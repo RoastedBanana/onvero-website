@@ -1,0 +1,185 @@
+You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+flipping-card.tsx
+import React from "react";
+import { cn } from "@/lib/utils";
+
+interface FlippingCardProps {
+  className?: string;
+  height?: number;
+  width?: number;
+  frontContent?: React.ReactNode;
+  backContent?: React.ReactNode;
+}
+
+export function FlippingCard({
+  className,
+  frontContent,
+  backContent,
+  height = 300,
+  width = 350,
+}: FlippingCardProps) {
+  return (
+    <div
+      className="group/flipping-card [perspective:1000px]"
+      style={
+        {
+          "--height": `${height}px`,
+          "--width": `${width}px`,
+        } as React.CSSProperties
+      }
+    >
+      <div
+        className={cn(
+          "relative rounded-xl border border-neutral-200 bg-white shadow-lg transition-all duration-700 [transform-style:preserve-3d] group-hover/flipping-card:[transform:rotateY(180deg)] dark:border-neutral-800 dark:bg-neutral-950",
+          "h-[var(--height)] w-[var(--width)]",
+          className
+        )}
+      >
+        {/* Front Face */}
+        <div className="absolute inset-0 h-full w-full rounded-[inherit] bg-white text-neutral-950 [transform-style:preserve-3d] [backface-visibility:hidden] [transform:rotateY(0deg)] dark:bg-zinc-950 dark:text-neutral-50">
+          <div className="[transform:translateZ(70px)_scale(.93)] h-full w-full">
+            {frontContent}
+          </div>
+        </div>
+        {/* Back Face */}
+        <div className="absolute inset-0 h-full w-full rounded-[inherit] bg-white text-neutral-950 [transform-style:preserve-3d] [backface-visibility:hidden] [transform:rotateY(180deg)] dark:bg-zinc-950 dark:text-neutral-50">
+          <div className="[transform:translateZ(70px)_scale(.93)] h-full w-full">
+            {backContent}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+demo.tsx
+import { FlippingCard } from "@/components/ui/flipping-card";
+
+interface CardData {
+  id: string;
+  front: {
+    imageSrc: string;
+    imageAlt: string;
+    title: string;
+    description: string;
+  };
+  back: {
+    description: string;
+    buttonText: string;
+  };
+}
+
+const cardsData: CardData[] = [
+
+  {
+    id: "design-excellence",
+    front: {
+      imageSrc: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=300&fit=crop",
+      imageAlt: "Design Excellence",
+      title: "Design Excellence",
+      description: "Beautiful, intuitive designs that create meaningful connections with users.",
+    },
+    back: {
+      description: "We craft exceptional user experiences through thoughtful design, user research, and modern design systems that ensure consistency and accessibility.",
+      buttonText: "View Portfolio",
+    },
+  },
+  {
+    id: "data-analytics",
+    front: {
+      imageSrc: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
+      imageAlt: "Data Analytics",
+      title: "Data Analytics",
+      description: "Transform raw data into actionable insights that drive informed decision-making.",
+    },
+    back: {
+      description: "Our data analytics platform provides real-time insights, predictive modeling, and interactive dashboards to help businesses make data-driven decisions.",
+      buttonText: "Learn More",
+    },
+  },
+];
+
+export default function FlippingCardDemo() {
+  return (
+    <div className="flex gap-4 flex-wrap justify-center p-8">
+      {cardsData.map((card) => (
+        <FlippingCard
+          key={card.id}
+          width={300}
+          frontContent={<GenericCardFront data={card.front} />}
+          backContent={<GenericCardBack data={card.back} />}
+        />
+      ))}
+    </div>
+  );
+}
+
+interface GenericCardFrontProps {
+  data: CardData["front"];
+}
+
+function GenericCardFront({ data }: GenericCardFrontProps) {
+  return (
+    <div className="flex flex-col h-full w-full p-4">
+      <img
+        src={data.imageSrc}
+        alt={data.imageAlt}
+        className="w-full h-auto object-cover flex-grow min-h-0 rounded-md"
+      />
+      <div className="p-2">
+        <h3 className="text-base font-semibold mt-2">{data.title}</h3>
+        <p className="text-[13.5px] mt-2 text-muted-foreground">
+          {data.description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+interface GenericCardBackProps {
+  data: CardData["back"];
+}
+
+function GenericCardBack({ data }: GenericCardBackProps) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full w-full p-6">
+      <p className="text-[13.5px] mt-2 text-muted-foreground text-center">
+        {data.description}
+      </p>
+      <button className="mt-6 bg-foreground text-background px-4 py-2 rounded-md text-[13.5px] w-min whitespace-nowrap h-8 flex items-center justify-center">
+        {data.buttonText}
+      </button>
+    </div>
+  );
+} 
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them

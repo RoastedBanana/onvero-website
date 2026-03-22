@@ -1,0 +1,12 @@
+In der SVG-Visualisierung:
+
+Ein Grid-Hintergrund aus feinen Linien
+8 rechteckige Karten mit abgerundeten Ecken, gleichmäßig im Kreis angeordnet (oben, oben-rechts, rechts, unten-rechts, unten, unten-links, links, oben-links)
+Jede Karte hat ein Icon oben und einen Label-Text darunter
+Die 8 Karten sind: Website, KI-Chatbot, Angebote, CRM, Reporting, Wissen, Dokumente, Workflows
+In der Mitte eine Pill-Form (breites abgerundetes Rechteck) mit dem Text „BusinessOS"
+Von jeder Karte führt eine geschwungene Linie (curved path) zur Mitte
+Auf jeder Linie fährt ein animierter Lichtimpuls (kurzes leuchtendes Segment) von der äußeren Karte zur Mitte — jeder Impuls startet mit einem anderen Delay sodass sie versetzt ankommen
+An jedem Verbindungspunkt zwischen Linie und Karte sitzt ein kleiner Kreis als Junction-Dot
+
+Verwende Lucide React für die Icons. Nutze ausschließlich die CSS-Variablen aus dem bestehenden Theme (--background, --card, --border, --foreground, --muted-foreground, --chart-2 für die Impulse). Keine hardcodierten Farben.

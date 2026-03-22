@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Ebene_2" data-name="Ebene 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 542.48 138.5">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #161616;
+        font-family: TimesNewRomanPSMT, 'Times New Roman';
+        font-size: 120px;
+        letter-spacing: .04em;
+      }
+
+      .cls-1, .cls-2 {
+        isolation: isolate;
+      }
+
+      .cls-3 {
+        fill: none;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-miterlimit: 10;
+        stroke-width: 8px;
+      }
+    </style>
+  </defs>
+  <g id="Ebene_6" data-name="Ebene 6">
+    <g>
+      <g>
+        <circle cx="45.26" cy="112.99" r="9.05"/>
+        <circle cx="9.2" cy="76.63" r="9.2"/>
+        <line class="cls-3" x1="38.88" y1="106.37" x2="15.56" y2="83.27"/>
+        <line class="cls-3" x1="56.82" y1="28.62" x2="15.43" y2="69.87"/>
+        <path d="M84.75,12.19c-5.44-1.79-9.74-6.09-11.54-11.53-.13-.39-.5-.66-.91-.66h0c-.41,0-.78.26-.91.66-1.79,5.43-6.07,9.72-11.49,11.52-.27.09-.5.27-.61.53-.23.54.05,1.14.56,1.31,5.44,1.79,9.74,6.09,11.54,11.53.13.39.5.66.91.66h0c.41,0,.78-.26.91-.66,1.79-5.43,6.07-9.72,11.49-11.52.27-.09.5-.27.61-.53.23-.54-.05-1.14-.56-1.31Z"/>
+      </g>
+      <circle cx="532.31" cy="91.53" r="10.17"/>
+      <g class="cls-2">
+        <text class="cls-1" transform="translate(121.88 101.7)"><tspan x="0" y="0">Onvero</tspan></text>
+      </g>
+    </g>
+  </g>
+</svg>
