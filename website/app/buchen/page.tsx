@@ -121,8 +121,8 @@ function FormBack() {
           "For those who prefer writing over calling. We reply within 24 hours with a concrete proposal."
         )}
       </p>
-      <a
-        href="mailto:hallo@onvero.de"
+      <Link
+        href="/buchen/formular"
         className="text-center font-semibold rounded-xl py-3 px-6 text-sm transition-all duration-200"
         style={{
           backgroundColor: "#ffffff",
@@ -138,8 +138,8 @@ function FormBack() {
             "#ffffff")
         }
       >
-        {t("Nachricht schreiben →", "Send a message →")}
-      </a>
+        {t("Loslegen →", "Get started →")}
+      </Link>
     </div>
   );
 }

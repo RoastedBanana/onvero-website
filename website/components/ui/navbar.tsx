@@ -183,7 +183,7 @@ export function Navbar() {
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#fff"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.3)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"; }}
             >
-              Anmelden
+              {t("Anmelden", "Sign in")}
             </Link>
           )}
         </div>
@@ -240,7 +240,7 @@ export function Navbar() {
               style={{ color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.12)" }}
               onClick={() => setMobileOpen(false)}
             >
-              {loggedInUser ? `${loggedInUser.firstName} →` : "Anmelden"}
+              {loggedInUser ? `${loggedInUser.firstName} →` : t("Anmelden", "Sign in")}
             </Link>
           </div>
         </div>

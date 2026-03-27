@@ -91,7 +91,7 @@ export function ProjectsSection() {
               )}
             </p>
             <a
-              href="#chatbot"
+              href="/buchen"
               className="inline-flex items-center gap-2 text-sm font-medium transition-colors duration-200"
               style={{ color: "rgba(255,255,255,0.45)" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { useTranslation } from "@/lib/language-context";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },
@@ -56,6 +57,7 @@ function ToolCard({ logo, name, description, color, iconSize, iconFilter, delay 
 }
 
 export function TechSection() {
+  const { t } = useTranslation();
   return (
     <>
       <style>{`
@@ -97,15 +99,14 @@ export function TechSection() {
               className="font-bold tracking-tight"
               style={{ fontSize: "clamp(1.9rem, 3.8vw, 3rem)", lineHeight: 1.1 }}
             >
-              <span className="block text-white">Gebaut mit den</span>
-              <span className="block" style={{ color: "rgba(255,255,255,0.45)" }}>neuesten Tools.</span>
+              <span className="block text-white">{t("Gebaut mit den", "Built with the")}</span>
+              <span className="block" style={{ color: "rgba(255,255,255,0.45)" }}>{t("neuesten Tools.", "latest tools.")}</span>
             </h2>
             <p
               className="mt-4 text-sm leading-relaxed max-w-xl"
               style={{ color: "rgba(255,255,255,0.4)" }}
             >
-              Wir arbeiten ausschließlich mit den fortschrittlichsten KI-Tools — damit deine
-              Infrastruktur immer auf dem neuesten Stand ist.
+              {t("Wir arbeiten ausschließlich mit den fortschrittlichsten KI-Tools — damit deine Infrastruktur immer auf dem neuesten Stand ist.", "We work exclusively with the most advanced AI tools — so your infrastructure is always up to date.")}
             </p>
           </motion.div>
 

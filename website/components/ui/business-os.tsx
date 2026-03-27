@@ -515,7 +515,7 @@ export function BusinessOS() {
     <MetricsSection />
 
     {/* ── Unsere Produkte ── */}
-    <div style={{ paddingTop: "2rem" }}>
+    <div id="projekte" style={{ paddingTop: "2rem" }}>
       <ProjectsSection />
     </div>
 

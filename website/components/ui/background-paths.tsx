@@ -55,7 +55,7 @@ function FloatingPaths({ position }: { position: number }) {
 
 export function BackgroundPaths() {
   const { scrollY } = useScroll();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
   // position: fixed means the element is already anchored to the viewport — no counteraction needed.
   // Phase 1 (0 → ~700px, hero height): y stays at 0, paths appear completely fixed.
@@ -100,7 +100,9 @@ export function BackgroundPaths() {
             style={{ fontSize: "clamp(2.2rem, 4.5vw, 4.5rem)" }}
           >
             {[
-              <>Dein Unternehmen hat jetzt ein <em style={{ fontFamily: "TimesNewRomanPSMT,'Times New Roman',Times,serif", fontStyle: "italic", letterSpacing: "0.02em" }}>KI-Betriebssystem</em></>,
+              lang === "de"
+                ? <>Dein Unternehmen hat jetzt ein <em style={{ fontFamily: "TimesNewRomanPSMT,'Times New Roman',Times,serif", fontStyle: "italic", letterSpacing: "0.02em" }}>KI-Betriebssystem</em></>
+                : <>Your business now has an <em style={{ fontFamily: "TimesNewRomanPSMT,'Times New Roman',Times,serif", fontStyle: "italic", letterSpacing: "0.02em" }}>AI operating system</em></>,
             ].map((line, lineIndex) => (
               <span key={lineIndex} className="block overflow-hidden">
                 <motion.span
@@ -126,7 +128,7 @@ export function BackgroundPaths() {
             className="text-lg md:text-xl mb-10 leading-relaxed"
             style={{ color: "rgba(255,255,255,0.45)" }}
           >
-            Keine isolierten Tools mehr. Wir bauen maßgeschneiderte KI-Workflows, die miteinander sprechen — und verbinden sie zu einer Infrastruktur, die dein Unternehmen wirklich voranbringt.
+            {t("Keine isolierten Tools mehr. Wir bauen maßgeschneiderte KI-Workflows, die miteinander sprechen — und verbinden sie zu einer Infrastruktur, die dein Unternehmen wirklich voranbringt.", "No more isolated tools. We build custom AI workflows that talk to each other — and connect them into an infrastructure that truly drives your business forward.")}
           </motion.p>
 
           <motion.div
@@ -144,10 +146,11 @@ export function BackgroundPaths() {
             >
               <Button
                 variant="ghost"
+                asChild
                 className="rounded-[0.65rem] px-8 py-6 text-base font-semibold bg-transparent hover:bg-white/5 transition-all duration-300 group-hover:-translate-y-0.5 border-0"
                 style={{ color: "rgba(255,255,255,0.7)" }}
               >
-                {t("Projekte ansehen ↓", "See Projects ↓")}
+                <Link href="/#leistungen">{t("Leistungen ansehen ↓", "See Services ↓")}</Link>
               </Button>
             </div>
           </motion.div>

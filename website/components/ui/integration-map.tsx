@@ -506,8 +506,8 @@ export function IntegrationMap() {
       }
     `}</style>
     <div ref={counterWrapperRef} className="integration-counter-wrapper">
-      <p className="integration-counter-bg">Über 400 weitere Integrationen.</p>
-      <p ref={counterFgRef} className="integration-counter-fg">Über 400 weitere Integrationen.</p>
+      <p className="integration-counter-bg">{t("Über 400 weitere Integrationen.", "Over 400 more integrations.")}</p>
+      <p ref={counterFgRef} className="integration-counter-fg">{t("Über 400 weitere Integrationen.", "Over 400 more integrations.")}</p>
     </div>
     </>
   );

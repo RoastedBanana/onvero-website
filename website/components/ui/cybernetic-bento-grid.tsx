@@ -55,7 +55,7 @@ function MeetingCard({ delay }: { delay: number }) {
         <IconWrap><Mic style={iconStyle} /></IconWrap>
       </div>
       <div style={contentStyle}>
-        <h3 className={titleStyle}>Meeting-Zusammenfassung</h3>
+        <h3 className={titleStyle}>{t("Meeting-Zusammenfassung", "Meeting Summary")}</h3>
         <p className="text-sm leading-relaxed" style={descStyle}>
           {t(
             "Meetings automatisch transkribieren, zusammenfassen und Aufgaben direkt ins Projektmanagement übergeben.",
@@ -803,7 +803,7 @@ function AnalyseCard({ delay }: { delay: number }) {
           <IconWrap><BarChart3 style={iconStyle} /></IconWrap>
         </div>
         <div style={contentStyle}>
-          <h3 className={titleStyle}>Analyse & Reporting</h3>
+          <h3 className={titleStyle}>{t("Analyse & Reporting", "Analytics & Reporting")}</h3>
           <p className="text-sm" style={descStyle}>
             {t(
               "Live-Dashboards und automatische Reports — datenbasierte Entscheidungen ohne manuellen Aufwand.",
@@ -908,7 +908,7 @@ function AISchulungCard({ delay }: { delay: number }) {
         <IconWrap><GraduationCap style={iconStyle} /></IconWrap>
       </div>
       <div style={contentStyle}>
-        <h3 className={titleStyle}>AI-Schulung</h3>
+        <h3 className={titleStyle}>{t("AI-Schulung", "AI Training")}</h3>
         <p className="text-sm leading-relaxed" style={descStyle}>
           {t(
             "Euer Team lernt, KI-Tools effektiv einzusetzen — praxisnah, auf euer Unternehmen zugeschnitten.",

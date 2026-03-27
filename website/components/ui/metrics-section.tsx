@@ -56,12 +56,12 @@ export function MetricsSection() {
   const textRefs    = useRef<(HTMLElement | null)[]>([null, null, null]);
 
   const metrics = [
-    { label: t("Zeitersparnis", "Time saved"),       value: "7.5h", description: t("Pro Mitarbeiter pro Woche durch KI-Automatisierung", "Per employee per week through AI automation") },
-    { label: t("Antwortzeit", "Response time"),      value: "60s",  description: t("Statt 4 Stunden — KI-Rezeptionist antwortet sofort", "Instead of 4 hours — AI receptionist responds instantly") },
-    { label: t("Automatisierbar", "Automatable"),    value: "80%",  description: t("Der täglichen Routineaufgaben in typischen KMU-Prozessen", "Of daily routine tasks in typical SME processes") },
-    { label: t("Umsetzung", "Time to launch"),       value: "3w",   description: t("Von Erstgespräch bis zur ersten laufenden KI-App", "From first call to your first running AI app") },
-    { label: t("Kostenreduktion", "Cost reduction"), value: "40%",  description: t("Weniger Aufwand in Dokumenten- und Finanzprozessen", "Less effort in document and finance processes") },
-    { label: t("Lead-Quote", "Lead rate"),           value: "3×",   description: t("Mehr qualifizierte Leads durch KI-gestützte Website und Chatbot", "More qualified leads via AI-powered website and chatbot") },
+    { label: t("Zeitersparnis", "Time saved"),       value: "7.5h", description: t("Pro Mitarbeiter pro Woche durch KI-Automatisierung", "Per employee per week through AI automation"),            href: "/#leistungen" },
+    { label: t("Antwortzeit", "Response time"),      value: "60s",  description: t("Statt 4 Stunden — KI-Rezeptionist antwortet sofort", "Instead of 4 hours — AI receptionist responds instantly"), href: "/#leistungen" },
+    { label: t("Automatisierbar", "Automatable"),    value: "80%",  description: t("Der täglichen Routineaufgaben in typischen KMU-Prozessen", "Of daily routine tasks in typical SME processes"),    href: "/#leistungen" },
+    { label: t("Umsetzung", "Time to launch"),       value: "3w",   description: t("Von Erstgespräch bis zur ersten laufenden KI-App", "From first call to your first running AI app"),             href: "/buchen"       },
+    { label: t("Kostenreduktion", "Cost reduction"), value: "40%",  description: t("Weniger Aufwand in Dokumenten- und Finanzprozessen", "Less effort in document and finance processes"),           href: "/#leistungen" },
+    { label: t("Lead-Quote", "Lead rate"),           value: "3×",   description: t("Mehr qualifizierte Leads durch KI-gestützte Website und Chatbot", "More qualified leads via AI-powered website and chatbot"), href: "/#projekte" },
   ];
 
   useEffect(() => {
@@ -139,17 +139,18 @@ export function MetricsSection() {
               </Button>
               <Button
                 variant="ghost"
+                asChild
                 className="rounded-full px-7 py-5 text-sm font-semibold bg-transparent border transition-all duration-300 hover:-translate-y-0.5 hover:bg-transparent"
                 style={{ borderColor: "rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.6)" }}
               >
-                {t("Projekte ansehen", "See Projects")}
+                <Link href="/#projekte">{t("Projekte ansehen", "See Projects")}</Link>
               </Button>
             </div>
           </div>
 
           {/* ── RIGHT: 2×3 Metric Grid ── */}
           <div className="grid grid-cols-2 gap-px" style={{ background: "rgba(255,255,255,0.05)" }}>
-            {metrics.map(({ label, value, description }, i) => (
+            {metrics.map(({ label, value, description, href }, i) => (
               <motion.div
                 key={label}
                 className="flex flex-col justify-between p-8 group"
@@ -171,15 +172,15 @@ export function MetricsSection() {
                 <p className="text-xs leading-relaxed mb-5" style={{ color: "rgba(255,255,255,0.38)" }}>
                   {description}
                 </p>
-                <a
-                  href="#"
+                <Link
+                  href={href}
                   className="text-xs font-medium transition-colors duration-200 w-fit"
                   style={{ color: "rgba(255,255,255,0.25)" }}
                   onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
                   onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.25)")}
                 >
                   {t("Mehr erfahren →", "Learn more →")}
-                </a>
+                </Link>
               </motion.div>
             ))}
           </div>
