@@ -8,6 +8,8 @@ interface SpotlightCardProps {
   style?: React.CSSProperties;
   onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
   onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
+  borderColor?: string;
+  bgColor?: string;
 }
 
 const BEFORE_AFTER = `
@@ -58,7 +60,7 @@ const BEFORE_AFTER = `
   }
 `;
 
-export function SpotlightCard({ children, className = "", style, onMouseEnter, onMouseLeave }: SpotlightCardProps) {
+export function SpotlightCard({ children, className = "", style, onMouseEnter, onMouseLeave, borderColor, bgColor }: SpotlightCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,8 +88,8 @@ export function SpotlightCard({ children, className = "", style, onMouseEnter, o
           "--border-size": "1px",
           "--spotlight-size": "200px",
           "--radius": "12",
-          "--backdrop": "rgba(255,255,255,0.03)",
-          "--backup-border": "rgba(255,255,255,0.08)",
+          "--backdrop": bgColor ?? "rgba(255,255,255,0.03)",
+          "--backup-border": borderColor ?? "rgba(255,255,255,0.08)",
           backgroundImage: `radial-gradient(
             200px 200px at
             calc(var(--x, 0) * 1px) calc(var(--y, 0) * 1px),

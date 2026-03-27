@@ -64,7 +64,7 @@ export function BackgroundPaths() {
 
   return (
     <div
-      className="relative min-h-screen w-full flex items-center"
+      className="relative min-h-screen w-full flex items-center justify-center"
       style={{ backgroundColor: "#0f0f0f" }}
     >
       {/* Fixed background — z-index 0 so subsequent sections (z-index 1) cover it */}
@@ -85,22 +85,22 @@ export function BackgroundPaths() {
 
       {/* Hero content — above the fixed paths */}
       <div
-        className="relative w-full px-8 md:px-16 lg:px-24 py-24"
+        className="relative w-full px-8 md:px-16 lg:px-24 flex items-center gap-16"
         style={{ zIndex: 10 }}
       >
+        {/* Left: Text */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 2 }}
-          className="max-w-4xl"
+          className="flex-shrink-0 w-full max-w-xl"
         >
           <h1
             className="mb-6 text-white leading-[1.05]"
-            style={{ fontSize: "clamp(2.6rem, 6vw, 5.5rem)" }}
+            style={{ fontSize: "clamp(2.2rem, 4.5vw, 4.5rem)" }}
           >
             {[
-              <>{t("Die Welt", "The world")} <em style={{ fontFamily: "TimesNewRomanPSMT,'Times New Roman',Times,serif", fontStyle: "italic", letterSpacing: "0.02em" }}>{t("automatisiert sich.", "is automating.")}</em></>,
-              <>{t("Deine Konkurrenz", "Your competition")} <em style={{ fontFamily: "TimesNewRomanPSMT,'Times New Roman',Times,serif", fontStyle: "italic", letterSpacing: "0.02em" }}>{t("schon längst.", "already has.")}</em></>,
+              <>Dein Unternehmen hat jetzt ein <em style={{ fontFamily: "TimesNewRomanPSMT,'Times New Roman',Times,serif", fontStyle: "italic", letterSpacing: "0.02em" }}>KI-Betriebssystem</em></>,
             ].map((line, lineIndex) => (
               <span key={lineIndex} className="block overflow-hidden">
                 <motion.span
@@ -123,13 +123,10 @@ export function BackgroundPaths() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9, duration: 0.8 }}
-            className="text-lg md:text-xl mb-10 max-w-2xl leading-relaxed"
+            className="text-lg md:text-xl mb-10 leading-relaxed"
             style={{ color: "rgba(255,255,255,0.45)" }}
           >
-            {t(
-              "Wir bauen KI-Infrastruktur für dein Unternehmen — von der Website bis zum internen Tool. Ohne technische Vorkenntnisse. Einfach wirksam.",
-              "We build AI infrastructure for your business — from your website to internal tools. No technical knowledge required. Simply effective."
-            )}
+            Keine isolierten Tools mehr. Wir bauen maßgeschneiderte KI-Workflows, die miteinander sprechen — und verbinden sie zu einer Infrastruktur, die dein Unternehmen wirklich voranbringt.
           </motion.p>
 
           <motion.div
@@ -154,6 +151,60 @@ export function BackgroundPaths() {
               </Button>
             </div>
           </motion.div>
+        </motion.div>
+
+        {/* Right: Dashboard screenshot — 3D tilted, overflows right */}
+        <motion.div
+          initial={{ opacity: 0, x: 80 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          className="hidden lg:block flex-1 min-w-0"
+          style={{
+            marginRight: '-48rem',
+            marginTop: '4rem',
+            perspective: '1200px',
+          }}
+        >
+          {/* Ambient glow behind the card */}
+          <div style={{
+            position: 'absolute',
+            inset: '10% 0 10% 10%',
+            background: 'radial-gradient(ellipse at 60% 50%, rgba(120,120,255,0.12) 0%, rgba(80,80,200,0.06) 50%, transparent 80%)',
+            filter: 'blur(40px)',
+            zIndex: 0,
+            pointerEvents: 'none',
+          }} />
+
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              transform: 'rotateY(-18deg) rotateX(6deg)',
+              transformStyle: 'preserve-3d',
+              borderRadius: '14px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.12)',
+              boxShadow: `
+                -40px 40px 100px rgba(0,0,0,0.8),
+                -8px 8px 32px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.08)
+              `,
+              background: '#111',
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/dashboard-preview.png"
+              alt="Dashboard Vorschau"
+              style={{
+                width: '100%',
+                display: 'block',
+                minHeight: 520,
+                objectFit: 'cover',
+                objectPosition: 'top left',
+              }}
+            />
+          </div>
         </motion.div>
       </div>
     </div>

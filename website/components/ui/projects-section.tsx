@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Globe, GitBranch, BarChart3, FileText, TrendingUp } from "lucide-react";
+import { ShoppingBag, Home, Scale, Dumbbell, Receipt } from "lucide-react";
 import DisplayCards from "@/components/ui/display-cards";
 import { useTranslation } from "@/lib/language-context";
 
@@ -16,36 +16,43 @@ const fadeUp = (delay = 0) => ({
 export function ProjectsSection() {
   const { t } = useTranslation();
 
+  const iconStyle = { width: 14, height: 14, color: "rgba(255,255,255,0.7)" };
+
   const projects = [
     {
-      icon: <Globe style={{ width: 14, height: 14, color: "rgba(255,255,255,0.7)" }} />,
-      title: t("KI-Website & Chatbot", "AI Website & Chatbot"),
-      description: t("Leadgenerierung um 3× gesteigert", "Lead generation increased 3×"),
-      date: t("Handelsunternehmen · 2024", "Retail company · 2024"),
-    },
-    {
-      icon: <GitBranch style={{ width: 14, height: 14, color: "rgba(255,255,255,0.7)" }} />,
-      title: t("Workflow-Automatisierung", "Workflow Automation"),
-      description: t("7,5 Std. Zeitersparnis pro Mitarbeiter/Woche", "7.5 hrs saved per employee/week"),
-      date: t("Kanzlei · 2024", "Law firm · 2024"),
-    },
-    {
-      icon: <BarChart3 style={{ width: 14, height: 14, color: "rgba(255,255,255,0.7)" }} />,
-      title: t("BusinessOS Integration", "BusinessOS Integration"),
-      description: t("80 % der Routineprozesse automatisiert", "80% of routine processes automated"),
-      date: t("Agentur · 2025", "Agency · 2025"),
-    },
-    {
-      icon: <FileText style={{ width: 14, height: 14, color: "rgba(255,255,255,0.7)" }} />,
-      title: t("KI-Dokumentenanalyse", "AI Document Analysis"),
-      description: t("Bearbeitungszeit um 65 % reduziert", "Processing time reduced by 65%"),
-      date: t("Versicherung · 2024", "Insurance · 2024"),
-    },
-    {
-      icon: <TrendingUp style={{ width: 14, height: 14, color: "rgba(255,255,255,0.7)" }} />,
-      title: t("Automatisiertes Reporting", "Automated Reporting"),
-      description: t("Tagesberichte ohne manuellen Aufwand", "Daily reports without manual effort"),
+      icon: <ShoppingBag style={iconStyle} />,
+      title: "Uhrmensch",
+      description: t("+20 % Umsatz · unter 4 Std. Aufwand/Woche", "+20% revenue · under 4 hrs/week"),
       date: t("E-Commerce · 2025", "E-Commerce · 2025"),
+      href: "/blog/uhrmensch-ai-shop",
+    },
+    {
+      icon: <Home style={iconStyle} />,
+      title: "Ferienhaus Wellenreiter",
+      description: t("+38 % Buchungen · +22 % Durchschnittspreis", "+38% bookings · +22% avg. price"),
+      date: t("Tourismus · 2025", "Tourism · 2025"),
+      href: "/blog/ferienhaus-wellenreiter",
+    },
+    {
+      icon: <Scale style={iconStyle} />,
+      title: "Berger & Partner",
+      description: t("70 % weniger Zeit für Dokumentenarbeit", "70% less time on document work"),
+      date: t("Kanzlei · 2025", "Law firm · 2025"),
+      href: "/blog/kanzlei-dokumenten-ki",
+    },
+    {
+      icon: <Dumbbell style={iconStyle} />,
+      title: "FitBase",
+      description: t("+31 % Neuanmeldungen in 90 Tagen", "+31% new sign-ups in 90 days"),
+      date: t("Fitness · 2025", "Fitness · 2025"),
+      href: "/blog/fitnessstudio-ki-vertrieb",
+    },
+    {
+      icon: <Receipt style={iconStyle} />,
+      title: "Kanzlei Nowak",
+      description: t("60 % weniger Admin-Aufwand", "60% less admin overhead"),
+      date: t("Steuerberatung · 2025", "Tax advisory · 2025"),
+      href: "/blog/steuerberater-mandanten-automation",
     },
   ];
 

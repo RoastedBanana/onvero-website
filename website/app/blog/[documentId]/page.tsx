@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
-import { ArrowLeft, Clock, Calendar, User } from 'lucide-react';
+import { Clock, Calendar, User } from 'lucide-react';
+import { BackButton } from './back-button';
 import { calcReadTime } from '@/lib/utils';
 import { Navbar } from '@/components/ui/navbar';
 import { FooterComponent } from '@/components/ui/flickering-footer';
@@ -80,14 +80,8 @@ export default async function BlogPostPage({
 
       <main style={{ maxWidth: 760, margin: '0 auto', padding: imageUrl ? '2.5rem 1.5rem 5rem' : '7rem 1.5rem 5rem' }}>
 
-        {/* Back link */}
-        <Link
-          href="/#blog"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', textDecoration: 'none', marginBottom: '2.5rem' }}
-        >
-          <ArrowLeft size={15} />
-          Zurück zum Blog
-        </Link>
+        {/* Back button — goes to previous page (projects or blog section) */}
+        <BackButton />
 
         {/* Tags */}
         {tags.length > 0 && (

@@ -12,23 +12,22 @@ const fadeUp = (delay = 0) => ({
 });
 
 const tools = [
-  { logo: "/logos/N8n-logo-new.svg",         name: "n8n",         description: "Workflow-Automatisierung" },
-  { logo: "/logos/Claude_AI_logo.svg",        name: "ClawdBot",    description: "KI-Chatbot Infrastruktur" },
-  { logo: "/logos/Claude_AI_logo.svg",        name: "Claude Code", description: "KI-gestützte Entwicklung" },
-  { logo: "/logos/ElevenLabs_Logo_01.svg",    name: "ElevenLabs",  description: "KI Voice & Audio"         },
-  { logo: "/logos/idpcAHoHxC_logos.svg",      name: "Nano Banana", description: "Rapid App Deployment"     },
+  { logo: "/logos/n8n-color.svg",             name: "n8n",         description: "Workflow-Automatisierung", color: "#EA4B71" },
+  { logo: "/logos/claude-color.svg",           name: "Claude Code", description: "KI-gestützte Entwicklung", color: "#D97757" },
+  { logo: "/logos/elevenlabs-symbol.svg",      name: "ElevenLabs",  description: "KI Voice & Audio",         color: "#ffffff", iconSize: 52, iconFilter: "brightness(0) invert(1)" },
+  { logo: "/logos/supabase-icon.svg",          name: "Supabase",    description: "Sichere Datenverwaltung",  color: "#3ECF8E" },
+  { logo: "/logos/higgsfield-logo.svg",        name: "Higgsfield",  description: "KI Video-Generierung",     color: "#D1FE17" },
 ];
 
-function ToolCard({ logo, name, description, delay = 0 }: (typeof tools)[number] & { delay?: number }) {
+function ToolCard({ logo, name, description, color, iconSize, iconFilter, delay = 0 }: (typeof tools)[number] & { delay?: number }) {
   const [hovered, setHovered] = useState(false);
   return (
     <motion.div {...fadeUp(delay)}>
       <SpotlightCard
         className="flex flex-col gap-4 rounded-xl p-6 cursor-default h-full"
-        style={{
-          transition: "background-color 0.2s ease",
-          backgroundColor: hovered ? "rgba(255,255,255,0.05)" : undefined,
-        } as React.CSSProperties}
+        borderColor={hovered ? `${color}90` : `${color}40`}
+        bgColor={hovered ? `${color}15` : "rgba(255,255,255,0.03)"}
+        style={{ transition: "background-color 0.25s ease, border-color 0.25s ease" } as React.CSSProperties}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
@@ -37,12 +36,12 @@ function ToolCard({ logo, name, description, delay = 0 }: (typeof tools)[number]
           src={logo}
           alt={name}
           style={{
-            width: 36,
-            height: 36,
+            width: iconSize ?? 36,
+            height: iconSize ?? 36,
             objectFit: "contain",
-            filter: hovered ? "none" : "brightness(0) invert(1)",
-            opacity: hovered ? 1 : 0.55,
-            transition: "filter 0.25s ease, opacity 0.25s ease",
+            filter: iconFilter,
+            opacity: hovered ? 1 : 0.8,
+            transition: "opacity 0.25s ease",
           }}
         />
         <div>

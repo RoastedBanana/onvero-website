@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { OnveroLogo, OnveroIcon } from "@/components/ui/onvero-logo";
 import { useLanguage, useTranslation } from "@/lib/language-context";
 
-function parseCookieUser(): { firstName: string; lastName: string } | null {
+function parseCookieUser(): { firstName: string; lastName: string; email?: string } | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(/onvero_user=([^;]+)/);
   if (!match) return null;
@@ -160,28 +160,26 @@ export function Navbar() {
             </Link>
           </Button>
 
-          {/* Anmelden / Dashboard */}
+          {/* Anmelden / Profil-Avatar */}
           {loggedInUser ? (
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium px-4 py-2 rounded-xl transition-colors"
-              style={{
-                color: "rgba(255,255,255,0.6)",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#fff"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.3)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"; }}
-            >
-              {loggedInUser.firstName} →
+            <Link href="/dashboard">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-opacity hover:opacity-80"
+                style={{
+                  background: "rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  color: "#fff",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                {(loggedInUser.firstName?.[0] ?? "").toUpperCase()}{(loggedInUser.lastName?.[0] ?? "").toUpperCase()}
+              </div>
             </Link>
           ) : (
             <Link
               href="/login"
               className="text-sm font-medium px-4 py-2 rounded-xl transition-colors"
-              style={{
-                color: "rgba(255,255,255,0.6)",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
+              style={{ color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.12)" }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#fff"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.3)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"; }}
             >

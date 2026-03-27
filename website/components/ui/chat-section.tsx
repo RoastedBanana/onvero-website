@@ -71,6 +71,7 @@ export function ChatSection() {
   const [limited, setLimited] = useState(false);
   const [usedCount, setUsedCount] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const hasSentMessage = useRef(false);
 
   // Read rate-limit state from localStorage on mount
@@ -81,7 +82,9 @@ export function ChatSection() {
 
   useEffect(() => {
     if (!hasSentMessage.current) return;
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading]);
 
   const handleSubmit = (e: FormEvent) => {
@@ -184,11 +187,11 @@ export function ChatSection() {
           >
             {/* ── Message area ── */}
             <div
+              ref={scrollContainerRef}
               className="overflow-y-auto"
               style={{
                 padding: "28px 24px",
-                minHeight: 180,
-                maxHeight: 340,
+                height: 340,
               }}
             >
               <div className="flex flex-col gap-5">

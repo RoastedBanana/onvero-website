@@ -3,6 +3,131 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
+// ── Meeting card ──────────────────────────────────────────────────────────────
+// Bell-curve base heights for the waveform bars
+const WAVE_BASE = [8, 14, 20, 26, 18, 30, 22, 38, 26, 38, 22, 30, 18, 26, 20, 14, 8];
+// Each bar gets a slightly different animation duration for organic feel
+const WAVE_DURATIONS = [380, 290, 420, 310, 360, 270, 400, 320, 350, 300, 410, 280, 370, 330, 390, 260, 340];
+
+function MeetingCard({ delay }: { delay: number }) {
+  const [hovered, setHovered] = useState(false);
+  const [phase, setPhase]     = useState<'idle' | 'wave' | 'done'>('idle');
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!hovered) { setPhase('idle'); return; }
+    const t1 = setTimeout(() => setPhase('wave'), 380);
+    const t2 = setTimeout(() => setPhase('done'),  2400);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [hovered]);
+
+  const iconStyle_: React.CSSProperties = {
+    transform: hovered ? 'translateY(-60px)' : 'translateY(0)',
+    opacity:   hovered ? 0 : 1,
+    transition: hovered
+      ? 'transform 220ms ease-in, opacity 220ms ease-in'
+      : 'transform 220ms ease-out, opacity 220ms ease-out',
+    transitionDelay: hovered ? '0ms' : '100ms',
+  };
+  const contentStyle: React.CSSProperties = {
+    transform: hovered ? 'translateY(-56px)' : 'translateY(0)',
+    transition: hovered ? 'transform 280ms ease-out' : 'transform 280ms ease-in-out',
+    transitionDelay: hovered ? '80ms' : '0ms',
+  };
+
+  const waveVisible  = phase === 'wave';
+  const checkVisible = phase === 'done';
+
+  return (
+    <BentoItem className="flex flex-col" delay={delay} onHoverStart={() => setHovered(true)} onHoverEnd={() => setHovered(false)}>
+      {/* CSS keyframes injected once */}
+      <style>{`
+        @keyframes wave-bar {
+          0%, 100% { transform: scaleY(0.25); }
+          50%       { transform: scaleY(1); }
+        }
+        @keyframes bar-collapse {
+          to { transform: scaleY(0.05); }
+        }
+      `}</style>
+
+      <div style={iconStyle_}>
+        <IconWrap><Mic style={iconStyle} /></IconWrap>
+      </div>
+      <div style={contentStyle}>
+        <h3 className={titleStyle}>Meeting-Zusammenfassung</h3>
+        <p className="text-sm leading-relaxed" style={descStyle}>
+          {t(
+            "Meetings automatisch transkribieren, zusammenfassen und Aufgaben direkt ins Projektmanagement übergeben.",
+            "Automatically transcribe, summarise meetings, and push tasks directly into project management.",
+          )}
+        </p>
+      </div>
+
+      {/* Animation area */}
+      <div style={{
+        position: 'absolute', bottom: 20, left: 20, right: 20,
+        pointerEvents: 'none',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: 52,
+        opacity: hovered ? 1 : 0,
+        transform: hovered ? 'translateY(0)' : 'translateY(10px)',
+        transition: hovered
+          ? 'opacity 250ms ease 380ms, transform 250ms ease 380ms'
+          : 'opacity 150ms ease, transform 150ms ease',
+      }}>
+        {/* Waveform bars — pure CSS animation, no JS per frame */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', gap: 3,
+          opacity: waveVisible ? 1 : 0,
+          transition: 'opacity 400ms ease',
+        }}>
+          {WAVE_BASE.map((h, i) => (
+            <div key={i} style={{
+              flex: 1,
+              height: `${h}px`,
+              background: 'rgba(255,255,255,0.85)',
+              borderRadius: 999,
+              transformOrigin: 'center',
+              willChange: 'transform',
+              animation: waveVisible
+                ? `wave-bar ${WAVE_DURATIONS[i]}ms ease-in-out ${i * 30}ms infinite`
+                : undefined,
+            }} />
+          ))}
+        </div>
+
+        {/* Checkmark circle */}
+        <div style={{
+          position: 'absolute',
+          width: 40, height: 40,
+          borderRadius: '50%',
+          border: '3px solid rgba(255,255,255,0.9)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          willChange: 'transform, opacity',
+          opacity: checkVisible ? 1 : 0,
+          transform: checkVisible ? 'scale(1)' : 'scale(0.4)',
+          transition: 'opacity 350ms cubic-bezier(0.34,1.56,0.64,1), transform 350ms cubic-bezier(0.34,1.56,0.64,1)',
+        }}>
+          <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+            <path
+              d="M1.5 7L6.5 12L16.5 2"
+              stroke="white"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray="22"
+              strokeDashoffset={checkVisible ? 0 : 22}
+              style={{ transition: 'stroke-dashoffset 350ms ease 100ms' }}
+            />
+          </svg>
+        </div>
+      </div>
+    </BentoItem>
+  );
+}
+
 // ── Website-building mockup animation ─────────────────────────────────────────
 const IDLE_H   = 94;
 const EXPAND_H = 210;
@@ -598,7 +723,7 @@ function CustomerSupportCard({ delay }: { delay: number }) {
   });
 
   const bubbleRect: React.CSSProperties = {
-    height: 28,
+    height: 20,
     border: '1px solid rgba(255,255,255,0.18)',
     backgroundColor: 'rgba(255,255,255,0.05)',
   };
@@ -629,12 +754,12 @@ function CustomerSupportCard({ delay }: { delay: number }) {
         display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none',
       }}>
         {/* Bubble 1 — left, tail bottom-left */}
-        <div style={bubbleBase(-20, 400)}>
+        <div style={{ ...bubbleBase(-20, 400), marginTop: 32 }}>
           <div style={{ ...bubbleRect, width: '55%', borderRadius: '14px 14px 14px 3px' }} />
         </div>
         {/* Bubble 2 — right, tail bottom-right */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', ...bubbleBase(20, 580) }}>
-          <div style={{ ...bubbleRect, width: '45%', borderRadius: '14px 14px 3px 14px' }} />
+          <div style={{ ...bubbleRect, width: '45%', borderRadius: '14px 14px 3px 14px', backgroundColor: 'rgba(255,255,255,1)', border: 'none' }} />
         </div>
       </div>
     </BentoItem>
@@ -688,19 +813,17 @@ function AnalyseCard({ delay }: { delay: number }) {
         </div>
       </div>
 
-      {/* Animated bar chart */}
-      <div className="flex items-end gap-1 mt-4 h-8">
+      {/* Bar chart — visible by default, grows on hover */}
+      <div className="flex items-end gap-1 mt-4 h-16">
         {BAR_HEIGHTS.map((h, i) => (
           <div
             key={i}
             className="flex-1 rounded-sm"
             style={{
-              height: hovered ? `${h}%` : '0%',
+              height: hovered ? `${Math.min(h * 1.35, 100)}%` : `${h * 0.25}%`,
               background: `rgba(255,255,255,${h === BAR_MAX ? 0.75 : 0.22})`,
-              transition: hovered
-                ? 'height 350ms ease-out'
-                : 'height 200ms ease-in',
-              transitionDelay: hovered ? `${380 + i * 60}ms` : '0ms',
+              transition: 'height 350ms ease-out',
+              transitionDelay: hovered ? `${i * 40}ms` : `${i * 20}ms`,
             }}
           />
         ))}
@@ -1040,13 +1163,7 @@ export const CyberneticBentoGrid = () => {
           <LeadGenCard delay={0.28} />
 
           {/* 6. Meeting Zusammenfassung */}
-          <BentoItem className="flex flex-col" delay={0.07}>
-            <IconWrap><Mic style={iconStyle} /></IconWrap>
-            <h3 className={titleStyle}>Meeting-Zusammenfassung</h3>
-            <p className="text-sm leading-relaxed" style={descStyle}>
-              {t("Meetings automatisch transkribieren, zusammenfassen und Aufgaben direkt ins Projektmanagement übergeben.", "Automatically transcribe, summarise meetings, and push tasks directly into project management.")}
-            </p>
-          </BentoItem>
+          <MeetingCard delay={0.07} />
 
           {/* 7. AI Schulung */}
           <AISchulungCard delay={0.14} />

@@ -11,6 +11,7 @@ import {
 import { OnveroLogo } from '@/components/ui/onvero-logo';
 import { Confetti } from '@/components/ui/confetti';
 import { GlassBlogCard } from '@/components/ui/glass-blog-card';
+import UniqueLoading from '@/components/ui/grid-loading';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -134,7 +135,7 @@ function SubmitButton({ state, label }: { state: SubmitState; label: string }) {
       disabled={state==='loading'||state==='success'}
       style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginTop:'0.25rem', width:'100%', background: state==='success'?'rgba(74,222,128,0.15)':'rgba(255,255,255,0.95)', color: state==='success'?'#4ade80':'#0a0a0a', fontWeight:600, fontSize:'0.88rem', border: state==='success'?'1px solid rgba(74,222,128,0.4)':'none', borderRadius:8, padding:'0.75rem', cursor: state==='loading'||state==='success'?'default':'pointer', opacity:state==='loading'?0.7:1, transition:'all 0.3s' }}
     >
-      {state==='loading' && <svg style={{animation:'spin 0.8s linear infinite',width:15,height:15}} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.2)" strokeWidth="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="#0a0a0a" strokeWidth="3" strokeLinecap="round"/></svg>}
+      {state==='loading' && <UniqueLoading size="sm" className="opacity-60" />}
       {state==='success' ? '✓ Gespeichert' : state==='loading' ? 'Wird gespeichert…' : label}
     </button>
   );
@@ -466,8 +467,8 @@ function WebsitePage({ user }: { user: UserInfo|null }) {
             <div style={{ background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:12, padding:'1.75rem' }}>
               <h2 style={{ fontWeight:600, fontSize:'0.95rem', marginBottom:'1.25rem', color:'rgba(255,255,255,0.85)' }}>Blogpost auswählen</h2>
               {postsLoading ? (
-                <div style={{ textAlign:'center', padding:'2.5rem', color:'rgba(255,255,255,0.25)' }}>
-                  <svg style={{animation:'spin 0.8s linear infinite',width:24,height:24,margin:'0 auto'}} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.08)" strokeWidth="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="rgba(255,255,255,0.4)" strokeWidth="3" strokeLinecap="round"/></svg>
+                <div style={{ display:'flex', justifyContent:'center', padding:'2.5rem' }}>
+                  <UniqueLoading size="lg" />
                 </div>
               ) : postsError ? (
                 <p style={{ color:'rgba(255,80,80,0.8)', fontSize:'0.85rem', padding:'1rem 0' }}>{postsError}</p>
@@ -526,7 +527,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{ display:'flex', minHeight:'100vh', backgroundColor:'#0c0c0c', color:'#fff' }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } } * { box-sizing: border-box; }`}</style>
+      <style>{`* { box-sizing: border-box; }`}</style>
 
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} />
 

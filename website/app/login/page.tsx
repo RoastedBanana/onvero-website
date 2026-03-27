@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { OnveroLogo } from '@/components/ui/onvero-logo';
+import UniqueLoading from '@/components/ui/grid-loading';
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -217,13 +218,7 @@ function LoginForm() {
           >
             {loading ? (
               <>
-                <svg
-                  style={{ animation: 'spin 0.8s linear infinite', width: 16, height: 16 }}
-                  viewBox="0 0 24 24" fill="none"
-                >
-                  <circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.2)" strokeWidth="3" />
-                  <path d="M12 2a10 10 0 0 1 10 10" stroke="#0f0f0f" strokeWidth="3" strokeLinecap="round" />
-                </svg>
+                <UniqueLoading size="sm" />
                 Anmelden…
               </>
             ) : (
@@ -233,7 +228,6 @@ function LoginForm() {
         </form>
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </main>
   );
 }

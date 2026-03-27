@@ -94,21 +94,21 @@ export function TimelineSection() {
         <div>
           <p className="text-sm md:text-base font-normal mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
             {t(
-              "Nach dem Launch begleiten wir dich langfristig — mit Optimierungen, Training und technischem Support.",
-              "After launch we support you long-term — with optimizations, training, and technical support."
+              "Alle aufgebauten Prozesse werden in dein persönliches BusinessOS zusammengeführt — dein digitaler Business Agent ist ab sofort einsatzbereit.",
+              "All built processes are merged into your personal BusinessOS — your digital business agent is ready to go."
             )}
           </p>
           <p className="text-sm md:text-base font-normal mb-6" style={{ color: "rgba(255,255,255,0.45)" }}>
             {t(
-              "Persönliches Onboarding für dein Team und ein individuelles Dashboard mit einfacher Bedienung — damit du unabhängig bleibst.",
-              "Personal onboarding for your team and a custom dashboard that's easy to use — so you stay independent."
+              "Du erhältst deine Zugangsdaten für das BusinessOS und kannst sofort loslegen. Wir bleiben an deiner Seite mit persönlichem Support.",
+              "You receive your BusinessOS login credentials and can get started immediately. We stay by your side with personal support."
             )}
           </p>
           <div className="space-y-2">
             {[
-              t("Onboarding & Team-Training", "Onboarding & team training"),
-              t("Monatliche Performance-Reviews", "Monthly performance reviews"),
-              t("Kontinuierliche KI-Verbesserungen", "Continuous AI improvements"),
+              t("Übergabe deines digitalen Business Agenten", "Handover of your digital business agent"),
+              t("Zugangsdaten & Onboarding ins BusinessOS", "Login credentials & BusinessOS onboarding"),
+              t("Persönlicher Support & laufende Optimierung", "Personal support & ongoing optimization"),
             ].map((item) => (
               <div key={item} className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "rgba(255,255,255,0.35)" }} />
