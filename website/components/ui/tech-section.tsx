@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { IntegrationMap } from "@/components/ui/integration-map";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },
@@ -22,36 +22,36 @@ const tools = [
 function ToolCard({ logo, name, description, delay = 0 }: (typeof tools)[number] & { delay?: number }) {
   const [hovered, setHovered] = useState(false);
   return (
-    <motion.div
-      {...fadeUp(delay)}
-      className="flex flex-col gap-4 rounded-xl p-6 cursor-default"
-      style={{
-        border: `1px solid ${hovered ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.08)"}`,
-        backgroundColor: hovered ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.03)",
-        transition: "border-color 0.2s ease, background-color 0.2s ease",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={logo}
-        alt={name}
+    <motion.div {...fadeUp(delay)}>
+      <SpotlightCard
+        className="flex flex-col gap-4 rounded-xl p-6 cursor-default h-full"
         style={{
-          width: 36,
-          height: 36,
-          objectFit: "contain",
-          filter: hovered ? "none" : "brightness(0) invert(1)",
-          opacity: hovered ? 1 : 0.55,
-          transition: "filter 0.25s ease, opacity 0.25s ease",
-        }}
-      />
-      <div>
-        <p className="text-sm font-medium text-white mb-1">{name}</p>
-        <p className="text-xs leading-snug" style={{ color: "rgba(255,255,255,0.4)" }}>
-          {description}
-        </p>
-      </div>
+          transition: "background-color 0.2s ease",
+          backgroundColor: hovered ? "rgba(255,255,255,0.05)" : undefined,
+        } as React.CSSProperties}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logo}
+          alt={name}
+          style={{
+            width: 36,
+            height: 36,
+            objectFit: "contain",
+            filter: hovered ? "none" : "brightness(0) invert(1)",
+            opacity: hovered ? 1 : 0.55,
+            transition: "filter 0.25s ease, opacity 0.25s ease",
+          }}
+        />
+        <div>
+          <p className="text-sm font-medium text-white mb-1">{name}</p>
+          <p className="text-xs leading-snug" style={{ color: "rgba(255,255,255,0.4)" }}>
+            {description}
+          </p>
+        </div>
+      </SpotlightCard>
     </motion.div>
   );
 }
@@ -117,33 +117,6 @@ export function TechSection() {
             ))}
           </div>
 
-        </div>
-
-        {/* ── Integration subsection ── */}
-        <div className="mt-24">
-          {/* Headline + subline */}
-          <motion.div className="max-w-6xl mx-auto mb-12" {...fadeUp(0)}>
-            <h3
-              className="font-bold text-white tracking-tight mb-2"
-              style={{ fontSize: "clamp(1.2rem, 2vw, 1.5rem)" }}
-            >
-              Integriert in was du bereits nutzt.
-            </h3>
-            <p className="text-sm max-w-xl" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Egal welche Tools dein Unternehmen heute einsetzt — wir verbinden sie.
-              Über 400 Integrationen verfügbar, kein technisches Setup nötig.
-            </p>
-          </motion.div>
-
-          {/* Integration map — full-width within the section */}
-          <IntegrationMap />
-
-          <p
-            className="text-center mt-4 text-sm"
-            style={{ color: "rgba(255,255,255,0.3)" }}
-          >
-            und vieles mehr...
-          </p>
         </div>
 
       </section>

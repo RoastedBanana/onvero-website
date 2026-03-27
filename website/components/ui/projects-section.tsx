@@ -97,11 +97,11 @@ export function ProjectsSection() {
           {/* ── RIGHT: Stacked cards + button ── */}
           <motion.div
             {...fadeUp(0.15)}
-            className="flex flex-col items-start justify-center pt-8 pb-64"
+            className="flex flex-col items-start justify-center pt-8 pb-64 overflow-hidden"
           >
             <DisplayCards cards={projects} />
 
-            <div className="mt-16 ml-[100px]">
+            <div className="mt-6 ml-0 sm:mt-16 sm:ml-[100px]">
               <a
                 href="#chatbot"
                 className="inline-flex items-center gap-2 text-sm font-medium px-5 py-2.5 rounded-xl transition-all duration-200"

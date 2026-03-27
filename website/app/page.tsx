@@ -4,15 +4,14 @@ import { CyberneticBentoGrid } from "@/components/ui/cybernetic-bento-grid";
 import { BusinessOS } from "@/components/ui/business-os";
 import { TechSection } from "@/components/ui/tech-section";
 import { TimelineSection } from "@/components/ui/timeline-section";
-import { MetricsSection } from "@/components/ui/metrics-section";
-import { ProjectsSection } from "@/components/ui/projects-section";
 import { TestimonialsSection } from "@/components/ui/testimonials-section";
 import { ChatSection } from "@/components/ui/chat-section";
 import { FooterComponent } from "@/components/ui/flickering-footer";
+import { BlogSection } from "@/components/ui/blog-section";
 
 export default function Home() {
   return (
-    <main style={{ backgroundColor: "#0f0f0f" }}>
+    <main style={{ backgroundColor: "#0f0f0f", overflowX: "clip" }}>
       {/* 1. Navbar */}
       <Navbar />
 
@@ -45,17 +44,7 @@ export default function Home() {
         <TimelineSection />
       </section>
 
-      {/* 6. Metrics — Was bei dir rauskommt */}
-      <section id="ergebnisse" style={{ position: "relative", zIndex: 1, backgroundColor: "#0f0f0f" }}>
-        <MetricsSection />
-      </section>
-
-      {/* 7. Projekte */}
-      <section id="projekte" style={{ position: "relative", zIndex: 1, backgroundColor: "#0f0f0f" }}>
-        <ProjectsSection />
-      </section>
-
-      {/* 8. Testimonials */}
+{/* 8. Testimonials */}
       <section id="testimonials" style={{ position: "relative", zIndex: 1, backgroundColor: "#0f0f0f" }}>
         <TestimonialsSection />
       </section>
@@ -65,7 +54,10 @@ export default function Home() {
         <ChatSection />
       </section>
 
-      {/* 7. Footer */}
+      {/* 10. Blog Section */}
+      <BlogSection />
+
+      {/* Footer */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <FooterComponent />
       </div>

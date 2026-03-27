@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/language-context";
@@ -137,8 +138,8 @@ export function BackgroundPaths() {
             transition={{ delay: 1.1, duration: 0.8 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Button className="rounded-xl px-8 py-6 text-base font-semibold bg-white hover:bg-white/90 text-black border-0 shadow-lg shadow-white/10 transition-all duration-300 hover:-translate-y-0.5">
-              {t("Kostenloses Erstgespräch →", "Free Intro Call →")}
+            <Button asChild className="rounded-xl px-8 py-6 text-base font-semibold bg-white hover:bg-white/90 text-black border-0 shadow-lg shadow-white/10 transition-all duration-300 hover:-translate-y-0.5">
+              <Link href="/buchen">{t("Kostenloses Erstgespräch →", "Free Intro Call →")}</Link>
             </Button>
             <div
               className="inline-block group p-px rounded-xl overflow-hidden"

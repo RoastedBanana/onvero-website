@@ -20,6 +20,7 @@ const TESTIMONIALS = [
     role: "Geschäftsführer",
     company: "Bergmann Steuerberatung, Hannover",
     tags: ["KI-Website", "KI-Chatbot"],
+    avatarColor: "#4285F4",
   },
   {
     quote:
@@ -28,6 +29,7 @@ const TESTIMONIALS = [
     role: "Inhaberin",
     company: "Kühl Physiotherapie, Freiburg",
     tags: ["Workflow-Automatisierung"],
+    avatarColor: "#34A853",
   },
   {
     quote:
@@ -36,6 +38,7 @@ const TESTIMONIALS = [
     role: "Vertriebsleiter",
     company: "Diehl Metallbau GmbH, Stuttgart",
     tags: ["Workflow-Automatisierung", "AI Workflows"],
+    avatarColor: "#EA4335",
   },
   {
     quote:
@@ -44,6 +47,7 @@ const TESTIMONIALS = [
     role: "Gründerin",
     company: "Hartmann Coaching & Consulting, München",
     tags: ["KI-Website", "KI-Chatbot"],
+    avatarColor: "#A142F4",
   },
   {
     quote:
@@ -52,8 +56,33 @@ const TESTIMONIALS = [
     role: "Betriebsleiter",
     company: "Autohaus Bauer, Kassel",
     tags: ["KI-Website", "KI-Chatbot", "Lead Generation"],
+    avatarColor: "#F29900",
   },
 ];
+
+function Avatar({ name, color }: { name: string; color: string }) {
+  const letter = name.trim()[0].toUpperCase();
+  return (
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: "50%",
+        backgroundColor: color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        fontSize: 15,
+        fontWeight: 600,
+        color: "#fff",
+        userSelect: "none",
+      }}
+    >
+      {letter}
+    </div>
+  );
+}
 
 const GAP = 16; // px — matches gap-4
 const VISIBLE = 3;
@@ -66,6 +95,7 @@ function TestimonialCard({
   role,
   company,
   tags,
+  avatarColor,
   width,
 }: (typeof TESTIMONIALS)[0] & { width: number }) {
   const borderControls = useAnimation();
@@ -117,6 +147,17 @@ function TestimonialCard({
         />
       </svg>
 
+      {/* Author */}
+      <div className="flex items-center gap-3">
+        <Avatar name={name} color={avatarColor} />
+        <div>
+          <p className="text-sm font-semibold text-white">{name}</p>
+          <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+            {role} — {company}
+          </p>
+        </div>
+      </div>
+
       {/* Quote */}
       <p
         className="text-sm leading-relaxed flex-1"
@@ -125,31 +166,21 @@ function TestimonialCard({
         „{quote}"
       </p>
 
-      {/* Author + tags */}
-      <div className="flex flex-col gap-3">
-        <div>
-          <p className="text-sm font-semibold text-white">{name}</p>
-          <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-            {role} — {company}
-          </p>
-        </div>
-
-        {/* Service tags */}
-        <div className="flex flex-wrap gap-1.5">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] font-medium px-2 py-0.5 rounded-md"
-              style={{
-                color: "rgba(255,255,255,0.42)",
-                border: "1px solid rgba(255,255,255,0.09)",
-                backgroundColor: "rgba(255,255,255,0.03)",
-              }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+      {/* Service tags */}
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="text-[10px] font-medium px-2 py-0.5 rounded-md"
+            style={{
+              color: "rgba(255,255,255,0.42)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              backgroundColor: "rgba(255,255,255,0.03)",
+            }}
+          >
+            {tag}
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -161,13 +192,20 @@ export function TestimonialsSection() {
   const [current, setCurrent] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [cardWidth, setCardWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  // Measure the container and derive card width so exactly 3 fit
+  // On mobile show 1 card, on desktop 3
+  const visible = containerWidth > 0 && containerWidth < 640 ? 1 : VISIBLE;
+  const maxIndex = TESTIMONIALS.length - visible;
+
+  // Measure container → derive card width
   useEffect(() => {
     const measure = () => {
       if (!containerRef.current) return;
       const w = containerRef.current.offsetWidth;
-      setCardWidth((w - GAP * (VISIBLE - 1)) / VISIBLE);
+      setContainerWidth(w);
+      const vis = w < 640 ? 1 : VISIBLE;
+      setCardWidth((w - GAP * (vis - 1)) / vis);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -175,8 +213,13 @@ export function TestimonialsSection() {
     return () => ro.disconnect();
   }, []);
 
+  // Clamp current when visible count changes
+  useEffect(() => {
+    setCurrent((c) => Math.min(c, maxIndex));
+  }, [maxIndex]);
+
   const scrollTo = (index: number) => {
-    setCurrent(Math.max(0, Math.min(MAX_INDEX, index)));
+    setCurrent(Math.max(0, Math.min(maxIndex, index)));
   };
 
   const offset = current * (cardWidth + GAP);
@@ -233,16 +276,16 @@ export function TestimonialsSection() {
               </button>
               <button
                 onClick={() => scrollTo(current + 1)}
-                disabled={current === MAX_INDEX}
+                disabled={current === maxIndex}
                 className="flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200"
                 style={{
                   border: "1px solid rgba(255,255,255,0.12)",
                   color:
-                    current === MAX_INDEX
+                    current === maxIndex
                       ? "rgba(255,255,255,0.2)"
                       : "rgba(255,255,255,0.65)",
                   backgroundColor: "transparent",
-                  cursor: current === MAX_INDEX ? "default" : "pointer",
+                  cursor: current === maxIndex ? "default" : "pointer",
                 }}
                 onMouseEnter={(e) => {
                   if (current !== MAX_INDEX)
@@ -296,7 +339,7 @@ export function TestimonialsSection() {
           {...fadeUp(0.15)}
           className="flex justify-center gap-2 mt-8"
         >
-          {Array.from({ length: MAX_INDEX + 1 }).map((_, i) => (
+          {Array.from({ length: maxIndex + 1 }).map((_, i) => (
             <button
               key={i}
               onClick={() => scrollTo(i)}

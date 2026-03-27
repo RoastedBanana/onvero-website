@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# large 3D assets (exceed GitHub 100MB limit — host via CDN or LFS)
+public/*.gltf
+public/*.glb

@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { OnveroLogo, OnveroIcon } from "@/components/ui/onvero-logo";
 import { useLanguage, useTranslation } from "@/lib/language-context";
 
+function parseCookieUser(): { firstName: string; lastName: string } | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/onvero_user=([^;]+)/);
+  if (!match) return null;
+  try { return JSON.parse(decodeURIComponent(match[1])); } catch { return null; }
+}
+
 const NAV_ITEMS = [
   { id: "hero",       de: "Home",        en: "Home",         href: "/",            section: "hero"       },
   { id: "leistungen", de: "Leistungen",  en: "Services",     href: "/#leistungen", section: "leistungen" },
@@ -24,6 +31,11 @@ export function Navbar() {
   const [activeTab, setActiveTab] = useState("hero");
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState<{ firstName: string; lastName: string } | null>(null);
+
+  useEffect(() => {
+    setLoggedInUser(parseCookieUser());
+  }, []);
 
   // Scroll shadow
   useEffect(() => {
@@ -143,10 +155,39 @@ export function Navbar() {
             asChild
             className="bg-white hover:bg-white/90 text-black text-sm font-semibold border-0 rounded-xl px-5 shadow-lg shadow-black/30"
           >
-            <Link href="/#chatbot" onClick={() => setActiveTab("chatbot")}>
+            <Link href="/buchen">
               {t("Erstgespräch buchen →", "Book a call →")}
             </Link>
           </Button>
+
+          {/* Anmelden / Dashboard */}
+          {loggedInUser ? (
+            <Link
+              href="/dashboard"
+              className="text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+              style={{
+                color: "rgba(255,255,255,0.6)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#fff"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.3)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"; }}
+            >
+              {loggedInUser.firstName} →
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+              style={{
+                color: "rgba(255,255,255,0.6)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#fff"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.3)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"; }}
+            >
+              Anmelden
+            </Link>
+          )}
         </div>
 
         {/* Mobile toggle */}
@@ -191,10 +232,18 @@ export function Navbar() {
               asChild
               className="bg-white hover:bg-white/90 text-black text-sm font-semibold border-0 rounded-xl flex-1"
             >
-              <Link href="/#chatbot" onClick={() => { setActiveTab("chatbot"); setMobileOpen(false); }}>
+              <Link href="/buchen" onClick={() => setMobileOpen(false)}>
                 {t("Erstgespräch buchen →", "Book a call →")}
               </Link>
             </Button>
+            <Link
+              href={loggedInUser ? "/dashboard" : "/login"}
+              className="text-sm font-medium py-2 px-4 rounded-xl"
+              style={{ color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.12)" }}
+              onClick={() => setMobileOpen(false)}
+            >
+              {loggedInUser ? `${loggedInUser.firstName} →` : "Anmelden"}
+            </Link>
           </div>
         </div>
       )}

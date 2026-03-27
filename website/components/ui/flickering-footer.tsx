@@ -6,7 +6,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { OnveroLogo } from "@/components/ui/onvero-logo";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation, useLanguage, type Lang } from "@/lib/language-context";
 
 export const getRGBA = (
   cssColor: React.CSSProperties["color"],
@@ -205,6 +205,34 @@ function useMediaQuery(query: string) {
   return value;
 }
 
+function LangToggle() {
+  const { lang, setLang } = useLanguage();
+  return (
+    <div
+      className="inline-flex items-center rounded-md overflow-hidden text-xs font-semibold"
+      style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+      role="group"
+      aria-label="Sprache wählen"
+    >
+      {(["de", "en"] as Lang[]).map((code, i) => (
+        <button
+          key={code}
+          onClick={() => setLang(code)}
+          className="px-3 py-1.5 transition-colors"
+          style={{
+            color: lang === code ? "#fff" : "rgba(255,255,255,0.35)",
+            background: lang === code ? "rgba(255,255,255,0.1)" : "transparent",
+            borderRight: i === 0 ? "1px solid rgba(255,255,255,0.1)" : "none",
+            cursor: lang === code ? "default" : "pointer",
+          }}
+        >
+          {code.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function FooterComponent() {
   const tablet = useMediaQuery("(max-width: 1024px)");
   const { t } = useTranslation();
@@ -213,28 +241,15 @@ export function FooterComponent() {
     {
       title: t("Unternehmen", "Company"),
       links: [
-        { id: 1, title: t("Über uns", "About us"),  url: "/ueber-uns" },
-        { id: 2, title: t("Kontakt", "Contact"),     url: "/#chatbot"  },
-        { id: 3, title: t("Blog", "Blog"),           url: "#"          },
-        { id: 4, title: t("Karriere", "Careers"),    url: "#"          },
-      ],
-    },
-    {
-      title: t("Leistungen", "Services"),
-      links: [
-        { id: 5, title: t("KI-Website", "AI Website"),          url: "/#leistungen" },
-        { id: 6, title: t("KI-Chatbot", "AI Chatbot"),          url: "/#chatbot"    },
-        { id: 7, title: t("Automatisierung", "Automation"),     url: "/#leistungen" },
-        { id: 8, title: "BusinessOS",                            url: "/#businessos" },
+        { id: 1, title: t("Über uns", "About us"),              url: "/ueber-uns"            },
+        { id: 2, title: t("Erstgespräch buchen", "Book a call"), url: "/erstgespraech-buchen" },
       ],
     },
     {
       title: t("Rechtliches", "Legal"),
       links: [
-        { id: 9,  title: t("Datenschutz", "Privacy Policy"),    url: "#" },
-        { id: 10, title: t("Impressum", "Imprint"),              url: "#" },
-        { id: 11, title: t("AGB", "Terms"),                      url: "#" },
-        { id: 12, title: t("Cookie-Richtlinie", "Cookie Policy"),url: "#" },
+        { id: 9,  title: t("Datenschutz", "Privacy Policy"), url: "/datenschutz" },
+        { id: 10, title: t("Impressum", "Imprint"),           url: "/impressum"   },
       ],
     },
   ];
@@ -271,6 +286,31 @@ export function FooterComponent() {
               Made in DE
             </span>
           </div>
+
+          {/* Contact info */}
+          <div className="flex flex-col gap-1 mt-1">
+            <a
+              href="mailto:info@onvero.de"
+              className="text-sm transition-colors"
+              style={{ color: "rgba(255,255,255,0.4)" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+            >
+              info@onvero.de
+            </a>
+            <a
+              href="tel:+491638981544"
+              className="text-sm transition-colors"
+              style={{ color: "rgba(255,255,255,0.4)" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+            >
+              +49 163 8981544
+            </a>
+          </div>
+
+          {/* Language toggle */}
+          <LangToggle />
         </div>
 
         {/* Links */}
