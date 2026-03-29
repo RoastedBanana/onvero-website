@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { calcReadTime } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import {
   Home, Globe, GitBranch, Calendar, Headphones, Users, BarChart2,
   BookOpen, Settings, LogOut, ChevronRight, Search,
-  FileText, PenLine, Zap,
+  FileText, PenLine, Zap, Trash2,
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useTenant } from '@/hooks/useTenant';
@@ -522,7 +522,7 @@ const DUMMY_CF = {
 };
 
 const DUMMY_ACTIVITIES = [
-  { id: '1', type: 'task', title: '🔥 HOT LEAD — Sofort anrufen!', content: 'Website manuell prüfen, dann Telefonat führen um Projektdetails und Unternehmen zu validieren.', created_at: '2026-03-28T16:41:00Z', is_pinned: true, user_id: null },
+  { id: '1', type: 'task', title: 'HOT LEAD — Sofort anrufen!', content: 'Website manuell prüfen, dann Telefonat führen um Projektdetails und Unternehmen zu validieren.', created_at: '2026-03-28T16:41:00Z', is_pinned: true, user_id: null },
   { id: '2', type: 'ai_analysis', title: 'KI-Scoring abgeschlossen', content: 'Score: 44/100. Website nicht erreichbar macht Unternehmensvalidierung unmöglich. Sehr kurze Nachricht deutet auf wenig Engagement hin.', created_at: '2026-03-28T16:41:00Z', is_pinned: false, user_id: null },
   { id: '3', type: 'form_submit', title: 'Lead via Website eingegangen', content: 'Wir suchen KI-Automatisierung für unser CRM. Budget 8.000 EUR.', created_at: '2026-03-28T16:20:00Z', is_pinned: false, user_id: null },
 ];
@@ -597,9 +597,9 @@ const MSG_QUALITY_COLOR: Record<string, string> = {
   'zu kurz': '#FF6B35', leer: '#666', spam: '#ef4444',
 };
 const ACTIVITY_ICON: Record<string, string> = {
-  note: '📝', email: '📧', call: '📞', meeting: '📅',
-  status_change: '🔄', ai_analysis: '🤖', score_update: '📊',
-  task: '✅', form_submit: '📨', default: '•',
+  note: '✍', email: '✉', call: '☎', meeting: '◎',
+  status_change: '↻', ai_analysis: '✦', score_update: '★',
+  task: '✓', form_submit: '▸', default: '·',
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -700,7 +700,7 @@ function ActivityItem({ act }: { act: LeadActivity }) {
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        {act.is_pinned && <span style={{ fontSize: '0.65rem', color: '#fde047', marginBottom: '0.15rem', display: 'block' }}>📌 Angeheftet</span>}
+        {act.is_pinned && <span style={{ fontSize: '0.65rem', color: '#fde047', marginBottom: '0.15rem', display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Angeheftet</span>}
         <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500, lineHeight: 1.3 }}>{act.title ?? act.type}</div>
         {displayContent && (
           <div style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.2rem', lineHeight: 1.5 }}>
@@ -734,11 +734,30 @@ function Toast({ msg, onDone }: { msg: string; onDone: () => void }) {
 
 // ── GeneratorModal helpers ────────────────────────────────────────────────────
 
-function GChipInput({ chips, onChange, placeholder }: { chips: string[]; onChange: (c: string[]) => void; placeholder: string }) {
+const CHIP_SUGGESTIONS: Record<string, string[]> = {
+  'Branche': ['Immobilien', 'Produktion', 'Handel', 'IT & Software', 'Bau & Handwerk', 'Beratung', 'Finanzen', 'Gesundheit', 'Logistik', 'Automotive', 'Marketing', 'Gastronomie'],
+  'Position': ['Geschäftsführer', 'CEO', 'COO', 'CTO', 'CFO', 'Inhaber', 'Managing Director', 'Head of Operations', 'IT-Leiter', 'Vertriebsleiter', 'Marketingleiter'],
+  'Technologie': ['SAP', 'Salesforce', 'HubSpot', 'Shopify', 'Microsoft 365', 'Slack', 'Zoom', 'Jira', 'Notion', 'Pipedrive', 'Zoho', 'Mailchimp'],
+  'Stadt': ['Hamburg', 'München', 'Berlin', 'Frankfurt', 'Köln', 'Stuttgart', 'Düsseldorf', 'Dresden', 'Leipzig', 'Hannover', 'Wien', 'Zürich'],
+  'Keyword': ['Automatisierung', 'Digitalisierung', 'Prozessoptimierung', 'Wachstum', 'Skalierung', 'KI', 'Effizienz', 'Innovation'],
+};
+
+function GChipInput({ chips, onChange, placeholder, suggestionKey }: { chips: string[]; onChange: (c: string[]) => void; placeholder: string; suggestionKey?: string }) {
   const [val, setVal] = useState('');
-  const add = () => { const v = val.trim(); if (v && !chips.includes(v)) onChange([...chips, v]); setVal(''); };
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const add = (v?: string) => { const t = (v ?? val).trim(); if (t && !chips.includes(t)) onChange([...chips, t]); setVal(''); setShowSuggestions(false); };
+  const suggestions = suggestionKey ? (CHIP_SUGGESTIONS[suggestionKey] ?? []) : [];
+  const filtered = suggestions.filter(s => !chips.includes(s) && (!val || s.toLowerCase().includes(val.toLowerCase())));
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setShowSuggestions(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   return (
-    <div>
+    <div ref={wrapRef} style={{ position: 'relative' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: chips.length ? '0.5rem' : 0 }}>
         {chips.map(c => (
           <span key={c} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(107,122,255,0.12)', border: '1px solid rgba(107,122,255,0.25)', color: '#c4c8ff', borderRadius: 999, padding: '0.2rem 0.55rem', fontSize: '0.78rem' }}>
@@ -749,13 +768,25 @@ function GChipInput({ chips, onChange, placeholder }: { chips: string[]; onChang
       </div>
       <div style={{ display: 'flex', gap: '0.4rem' }}>
         <input
-          value={val} onChange={e => setVal(e.target.value)}
+          value={val}
+          onChange={e => { setVal(e.target.value); setShowSuggestions(true); }}
+          onFocus={() => setShowSuggestions(true)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder={placeholder}
           style={{ flex: 1, background: '#1a1a1a', border: '1px solid #333', borderRadius: 6, color: '#ccc', fontSize: '0.8rem', padding: '0.4rem 0.7rem', outline: 'none' }}
         />
-        <button type="button" onClick={add} style={{ background: '#1a1a1a', border: '1px solid #333', color: '#888', borderRadius: 6, padding: '0 0.75rem', cursor: 'pointer', fontSize: '0.85rem' }}>+</button>
+        <button type="button" onClick={() => { if (val.trim()) add(); else setShowSuggestions(s => !s); }} style={{ background: '#1a1a1a', border: '1px solid #333', color: '#888', borderRadius: 6, padding: '0 0.75rem', cursor: 'pointer', fontSize: '0.85rem' }}>+</button>
       </div>
+      {showSuggestions && filtered.length > 0 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: 4, background: '#1a1a1a', border: '1px solid #333', borderRadius: 6, maxHeight: 160, overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+          {filtered.map(s => (
+            <button key={s} type="button" onClick={() => add(s)} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', color: '#ccc', fontSize: '0.79rem', padding: '0.45rem 0.75rem', cursor: 'pointer' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(107,122,255,0.12)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >{s}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -786,7 +817,7 @@ type ProfileRow = {
   technologies: string[] | null; job_titles: string[] | null; seniority_levels: string[] | null;
   departments: string[] | null; countries: string[] | null; cities: string[] | null;
   keywords: string[] | null; excluded_domains: string[] | null;
-  lead_count: number | null; schedule_enabled: boolean | null; schedule_time: string | null;
+  max_leads_per_run: number | null; schedule_enabled: boolean | null; schedule_time: string | null;
   schedule_days: boolean[] | null; only_verified_emails: boolean | null;
 };
 type GeneratorRow = {
@@ -822,11 +853,31 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [excludedDomains, setExcludedDomains] = useState<string[]>([]);
   const [domainsOpen, setDomainsOpen] = useState(false);
-  const [leadCount, setLeadCount] = useState(25);
+  const [leadCount, setLeadCount] = useState(10);
   const [scheduleOn, setScheduleOn] = useState(false);
   const [scheduleTime, setScheduleTime] = useState('08:00');
   const [weekdays, setWeekdays] = useState([true, true, true, true, true, false, false]);
   const [onlyVerified, setOnlyVerified] = useState(true);
+
+  const LS_KEY = 'onvero_lead_gen_filters';
+
+  const applyFilters = (src: {
+    industries?: string[]; employee_min?: number; employee_max?: number;
+    technologies?: string[]; job_titles?: string[]; countries?: string[];
+    cities?: string[]; keywords?: string[]; excluded_domains?: string[];
+    lead_count?: number;
+  }) => {
+    if (src.industries) setBranchen(src.industries);
+    if (src.employee_min !== undefined) setEmpMin(src.employee_min);
+    if (src.employee_max !== undefined) setEmpMax(src.employee_max);
+    if (src.technologies) setTechs(src.technologies);
+    if (src.job_titles) setPositions(src.job_titles);
+    if (src.countries) setCountries(src.countries);
+    if (src.cities) setCities(src.cities);
+    if (src.keywords) setKeywords(src.keywords);
+    if (src.excluded_domains) setExcludedDomains(src.excluded_domains);
+    if (src.lead_count !== undefined) setLeadCount(src.lead_count);
+  };
 
   // Load data on mount
   useEffect(() => {
@@ -841,11 +892,22 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
       if (profRes.data) {
         const p = profRes.data as ProfileRow;
         setProfile(p);
-        setBranchen((p.industries ?? []).map(s => INDUSTRY_LABELS[s] ?? s));
-        setEmpMin(p.employee_min ?? 5);
-        setEmpMax(p.employee_max ?? 250);
-        setTechs(p.technologies ?? []);
-        setPositions(p.job_titles ?? []);
+        // Try localStorage first, then DB values
+        const cached = (() => { try { return JSON.parse(localStorage.getItem(LS_KEY) ?? ''); } catch { return null; } })();
+        if (cached) {
+          applyFilters(cached);
+        } else {
+          setBranchen((p.industries ?? []).map(s => INDUSTRY_LABELS[s] ?? s));
+          setEmpMin(p.employee_min ?? 5);
+          setEmpMax(p.employee_max ?? 250);
+          setTechs(p.technologies ?? []);
+          setPositions(p.job_titles ?? []);
+          setCountries(p.countries ?? ['🇩🇪 Deutschland', '🇦🇹 Österreich', '🇨🇭 Schweiz']);
+          setCities(p.cities ?? []);
+          setKeywords(p.keywords ?? []);
+          setExcludedDomains(p.excluded_domains ?? []);
+          setLeadCount(Math.min(p.max_leads_per_run ?? 10, 25));
+        }
         setSeniority({
           c_suite: (p.seniority_levels ?? []).includes('c_suite'),
           director: (p.seniority_levels ?? []).includes('director'),
@@ -856,11 +918,6 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
           finance: (p.departments ?? []).includes('finance'),
           information_technology: (p.departments ?? []).includes('information_technology'),
         });
-        setCountries(p.countries ?? ['🇩🇪 Deutschland', '🇦🇹 Österreich', '🇨🇭 Schweiz']);
-        setCities(p.cities ?? []);
-        setKeywords(p.keywords ?? []);
-        setExcludedDomains(p.excluded_domains ?? []);
-        setLeadCount(p.lead_count ?? 25);
         setScheduleOn(p.schedule_enabled ?? false);
         setScheduleTime(p.schedule_time ?? '08:00');
         setWeekdays(p.schedule_days ?? [true, true, true, true, true, false, false]);
@@ -868,6 +925,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
       }
       setDataLoading(false);
     })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, supabase]);
 
   const buildProfilePayload = () => ({
@@ -877,7 +935,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
     seniority_levels: SENIORITY_KEYS.filter(k => seniority[k]),
     departments: DEPT_KEYS.filter(k => abteilungen[k]),
     countries, cities, keywords, excluded_domains: excludedDomains,
-    lead_count: leadCount, schedule_enabled: scheduleOn,
+    max_leads_per_run: leadCount, schedule_enabled: scheduleOn,
     schedule_time: scheduleTime, schedule_days: weekdays,
     only_verified_emails: onlyVerified,
   });
@@ -889,7 +947,18 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
     setTimeout(() => setSavedLabel(''), 2500);
   };
 
+  const persistToLS = () => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        industries: branchen, employee_min: empMin, employee_max: empMax,
+        technologies: techs, job_titles: positions, countries, cities,
+        keywords, excluded_domains: excludedDomains, lead_count: leadCount,
+      }));
+    } catch { /* quota */ }
+  };
+
   const triggerDebounce = () => {
+    persistToLS();
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(saveProfile, 2000);
   };
@@ -919,9 +988,9 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
   };
 
   const TABS = [
-    { key: 'zielgruppe', label: '🎯 Zielgruppe' },
-    { key: 'einstellungen', label: '⚙️ Einstellungen' },
-    { key: 'verlauf', label: '📊 Verlauf' },
+    { key: 'zielgruppe', label: 'Zielgruppe' },
+    { key: 'einstellungen', label: 'Einstellungen' },
+    { key: 'verlauf', label: 'Verlauf' },
   ] as const;
 
   const SkeletonBar = ({ w = '100%', h = 12 }: { w?: string; h?: number }) => (
@@ -937,7 +1006,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
         <div style={{ padding: '1.25rem 1.5rem 0', borderBottom: '1px solid #1f1f1f', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.15rem' }}>
             <div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#fff' }}>⚡ Lead Generator</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Zap size={15} strokeWidth={2.5} /> Lead Generator</div>
               <div style={{ fontSize: '0.78rem', color: '#555', marginTop: '0.1rem' }}>Neue qualifizierte Leads automatisch finden</div>
             </div>
             <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '1.3rem', lineHeight: 1, padding: 0, marginTop: '0.1rem' }}>×</button>
@@ -976,7 +1045,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
           {/* No profile state */}
           {!dataLoading && !profile && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', padding: '3rem 1rem', color: '#555', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem' }}>📋</div>
+              <div style={{ fontSize: '1.2rem', color: '#444' }}><FileText size={28} strokeWidth={1.5} /></div>
               <div style={{ fontSize: '0.9rem', color: '#666' }}>Noch kein Suchprofil angelegt</div>
               <div style={{ fontSize: '0.78rem', color: '#444' }}>Erstelle ein Suchprofil in den Einstellungen, um den Lead Generator zu nutzen.</div>
             </div>
@@ -990,7 +1059,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
               {showBanner && !dataLoading && profile && (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: 'rgba(107,122,255,0.08)', borderLeft: '3px solid #6B7AFF', borderRadius: '0 6px 6px 0', padding: '0.75rem 1rem' }}>
                   <span style={{ fontSize: '0.8rem', color: '#a0a8ff', flex: 1, lineHeight: 1.5 }}>
-                    <strong style={{ color: '#b4baff' }}>✨ KI-Vorschlag</strong> — Diese Filter wurden basierend auf deinen bisherigen Leads vorgeschlagen. Du kannst sie jederzeit anpassen.
+                    <strong style={{ color: '#b4baff' }}>KI-Vorschlag</strong> — Diese Filter wurden basierend auf deinen bisherigen Leads vorgeschlagen. Du kannst sie jederzeit anpassen.
                   </span>
                   <button onClick={() => setShowBanner(false)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
                 </div>
@@ -1016,7 +1085,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                       <div>
                         <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.45rem' }}>Branchen</div>
-                        <GChipInput chips={branchen} onChange={v => { setBranchen(v); triggerDebounce(); }} placeholder="+ Branche hinzufügen" />
+                        <GChipInput chips={branchen} onChange={v => { setBranchen(v); triggerDebounce(); }} placeholder="+ Branche hinzufügen" suggestionKey="Branche" />
                       </div>
                       <div>
                         <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.45rem' }}>Mitarbeiter: <span style={{ color: '#ccc' }}>{empMin} bis {empMax}</span></div>
@@ -1041,7 +1110,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
                       </div>
                       <div>
                         <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.45rem' }}>Technologien <span style={{ color: '#444' }}>(optional)</span></div>
-                        <GChipInput chips={techs} onChange={v => { setTechs(v); triggerDebounce(); }} placeholder="+ Technologie hinzufügen" />
+                        <GChipInput chips={techs} onChange={v => { setTechs(v); triggerDebounce(); }} placeholder="+ Technologie hinzufügen" suggestionKey="Technologie" />
                       </div>
                     </div>
                   </div>
@@ -1052,7 +1121,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                       <div>
                         <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.45rem' }}>Position / Jobtitel</div>
-                        <GChipInput chips={positions} onChange={v => { setPositions(v); triggerDebounce(); }} placeholder="+ Position hinzufügen" />
+                        <GChipInput chips={positions} onChange={v => { setPositions(v); triggerDebounce(); }} placeholder="+ Position hinzufügen" suggestionKey="Position" />
                       </div>
                       <div>
                         <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.5rem' }}>Seniority</div>
@@ -1089,11 +1158,11 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
                       </div>
                       <div>
                         <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.45rem' }}>Städte <span style={{ color: '#444' }}>(optional)</span></div>
-                        <GChipInput chips={cities} onChange={v => { setCities(v); triggerDebounce(); }} placeholder="+ Stadt hinzufügen" />
+                        <GChipInput chips={cities} onChange={v => { setCities(v); triggerDebounce(); }} placeholder="+ Stadt hinzufügen" suggestionKey="Stadt" />
                       </div>
                       <div>
                         <div style={{ fontSize: '0.78rem', color: '#888', marginBottom: '0.45rem' }}>Keywords <span style={{ color: '#444' }}>(optional)</span></div>
-                        <GChipInput chips={keywords} onChange={v => { setKeywords(v); triggerDebounce(); }} placeholder="+ Keyword hinzufügen" />
+                        <GChipInput chips={keywords} onChange={v => { setKeywords(v); triggerDebounce(); }} placeholder="+ Keyword hinzufügen" suggestionKey="Keyword" />
                       </div>
                       <div>
                         <button type="button" onClick={() => setDomainsOpen(o => !o)} style={{ background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.78rem', padding: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -1123,11 +1192,11 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
                 <div style={{ fontSize: '0.82rem', color: '#888', marginBottom: '0.85rem' }}>Wie viele Leads möchtest du generieren?</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <button onClick={() => { setLeadCount(c => Math.max(1, c - 5)); triggerDebounce(); }} style={{ width: 32, height: 32, background: '#222', border: '1px solid #333', color: '#ccc', borderRadius: 6, cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-                  <input type="number" min={1} max={100} value={leadCount} onChange={e => { setLeadCount(Math.min(100, Math.max(1, +e.target.value))); triggerDebounce(); }} style={{ width: 64, textAlign: 'center', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: 6, fontSize: '1.1rem', fontWeight: 600, padding: '0.35rem', outline: 'none' }} />
-                  <button onClick={() => { setLeadCount(c => Math.min(100, c + 5)); triggerDebounce(); }} style={{ width: 32, height: 32, background: '#222', border: '1px solid #333', color: '#ccc', borderRadius: 6, cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                  <input type="number" min={1} max={25} value={leadCount} onChange={e => { setLeadCount(Math.min(25, Math.max(1, +e.target.value))); triggerDebounce(); }} style={{ width: 64, textAlign: 'center', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: 6, fontSize: '1.1rem', fontWeight: 600, padding: '0.35rem', outline: 'none' }} />
+                  <button onClick={() => { setLeadCount(c => Math.min(25, c + 5)); triggerDebounce(); }} style={{ width: 32, height: 32, background: '#222', border: '1px solid #333', color: '#ccc', borderRadius: 6, cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                 </div>
                 <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <span style={{ fontSize: '0.73rem', color: '#444' }}>Max. 100 pro Lauf</span>
+                  <span style={{ fontSize: '0.73rem', color: '#444' }}>Max. 25 pro Lauf · Apollo Basic: 50 Credits/Monat</span>
                   <span style={{ fontSize: '0.73rem', color: '#444' }}>Verbleibend diesen Monat: {remaining.toLocaleString('de-DE')} Searches</span>
                 </div>
               </div>
@@ -1200,7 +1269,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
                       <span style={{ color: '#4ade80' }}>{generator.last_run_leads ?? 0} neu</span> generiert
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(74,222,128,0.1)', color: '#4ade80', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>✅ Erfolgreich</span>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(74,222,128,0.1)', color: '#4ade80', borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>Erfolgreich</span>
                 </div>
               ) : (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#444', fontSize: '0.82rem' }}>Noch keine Läufe</div>
@@ -1230,7 +1299,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
             <div style={{ display: 'flex', gap: '0.6rem', flexShrink: 0 }}>
               <button onClick={onClose} style={{ background: 'none', border: '1px solid #2a2a2a', color: '#777', borderRadius: 6, padding: '0.5rem 1rem', fontSize: '0.82rem', cursor: 'pointer' }}>Abbrechen</button>
               <button onClick={handleGenerate} disabled={generating || budgetEmpty || !profile} title={budgetEmpty ? 'Kein Budget mehr' : undefined} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: (generating || budgetEmpty || !profile) ? '#1f1f1f' : '#fff', color: (generating || budgetEmpty || !profile) ? '#555' : '#000', border: 'none', borderRadius: 6, padding: '0.5rem 1.15rem', fontSize: '0.82rem', fontWeight: 700, cursor: (generating || budgetEmpty || !profile) ? 'default' : 'pointer' }}>
-                {generating ? <><UniqueLoading size="sm" /> Generiert…</> : budgetEmpty ? 'Kein Budget mehr' : <>⚡ Jetzt generieren</>}
+                {generating ? <><UniqueLoading size="sm" /> Generiert…</> : budgetEmpty ? 'Kein Budget mehr' : <><Zap size={13} /> Jetzt generieren</>}
               </button>
             </div>
           </div>
@@ -1326,12 +1395,25 @@ function LeadsPage() {
         .eq('id', leadId)
         .eq('tenant_id', tenantId!);
       if (err) throw err;
-      showToast('✅ Status aktualisiert');
+      showToast('Status aktualisiert');
     } catch {
-      showToast('❌ Fehler beim Speichern');
+      showToast('Fehler beim Speichern');
     }
   }, [supabase, tenantId, showToast]);
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDeleteLead = useCallback(async (leadId: string) => {
+    try {
+      await supabase.from('leads').delete().eq('id', leadId);
+      setLeads(prev => prev.filter(l => l.id !== leadId));
+      if (selectedLead?.id === leadId) setSelectedLead(null);
+      setDeleteConfirmId(null);
+      showToast('Lead gelöscht');
+    } catch {
+      showToast('Fehler beim Löschen');
+    }
+  }, [supabase, selectedLead, showToast]);
 
   const toggleScore = (tier: string) =>
     setScoreFilters(prev => prev.includes(tier) ? prev.filter(x => x !== tier) : [...prev, tier]);
@@ -1365,9 +1447,9 @@ function LeadsPage() {
   const displayActivities = activities.length > 0 ? activities : DUMMY_ACTIVITIES;
 
   const SCORE_TIERS = [
-    { key: 'HOT', emoji: '🔥', color: '#FF6B35', bg: 'rgba(255,107,53,0.12)', border: 'rgba(255,107,53,0.35)' },
-    { key: 'WARM', emoji: '☀️', color: '#FFD700', bg: 'rgba(255,215,0,0.1)', border: 'rgba(255,215,0,0.3)' },
-    { key: 'COLD', emoji: '❄️', color: '#6B7AFF', bg: 'rgba(107,122,255,0.1)', border: 'rgba(107,122,255,0.3)' },
+    { key: 'HOT', color: '#FF6B35', bg: 'rgba(255,107,53,0.12)', border: 'rgba(255,107,53,0.35)' },
+    { key: 'WARM', color: '#FFD700', bg: 'rgba(255,215,0,0.1)', border: 'rgba(255,215,0,0.3)' },
+    { key: 'COLD', color: '#6B7AFF', bg: 'rgba(107,122,255,0.1)', border: 'rgba(107,122,255,0.3)' },
   ];
 
   return (
@@ -1375,7 +1457,7 @@ function LeadsPage() {
       {generatorOpen && (
         <GeneratorModal
           onClose={() => setGeneratorOpen(false)}
-          onGenerated={count => { showToast(`✅ Lead Generator gestartet — ${count} Leads werden gesucht`); setTimeout(loadLeads, 5000); }}
+          onGenerated={count => { showToast(`Lead Generator gestartet — ${count} Leads werden gesucht`); setTimeout(loadLeads, 5000); }}
           tenantId={tenantId}
           supabase={supabase}
         />
@@ -1405,8 +1487,8 @@ function LeadsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
             {[
               { label: 'Gesamt', value: leads.length, color: '#fff' },
-              { label: '🔥 HOT', value: hot, color: '#FF6B35' },
-              { label: '☀️ WARM', value: warm, color: '#FFD700' },
+              { label: 'HOT', value: hot, color: '#FF6B35' },
+              { label: 'WARM', value: warm, color: '#FFD700' },
               { label: 'Neu', value: newCount, color: '#818cf8' },
             ].map(s => (
               <div key={s.label} style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 10, padding: '1rem 1.25rem' }}>
@@ -1430,7 +1512,7 @@ function LeadsPage() {
                   onClick={() => toggleScore(tier.key)}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: active ? tier.bg : '#0a0a0a', border: `1px solid ${active ? tier.border : '#1f1f1f'}`, color: active ? tier.color : '#666', borderRadius: 999, padding: '0.4rem 0.85rem', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
                 >
-                  {tier.emoji} {tier.key}
+                  {tier.key}
                 </button>
               );
             })}
@@ -1455,16 +1537,16 @@ function LeadsPage() {
 
           {/* Lead Table */}
           <div style={{ background: '#0a0a0a', border: '1px solid #1f1f1f', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.8fr 1fr 1fr 1fr 0.9fr', padding: '0.65rem 1.25rem', borderBottom: '1px solid #1a1a1a', gap: '0.5rem' }}>
-              {['Firma / Kontakt', 'E-Mail', 'Branche', 'Status', 'Score', 'Datum'].map(h => (
-                <span key={h} style={{ fontSize: '0.69rem', fontWeight: 500, color: '#444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.8fr 1fr 1fr 1fr 0.9fr 28px', padding: '0.65rem 1.25rem', borderBottom: '1px solid #1a1a1a', gap: '0.5rem' }}>
+              {['Firma / Kontakt', 'E-Mail', 'Branche', 'Status', 'Score', 'Datum', ''].map((h, i) => (
+                <span key={i} style={{ fontSize: '0.69rem', fontWeight: 500, color: '#444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
               ))}
             </div>
             <div style={{ maxHeight: 480, overflowY: 'auto' }}>
               {(loading || tenantLoading) ? (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   {[1,2,3].map(i => (
-                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1.8fr 1fr 1fr 1fr 0.9fr', padding: '0.85rem 1.25rem', gap: '0.5rem', alignItems: 'center', borderBottom: '1px solid #141414' }}>
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1.8fr 1fr 1fr 1fr 0.9fr 28px', padding: '0.85rem 1.25rem', gap: '0.5rem', alignItems: 'center', borderBottom: '1px solid #141414' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <div style={{ height: 10, borderRadius: 4, background: '#1a1a1a', width: '65%' }} />
                         <div style={{ height: 8, borderRadius: 4, background: '#141414', width: '40%' }} />
@@ -1479,7 +1561,7 @@ function LeadsPage() {
                 <p style={{ color: '#f87171', fontSize: '0.85rem', padding: '2rem', textAlign: 'center' }}>{error}</p>
               ) : filtered.length === 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.65rem', padding: '3rem 1.5rem' }}>
-                  <span style={{ fontSize: '1.75rem' }}>🔍</span>
+                  <Search size={28} strokeWidth={1.5} style={{ color: '#444' }} />
                   <span style={{ fontSize: '0.9rem', color: '#555', fontWeight: 500 }}>Keine Leads gefunden</span>
                   <span style={{ fontSize: '0.79rem', color: '#3a3a3a', textAlign: 'center' }}>Passe deine Filter an oder setze sie zurück</span>
                   {hasFilters && (
@@ -1494,10 +1576,11 @@ function LeadsPage() {
                 const urgentContact = (leadCf?.contact_in_hours as number | undefined) !== undefined && (leadCf!.contact_in_hours as number) <= 24;
                 const industry = (leadCf?.industry as string | undefined) ?? '—';
                 return (
+                  <React.Fragment key={lead.id}>
                   <div
-                    key={lead.id}
                     onClick={() => handleSelectLead(lead)}
-                    style={{ display: 'grid', gridTemplateColumns: '2fr 1.8fr 1fr 1fr 1fr 0.9fr', padding: '0.85rem 1.25rem', gap: '0.5rem', alignItems: 'center', cursor: 'pointer', transition: 'background 0.12s', background: isSelected ? 'rgba(255,255,255,0.05)' : 'transparent', borderBottom: '1px solid #141414', borderLeft: `2px solid ${isSelected ? 'rgba(255,255,255,0.35)' : 'transparent'}` }}
+                    className="lead-row"
+                    style={{ display: 'grid', gridTemplateColumns: '2fr 1.8fr 1fr 1fr 1fr 0.9fr 28px', padding: '0.85rem 1.25rem', gap: '0.5rem', alignItems: 'center', cursor: 'pointer', transition: 'background 0.12s', background: isSelected ? 'rgba(255,255,255,0.05)' : 'transparent', borderBottom: '1px solid #141414', borderLeft: `2px solid ${isSelected ? 'rgba(255,255,255,0.35)' : 'transparent'}` }}
                     onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'; }}
                     onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                   >
@@ -1509,11 +1592,26 @@ function LeadsPage() {
                     <div style={{ fontSize: '0.78rem', color: '#777' }}>{industry}</div>
                     <StatusBadge status={lead.status} />
                     <ScoreBadge score={lead.score} />
-                    <div style={{ fontSize: '0.77rem', color: '#444', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      {date}
-                      {urgentContact && <span title="Sofort kontaktieren" style={{ fontSize: '0.75rem' }}>⏰</span>}
-                    </div>
+                    <div style={{ fontSize: '0.77rem', color: '#444' }}>{date}</div>
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeleteConfirmId(lead.id); }}
+                      className="row-trash"
+                      title="Lead löschen"
+                      style={{ background: 'none', border: 'none', color: '#333', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.15s' }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
+                  {deleteConfirmId === lead.id && (
+                    <div style={{ padding: '0.5rem 1.25rem', background: 'rgba(239,68,68,0.06)', borderBottom: '1px solid rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.76rem', color: '#f87171' }}>Lead löschen?</span>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button onClick={e => { e.stopPropagation(); setDeleteConfirmId(null); }} style={{ background: 'none', border: '1px solid #333', color: '#888', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.73rem', cursor: 'pointer' }}>Abbrechen</button>
+                        <button onClick={e => { e.stopPropagation(); handleDeleteLead(lead.id); }} style={{ background: '#ef4444', border: 'none', color: '#fff', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.73rem', fontWeight: 600, cursor: 'pointer' }}>Löschen</button>
+                      </div>
+                    </div>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </div>
@@ -1537,17 +1635,31 @@ function LeadsPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
                 {selectedLead.phone && (
-                  <button onClick={() => window.open('tel:' + ((cf?.normalized_phone as string) ?? selectedLead.phone))} title="Anrufen" style={{ background: '#1a1a1a', border: '1px solid #222', color: '#888', borderRadius: 7, width: 29, height: 29, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.8rem' }}>📞</button>
+                  <button onClick={() => window.open('tel:' + ((cf?.normalized_phone as string) ?? selectedLead.phone))} title="Anrufen" style={{ background: '#1a1a1a', border: '1px solid #222', color: '#888', borderRadius: 7, width: 29, height: 29, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.8rem' }}>☎</button>
                 )}
                 {selectedLead.email && (
-                  <button onClick={() => window.open('mailto:' + selectedLead.email)} title="E-Mail senden" style={{ background: '#1a1a1a', border: '1px solid #222', color: '#888', borderRadius: 7, width: 29, height: 29, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.8rem' }}>✉️</button>
+                  <button onClick={() => window.open('mailto:' + selectedLead.email)} title="E-Mail senden" style={{ background: '#1a1a1a', border: '1px solid #222', color: '#888', borderRadius: 7, width: 29, height: 29, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.8rem' }}>✉</button>
                 )}
                 {selectedLead.website && (
                   <a href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener noreferrer" title="Website öffnen" style={{ background: '#1a1a1a', border: '1px solid #222', color: '#888', borderRadius: 7, width: 29, height: 29, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem' }}>↗</a>
                 )}
+                <button onClick={() => setDeleteConfirmId(selectedLead.id)} title="Lead löschen" style={{ background: 'none', border: '1px solid #222', color: '#555', borderRadius: 7, width: 29, height: 29, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <Trash2 size={13} />
+                </button>
                 <button onClick={() => setSelectedLead(null)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1, padding: '0 0 0 0.25rem' }}>×</button>
               </div>
             </div>
+
+            {/* Delete confirmation */}
+            {deleteConfirmId === selectedLead.id && (
+              <div style={{ padding: '0.75rem 1.25rem', background: 'rgba(239,68,68,0.06)', borderBottom: '1px solid rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexShrink: 0 }}>
+                <span style={{ fontSize: '0.79rem', color: '#f87171' }}>Lead löschen? Kann nicht rückgängig gemacht werden.</span>
+                <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                  <button onClick={() => setDeleteConfirmId(null)} style={{ background: 'none', border: '1px solid #333', color: '#888', borderRadius: 6, padding: '0.3rem 0.7rem', fontSize: '0.75rem', cursor: 'pointer' }}>Abbrechen</button>
+                  <button onClick={() => handleDeleteLead(selectedLead.id)} style={{ background: '#ef4444', border: 'none', color: '#fff', borderRadius: 6, padding: '0.3rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Löschen</button>
+                </div>
+              </div>
+            )}
 
             {/* Scrollable body */}
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '0 0 12px 12px' }}>
@@ -1557,7 +1669,7 @@ function LeadsPage() {
               {/* Disposable email warning */}
               {!!(cf?.is_disposable_email) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '0.65rem 0.9rem' }}>
-                  <span>🚨</span>
+                  <span style={{ color: '#f87171', fontWeight: 700, fontSize: '0.85rem' }}>!</span>
                   <span style={{ fontSize: '0.79rem', color: '#f87171', fontWeight: 500 }}>Wegwerf-E-Mail erkannt — Lead wahrscheinlich unbrauchbar</span>
                 </div>
               )}
@@ -1579,7 +1691,6 @@ function LeadsPage() {
               {/* Contact in hours */}
               {cf?.contact_in_hours !== undefined && (cf.contact_in_hours as number) > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(234,179,8,0.05)', border: '1px solid rgba(234,179,8,0.12)', borderRadius: 7, padding: '0.5rem 0.85rem' }}>
-                  <span>⏰</span>
                   <span style={{ fontSize: '0.79rem', color: 'rgba(234,179,8,0.85)' }}>Empfohlen innerhalb von <strong>{cf.contact_in_hours as number} Std.</strong> kontaktieren</span>
                 </div>
               )}
@@ -1604,7 +1715,7 @@ function LeadsPage() {
                       <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>E-Mail</span>
                       <span style={{ color: '#ccc', wordBreak: 'break-all', flex: 1 }}>{selectedLead.email}</span>
                       <button onClick={() => copyWithFeedback(selectedLead.email!, 'email')} style={{ background: 'none', border: 'none', color: copiedField === 'email' ? '#4ade80' : '#444', cursor: 'pointer', fontSize: '0.78rem', padding: '0 0.15rem', flexShrink: 0 }} title="Kopieren">
-                        {copiedField === 'email' ? '✓' : '📋'}
+                        {copiedField === 'email' ? '✓' : '⎘'}
                       </button>
                     </div>
                   )}
@@ -1613,7 +1724,7 @@ function LeadsPage() {
                       <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Telefon</span>
                       <span style={{ color: '#ccc', flex: 1 }}>{(cf?.normalized_phone as string) ?? selectedLead.phone}</span>
                       <button onClick={() => copyWithFeedback((cf?.normalized_phone as string) ?? selectedLead.phone!, 'phone')} style={{ background: 'none', border: 'none', color: copiedField === 'phone' ? '#4ade80' : '#444', cursor: 'pointer', fontSize: '0.78rem', padding: '0 0.15rem', flexShrink: 0 }} title="Kopieren">
-                        {copiedField === 'phone' ? '✓' : '📋'}
+                        {copiedField === 'phone' ? '✓' : '⎘'}
                       </button>
                     </div>
                   )}
@@ -1713,20 +1824,48 @@ function LeadsPage() {
 
               {/* ── Firmenprofil — 2-col grid ── */}
               <CollapsibleSection label="Firmenprofil">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 0.75rem', background: '#0a0a0a', borderRadius: 8, padding: '0.85rem' }}>
-                  {[
-                    { label: 'Branche', val: cf?.industry },
-                    { label: 'Typ', val: cf?.company_type },
-                    { label: 'Größe', val: cf?.company_size },
-                    { label: 'Mitarbeiter', val: cf?.employee_count ? String(cf.employee_count) : undefined },
-                    { label: 'Budget', val: cf?.budget_estimate, highlight: true },
-                    { label: 'Jahresumsatz', val: cf?.annual_revenue },
-                  ].filter(r => r.val).map(r => (
-                    <div key={r.label}>
-                      <div style={{ fontSize: '0.67rem', color: '#444', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{r.label}</div>
-                      <div style={{ fontSize: '0.81rem', color: r.highlight ? '#4ade80' : '#ccc', fontWeight: r.highlight ? 600 : 400 }}>{r.val as string}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', background: '#0a0a0a', borderRadius: 8, padding: '0.85rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 0.75rem' }}>
+                    {[
+                      { label: 'Branche', val: cf?.industry },
+                      { label: 'Typ', val: cf?.company_type },
+                      { label: 'Größe', val: cf?.company_size },
+                      { label: 'Mitarbeiter', val: cf?.employee_count ? `${cf.employee_count} Mitarbeiter` : undefined },
+                      { label: 'Position', val: cf?.job_title },
+                      { label: 'Budget', val: cf?.budget_estimate, highlight: true },
+                      { label: 'Jahresumsatz', val: cf?.annual_revenue },
+                    ].filter(r => r.val).map(r => (
+                      <div key={r.label}>
+                        <div style={{ fontSize: '0.67rem', color: '#444', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{r.label}</div>
+                        <div style={{ fontSize: '0.81rem', color: r.highlight ? '#4ade80' : '#ccc', fontWeight: r.highlight ? 600 : 400 }}>{r.val as string}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {(cf?.technologies as string[])?.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '0.67rem', color: '#444', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Technologien</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                        {(cf!.technologies as string[]).map(t => (
+                          <span key={t} style={{ background: 'rgba(107,122,255,0.1)', color: '#818cf8', borderRadius: 999, padding: '2px 8px', fontSize: '0.71rem' }}>{t}</span>
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  )}
+                  {!!(cf?.linkedin_url) && (
+                    <div>
+                      <div style={{ fontSize: '0.67rem', color: '#444', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>LinkedIn</div>
+                      <a href={cf.linkedin_url as string} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', fontSize: '0.79rem', textDecoration: 'none' }}>Profil öffnen ↗</a>
+                    </div>
+                  )}
+                  {!!(cf?.email_status) && (
+                    <div>
+                      <div style={{ fontSize: '0.67rem', color: '#444', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>E-Mail Status</div>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.79rem', color: (cf.email_status as string).toLowerCase() === 'verified' ? '#4ade80' : '#888' }}>
+                        {(cf.email_status as string).toLowerCase() === 'verified' && <span style={{ width: 6, height: 6, borderRadius: 3, background: '#4ade80', flexShrink: 0 }} />}
+                        {cf.email_status as string}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </CollapsibleSection>
 
@@ -1752,23 +1891,12 @@ function LeadsPage() {
                     const c = MESSAGE_QUALITY_COLORS[mq] ?? { bg: 'rgba(255,255,255,0.04)', fg: '#555' };
                     return (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: c.bg, border: `1px solid ${c.fg}22`, borderRadius: 7, padding: '0.4rem 0.65rem', gridColumn: 'span 2' }}>
-                        <span style={{ fontSize: '0.74rem', color: c.fg }}>✉ Nachricht: {cf.message_quality as string}</span>
+                        <span style={{ fontSize: '0.74rem', color: c.fg }}>Nachricht: {cf.message_quality as string}</span>
                       </div>
                     );
                   })()}
                 </div>
               </CollapsibleSection>
-
-              {/* Technologies */}
-              {(cf?.technologies as string[])?.length > 0 && (
-                <CollapsibleSection label="Technologien">
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                    {(cf!.technologies as string[]).map(t => (
-                      <span key={t} style={{ background: 'rgba(107,122,255,0.1)', color: '#818cf8', borderRadius: 999, padding: '2px 8px', fontSize: '0.73rem' }}>{t}</span>
-                    ))}
-                  </div>
-                </CollapsibleSection>
-              )}
 
               {/* AI Tags */}
               {selectedLead.ai_tags && selectedLead.ai_tags.length > 0 && (
@@ -1858,7 +1986,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{ display:'flex', minHeight:'100vh', backgroundColor:'#000', color:'#fff' }}>
-      <style>{`* { box-sizing: border-box; } @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      <style>{`* { box-sizing: border-box; } @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } .lead-row:hover .row-trash { opacity: 1 !important; color: #666 !important; } .lead-row:hover .row-trash:hover { color: #f87171 !important; }`}</style>
 
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} />
 
