@@ -929,7 +929,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
   }, [tenantId, supabase]);
 
   const buildProfilePayload = () => ({
-    industries: branchen.map(l => Object.entries(INDUSTRY_LABELS).find(([, v]) => v === l)?.[0] ?? l),
+    industries: branchen,
     employee_min: empMin, employee_max: empMax,
     technologies: techs, job_titles: positions,
     seniority_levels: SENIORITY_KEYS.filter(k => seniority[k]),
@@ -941,8 +941,15 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
   });
 
   const saveProfile = async () => {
-    if (!profile?.id) return;
-    await supabase.from('lead_search_profiles').update(buildProfilePayload()).eq('id', profile.id);
+    if (!profile?.id || !tenantId) return;
+    await fetch(
+      `https://jnaqmsvozkpqawqwslrl.supabase.co/functions/v1/patch-search-profile?id=${profile.id}&tenant_id=${tenantId}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify(buildProfilePayload()),
+      },
+    );
     setSavedLabel('Gespeichert ✓');
     setTimeout(() => setSavedLabel(''), 2500);
   };
