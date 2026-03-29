@@ -1196,7 +1196,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
               {/* Anzahl Leads */}
               <div style={{ background: '#1a1a1a', borderRadius: 6, padding: '1rem' }}>
                 <GSectionLabel>Anzahl Leads</GSectionLabel>
-                <div style={{ fontSize: '0.82rem', color: '#888', marginBottom: '0.85rem' }}>Wie viele Leads möchtest du generieren?</div>
+                <div style={{ fontSize: '0.82rem', color: '#888', marginBottom: '0.85rem' }}>Wie viele Leads möchtest du generieren? <span style={{ color: '#666' }}>(bis zu {leadCount} Leads)</span></div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <button onClick={() => { setLeadCount(c => Math.max(1, c - 5)); triggerDebounce(); }} style={{ width: 32, height: 32, background: '#222', border: '1px solid #333', color: '#ccc', borderRadius: 6, cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
                   <input type="number" min={1} max={25} value={leadCount} onChange={e => { setLeadCount(Math.min(25, Math.max(1, +e.target.value))); triggerDebounce(); }} style={{ width: 64, textAlign: 'center', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: 6, fontSize: '1.1rem', fontWeight: 600, padding: '0.35rem', outline: 'none' }} />
@@ -1409,6 +1409,7 @@ function LeadsPage() {
   }, [supabase, tenantId, showToast]);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [rescoring, setRescoring] = useState(false);
 
   const handleDeleteLead = useCallback(async (leadId: string) => {
     try {
@@ -1756,6 +1757,30 @@ function LeadsPage() {
                 </div>
               )}
 
+              {/* ── Follow-up Context ── */}
+              {!!(cf?.follow_up_context) && (() => {
+                const fuc = cf.follow_up_context as Record<string, unknown>;
+                const items = [
+                  { label: 'Unternehmen', val: fuc.company_description as string | undefined },
+                  { label: 'Pain Points', val: fuc.pain_points as string | undefined },
+                  { label: 'Automatisierungspotenzial', val: fuc.automation_opportunities as string | undefined },
+                  { label: 'Gesprächseinstieg', val: fuc.conversation_opener as string | undefined, highlight: true },
+                ].filter(r => r.val);
+                if (items.length === 0) return null;
+                return (
+                  <CollapsibleSection label="Follow-up Kontext">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', background: '#0a0a0a', borderRadius: 8, padding: '0.85rem' }}>
+                      {items.map(r => (
+                        <div key={r.label}>
+                          <div style={{ fontSize: '0.67rem', color: r.highlight ? 'rgba(107,122,255,0.7)' : '#444', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>{r.label}</div>
+                          <div style={{ fontSize: '0.81rem', color: r.highlight ? '#c4c8ff' : '#888', lineHeight: 1.5 }}>{r.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                );
+              })()}
+
               {/* ── KI-Scoring ── */}
               <CollapsibleSection label="KI-Scoring">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -1826,6 +1851,26 @@ function LeadsPage() {
                       ))}
                     </div>
                   )}
+                  <button
+                    onClick={async () => {
+                      if (!tenantId || !selectedLead) return;
+                      setRescoring(true);
+                      try {
+                        await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/ki-scoring', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
+                        });
+                        showToast('KI-Scoring gestartet — Score wird aktualisiert');
+                        setTimeout(() => { loadLeads(); if (selectedLead) handleSelectLead(selectedLead); }, 5000);
+                      } catch { showToast('Scoring konnte nicht gestartet werden'); }
+                      finally { setRescoring(false); }
+                    }}
+                    disabled={rescoring}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', width: '100%', marginTop: '0.25rem', background: '#1a1a1a', border: '1px solid #2a2a2a', color: rescoring ? '#555' : '#888', borderRadius: 7, padding: '0.45rem', fontSize: '0.76rem', cursor: rescoring ? 'default' : 'pointer' }}
+                  >
+                    {rescoring ? <><UniqueLoading size="sm" /> Wird bewertet…</> : '↻ Neu bewerten'}
+                  </button>
                 </div>
               </CollapsibleSection>
 
