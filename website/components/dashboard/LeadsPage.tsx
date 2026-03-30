@@ -664,13 +664,13 @@ export function LeadsPage() {
         {/* Filter toolbar */}
         {(() => {
           const fb = (active: boolean): React.CSSProperties => ({
-            fontSize: 13,
+            fontSize: 12,
             padding: '4px 10px',
             borderRadius: 6,
             cursor: 'pointer',
-            border: active ? '1px solid #e5e7eb' : '1px solid #2a2a2a',
-            background: active ? '#e5e7eb' : 'transparent',
-            color: active ? '#111827' : '#6b7280',
+            border: active ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.1)',
+            background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
+            color: active ? '#f9fafb' : '#9ca3af',
             transition: 'all 0.12s',
             whiteSpace: 'nowrap',
           });
@@ -733,26 +733,26 @@ export function LeadsPage() {
                 <button onClick={() => toggleTag('ki_affin')} style={fb(!!tagToggles.ki_affin)}>
                   KI-affin
                 </button>
+                <div style={{ flex: 1 }} />
+                <span style={{ fontSize: 12, color: '#4b5563' }}>
+                  {filtered.length} von {leads.length} Leads
+                </span>
                 {hasFilters && (
                   <button
                     onClick={resetFilters}
                     style={{
+                      fontSize: 12,
+                      color: '#6b7280',
                       background: 'none',
                       border: 'none',
-                      color: '#6b7280',
-                      fontSize: 13,
                       cursor: 'pointer',
                       textDecoration: 'underline',
                       padding: 0,
-                      marginLeft: 4,
                     }}
                   >
                     Zurücksetzen
                   </button>
                 )}
-              </div>
-              <div style={{ fontSize: 13, color: '#6b7280' }}>
-                Zeige {filtered.length} von {leads.length} Leads
               </div>
             </div>
           );
