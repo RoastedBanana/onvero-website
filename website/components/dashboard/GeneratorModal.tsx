@@ -347,7 +347,7 @@ export function GeneratorModal({
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [generator, setGenerator] = useState<GeneratorRow | null>(null);
   const [savedLabel, setSavedLabel] = useState('');
-  const [generating, setGenerating] = useState(false);
+  const [genState, setGenState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup debounce on unmount
@@ -539,7 +539,7 @@ export function GeneratorModal({
 
   const handleGenerate = async () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    setGenerating(true);
+    setGenState('loading');
     await saveProfile();
     try {
       const res = await fetch('/api/leads/generate', {
@@ -547,14 +547,13 @@ export function GeneratorModal({
         headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
         body: JSON.stringify({ tenant_id: tenantId, profile_id: profile?.id }),
       });
-      if (res.ok) {
-        onGenerated(leadCount);
-        onClose();
-      }
+      if (!res.ok) throw new Error('API error');
+      setGenState('success');
+      onGenerated(leadCount);
+      setTimeout(() => onClose(), 4000);
     } catch {
-      /* silent — toast will still show */
-    } finally {
-      setGenerating(false);
+      setGenState('error');
+      setTimeout(() => setGenState('idle'), 4000);
     }
   };
 
@@ -1462,26 +1461,50 @@ export function GeneratorModal({
               </button>
               <button
                 onClick={handleGenerate}
-                disabled={generating || budgetEmpty || !profile}
+                disabled={genState !== 'idle' || budgetEmpty || !profile}
                 title={budgetEmpty ? 'Kein Budget mehr' : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.45rem',
-                  background: generating || budgetEmpty || !profile ? '#1f1f1f' : '#fff',
-                  color: generating || budgetEmpty || !profile ? '#555' : '#000',
-                  border: 'none',
+                  background:
+                    genState === 'success'
+                      ? 'rgba(74,222,128,0.15)'
+                      : genState === 'error'
+                        ? 'rgba(248,113,113,0.15)'
+                        : genState === 'loading' || budgetEmpty || !profile
+                          ? '#1f1f1f'
+                          : '#fff',
+                  color:
+                    genState === 'success'
+                      ? '#4ade80'
+                      : genState === 'error'
+                        ? '#f87171'
+                        : genState === 'loading' || budgetEmpty || !profile
+                          ? '#555'
+                          : '#000',
+                  border:
+                    genState === 'success'
+                      ? '1px solid rgba(74,222,128,0.3)'
+                      : genState === 'error'
+                        ? '1px solid rgba(248,113,113,0.3)'
+                        : 'none',
                   borderRadius: 6,
                   padding: '0.5rem 1.15rem',
                   fontSize: '0.82rem',
                   fontWeight: 700,
-                  cursor: generating || budgetEmpty || !profile ? 'default' : 'pointer',
+                  cursor: genState !== 'idle' || budgetEmpty || !profile ? 'default' : 'pointer',
+                  transition: 'all 0.2s',
                 }}
               >
-                {generating ? (
+                {genState === 'loading' ? (
                   <>
-                    <UniqueLoading size="sm" /> Generiert…
+                    <UniqueLoading size="sm" /> Suche läuft…
                   </>
+                ) : genState === 'success' ? (
+                  'Fertig — neue Leads werden im Hintergrund gescored'
+                ) : genState === 'error' ? (
+                  'Fehler — bitte erneut versuchen'
                 ) : budgetEmpty ? (
                   'Kein Budget mehr'
                 ) : (
