@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useTenant } from '@/hooks/useTenant';
+import { getCsrfToken } from '@/lib/csrf';
 
 function createClient() {
   return createBrowserClient(
@@ -986,7 +987,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
     try {
       const res = await fetch('/api/leads/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
         body: JSON.stringify({ tenant_id: tenantId, profile_id: profile?.id }),
       });
       if (res.ok) {
@@ -1861,7 +1862,7 @@ function LeadsPage() {
                       try {
                         await fetch('/api/leads/rescore', {
                           method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
+                          headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
                           body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
                         });
                         showToast('KI-Scoring gestartet — Score wird aktualisiert');
