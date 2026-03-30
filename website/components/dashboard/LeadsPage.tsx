@@ -262,8 +262,9 @@ export function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [scoreFilters, setScoreFilters] = useState<string[]>([]);
-  const [sourceFilter, setSourceFilter] = useState('all');
+  const [scoreRange, setScoreRange] = useState<'all' | '70+' | '45-69' | '<45'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [tagToggles, setTagToggles] = useState<Record<string, boolean>>({});
   const [sortBy, setSortBy] = useState('score_desc');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<LeadActivity[]>([]);
@@ -386,16 +387,16 @@ export function LeadsPage() {
     [supabase, tenantId, selectedLead, showToast]
   );
 
-  const toggleScore = (tier: string) =>
-    setScoreFilters((prev) => (prev.includes(tier) ? prev.filter((x) => x !== tier) : [...prev, tier]));
+  const toggleTag = (tag: string) => setTagToggles((prev) => ({ ...prev, [tag]: !prev[tag] }));
 
   const resetFilters = () => {
-    setScoreFilters([]);
-    setSourceFilter('all');
-    setSortBy('newest');
+    setScoreRange('all');
+    setStatusFilter('all');
+    setTagToggles({});
     setSearch('');
   };
-  const hasFilters = scoreFilters.length > 0 || sourceFilter !== 'all' || sortBy !== 'newest' || search !== '';
+  const activeTagCount = Object.values(tagToggles).filter(Boolean).length;
+  const hasFilters = scoreRange !== 'all' || statusFilter !== 'all' || activeTagCount > 0 || search !== '';
 
   const filtered = useMemo(
     () =>
@@ -407,11 +408,17 @@ export function LeadsPage() {
             (l.company_name ?? '').toLowerCase().includes(q) ||
             (l.email ?? '').toLowerCase().includes(q) ||
             `${l.first_name ?? ''} ${l.last_name ?? ''}`.toLowerCase().includes(q);
-          const tier = getScoreLabel(l.score);
-          const matchScore = scoreFilters.length === 0 || scoreFilters.includes(tier);
-          const matchSource =
-            sourceFilter === 'all' || (l.source ?? '').toLowerCase().includes(sourceFilter.toLowerCase());
-          return matchSearch && matchScore && matchSource;
+          const s = l.score ?? 0;
+          const matchScore =
+            scoreRange === 'all' ||
+            (scoreRange === '70+' && s >= 70) ||
+            (scoreRange === '45-69' && s >= 45 && s < 70) ||
+            (scoreRange === '<45' && s < 45);
+          const matchStatus = statusFilter === 'all' || l.status === statusFilter;
+          const matchTags = !tagToggles.has_email || l.email_draft !== null;
+          const matchPremium = !tagToggles.premium || (l.ai_tags ?? []).includes('premium_lead');
+          const matchKI = !tagToggles.ki_affin || (l.ai_tags ?? []).includes('ki_affin');
+          return matchSearch && matchScore && matchStatus && matchTags && matchPremium && matchKI;
         })
         .sort((a, b) => {
           if (sortBy === 'score_desc') return (b.score ?? 0) - (a.score ?? 0);
@@ -428,7 +435,7 @@ export function LeadsPage() {
           if (sortBy === 'status_desc') return (b.status ?? '').localeCompare(a.status ?? '');
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }),
-    [leads, search, scoreFilters, sourceFilter, sortBy]
+    [leads, search, scoreRange, statusFilter, tagToggles, sortBy]
   );
 
   const scored = leads.filter((l) => l.score !== null).length;
@@ -445,12 +452,6 @@ export function LeadsPage() {
 
   const cf = (selectedLead?.custom_fields ?? DUMMY_CF) as unknown as Record<string, unknown>;
   const displayActivities = activities.length > 0 ? activities : DUMMY_ACTIVITIES;
-
-  const SCORE_TIERS = [
-    { key: 'HOT', color: '#FF6B35', bg: 'rgba(255,107,53,0.12)', border: 'rgba(255,107,53,0.35)' },
-    { key: 'WARM', color: '#FFD700', bg: 'rgba(255,215,0,0.1)', border: 'rgba(255,215,0,0.3)' },
-    { key: 'COLD', color: '#6B7AFF', bg: 'rgba(107,122,255,0.1)', border: 'rgba(107,122,255,0.3)' },
-  ];
 
   return (
     <>
@@ -521,105 +522,101 @@ export function LeadsPage() {
           </div>
 
           {/* Filter toolbar */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: '1 1 200px' }}>
-              <Search
-                size={14}
-                style={{
-                  position: 'absolute',
-                  left: 10,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#444',
-                  pointerEvents: 'none',
-                }}
-              />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Firma, Name oder E-Mail…"
-                style={{ ...field, paddingLeft: '2rem', background: '#0a0a0a', borderColor: '#1f1f1f' }}
-              />
-            </div>
-            {SCORE_TIERS.map((tier) => {
-              const active = scoreFilters.includes(tier.key);
-              return (
-                <button
-                  key={tier.key}
-                  onClick={() => toggleScore(tier.key)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.3rem',
-                    background: active ? tier.bg : '#0a0a0a',
-                    border: `1px solid ${active ? tier.border : '#1f1f1f'}`,
-                    color: active ? tier.color : '#666',
-                    borderRadius: 999,
-                    padding: '0.4rem 0.85rem',
-                    fontSize: '0.78rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {tier.key}
-                </button>
-              );
-            })}
-            <select
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value)}
-              style={{
-                ...field,
-                width: 'auto',
-                background: '#0a0a0a',
-                borderColor: '#1f1f1f',
-                color: '#aaa',
-                cursor: 'pointer',
-                padding: '0.42rem 0.9rem',
-              }}
-            >
-              <option value="all">Alle Quellen</option>
-              <option value="website">Website</option>
-              <option value="apollo">Apollo</option>
-              <option value="linkedin">LinkedIn</option>
-              <option value="empfehlung">Empfehlung</option>
-            </select>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              style={{
-                ...field,
-                width: 'auto',
-                background: '#0a0a0a',
-                borderColor: '#1f1f1f',
-                color: '#aaa',
-                cursor: 'pointer',
-                padding: '0.42rem 0.9rem',
-              }}
-            >
-              <option value="newest">Neueste zuerst</option>
-              <option value="score_desc">Score ↓</option>
-              <option value="score_asc">Score ↑</option>
-            </select>
-            {hasFilters && (
-              <button
-                onClick={resetFilters}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#555',
-                  fontSize: '0.78rem',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  padding: 0,
-                }}
-              >
-                Filter zurücksetzen
-              </button>
-            )}
-          </div>
+          {(() => {
+            const fb = (active: boolean): React.CSSProperties => ({
+              fontSize: 13,
+              padding: '4px 10px',
+              borderRadius: 6,
+              cursor: 'pointer',
+              border: active ? '1px solid #e5e7eb' : '1px solid #2a2a2a',
+              background: active ? '#e5e7eb' : 'transparent',
+              color: active ? '#111827' : '#6b7280',
+              transition: 'all 0.12s',
+              whiteSpace: 'nowrap',
+            });
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                  <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
+                    <Search
+                      size={14}
+                      style={{
+                        position: 'absolute',
+                        left: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#6b7280',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Name oder Firma…"
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: '1px solid #2a2a2a',
+                        borderRadius: 6,
+                        color: '#fff',
+                        fontSize: 13,
+                        padding: '5px 10px 5px 30px',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <span style={{ color: '#333', margin: '0 2px' }}>|</span>
+                  {(['all', '70+', '45-69', '<45'] as const).map((r) => (
+                    <button key={r} onClick={() => setScoreRange(r)} style={fb(scoreRange === r)}>
+                      {r === 'all' ? 'Alle Scores' : r}
+                    </button>
+                  ))}
+                  <span style={{ color: '#333', margin: '0 2px' }}>|</span>
+                  {[
+                    ['all', 'Alle'],
+                    ['new', 'New'],
+                    ['contacted', 'Contacted'],
+                    ['qualified', 'Qualified'],
+                    ['lost', 'Lost'],
+                  ].map(([k, l]) => (
+                    <button key={k} onClick={() => setStatusFilter(k)} style={fb(statusFilter === k)}>
+                      {l}
+                    </button>
+                  ))}
+                  <span style={{ color: '#333', margin: '0 2px' }}>|</span>
+                  <button onClick={() => toggleTag('has_email')} style={fb(!!tagToggles.has_email)}>
+                    ✉ Hat E-Mail
+                  </button>
+                  <button onClick={() => toggleTag('premium')} style={fb(!!tagToggles.premium)}>
+                    Premium
+                  </button>
+                  <button onClick={() => toggleTag('ki_affin')} style={fb(!!tagToggles.ki_affin)}>
+                    KI-affin
+                  </button>
+                  {hasFilters && (
+                    <button
+                      onClick={resetFilters}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#6b7280',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        padding: 0,
+                        marginLeft: 4,
+                      }}
+                    >
+                      Zurücksetzen
+                    </button>
+                  )}
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>
+                  Zeige {filtered.length} von {leads.length} Leads
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Lead Table */}
           {(() => {
