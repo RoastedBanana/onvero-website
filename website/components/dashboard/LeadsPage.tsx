@@ -1723,46 +1723,49 @@ export function LeadsPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                       {(() => {
                         const sb = (cf?.score_breakdown ?? DUMMY_CF.score_breakdown) as Record<string, number>;
-                        const barLabels: Record<string, string> = {
-                          kontakt_vertrauen: 'Kontakt & Vertrauen',
-                          kaufbereitschaft: 'Kaufbereitschaft',
-                          unternehmensfit: 'Unternehmensfit',
-                          abzuege: 'Abzüge',
-                        };
-                        const barColors: Record<string, string> = {
-                          kontakt_vertrauen: '#818cf8',
-                          kaufbereitschaft: '#4ade80',
-                          unternehmensfit: '#fb923c',
-                          abzuege: '#f87171',
-                        };
-                        return Object.entries(sb).map(([k, v]) => {
-                          const maxVal = SCORE_MAX[k] ?? 35;
-                          const pct = Math.min((Math.abs(v) / maxVal) * 100, 100);
-                          const color = barColors[k] ?? '#818cf8';
+                        const dims = [
+                          {
+                            key: 'kontaktqualitaet',
+                            alt: 'kontakt_vertrauen',
+                            label: 'Kontaktqualität',
+                            max: 25,
+                            color: '#22c55e',
+                          },
+                          {
+                            key: 'unternehmensfit',
+                            alt: 'unternehmensfit',
+                            label: 'Unternehmensfit',
+                            max: 35,
+                            color: '#22c55e',
+                          },
+                          {
+                            key: 'entscheidungsposition',
+                            alt: 'kaufbereitschaft',
+                            label: 'Entscheidungsposition',
+                            max: 25,
+                            color: '#22c55e',
+                          },
+                          { key: 'kaufsignale', alt: 'kaufsignale', label: 'Kaufsignale', max: 15, color: '#22c55e' },
+                          { key: 'abzuege', alt: 'abzuege', label: 'Abzüge', max: 15, color: '#ef4444' },
+                        ];
+                        return dims.map(({ key, alt, label, max, color }) => {
+                          const v = sb[key] ?? sb[alt] ?? 0;
+                          const pct = Math.min((Math.abs(v) / max) * 100, 100);
                           return (
-                            <div key={k}>
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  justifyContent: 'space-between',
-                                  fontSize: '0.76rem',
-                                  marginBottom: '0.3rem',
-                                }}
-                              >
-                                <span style={{ color: '#666' }}>{barLabels[k] ?? k}</span>
-                                <span style={{ color, fontWeight: 700 }}>
-                                  {v > 0 ? '+' : ''}
-                                  {v}
+                            <div key={key} style={{ marginBottom: 8 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                <span style={{ fontSize: 11, color: '#9ca3af' }}>{label}</span>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: '#f9fafb' }}>
+                                  {v}/{max}
                                 </span>
                               </div>
-                              <div style={{ height: 4, borderRadius: 2, background: '#1a1a1a' }}>
+                              <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
                                 <div
                                   style={{
+                                    width: `${pct}%`,
                                     height: '100%',
                                     borderRadius: 2,
-                                    width: `${pct}%`,
                                     background: color,
-                                    opacity: 0.75,
                                     transition: 'width 0.5s ease',
                                   }}
                                 />
