@@ -785,6 +785,7 @@ export function LeadsPage() {
                           }}
                           className="row-trash"
                           title="Lead löschen"
+                          aria-label="Lead löschen"
                           style={{
                             background: 'none',
                             border: 'none',
@@ -866,6 +867,8 @@ export function LeadsPage() {
           <div
             style={{
               width: 380,
+              minWidth: 320,
+              maxWidth: 420,
               flexShrink: 0,
               background: '#111',
               border: '1px solid #1f1f1f',
@@ -914,6 +917,7 @@ export function LeadsPage() {
                   <button
                     onClick={() => window.open('tel:' + ((cf?.normalized_phone as string) ?? selectedLead.phone))}
                     title="Anrufen"
+                    aria-label="Anrufen"
                     style={{
                       background: '#1a1a1a',
                       border: '1px solid #222',
@@ -935,6 +939,7 @@ export function LeadsPage() {
                   <button
                     onClick={() => window.open('mailto:' + selectedLead.email)}
                     title="E-Mail senden"
+                    aria-label="E-Mail senden"
                     style={{
                       background: '#1a1a1a',
                       border: '1px solid #222',
@@ -960,6 +965,7 @@ export function LeadsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Website öffnen"
+                    aria-label="Website öffnen"
                     style={{
                       background: '#1a1a1a',
                       border: '1px solid #222',
@@ -980,6 +986,7 @@ export function LeadsPage() {
                 <button
                   onClick={() => setDeleteConfirmId(selectedLead.id)}
                   title="Lead löschen"
+                  aria-label="Lead löschen"
                   style={{
                     background: 'none',
                     border: '1px solid #222',
@@ -997,6 +1004,7 @@ export function LeadsPage() {
                 </button>
                 <button
                   onClick={() => setSelectedLead(null)}
+                  aria-label="Panel schließen"
                   style={{
                     background: 'none',
                     border: 'none',
@@ -1071,7 +1079,7 @@ export function LeadsPage() {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: 48,
+                  height: 24,
                   background: 'linear-gradient(to bottom, transparent, #111)',
                   pointerEvents: 'none',
                   zIndex: 1,
@@ -1172,7 +1180,14 @@ export function LeadsPage() {
                   <select
                     value={selectedLead.status}
                     onChange={(e) => handleStatusUpdate(selectedLead.id, e.target.value)}
-                    style={{ ...field, cursor: 'pointer', background: '#0a0a0a', borderColor: '#1f1f1f' }}
+                    disabled={statusUpdating}
+                    style={{
+                      ...field,
+                      cursor: statusUpdating ? 'wait' : 'pointer',
+                      background: '#0a0a0a',
+                      borderColor: '#1f1f1f',
+                      opacity: statusUpdating ? 0.5 : 1,
+                    }}
                   >
                     {Object.entries(STATUS_LABELS).map(([k, v]) => (
                       <option key={k} value={k}>
