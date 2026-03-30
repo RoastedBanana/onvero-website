@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ip = getClientIp(req.headers);
-    const { success } = rateLimit(`chat:${ip}`, { maxRequests: 30, windowMs: 60 * 60 * 1000 });
+    const { success } = await rateLimit(`chat:${ip}`, { maxRequests: 30, windowMs: 60 * 60 * 1000 });
     if (!success) {
       return NextResponse.json({ error: 'Zu viele Nachrichten. Bitte warte etwas.' }, { status: 429 });
     }

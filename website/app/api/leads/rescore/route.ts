@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { validateCsrf } from '@/lib/csrf';
 import { isUUID } from '@/lib/validate';
+import { getSignedHeaders } from '@/lib/webhook-sign';
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,10 +29,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Server-Konfiguration fehlt' }, { status: 500 });
     }
 
+    const payload = JSON.stringify({ lead_id: body.lead_id, tenant_id: body.tenant_id });
     const response = await fetch(n8nUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead_id: body.lead_id, tenant_id: body.tenant_id }),
+      headers: getSignedHeaders(payload),
+      body: payload,
     });
 
     if (!response.ok) {
