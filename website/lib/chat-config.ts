@@ -1,8 +1,7 @@
 // ─── Chat Webhook Configuration ──────────────────────────────────────────────
 // Change WEBHOOK_URL here to update the endpoint for all chat messages.
 
-export const WEBHOOK_URL =
-  "https://n8n.srv1223027.hstgr.cloud/webhook/7b43e6cb-de44-4643-b813-745f2cbc8cbc";
+export const WEBHOOK_URL = "/api/chat";
 
 // ─── Rate Limit ───────────────────────────────────────────────────────────────
 // MAX_MESSAGES_PER_WINDOW: maximum number of messages a user may send

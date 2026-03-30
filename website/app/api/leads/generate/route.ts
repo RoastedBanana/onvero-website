@@ -1,17 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const N8N_URL = 'https://n8n.srv1223027.hstgr.cloud/webhook/lead-generator-run';
-const WEBHOOK_SECRET = '59317c4c-217d-4046-93d8-15ea3e94dbb6';
+import { createServerSupabaseClient } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth check
+    const supabase = await createServerSupabaseClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
 
-    const response = await fetch(N8N_URL, {
+    // Validate input
+    if (!body.tenant_id || typeof body.tenant_id !== 'string') {
+      return NextResponse.json({ error: 'tenant_id erforderlich' }, { status: 400 });
+    }
+
+    const n8nUrl = process.env.N8N_WEBHOOK_LEAD_GENERATOR;
+    const secret = process.env.N8N_WEBHOOK_SECRET;
+    if (!n8nUrl || !secret) {
+      return NextResponse.json({ error: 'Server-Konfiguration fehlt' }, { status: 500 });
+    }
+
+    const response = await fetch(n8nUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-webhook-secret': WEBHOOK_SECRET,
+        'x-webhook-secret': secret,
       },
       body: JSON.stringify({
         tenant_id: body.tenant_id,

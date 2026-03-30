@@ -39,11 +39,12 @@ const POSTS_PER_PAGE = 15;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function parseCookieUser(): UserInfo | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(/onvero_user=([^;]+)/);
-  if (!match) return null;
-  try { return JSON.parse(decodeURIComponent(match[1])); } catch { return null; }
+async function fetchUser(): Promise<UserInfo | null> {
+  try {
+    const res = await fetch('/api/auth/me');
+    const data = await res.json();
+    return data.user ?? null;
+  } catch { return null; }
 }
 
 function getImageUrl(url: string | null | undefined): string | null {
@@ -945,7 +946,7 @@ function GeneratorModal({ onClose, onGenerated, tenantId, supabase }: {
   const saveProfile = async () => {
     if (!profile?.id || !tenantId) return;
     await fetch(
-      `https://jnaqmsvozkpqawqwslrl.supabase.co/functions/v1/patch-search-profile?id=${profile.id}&tenant_id=${tenantId}`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/patch-search-profile?id=${profile.id}&tenant_id=${tenantId}`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
@@ -1858,7 +1859,7 @@ function LeadsPage() {
                       if (!tenantId || !selectedLead) return;
                       setRescoring(true);
                       try {
-                        await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/ki-scoring', {
+                        await fetch('/api/leads/rescore', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
@@ -2010,9 +2011,8 @@ function LeadsPage() {
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserInfo | null>(null);
+  useEffect(() => { fetchUser().then(setUser); }, []);
   const [activePage, setActivePage] = useState<Page>('home');
-
-  useEffect(() => { setUser(parseCookieUser()); }, []);
 
   // Prevent browser file-drop navigation
   useEffect(() => {

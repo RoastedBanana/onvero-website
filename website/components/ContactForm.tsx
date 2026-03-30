@@ -35,7 +35,7 @@ const INITIAL: FormData = {
   preferredDate: "", preferredTime: "", source: "",
 };
 
-const WEBHOOK = "https://n8n.srv1223027.hstgr.cloud/webhook/5ab49b3b-e8ae-4b6b-a8f2-ec25758ede46";
+const WEBHOOK = "/api/contact";
 
 const EMPLOYEE_OPTIONS = ["1–10", "11–50", "51–200", "200+"] as const;
 const SERVICE_OPTIONS  = ["KI-Website", "Workflow-Automatisierung", "Micro AI App", "BusinessOS", "Alles zusammen"] as const;

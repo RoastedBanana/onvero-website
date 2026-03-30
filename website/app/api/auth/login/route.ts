@@ -58,7 +58,7 @@ export async function POST(request: Request) {
         })
       ),
       {
-        httpOnly: false,
+        httpOnly: true,
         secure: isProduction,
         sameSite: 'strict',
         maxAge,

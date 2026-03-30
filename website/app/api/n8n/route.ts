@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
 
-const N8N_WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/faf398bf-4e13-4fff-b3c2-b1cb3d8b9390';
+const N8N_WEBHOOK = process.env.N8N_WEBHOOK_BLOG!;
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabaseClient();
