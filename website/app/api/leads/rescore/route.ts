@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { validateCsrf } from '@/lib/csrf';
+import { isUUID } from '@/lib/validate';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,15 +10,17 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createServerSupabaseClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
 
-    if (!body.lead_id || !body.tenant_id) {
-      return NextResponse.json({ error: 'lead_id und tenant_id erforderlich' }, { status: 400 });
+    if (!isUUID(body.lead_id) || !isUUID(body.tenant_id)) {
+      return NextResponse.json({ error: 'Ungültige lead_id oder tenant_id' }, { status: 400 });
     }
 
     const n8nUrl = process.env.N8N_WEBHOOK_KI_SCORING;

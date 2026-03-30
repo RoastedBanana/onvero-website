@@ -350,6 +350,13 @@ export function GeneratorModal({
   const [generating, setGenerating] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   // Form state
   const [branchen, setBranchen] = useState<string[]>([]);
   const [empMin, setEmpMin] = useState(5);

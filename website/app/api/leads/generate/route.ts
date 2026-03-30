@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase';
 import { validateCsrf } from '@/lib/csrf';
+import { isUUID } from '@/lib/validate';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,16 +11,17 @@ export async function POST(req: NextRequest) {
 
     // Auth check
     const supabase = await createServerSupabaseClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
 
-    // Validate input
-    if (!body.tenant_id || typeof body.tenant_id !== 'string') {
-      return NextResponse.json({ error: 'tenant_id erforderlich' }, { status: 400 });
+    if (!isUUID(body.tenant_id)) {
+      return NextResponse.json({ error: 'Ungültige tenant_id' }, { status: 400 });
     }
 
     const n8nUrl = process.env.N8N_WEBHOOK_LEAD_GENERATOR;
@@ -41,10 +43,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      return NextResponse.json(
-        { error: 'Webhook fehlgeschlagen', status: response.status },
-        { status: 502 }
-      );
+      return NextResponse.json({ error: 'Webhook fehlgeschlagen', status: response.status }, { status: 502 });
     }
 
     return NextResponse.json({ success: true, message: 'Lead Generator gestartet' });

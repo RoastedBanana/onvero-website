@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { validateCsrf } from '@/lib/csrf';
 
 export async function POST(req: NextRequest) {
   try {
+    if (!validateCsrf(req)) {
+      return NextResponse.json({ error: 'Ungültiges CSRF-Token' }, { status: 403 });
+    }
+
     const ip = getClientIp(req.headers);
     const { success } = rateLimit(`chat:${ip}`, { maxRequests: 30, windowMs: 60 * 60 * 1000 });
     if (!success) {
@@ -11,8 +16,8 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    if (!body.message || typeof body.message !== 'string') {
-      return NextResponse.json({ error: 'Nachricht erforderlich' }, { status: 400 });
+    if (!body.message || typeof body.message !== 'string' || body.message.length > 5000) {
+      return NextResponse.json({ error: 'Nachricht ungültig oder zu lang' }, { status: 400 });
     }
 
     const n8nUrl = process.env.N8N_WEBHOOK_CHAT;

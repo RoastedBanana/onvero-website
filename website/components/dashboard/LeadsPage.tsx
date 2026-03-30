@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Search, Zap, Trash2 } from 'lucide-react';
 import UniqueLoading from '@/components/ui/grid-loading';
 import { useTenant } from '@/hooks/useTenant';
@@ -301,6 +301,7 @@ export function LeadsPage() {
 
   const loadActivities = useCallback(
     async (leadId: string) => {
+      if (!tenantId) return;
       setActivitiesLoading(true);
       setActivities([]);
       try {
@@ -308,16 +309,17 @@ export function LeadsPage() {
           .from('lead_activities')
           .select('*')
           .eq('lead_id', leadId)
+          .eq('tenant_id', tenantId)
           .order('is_pinned', { ascending: false })
           .order('created_at', { ascending: false });
         setActivities(data ?? []);
       } catch {
-        /* silent */
+        setActivities([]);
       } finally {
         setActivitiesLoading(false);
       }
     },
-    [supabase]
+    [supabase, tenantId]
   );
 
   const handleSelectLead = useCallback(
@@ -325,7 +327,7 @@ export function LeadsPage() {
       setSelectedLead(lead);
       loadActivities(lead.id);
       try {
-        const { data } = await supabase.from('leads').select('*').eq('id', lead.id).single();
+        const { data } = await supabase.from('leads').select('*').eq('id', lead.id).eq('tenant_id', tenantId!).single();
         if (data) setSelectedLead(data as Lead);
       } catch {
         /* keep partial data */
@@ -342,7 +344,7 @@ export function LeadsPage() {
 
   const handleStatusUpdate = useCallback(
     async (leadId: string, newStatus: string) => {
-      // Optimistic local update
+      setStatusUpdating(true);
       setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l)));
       setSelectedLead((prev) => (prev?.id === leadId ? { ...prev, status: newStatus } : prev));
       try {
@@ -353,27 +355,35 @@ export function LeadsPage() {
         showToast('Status aktualisiert');
       } catch {
         showToast('Fehler beim Speichern');
+      } finally {
+        setStatusUpdating(false);
       }
     },
     [supabase, tenantId, showToast]
   );
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [rescoring, setRescoring] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
 
   const handleDeleteLead = useCallback(
     async (leadId: string) => {
+      setDeleting(true);
       try {
-        await supabase.from('leads').delete().eq('id', leadId);
+        const { error: err } = await supabase.from('leads').delete().eq('id', leadId).eq('tenant_id', tenantId!);
+        if (err) throw err;
         setLeads((prev) => prev.filter((l) => l.id !== leadId));
         if (selectedLead?.id === leadId) setSelectedLead(null);
         setDeleteConfirmId(null);
         showToast('Lead gelöscht');
       } catch {
         showToast('Fehler beim Löschen');
+      } finally {
+        setDeleting(false);
       }
     },
-    [supabase, selectedLead, showToast]
+    [supabase, tenantId, selectedLead, showToast]
   );
 
   const toggleScore = (tier: string) =>
@@ -387,24 +397,29 @@ export function LeadsPage() {
   };
   const hasFilters = scoreFilters.length > 0 || sourceFilter !== 'all' || sortBy !== 'newest' || search !== '';
 
-  const filtered = leads
-    .filter((l) => {
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q ||
-        (l.company_name ?? '').toLowerCase().includes(q) ||
-        (l.email ?? '').toLowerCase().includes(q) ||
-        `${l.first_name ?? ''} ${l.last_name ?? ''}`.toLowerCase().includes(q);
-      const tier = getScoreLabel(l.score);
-      const matchScore = scoreFilters.length === 0 || scoreFilters.includes(tier);
-      const matchSource = sourceFilter === 'all' || (l.source ?? '').toLowerCase().includes(sourceFilter.toLowerCase());
-      return matchSearch && matchScore && matchSource;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'score_desc') return (b.score ?? 0) - (a.score ?? 0);
-      if (sortBy === 'score_asc') return (a.score ?? 0) - (b.score ?? 0);
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
+  const filtered = useMemo(
+    () =>
+      leads
+        .filter((l) => {
+          const q = search.toLowerCase();
+          const matchSearch =
+            !q ||
+            (l.company_name ?? '').toLowerCase().includes(q) ||
+            (l.email ?? '').toLowerCase().includes(q) ||
+            `${l.first_name ?? ''} ${l.last_name ?? ''}`.toLowerCase().includes(q);
+          const tier = getScoreLabel(l.score);
+          const matchScore = scoreFilters.length === 0 || scoreFilters.includes(tier);
+          const matchSource =
+            sourceFilter === 'all' || (l.source ?? '').toLowerCase().includes(sourceFilter.toLowerCase());
+          return matchSearch && matchScore && matchSource;
+        })
+        .sort((a, b) => {
+          if (sortBy === 'score_desc') return (b.score ?? 0) - (a.score ?? 0);
+          if (sortBy === 'score_asc') return (a.score ?? 0) - (b.score ?? 0);
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }),
+    [leads, search, scoreFilters, sourceFilter, sortBy]
+  );
 
   const hot = leads.filter((l) => (l.score ?? 0) >= 75).length;
   const warm = leads.filter((l) => {
@@ -1524,11 +1539,12 @@ export function LeadsPage() {
                         if (!tenantId || !selectedLead) return;
                         setRescoring(true);
                         try {
-                          await fetch('/api/leads/rescore', {
+                          const res = await fetch('/api/leads/rescore', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
                             body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
                           });
+                          if (!res.ok) throw new Error('Scoring fehlgeschlagen');
                           showToast('KI-Scoring gestartet — Score wird aktualisiert');
                           setTimeout(() => {
                             loadLeads();
