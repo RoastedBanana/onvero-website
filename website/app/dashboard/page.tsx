@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import {
   Home, Globe, GitBranch, Calendar, Headphones, Users, BarChart2,
   BookOpen, Settings, LogOut, ChevronRight, Search,
-  FileText, PenLine, Zap, Trash2,
+  FileText, PenLine, Zap, Trash2, Sparkles,
 } from 'lucide-react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useTenant } from '@/hooks/useTenant';
@@ -21,6 +21,7 @@ import { OnveroLogo } from '@/components/ui/onvero-logo';
 import { Confetti } from '@/components/ui/confetti';
 import { GlassBlogCard } from '@/components/ui/glass-blog-card';
 import UniqueLoading from '@/components/ui/grid-loading';
+import { BusinessAIChat } from '@/components/ui/business-ai-chat';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ interface BlogPost {
 }
 type Mode = 'create' | 'update';
 type SubmitState = 'idle' | 'loading' | 'success';
-type Page = 'home' | 'website' | 'workflows' | 'meetings' | 'support' | 'leads' | 'analytics';
+type Page = 'home' | 'website' | 'workflows' | 'meetings' | 'support' | 'leads' | 'analytics' | 'business-ai';
 
 const N8N_WEBHOOK = '/api/n8n';
 const POSTS_PER_PAGE = 15;
@@ -264,6 +265,7 @@ const NAV = [
   { id:'support' as Page,    icon: Headphones,   label:'Customer Support'  },
   { id:'leads' as Page,      icon: Users,        label:'Leads'             },
   { id:'analytics' as Page,  icon: BarChart2,    label:'Analytics'         },
+  { id:'business-ai' as Page, icon: Sparkles,   label:'Business AI'       },
 ];
 
 const NAV_BOTTOM = [
@@ -2008,8 +2010,9 @@ function LeadsPage() {
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserInfo | null>(null);
-  useEffect(() => { setUser(parseCookieUser()); }, []);
   const [activePage, setActivePage] = useState<Page>('home');
+
+  useEffect(() => { setUser(parseCookieUser()); }, []);
 
   // Prevent browser file-drop navigation
   useEffect(() => {
@@ -2031,8 +2034,10 @@ export default function DashboardPage() {
       case 'workflows':  return <EmptyState title="Workflows" description="Automatisiere deine Prozesse und verbinde deine Tools." />;
       case 'meetings':   return <EmptyState title="Meetings" description="Plane und verwalte deine Termine an einem Ort." />;
       case 'support':    return <EmptyState title="Customer Support" description="Bearbeite Anfragen und halte deinen Kunden-Support im Blick." />;
+<<<<<<< HEAD
       case 'leads':      return <LeadsPage />;
       case 'analytics':  return <EmptyState title="Analytics" description="Analysiere deine Performance mit detaillierten Auswertungen." />;
+      case 'business-ai':  return <BusinessAIChat />;
     }
   };
 
@@ -2042,7 +2047,7 @@ export default function DashboardPage() {
 
       <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} />
 
-      <main style={{ flex:1, overflowY:'auto', padding:'2.5rem 2.75rem' }}>
+      <main style={{ flex:1, overflowY:'auto', padding: activePage === 'business-ai' ? '0' : '2.5rem 2.75rem' }}>
         {renderContent()}
       </main>
     </div>
