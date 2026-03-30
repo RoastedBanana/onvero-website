@@ -443,10 +443,10 @@ export function LeadsPage() {
   const withEmail = leads.filter((l) => l.email_draft !== null).length;
   const avgScore = scored > 0 ? Math.round(leads.reduce((sum, l) => sum + (l.score ?? 0), 0) / scored) : 0;
 
-  const hot = leads.filter((l) => (l.score ?? 0) >= 75).length;
+  const hot = leads.filter((l) => (l.score ?? 0) >= 70).length;
   const warm = leads.filter((l) => {
     const s = l.score ?? 0;
-    return s >= 45 && s < 75;
+    return s >= 45 && s < 70;
   }).length;
   const newCount = leads.filter((l) => l.status === 'new').length;
 
@@ -603,7 +603,7 @@ export function LeadsPage() {
             {byDate.length > 0 ? (
               <svg viewBox={`0 0 ${byDate.length * 28} 60`} style={{ width: '100%', height: 50 }}>
                 {byDate.map(([day, count], i) => {
-                  const h = (count / maxByDate) * 44;
+                  const h = Math.max((count / maxByDate) * 44, 4);
                   return (
                     <g key={day}>
                       <rect
@@ -790,12 +790,13 @@ export function LeadsPage() {
               <thead>
                 <tr>
                   {[
-                    { key: 'score', label: 'Score', w: 60 },
+                    { key: 'score', label: 'Score', w: 70 },
                     { key: 'name', label: 'Name / Firma', w: undefined },
-                    { key: 'tags', label: 'Tags', w: 160 },
-                    { key: 'status', label: 'Status', w: 120 },
+                    { key: 'industry', label: 'Branche', w: 130 },
+                    { key: 'tags', label: 'Tags', w: 170 },
+                    { key: 'status', label: 'Status', w: 130 },
                     { key: 'email_draft', label: '✉', w: 40 },
-                    { key: 'action', label: '', w: 50 },
+                    { key: 'action', label: '', w: 90 },
                   ].map((col) => (
                     <th
                       key={col.key}
@@ -826,20 +827,20 @@ export function LeadsPage() {
                 {loading || tenantLoading ? (
                   [1, 2, 3].map((i) => (
                     <tr key={i}>
-                      <td colSpan={6} style={{ padding: '14px 12px', borderBottom: '1px solid #f3f4f6' }}>
+                      <td colSpan={7} style={{ padding: '14px 12px', borderBottom: '1px solid #f3f4f6' }}>
                         <div style={{ height: 10, borderRadius: 4, background: '#1a1a1a', width: `${40 + i * 15}%` }} />
                       </td>
                     </tr>
                   ))
                 ) : error ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#f87171', fontSize: 14 }}>
+                    <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#f87171', fontSize: 14 }}>
                       {error}
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: '#6b7280', fontSize: 14 }}>
+                    <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: '#6b7280', fontSize: 14 }}>
                       Keine Leads gefunden
                       {hasFilters && (
                         <>
@@ -888,42 +889,104 @@ export function LeadsPage() {
                           }}
                           onClick={() => handleSelectLead(lead)}
                         >
+                          <td style={{ padding: '0 12px', width: 70 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                              <span
+                                style={{
+                                  fontSize: 15,
+                                  fontWeight: 700,
+                                  color: scoreColor(lead.score),
+                                  fontVariantNumeric: 'tabular-nums',
+                                }}
+                              >
+                                {lead.score ?? '—'}
+                              </span>
+                              {lead.score !== null && (
+                                <div
+                                  style={{
+                                    width: 32,
+                                    height: 3,
+                                    borderRadius: 2,
+                                    background: 'rgba(255,255,255,0.08)',
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      width: `${lead.score}%`,
+                                      height: '100%',
+                                      borderRadius: 2,
+                                      background: scoreColor(lead.score),
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '6px 12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: '50%',
+                                  flexShrink: 0,
+                                  background: 'rgba(255,255,255,0.06)',
+                                  border: '1px solid rgba(255,255,255,0.1)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  color: '#9ca3af',
+                                  userSelect: 'none',
+                                }}
+                              >
+                                {(lead.first_name?.[0] ?? '?').toUpperCase()}
+                                {(lead.last_name?.[0] ?? '').toUpperCase()}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    fontSize: 14,
+                                    color: '#f9fafb',
+                                    fontWeight: 500,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {name}
+                                </div>
+                                {lead.company_name && (
+                                  <div
+                                    style={{
+                                      fontSize: 12,
+                                      color: '#6b7280',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
+                                    {lead.company_name}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
                           <td
                             style={{
                               padding: '0 12px',
-                              fontSize: 15,
-                              fontWeight: 700,
-                              color: scoreColor(lead.score),
+                              fontSize: 12,
+                              color: '#9ca3af',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              maxWidth: 130,
                             }}
                           >
-                            {lead.score ?? '—'}
-                          </td>
-                          <td style={{ padding: '6px 12px' }}>
-                            <div
-                              style={{
-                                fontSize: 14,
-                                color: '#fff',
-                                fontWeight: 500,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {name}
-                            </div>
-                            {lead.company_name && (
-                              <div
-                                style={{
-                                  fontSize: 12,
-                                  color: '#6b7280',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {lead.company_name}
-                              </div>
-                            )}
+                            {((lead.custom_fields as Record<string, unknown>)?.industry_de as string) ||
+                              ((lead.custom_fields as Record<string, unknown>)?.industry as string) ||
+                              '—'}
                           </td>
                           <td style={{ padding: '0 12px' }}>
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'nowrap' }}>
@@ -972,12 +1035,18 @@ export function LeadsPage() {
                               <span
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleSelectLead(lead);
+                                  navigator.clipboard?.writeText(lead.email_draft!).catch(() => {});
+                                  setCopiedField(`email_${lead.id}`);
+                                  setTimeout(() => setCopiedField(null), 500);
                                 }}
-                                style={{ color: '#2563eb', cursor: 'pointer', fontSize: 14 }}
-                                title="E-Mail-Entwurf öffnen"
+                                style={{
+                                  color: copiedField === `email_${lead.id}` ? '#22c55e' : '#2563eb',
+                                  cursor: 'pointer',
+                                  fontSize: copiedField === `email_${lead.id}` ? 11 : 14,
+                                }}
+                                title="E-Mail kopieren"
                               >
-                                ✉
+                                {copiedField === `email_${lead.id}` ? 'Kopiert!' : '✉'}
                               </span>
                             )}
                           </td>
@@ -996,7 +1065,7 @@ export function LeadsPage() {
                         {deleteConfirmId === lead.id && (
                           <tr>
                             <td
-                              colSpan={6}
+                              colSpan={7}
                               style={{
                                 padding: '8px 12px',
                                 background: 'rgba(239,68,68,0.06)',
