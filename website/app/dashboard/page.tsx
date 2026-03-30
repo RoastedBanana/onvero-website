@@ -2034,7 +2034,6 @@ export default function DashboardPage() {
       case 'workflows':  return <EmptyState title="Workflows" description="Automatisiere deine Prozesse und verbinde deine Tools." />;
       case 'meetings':   return <EmptyState title="Meetings" description="Plane und verwalte deine Termine an einem Ort." />;
       case 'support':    return <EmptyState title="Customer Support" description="Bearbeite Anfragen und halte deinen Kunden-Support im Blick." />;
-<<<<<<< HEAD
       case 'leads':      return <LeadsPage />;
       case 'analytics':  return <EmptyState title="Analytics" description="Analysiere deine Performance mit detaillierten Auswertungen." />;
       case 'business-ai':  return <BusinessAIChat />;
