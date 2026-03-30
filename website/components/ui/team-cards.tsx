@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 
 // ── Vision lines — each is one logical phrase rendered as a block span ────────
 const VISION_LINES = [
@@ -49,9 +50,11 @@ function ConnectorSVG({ glowId, d }: { glowId: string; d: string }) {
 function Portrait({ src, alt, href }: { src: string; alt: string; href: string }) {
   return (
     <div className="flex-shrink-0 relative" style={{ width: 300 }}>
-      <img
+      <Image
         src={src}
         alt={alt}
+        width={300}
+        height={400}
         style={{
           width: '100%',
           height: 'auto',

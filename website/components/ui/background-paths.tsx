@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/language-context";
@@ -195,10 +196,12 @@ export function BackgroundPaths() {
               background: '#111',
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="/dashboard-preview.png"
               alt="Dashboard Vorschau"
+              width={1200}
+              height={800}
+              priority
               style={{
                 width: '100%',
                 display: 'block',
