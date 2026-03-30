@@ -38,7 +38,7 @@ function StatusBadge({ status }: { status: string }) {
         color: STATUS_FG[status] ?? '#888',
         borderRadius: 999,
         padding: '2px 8px',
-        fontSize: '0.7rem',
+        fontSize: 11,
         fontWeight: 500,
         whiteSpace: 'nowrap',
       }}
@@ -59,7 +59,7 @@ function ScoreBadge({ score }: { score: number | null }) {
         color: fg,
         borderRadius: 999,
         padding: '2px 8px',
-        fontSize: '0.7rem',
+        fontSize: 11,
         fontWeight: 700,
         whiteSpace: 'nowrap',
       }}
@@ -948,24 +948,42 @@ export function LeadsPage() {
                 flexShrink: 0,
               }}
             >
-              <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    color: '#fff',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    fontSize: 32,
+                    fontWeight: 700,
+                    color:
+                      (selectedLead.score ?? 0) >= 70
+                        ? '#16a34a'
+                        : (selectedLead.score ?? 0) >= 45
+                          ? '#d97706'
+                          : '#9ca3af',
+                    lineHeight: 1,
+                    flexShrink: 0,
                   }}
                 >
-                  {selectedLead.company_name ||
-                    `${selectedLead.first_name ?? ''} ${selectedLead.last_name ?? ''}`.trim() ||
-                    '—'}
+                  {selectedLead.score ?? '—'}
                 </div>
-                <div style={{ fontSize: '0.77rem', color: '#555', marginTop: '0.15rem' }}>
-                  {[selectedLead.first_name, selectedLead.last_name].filter(Boolean).join(' ')}
-                  {selectedLead.city ? ` · ${selectedLead.city}` : ''}
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      color: '#fff',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {selectedLead.company_name ||
+                      `${selectedLead.first_name ?? ''} ${selectedLead.last_name ?? ''}`.trim() ||
+                      '—'}
+                  </div>
+                  <div style={{ fontSize: '0.77rem', color: '#555', marginTop: '0.15rem' }}>
+                    {[selectedLead.first_name, selectedLead.last_name].filter(Boolean).join(' ')}
+                    {selectedLead.city ? ` · ${selectedLead.city}` : ''}
+                  </div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
@@ -1188,7 +1206,7 @@ export function LeadsPage() {
                             color: fg,
                             borderRadius: 999,
                             padding: '2px 8px',
-                            fontSize: '0.7rem',
+                            fontSize: 11,
                             fontWeight: 500,
                           }}
                         >
@@ -1199,7 +1217,7 @@ export function LeadsPage() {
                   {selectedLead.source && (
                     <span
                       style={{
-                        fontSize: '0.7rem',
+                        fontSize: 11,
                         color: '#555',
                         background: '#1a1a1a',
                         borderRadius: 999,
@@ -1288,6 +1306,86 @@ export function LeadsPage() {
                     ))}
                   </select>
                 </div>
+
+                {/* ── E-Mail-Skript ── */}
+                {selectedLead.email_draft && (
+                  <CollapsibleSection label="E-Mail-Skript">
+                    <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem', position: 'relative' }}>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(selectedLead.email_draft!).catch(() => {});
+                          setCopiedField('email_draft');
+                          setTimeout(() => setCopiedField(null), 500);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: '0.6rem',
+                          right: '0.6rem',
+                          background: copiedField === 'email_draft' ? 'rgba(74,222,128,0.12)' : '#1a1a1a',
+                          border: `1px solid ${copiedField === 'email_draft' ? 'rgba(74,222,128,0.3)' : '#2a2a2a'}`,
+                          color: copiedField === 'email_draft' ? '#4ade80' : '#888',
+                          borderRadius: 6,
+                          padding: '0.3rem 0.6rem',
+                          fontSize: '0.72rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {copiedField === 'email_draft' ? 'Kopiert ✓' : 'Kopieren'}
+                      </button>
+                      <p
+                        style={{
+                          fontSize: '0.79rem',
+                          color: '#888',
+                          lineHeight: 1.6,
+                          margin: 0,
+                          whiteSpace: 'pre-line',
+                          paddingRight: '4.5rem',
+                        }}
+                      >
+                        {selectedLead.email_draft}
+                      </p>
+                    </div>
+                  </CollapsibleSection>
+                )}
+
+                {/* AI Summary */}
+                {selectedLead.ai_summary && (
+                  <CollapsibleSection label="KI-Zusammenfassung">
+                    <p
+                      style={{
+                        fontSize: '0.81rem',
+                        color: '#888',
+                        lineHeight: 1.6,
+                        background: '#0a0a0a',
+                        borderRadius: 8,
+                        padding: '0.85rem',
+                        margin: 0,
+                      }}
+                    >
+                      {selectedLead.ai_summary}
+                    </p>
+                  </CollapsibleSection>
+                )}
+
+                {/* AI Next Action */}
+                {selectedLead.ai_next_action && (
+                  <div
+                    style={{
+                      background: 'rgba(234,179,8,0.05)',
+                      border: '1px solid rgba(234,179,8,0.15)',
+                      borderRadius: 8,
+                      padding: '0.85rem',
+                    }}
+                  >
+                    <label style={{ ...lbl, color: 'rgba(234,179,8,0.7)', marginBottom: '0.4rem', display: 'block' }}>
+                      Empfohlene Aktion
+                    </label>
+                    <p style={{ fontSize: '0.81rem', color: '#ccc', lineHeight: 1.5, margin: 0 }}>
+                      {selectedLead.ai_next_action}
+                    </p>
+                  </div>
+                )}
 
                 {/* Kontaktdaten */}
                 <CollapsibleSection label="Kontaktdaten">
@@ -1380,101 +1478,6 @@ export function LeadsPage() {
                     )}
                   </div>
                 </CollapsibleSection>
-
-                {/* AI Summary */}
-                {selectedLead.ai_summary && (
-                  <CollapsibleSection label="KI-Zusammenfassung">
-                    <p
-                      style={{
-                        fontSize: '0.81rem',
-                        color: '#888',
-                        lineHeight: 1.6,
-                        background: '#0a0a0a',
-                        borderRadius: 8,
-                        padding: '0.85rem',
-                        margin: 0,
-                      }}
-                    >
-                      {selectedLead.ai_summary}
-                    </p>
-                  </CollapsibleSection>
-                )}
-
-                {/* AI Next Action */}
-                {selectedLead.ai_next_action && (
-                  <div
-                    style={{
-                      background: 'rgba(234,179,8,0.05)',
-                      border: '1px solid rgba(234,179,8,0.15)',
-                      borderRadius: 8,
-                      padding: '0.85rem',
-                    }}
-                  >
-                    <label style={{ ...lbl, color: 'rgba(234,179,8,0.7)', marginBottom: '0.4rem', display: 'block' }}>
-                      Empfohlene Aktion
-                    </label>
-                    <p style={{ fontSize: '0.81rem', color: '#ccc', lineHeight: 1.5, margin: 0 }}>
-                      {selectedLead.ai_next_action}
-                    </p>
-                  </div>
-                )}
-
-                {/* ── Follow-up Context ── */}
-                {!!cf?.follow_up_context &&
-                  (() => {
-                    const fuc = cf.follow_up_context as Record<string, unknown>;
-                    const items = [
-                      { label: 'Unternehmen', val: fuc.company_description as string | undefined },
-                      { label: 'Pain Points', val: fuc.pain_points as string | undefined },
-                      { label: 'Automatisierungspotenzial', val: fuc.automation_opportunities as string | undefined },
-                      {
-                        label: 'Gesprächseinstieg',
-                        val: fuc.conversation_opener as string | undefined,
-                        highlight: true,
-                      },
-                    ].filter((r) => r.val);
-                    if (items.length === 0) return null;
-                    return (
-                      <CollapsibleSection label="Follow-up Kontext">
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.65rem',
-                            background: '#0a0a0a',
-                            borderRadius: 8,
-                            padding: '0.85rem',
-                          }}
-                        >
-                          {items.map((r) => (
-                            <div key={r.label}>
-                              <div
-                                style={{
-                                  fontSize: '0.67rem',
-                                  color: r.highlight ? 'rgba(107,122,255,0.7)' : '#444',
-                                  marginBottom: '0.2rem',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.04em',
-                                  fontWeight: 600,
-                                }}
-                              >
-                                {r.label}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: '0.81rem',
-                                  color: r.highlight ? '#c4c8ff' : '#888',
-                                  lineHeight: 1.5,
-                                }}
-                              >
-                                {r.val}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CollapsibleSection>
-                    );
-                  })()}
 
                 {/* ── KI-Scoring ── */}
                 <CollapsibleSection label="KI-Scoring">
@@ -1691,6 +1694,63 @@ export function LeadsPage() {
                   </div>
                 </CollapsibleSection>
 
+                {/* ── Follow-up Context ── */}
+                {!!cf?.follow_up_context &&
+                  (() => {
+                    const fuc = cf.follow_up_context as Record<string, unknown>;
+                    const items = [
+                      { label: 'Unternehmen', val: fuc.company_description as string | undefined },
+                      { label: 'Pain Points', val: fuc.pain_points as string | undefined },
+                      { label: 'Automatisierungspotenzial', val: fuc.automation_opportunities as string | undefined },
+                      {
+                        label: 'Gesprächseinstieg',
+                        val: fuc.conversation_opener as string | undefined,
+                        highlight: true,
+                      },
+                    ].filter((r) => r.val);
+                    if (items.length === 0) return null;
+                    return (
+                      <CollapsibleSection label="Follow-up Kontext">
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.65rem',
+                            background: '#0a0a0a',
+                            borderRadius: 8,
+                            padding: '0.85rem',
+                          }}
+                        >
+                          {items.map((r) => (
+                            <div key={r.label}>
+                              <div
+                                style={{
+                                  fontSize: '0.67rem',
+                                  color: r.highlight ? 'rgba(107,122,255,0.7)' : '#444',
+                                  marginBottom: '0.2rem',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.04em',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {r.label}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '0.81rem',
+                                  color: r.highlight ? '#c4c8ff' : '#888',
+                                  lineHeight: 1.5,
+                                }}
+                              >
+                                {r.val}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CollapsibleSection>
+                    );
+                  })()}
+
                 {/* ── Website-Analyse ── */}
                 {selectedLead.website_summary && (
                   <CollapsibleSection label="Website-Analyse">
@@ -1710,48 +1770,6 @@ export function LeadsPage() {
                         }}
                       >
                         {selectedLead.website_summary}
-                      </p>
-                    </div>
-                  </CollapsibleSection>
-                )}
-
-                {/* ── E-Mail-Skript ── */}
-                {selectedLead.email_draft && (
-                  <CollapsibleSection label="E-Mail-Skript">
-                    <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem', position: 'relative' }}>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard?.writeText(selectedLead.email_draft!).catch(() => {});
-                          setCopiedField('email_draft');
-                          setTimeout(() => setCopiedField(null), 500);
-                        }}
-                        style={{
-                          position: 'absolute',
-                          top: '0.6rem',
-                          right: '0.6rem',
-                          background: copiedField === 'email_draft' ? 'rgba(74,222,128,0.12)' : '#1a1a1a',
-                          border: `1px solid ${copiedField === 'email_draft' ? 'rgba(74,222,128,0.3)' : '#2a2a2a'}`,
-                          color: copiedField === 'email_draft' ? '#4ade80' : '#888',
-                          borderRadius: 6,
-                          padding: '0.3rem 0.6rem',
-                          fontSize: '0.72rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        {copiedField === 'email_draft' ? 'Kopiert ✓' : 'Kopieren'}
-                      </button>
-                      <p
-                        style={{
-                          fontSize: '0.79rem',
-                          color: '#888',
-                          lineHeight: 1.6,
-                          margin: 0,
-                          whiteSpace: 'pre-line',
-                          paddingRight: '4.5rem',
-                        }}
-                      >
-                        {selectedLead.email_draft}
                       </p>
                     </div>
                   </CollapsibleSection>
