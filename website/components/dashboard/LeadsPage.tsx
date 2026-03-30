@@ -367,6 +367,7 @@ export function LeadsPage() {
   const [deleting, setDeleting] = useState(false);
   const [rescoring, setRescoring] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const handleDeleteLead = useCallback(
     async (leadId: string) => {
@@ -973,21 +974,28 @@ export function LeadsPage() {
                               </div>
                             </div>
                           </td>
-                          <td
-                            style={{
-                              padding: '0 12px',
-                              fontSize: 12,
-                              color: '#9ca3af',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              maxWidth: 130,
-                            }}
-                          >
-                            {((lead.custom_fields as Record<string, unknown>)?.industry_de as string) ||
+                          {(() => {
+                            const branche =
+                              ((lead.custom_fields as Record<string, unknown>)?.industry_de as string) ||
                               ((lead.custom_fields as Record<string, unknown>)?.industry as string) ||
-                              '—'}
-                          </td>
+                              '—';
+                            return (
+                              <td
+                                title={branche}
+                                style={{
+                                  padding: '0 12px',
+                                  fontSize: 12,
+                                  color: '#9ca3af',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: 130,
+                                }}
+                              >
+                                {branche}
+                              </td>
+                            );
+                          })()}
                           <td style={{ padding: '0 12px' }}>
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'nowrap' }}>
                               {visibleTags.map((t) => (
@@ -1431,18 +1439,27 @@ export function LeadsPage() {
                   {rescoring ? 'Wird bewertet…' : '↻ Neu bewerten'}
                 </button>
                 <button
-                  onClick={() => handleStatusUpdate(selectedLead.id, 'archived')}
+                  onClick={() => {
+                    if (window.confirm('Lead wirklich archivieren?')) handleStatusUpdate(selectedLead.id, 'archived');
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#ef4444';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#6b7280';
+                  }}
                   style={{
                     fontSize: 12,
                     padding: '6px 12px',
                     borderRadius: 7,
                     border: '1px solid rgba(255,255,255,0.1)',
                     background: 'rgba(255,255,255,0.05)',
-                    color: '#d1d5db',
+                    color: '#6b7280',
                     cursor: 'pointer',
+                    transition: 'color 0.15s',
                   }}
                 >
-                  🗑 Archivieren
+                  Archivieren
                 </button>
               </div>
 
@@ -1481,41 +1498,75 @@ export function LeadsPage() {
                     </div>
                   )}
 
-                  {/* AI Tags as colored badges */}
-                  {selectedLead.ai_tags && selectedLead.ai_tags.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                      {selectedLead.ai_tags.map((tag) => {
-                        const t = tag.toLowerCase();
-                        let bg = 'rgba(100,116,139,0.12)';
-                        let fg = '#94a3b8';
-                        if (['premium_lead', 'gut_erreichbar'].includes(t)) {
-                          bg = 'rgba(74,222,128,0.12)';
-                          fg = '#4ade80';
-                        } else if (['firmen_email', 'telefon_vorhanden', 'linkedin_vorhanden'].includes(t)) {
-                          bg = 'rgba(96,165,250,0.12)';
-                          fg = '#60a5fa';
-                        } else if (['ki_affin', 'automatisierungspotenzial', 'digitale_praesenz'].includes(t)) {
-                          bg = 'rgba(167,139,250,0.12)';
-                          fg = '#a78bfa';
-                        }
-                        return (
-                          <span
-                            key={tag}
-                            style={{
-                              background: bg,
-                              color: fg,
-                              borderRadius: 999,
-                              padding: '2px 8px',
-                              fontSize: '0.68rem',
-                              fontWeight: 500,
-                            }}
-                          >
-                            {tag.replace(/_/g, ' ')}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
+                  {/* AI Tags as colored badges (max 4 visible, toggle for rest) */}
+                  {selectedLead.ai_tags &&
+                    selectedLead.ai_tags.length > 0 &&
+                    (() => {
+                      const allTags = selectedLead.ai_tags;
+                      const visible = showAllTags ? allTags : allTags.slice(0, 4);
+                      const hiddenCount = allTags.length - 4;
+                      const tagColor = (t: string) => {
+                        if (['premium_lead', 'gut_erreichbar'].includes(t))
+                          return { bg: 'rgba(74,222,128,0.12)', fg: '#4ade80' };
+                        if (['firmen_email', 'telefon_vorhanden', 'linkedin_vorhanden'].includes(t))
+                          return { bg: 'rgba(96,165,250,0.12)', fg: '#60a5fa' };
+                        if (['ki_affin', 'automatisierungspotenzial', 'digitale_praesenz'].includes(t))
+                          return { bg: 'rgba(167,139,250,0.12)', fg: '#a78bfa' };
+                        return { bg: 'rgba(100,116,139,0.12)', fg: '#94a3b8' };
+                      };
+                      return (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                          {visible.map((tag) => {
+                            const { bg, fg } = tagColor(tag.toLowerCase());
+                            return (
+                              <span
+                                key={tag}
+                                style={{
+                                  background: bg,
+                                  color: fg,
+                                  borderRadius: 999,
+                                  padding: '2px 8px',
+                                  fontSize: 11,
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {tag.replace(/_/g, ' ')}
+                              </span>
+                            );
+                          })}
+                          {hiddenCount > 0 && !showAllTags && (
+                            <button
+                              onClick={() => setShowAllTags(true)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#6b7280',
+                                fontSize: 11,
+                                cursor: 'pointer',
+                                padding: '2px 4px',
+                              }}
+                            >
+                              +{hiddenCount} weitere
+                            </button>
+                          )}
+                          {showAllTags && hiddenCount > 0 && (
+                            <button
+                              onClick={() => setShowAllTags(false)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#6b7280',
+                                fontSize: 11,
+                                cursor: 'pointer',
+                                padding: '2px 4px',
+                              }}
+                            >
+                              weniger
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                   {/* ── E-Mail-Skript ── */}
                   {selectedLead.email_draft && (
