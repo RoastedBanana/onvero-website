@@ -48,6 +48,11 @@ export interface Lead {
   ai_next_action: string | null;
   notes: string | null;
   custom_fields: Record<string, unknown> | null;
+  website_summary: string | null;
+  website_title: string | null;
+  website_description: string | null;
+  website_text: string | null;
+  social_links: Record<string, string> | null;
   created_at: string;
   activity_count?: number;
 }

@@ -1155,6 +1155,42 @@ export function LeadsPage() {
                   )}
                 </div>
 
+                {/* AI Tags as colored badges */}
+                {selectedLead.ai_tags && selectedLead.ai_tags.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                    {selectedLead.ai_tags.map((tag) => {
+                      const t = tag.toLowerCase();
+                      let bg = 'rgba(100,116,139,0.12)';
+                      let fg = '#94a3b8';
+                      if (['premium_lead', 'gut_erreichbar'].includes(t)) {
+                        bg = 'rgba(74,222,128,0.12)';
+                        fg = '#4ade80';
+                      } else if (['firmen_email', 'telefon_vorhanden', 'linkedin_vorhanden'].includes(t)) {
+                        bg = 'rgba(96,165,250,0.12)';
+                        fg = '#60a5fa';
+                      } else if (['ki_affin', 'automatisierungspotenzial', 'digitale_praesenz'].includes(t)) {
+                        bg = 'rgba(167,139,250,0.12)';
+                        fg = '#a78bfa';
+                      }
+                      return (
+                        <span
+                          key={tag}
+                          style={{
+                            background: bg,
+                            color: fg,
+                            borderRadius: 999,
+                            padding: '2px 8px',
+                            fontSize: '0.68rem',
+                            fontWeight: 500,
+                          }}
+                        >
+                          {tag.replace(/_/g, ' ')}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Contact in hours */}
                 {cf?.contact_in_hours !== undefined && (cf.contact_in_hours as number) > 0 && (
                   <div
@@ -1599,6 +1635,30 @@ export function LeadsPage() {
                   </div>
                 </CollapsibleSection>
 
+                {/* ── Website-Analyse ── */}
+                {selectedLead.website_summary && (
+                  <CollapsibleSection label="Website-Analyse">
+                    <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem' }}>
+                      {selectedLead.website_title && (
+                        <div style={{ fontSize: '0.82rem', color: '#ccc', fontWeight: 600, marginBottom: '0.4rem' }}>
+                          {selectedLead.website_title}
+                        </div>
+                      )}
+                      <p
+                        style={{
+                          fontSize: '0.79rem',
+                          color: '#888',
+                          lineHeight: 1.6,
+                          margin: 0,
+                          whiteSpace: 'pre-line',
+                        }}
+                      >
+                        {selectedLead.website_summary}
+                      </p>
+                    </div>
+                  </CollapsibleSection>
+                )}
+
                 {/* ── Firmenprofil — 2-col grid ── */}
                 <CollapsibleSection label="Firmenprofil">
                   <div
@@ -1798,29 +1858,6 @@ export function LeadsPage() {
                       })()}
                   </div>
                 </CollapsibleSection>
-
-                {/* AI Tags */}
-                {selectedLead.ai_tags && selectedLead.ai_tags.length > 0 && (
-                  <div>
-                    <label style={lbl}>KI-Tags</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.5rem' }}>
-                      {selectedLead.ai_tags.map((tag) => (
-                        <span
-                          key={tag}
-                          style={{
-                            background: '#1a1a1a',
-                            borderRadius: 999,
-                            padding: '2px 8px',
-                            fontSize: '0.74rem',
-                            color: '#555',
-                          }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Notes */}
                 {selectedLead.notes && (
