@@ -421,6 +421,11 @@ export function LeadsPage() {
     [leads, search, scoreFilters, sourceFilter, sortBy]
   );
 
+  const scored = leads.filter((l) => l.score !== null).length;
+  const premium = leads.filter((l) => (l.ai_tags ?? []).includes('premium_lead')).length;
+  const withEmail = leads.filter((l) => l.email_draft !== null).length;
+  const avgScore = scored > 0 ? Math.round(leads.reduce((sum, l) => sum + (l.score ?? 0), 0) / scored) : 0;
+
   const hot = leads.filter((l) => (l.score ?? 0) >= 75).length;
   const warm = leads.filter((l) => {
     const s = l.score ?? 0;
@@ -490,25 +495,18 @@ export function LeadsPage() {
           </div>
 
           {/* Stats row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+          <div style={{ fontSize: 13, color: '#6b7280', padding: '0 0 12px 0' }}>
             {[
-              { label: 'Gesamt', value: leads.length, color: '#fff' },
-              { label: 'HOT', value: hot, color: '#FF6B35' },
-              { label: 'WARM', value: warm, color: '#FFD700' },
-              { label: 'Neu', value: newCount, color: '#818cf8' },
-            ].map((s) => (
-              <div
-                key={s.label}
-                style={{
-                  background: '#0a0a0a',
-                  border: '1px solid #1f1f1f',
-                  borderRadius: 10,
-                  padding: '1rem 1.25rem',
-                }}
-              >
-                <div style={{ fontSize: '1.75rem', fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
-                <div style={{ fontSize: '0.73rem', color: '#555', marginTop: '0.35rem' }}>{s.label}</div>
-              </div>
+              `${leads.length} Leads`,
+              `${scored} gescored`,
+              `${premium} Premium`,
+              `${withEmail} mit E-Mail`,
+              `Ø Score ${avgScore}`,
+            ].map((t, i) => (
+              <span key={i}>
+                {i > 0 && <span style={{ color: '#d1d5db', margin: '0 8px' }}>·</span>}
+                {t}
+              </span>
             ))}
           </div>
 
