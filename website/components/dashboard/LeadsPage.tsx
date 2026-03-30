@@ -776,7 +776,17 @@ export function LeadsPage() {
                         </div>
                         <div style={{ fontSize: '0.78rem', color: '#777' }}>{industry}</div>
                         <StatusBadge status={lead.status} />
-                        <ScoreBadge score={lead.score} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <ScoreBadge score={lead.score} />
+                          {lead.email_draft && (
+                            <span
+                              title="E-Mail-Entwurf vorhanden"
+                              style={{ fontSize: '0.7rem', color: '#60a5fa', opacity: 0.7 }}
+                            >
+                              ✉
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '0.77rem', color: '#444' }}>{date}</div>
                         <button
                           onClick={(e) => {
@@ -1654,6 +1664,48 @@ export function LeadsPage() {
                         }}
                       >
                         {selectedLead.website_summary}
+                      </p>
+                    </div>
+                  </CollapsibleSection>
+                )}
+
+                {/* ── E-Mail-Skript ── */}
+                {selectedLead.email_draft && (
+                  <CollapsibleSection label="E-Mail-Skript">
+                    <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem', position: 'relative' }}>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(selectedLead.email_draft!).catch(() => {});
+                          setCopiedField('email_draft');
+                          setTimeout(() => setCopiedField(null), 500);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: '0.6rem',
+                          right: '0.6rem',
+                          background: copiedField === 'email_draft' ? 'rgba(74,222,128,0.12)' : '#1a1a1a',
+                          border: `1px solid ${copiedField === 'email_draft' ? 'rgba(74,222,128,0.3)' : '#2a2a2a'}`,
+                          color: copiedField === 'email_draft' ? '#4ade80' : '#888',
+                          borderRadius: 6,
+                          padding: '0.3rem 0.6rem',
+                          fontSize: '0.72rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {copiedField === 'email_draft' ? 'Kopiert ✓' : 'Kopieren'}
+                      </button>
+                      <p
+                        style={{
+                          fontSize: '0.79rem',
+                          color: '#888',
+                          lineHeight: 1.6,
+                          margin: 0,
+                          whiteSpace: 'pre-line',
+                          paddingRight: '4.5rem',
+                        }}
+                      >
+                        {selectedLead.email_draft}
                       </p>
                     </div>
                   </CollapsibleSection>

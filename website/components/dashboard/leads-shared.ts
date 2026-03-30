@@ -53,6 +53,7 @@ export interface Lead {
   website_description: string | null;
   website_text: string | null;
   social_links: Record<string, string> | null;
+  email_draft: string | null;
   created_at: string;
   activity_count?: number;
 }
