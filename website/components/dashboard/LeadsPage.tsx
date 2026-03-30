@@ -25,6 +25,7 @@ import {
   field,
   lbl,
 } from './leads-shared';
+import { tokens, getScoreStyle, getStatusStyle } from '@/lib/design-tokens';
 
 // ── Internal Components ──────────────────────────────────────────────────────
 
@@ -496,13 +497,12 @@ export function LeadsPage() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const scoreColor = (s: number | null) =>
-    s === null ? '#374151' : s >= 70 ? '#22c55e' : s >= 45 ? '#f59e0b' : '#6b7280';
+  const scoreColor = (s: number | null) => getScoreStyle(s).color;
   const cardStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.07)',
-    borderRadius: 10,
-    padding: '14px 16px',
+    background: tokens.bg.surface,
+    border: '1px solid ' + tokens.bg.border,
+    borderRadius: tokens.radius.lg,
+    padding: '16px 20px',
   };
 
   return (
@@ -523,8 +523,12 @@ export function LeadsPage() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 style={{ fontWeight: 700, fontSize: 20, color: '#f9fafb', margin: 0 }}>Leads</h1>
-            <p style={{ color: '#4b5563', fontSize: 13, margin: '2px 0 0' }}>Lead Intelligence Dashboard</p>
+            <h1
+              style={{ fontSize: 28, fontWeight: 700, color: tokens.text.primary, margin: 0, letterSpacing: '-0.02em' }}
+            >
+              Leads
+            </h1>
+            <p style={{ fontSize: 14, color: tokens.text.muted, marginTop: 4 }}>Lead Intelligence Dashboard</p>
           </div>
           <button
             onClick={() => setGeneratorOpen(true)}
@@ -533,13 +537,13 @@ export function LeadsPage() {
               alignItems: 'center',
               gap: 8,
               padding: '9px 18px',
-              borderRadius: 8,
+              borderRadius: tokens.radius.md,
               cursor: 'pointer',
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              color: '#f9fafb',
+              background: tokens.brand.primary,
+              border: 'none',
+              color: tokens.text.inverse,
               fontSize: 14,
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             <Zap size={14} /> Lead Generator
@@ -669,9 +673,10 @@ export function LeadsPage() {
             padding: '4px 10px',
             borderRadius: 6,
             cursor: 'pointer',
-            border: active ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.1)',
-            background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
-            color: active ? '#f9fafb' : '#9ca3af',
+            border: active ? '1px solid transparent' : '1px solid ' + tokens.bg.border,
+            background: active ? tokens.brand.primary : 'transparent',
+            color: active ? tokens.text.inverse : tokens.text.muted,
+            fontWeight: active ? 600 : undefined,
             transition: 'all 0.12s',
             whiteSpace: 'nowrap',
           });
@@ -775,8 +780,7 @@ export function LeadsPage() {
             userSelect: 'none',
             whiteSpace: 'nowrap',
           };
-          const scoreColor = (s: number | null) =>
-            s === null ? '#9ca3af' : s >= 70 ? '#16a34a' : s >= 45 ? '#d97706' : '#9ca3af';
+          const scoreColor = (s: number | null) => getScoreStyle(s).color;
           return (
             <table
               style={{
@@ -1176,7 +1180,7 @@ export function LeadsPage() {
           >
             <div
               style={{
-                background: '#111',
+                background: tokens.bg.surface,
                 borderRadius: 16,
                 width: '90vw',
                 maxWidth: 1100,
@@ -1202,7 +1206,7 @@ export function LeadsPage() {
                   style={{
                     fontSize: 42,
                     fontWeight: 800,
-                    color: getScoreColor(selectedLead.score).fg,
+                    color: tokens.text.primary,
                     lineHeight: 1,
                     flexShrink: 0,
                   }}
@@ -1377,9 +1381,10 @@ export function LeadsPage() {
                       fontSize: 12,
                       padding: '6px 12px',
                       borderRadius: 7,
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      background: 'rgba(255,255,255,0.05)',
-                      color: '#d1d5db',
+                      background: tokens.brand.primary,
+                      color: tokens.text.inverse,
+                      border: 'none',
+                      fontWeight: 600,
                       cursor: 'pointer',
                     }}
                   >
@@ -1505,14 +1510,8 @@ export function LeadsPage() {
                       const allTags = selectedLead.ai_tags;
                       const visible = showAllTags ? allTags : allTags.slice(0, 4);
                       const hiddenCount = allTags.length - 4;
-                      const tagColor = (t: string) => {
-                        if (['premium_lead', 'gut_erreichbar'].includes(t))
-                          return { bg: 'rgba(74,222,128,0.12)', fg: '#4ade80' };
-                        if (['firmen_email', 'telefon_vorhanden', 'linkedin_vorhanden'].includes(t))
-                          return { bg: 'rgba(96,165,250,0.12)', fg: '#60a5fa' };
-                        if (['ki_affin', 'automatisierungspotenzial', 'digitale_praesenz'].includes(t))
-                          return { bg: 'rgba(167,139,250,0.12)', fg: '#a78bfa' };
-                        return { bg: 'rgba(100,116,139,0.12)', fg: '#94a3b8' };
+                      const tagColor = (_t: string) => {
+                        return { bg: 'rgba(255,255,255,0.06)', fg: '#a1a1aa' };
                       };
                       return (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -1811,24 +1810,30 @@ export function LeadsPage() {
                             alt: 'kontakt_vertrauen',
                             label: 'Kontaktqualität',
                             max: 25,
-                            color: '#22c55e',
+                            color: 'rgba(255,255,255,0.9)',
                           },
                           {
                             key: 'unternehmensfit',
                             alt: 'unternehmensfit',
                             label: 'Unternehmensfit',
                             max: 35,
-                            color: '#22c55e',
+                            color: 'rgba(255,255,255,0.9)',
                           },
                           {
                             key: 'entscheidungsposition',
                             alt: 'kaufbereitschaft',
                             label: 'Entscheidungsposition',
                             max: 25,
-                            color: '#22c55e',
+                            color: 'rgba(255,255,255,0.9)',
                           },
-                          { key: 'kaufsignale', alt: 'kaufsignale', label: 'Kaufsignale', max: 15, color: '#22c55e' },
-                          { key: 'abzuege', alt: 'abzuege', label: 'Abzüge', max: 15, color: '#ef4444' },
+                          {
+                            key: 'kaufsignale',
+                            alt: 'kaufsignale',
+                            label: 'Kaufsignale',
+                            max: 15,
+                            color: 'rgba(255,255,255,0.9)',
+                          },
+                          { key: 'abzuege', alt: 'abzuege', label: 'Abzüge', max: 15, color: 'rgba(255,255,255,0.3)' },
                         ];
                         return dims.map(({ key, alt, label, max, color }) => {
                           const v = sb[key] ?? sb[alt] ?? 0;
