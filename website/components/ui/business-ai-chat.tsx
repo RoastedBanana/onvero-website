@@ -21,9 +21,22 @@ import {
 import { DottedSurface } from "@/components/ui/dotted-surface";
 import ReactMarkdown from "react-markdown";
 import { TextShimmer } from "@/components/ui/text-shimmer";
+import { createBrowserClient } from "@supabase/ssr";
 
 const WEBHOOK = "https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat";
 const STORAGE_KEY = "onvero_chat_sessions";
+
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
+
+function parseCookieUser(): { firstName: string; lastName: string } | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/onvero_user=([^;]+)/);
+  if (!match) return null;
+  try { return JSON.parse(decodeURIComponent(match[1])); } catch { return null; }
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Message { role: "user" | "ai"; text: string; imageUrl?: string; }
@@ -217,6 +230,16 @@ export function BusinessAIChat() {
       form.append("chatInput", text.trim());
       form.append("sessionId", activeId);
       if (currentFile) form.append("data", currentFile);
+
+      // Attach JWT and user name
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) form.append("jwt", session.access_token);
+      const cookieUser = parseCookieUser();
+      if (cookieUser) {
+        form.append("firstName", cookieUser.firstName);
+        form.append("lastName", cookieUser.lastName);
+      }
+
       const res = await fetch(WEBHOOK, { method: "POST", body: form });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
