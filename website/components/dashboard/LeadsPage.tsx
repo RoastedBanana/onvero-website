@@ -1118,58 +1118,63 @@ export function LeadsPage() {
           );
         })()}
 
-        {/* ── Detail Panel ── */}
+        {/* ── Detail Overlay ── */}
         {selectedLead && (
           <div
             style={{
-              width: 380,
-              minWidth: 320,
-              maxWidth: 420,
-              flexShrink: 0,
-              background: '#111',
-              border: '1px solid #1f1f1f',
-              borderRadius: 12,
+              position: 'fixed',
+              inset: 0,
+              zIndex: 50,
+              background: 'rgba(0,0,0,0.7)',
+              backdropFilter: 'blur(4px)',
               display: 'flex',
-              flexDirection: 'column',
-              maxHeight: 'calc(100vh - 5rem)',
-              position: 'sticky',
-              top: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setSelectedLead(null);
             }}
           >
-            {/* Panel header */}
             <div
               style={{
-                padding: '1rem 1.25rem',
-                borderBottom: '1px solid #1a1a1a',
+                background: '#111',
+                borderRadius: 16,
+                width: '90vw',
+                maxWidth: 1100,
+                maxHeight: '92vh',
+                overflow: 'hidden',
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: '0.75rem',
-                flexShrink: 0,
+                flexDirection: 'column',
+                border: '1px solid rgba(255,255,255,0.08)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+              {/* ── Header ── */}
+              <div
+                style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 18,
+                  flexShrink: 0,
+                }}
+              >
                 <div
                   style={{
-                    fontSize: 32,
-                    fontWeight: 700,
-                    color:
-                      (selectedLead.score ?? 0) >= 70
-                        ? '#16a34a'
-                        : (selectedLead.score ?? 0) >= 45
-                          ? '#d97706'
-                          : '#9ca3af',
+                    fontSize: 42,
+                    fontWeight: 800,
+                    color: getScoreColor(selectedLead.score).fg,
                     lineHeight: 1,
                     flexShrink: 0,
                   }}
                 >
                   {selectedLead.score ?? '—'}
                 </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 600,
+                      fontSize: 18,
+                      fontWeight: 700,
                       color: '#fff',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -1180,757 +1185,813 @@ export function LeadsPage() {
                       `${selectedLead.first_name ?? ''} ${selectedLead.last_name ?? ''}`.trim() ||
                       '—'}
                   </div>
-                  <div style={{ fontSize: '0.77rem', color: '#555', marginTop: '0.15rem' }}>
+                  <div style={{ fontSize: 14, color: '#9ca3af', marginTop: 2 }}>
                     {[selectedLead.first_name, selectedLead.last_name].filter(Boolean).join(' ')}
-                    {selectedLead.city ? ` · ${selectedLead.city}` : ''}
+                  </div>
+                  {selectedLead.city && (
+                    <div style={{ fontSize: 12, color: '#4b5563', marginTop: 2 }}>{selectedLead.city}</div>
+                  )}
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                    <StatusBadge status={selectedLead.status} />
+                    {!!cf?.lead_quality &&
+                      (() => {
+                        const q = (cf.lead_quality as string).toLowerCase();
+                        const { bg, fg } = QUALITY_COLORS[q] ?? { bg: '#1a1a1a', fg: '#666' };
+                        return (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              background: bg,
+                              color: fg,
+                              borderRadius: 999,
+                              padding: '2px 8px',
+                              fontSize: 11,
+                              fontWeight: 500,
+                            }}
+                          >
+                            {cf.lead_quality as string}
+                          </span>
+                        );
+                      })()}
+                    {selectedLead.source && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: '#555',
+                          background: '#1a1a1a',
+                          borderRadius: 999,
+                          padding: '2px 8px',
+                        }}
+                      >
+                        {selectedLead.source}
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
-                {selectedLead.phone && (
-                  <button
-                    onClick={() => window.open('tel:' + ((cf?.normalized_phone as string) ?? selectedLead.phone))}
-                    title="Anrufen"
-                    aria-label="Anrufen"
-                    style={{
-                      background: '#1a1a1a',
-                      border: '1px solid #222',
-                      color: '#888',
-                      borderRadius: 7,
-                      width: 29,
-                      height: 29,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                    }}
-                  >
-                    ☎
-                  </button>
-                )}
-                {selectedLead.email && (
-                  <button
-                    onClick={() => window.open('mailto:' + selectedLead.email)}
-                    title="E-Mail senden"
-                    aria-label="E-Mail senden"
-                    style={{
-                      background: '#1a1a1a',
-                      border: '1px solid #222',
-                      color: '#888',
-                      borderRadius: 7,
-                      width: 29,
-                      height: 29,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                    }}
-                  >
-                    ✉
-                  </button>
-                )}
-                {selectedLead.website && (
-                  <a
-                    href={
-                      selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Website öffnen"
-                    aria-label="Website öffnen"
-                    style={{
-                      background: '#1a1a1a',
-                      border: '1px solid #222',
-                      color: '#888',
-                      borderRadius: 7,
-                      width: 29,
-                      height: 29,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textDecoration: 'none',
-                      fontSize: '0.85rem',
-                    }}
-                  >
-                    ↗
-                  </a>
-                )}
-                <button
-                  onClick={() => setDeleteConfirmId(selectedLead.id)}
-                  title="Lead löschen"
-                  aria-label="Lead löschen"
-                  style={{
-                    background: 'none',
-                    border: '1px solid #222',
-                    color: '#555',
-                    borderRadius: 7,
-                    width: 29,
-                    height: 29,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Trash2 size={13} />
-                </button>
                 <button
                   onClick={() => setSelectedLead(null)}
-                  aria-label="Panel schließen"
+                  aria-label="Overlay schließen"
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#444',
+                    color: '#666',
                     cursor: 'pointer',
-                    fontSize: '1.2rem',
+                    fontSize: 28,
                     lineHeight: 1,
-                    padding: '0 0 0 0.25rem',
+                    padding: 4,
+                    flexShrink: 0,
                   }}
                 >
                   ×
                 </button>
               </div>
-            </div>
 
-            {/* Delete confirmation */}
-            {deleteConfirmId === selectedLead.id && (
+              {/* Delete confirmation */}
+              {deleteConfirmId === selectedLead.id && (
+                <div
+                  style={{
+                    padding: '0.75rem 1.25rem',
+                    background: 'rgba(239,68,68,0.06)',
+                    borderBottom: '1px solid rgba(239,68,68,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.5rem',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{ fontSize: '0.79rem', color: '#f87171' }}>
+                    Lead löschen? Kann nicht rückgängig gemacht werden.
+                  </span>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                    <button
+                      onClick={() => setDeleteConfirmId(null)}
+                      style={{
+                        background: 'none',
+                        border: '1px solid #333',
+                        color: '#888',
+                        borderRadius: 6,
+                        padding: '0.3rem 0.7rem',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Abbrechen
+                    </button>
+                    <button
+                      onClick={() => handleDeleteLead(selectedLead.id)}
+                      style={{
+                        background: '#ef4444',
+                        border: 'none',
+                        color: '#fff',
+                        borderRadius: 6,
+                        padding: '0.3rem 0.7rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Löschen
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Quick Actions Bar ── */}
               <div
                 style={{
-                  padding: '0.75rem 1.25rem',
-                  background: 'rgba(239,68,68,0.06)',
-                  borderBottom: '1px solid rgba(239,68,68,0.15)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '0.5rem',
+                  gap: 8,
+                  padding: '10px 24px',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
                   flexShrink: 0,
+                  flexWrap: 'wrap',
                 }}
               >
-                <span style={{ fontSize: '0.79rem', color: '#f87171' }}>
-                  Lead löschen? Kann nicht rückgängig gemacht werden.
-                </span>
-                <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-                  <button
-                    onClick={() => setDeleteConfirmId(null)}
-                    style={{
-                      background: 'none',
-                      border: '1px solid #333',
-                      color: '#888',
-                      borderRadius: 6,
-                      padding: '0.3rem 0.7rem',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Abbrechen
-                  </button>
-                  <button
-                    onClick={() => handleDeleteLead(selectedLead.id)}
-                    style={{
-                      background: '#ef4444',
-                      border: 'none',
-                      color: '#fff',
-                      borderRadius: 6,
-                      padding: '0.3rem 0.7rem',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Löschen
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Scrollable body */}
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: '0 0 12px 12px' }}>
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 24,
-                  background: 'linear-gradient(to bottom, transparent, #111)',
-                  pointerEvents: 'none',
-                  zIndex: 1,
-                }}
-              />
-              <div
-                style={{
-                  height: '100%',
-                  overflowY: 'auto',
-                  padding: '1.1rem 1.25rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1.25rem',
-                }}
-              >
-                {/* Disposable email warning */}
-                {!!cf?.is_disposable_email && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      background: 'rgba(239,68,68,0.08)',
-                      border: '1px solid rgba(239,68,68,0.2)',
-                      borderRadius: 8,
-                      padding: '0.65rem 0.9rem',
-                    }}
-                  >
-                    <span style={{ color: '#f87171', fontWeight: 700, fontSize: '0.85rem' }}>!</span>
-                    <span style={{ fontSize: '0.79rem', color: '#f87171', fontWeight: 500 }}>
-                      Wegwerf-E-Mail erkannt — Lead wahrscheinlich unbrauchbar
-                    </span>
-                  </div>
-                )}
-
-                {/* Badges row */}
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                  <ScoreBadge score={selectedLead.score} />
-                  <StatusBadge status={selectedLead.status} />
-                  {!!cf?.lead_quality &&
-                    (() => {
-                      const q = (cf.lead_quality as string).toLowerCase();
-                      const { bg, fg } = QUALITY_COLORS[q] ?? { bg: '#1a1a1a', fg: '#666' };
-                      return (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            background: bg,
-                            color: fg,
-                            borderRadius: 999,
-                            padding: '2px 8px',
-                            fontSize: 11,
-                            fontWeight: 500,
-                          }}
-                        >
-                          {cf.lead_quality as string}
-                        </span>
-                      );
-                    })()}
-                  {selectedLead.source && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: '#555',
-                        background: '#1a1a1a',
-                        borderRadius: 999,
-                        padding: '2px 8px',
-                      }}
-                    >
-                      {selectedLead.source}
-                    </span>
-                  )}
-                </div>
-
-                {/* AI Tags as colored badges */}
-                {selectedLead.ai_tags && selectedLead.ai_tags.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                    {selectedLead.ai_tags.map((tag) => {
-                      const t = tag.toLowerCase();
-                      let bg = 'rgba(100,116,139,0.12)';
-                      let fg = '#94a3b8';
-                      if (['premium_lead', 'gut_erreichbar'].includes(t)) {
-                        bg = 'rgba(74,222,128,0.12)';
-                        fg = '#4ade80';
-                      } else if (['firmen_email', 'telefon_vorhanden', 'linkedin_vorhanden'].includes(t)) {
-                        bg = 'rgba(96,165,250,0.12)';
-                        fg = '#60a5fa';
-                      } else if (['ki_affin', 'automatisierungspotenzial', 'digitale_praesenz'].includes(t)) {
-                        bg = 'rgba(167,139,250,0.12)';
-                        fg = '#a78bfa';
-                      }
-                      return (
-                        <span
-                          key={tag}
-                          style={{
-                            background: bg,
-                            color: fg,
-                            borderRadius: 999,
-                            padding: '2px 8px',
-                            fontSize: '0.68rem',
-                            fontWeight: 500,
-                          }}
-                        >
-                          {tag.replace(/_/g, ' ')}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Contact in hours */}
-                {cf?.contact_in_hours !== undefined && (cf.contact_in_hours as number) > 0 && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      background: 'rgba(234,179,8,0.05)',
-                      border: '1px solid rgba(234,179,8,0.12)',
-                      borderRadius: 7,
-                      padding: '0.5rem 0.85rem',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.79rem', color: 'rgba(234,179,8,0.85)' }}>
-                      Empfohlen innerhalb von <strong>{cf.contact_in_hours as number} Std.</strong> kontaktieren
-                    </span>
-                  </div>
-                )}
-
-                {/* Status update */}
-                <div>
-                  <label style={lbl}>Status ändern</label>
-                  <select
-                    value={selectedLead.status}
-                    onChange={(e) => handleStatusUpdate(selectedLead.id, e.target.value)}
-                    disabled={statusUpdating}
-                    style={{
-                      ...field,
-                      cursor: statusUpdating ? 'wait' : 'pointer',
-                      background: '#0a0a0a',
-                      borderColor: '#1f1f1f',
-                      opacity: statusUpdating ? 0.5 : 1,
-                    }}
-                  >
-                    {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* ── E-Mail-Skript ── */}
                 {selectedLead.email_draft && (
-                  <CollapsibleSection label="E-Mail-Skript">
-                    <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem', position: 'relative' }}>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard?.writeText(selectedLead.email_draft!).catch(() => {});
-                          setCopiedField('email_draft');
-                          setTimeout(() => setCopiedField(null), 500);
-                        }}
-                        style={{
-                          position: 'absolute',
-                          top: '0.6rem',
-                          right: '0.6rem',
-                          background: copiedField === 'email_draft' ? 'rgba(74,222,128,0.12)' : '#1a1a1a',
-                          border: `1px solid ${copiedField === 'email_draft' ? 'rgba(74,222,128,0.3)' : '#2a2a2a'}`,
-                          color: copiedField === 'email_draft' ? '#4ade80' : '#888',
-                          borderRadius: 6,
-                          padding: '0.3rem 0.6rem',
-                          fontSize: '0.72rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        {copiedField === 'email_draft' ? 'Kopiert ✓' : 'Kopieren'}
-                      </button>
-                      <p
-                        style={{
-                          fontSize: '0.79rem',
-                          color: '#888',
-                          lineHeight: 1.6,
-                          margin: 0,
-                          whiteSpace: 'pre-line',
-                          paddingRight: '4.5rem',
-                        }}
-                      >
-                        {selectedLead.email_draft}
-                      </p>
-                    </div>
-                  </CollapsibleSection>
-                )}
-
-                {/* AI Summary */}
-                {selectedLead.ai_summary && (
-                  <CollapsibleSection label="KI-Zusammenfassung">
-                    <p
-                      style={{
-                        fontSize: '0.81rem',
-                        color: '#888',
-                        lineHeight: 1.6,
-                        background: '#0a0a0a',
-                        borderRadius: 8,
-                        padding: '0.85rem',
-                        margin: 0,
-                      }}
-                    >
-                      {selectedLead.ai_summary}
-                    </p>
-                  </CollapsibleSection>
-                )}
-
-                {/* AI Next Action */}
-                {selectedLead.ai_next_action && (
-                  <div
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(selectedLead.email_draft!).catch(() => {});
+                      setCopiedField('email_draft_action');
+                      setTimeout(() => setCopiedField(null), 1500);
+                    }}
                     style={{
-                      background: 'rgba(234,179,8,0.05)',
-                      border: '1px solid rgba(234,179,8,0.15)',
-                      borderRadius: 8,
-                      padding: '0.85rem',
+                      fontSize: 12,
+                      padding: '6px 12px',
+                      borderRadius: 7,
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      background:
+                        copiedField === 'email_draft_action' ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.05)',
+                      color: copiedField === 'email_draft_action' ? '#4ade80' : '#d1d5db',
+                      cursor: 'pointer',
                     }}
                   >
-                    <label style={{ ...lbl, color: 'rgba(234,179,8,0.7)', marginBottom: '0.4rem', display: 'block' }}>
-                      Empfohlene Aktion
-                    </label>
-                    <p style={{ fontSize: '0.81rem', color: '#ccc', lineHeight: 1.5, margin: 0 }}>
-                      {selectedLead.ai_next_action}
-                    </p>
-                  </div>
+                    {copiedField === 'email_draft_action' ? '✓ Kopiert' : '✉ E-Mail kopieren'}
+                  </button>
                 )}
-
-                {/* Kontaktdaten */}
-                <CollapsibleSection label="Kontaktdaten">
-                  <div
+                {selectedLead.status === 'new' && (
+                  <button
+                    onClick={() => handleStatusUpdate(selectedLead.id, 'contacted')}
                     style={{
-                      background: '#0a0a0a',
-                      borderRadius: 8,
-                      padding: '0.85rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.45rem',
+                      fontSize: 12,
+                      padding: '6px 12px',
+                      borderRadius: 7,
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: '#d1d5db',
+                      cursor: 'pointer',
                     }}
                   >
-                    {selectedLead.email && (
-                      <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
-                        <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>E-Mail</span>
-                        <span style={{ color: '#ccc', wordBreak: 'break-all', flex: 1 }}>{selectedLead.email}</span>
-                        <button
-                          onClick={() => copyWithFeedback(selectedLead.email!, 'email')}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: copiedField === 'email' ? '#4ade80' : '#444',
-                            cursor: 'pointer',
-                            fontSize: '0.78rem',
-                            padding: '0 0.15rem',
-                            flexShrink: 0,
-                          }}
-                          title="Kopieren"
-                        >
-                          {copiedField === 'email' ? '✓' : '⎘'}
-                        </button>
-                      </div>
-                    )}
-                    {(cf?.normalized_phone ?? selectedLead.phone) && (
-                      <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
-                        <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Telefon</span>
-                        <span style={{ color: '#ccc', flex: 1 }}>
-                          {(cf?.normalized_phone as string) ?? selectedLead.phone}
-                        </span>
-                        <button
-                          onClick={() =>
-                            copyWithFeedback((cf?.normalized_phone as string) ?? selectedLead.phone!, 'phone')
-                          }
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: copiedField === 'phone' ? '#4ade80' : '#444',
-                            cursor: 'pointer',
-                            fontSize: '0.78rem',
-                            padding: '0 0.15rem',
-                            flexShrink: 0,
-                          }}
-                          title="Kopieren"
-                        >
-                          {copiedField === 'phone' ? '✓' : '⎘'}
-                        </button>
-                      </div>
-                    )}
-                    {!!cf?.job_title && (
-                      <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem' }}>
-                        <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Position</span>
-                        <span style={{ color: '#ccc' }}>{cf.job_title as string}</span>
-                      </div>
-                    )}
-                    {!!cf?.linkedin_url && (
-                      <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
-                        <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>LinkedIn</span>
-                        <a
-                          href={cf.linkedin_url as string}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#60a5fa', fontSize: '0.79rem', textDecoration: 'none' }}
-                        >
-                          Profil öffnen ↗
-                        </a>
-                      </div>
-                    )}
-                    {!!selectedLead.estimated_value && (
-                      <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem' }}>
-                        <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Deal-Wert</span>
-                        <span style={{ color: '#4ade80', fontWeight: 600 }}>
-                          {new Intl.NumberFormat('de-DE', {
-                            style: 'currency',
-                            currency: 'EUR',
-                            maximumFractionDigits: 0,
-                          }).format(selectedLead.estimated_value)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleSection>
-
-                {/* ── KI-Scoring ── */}
-                <CollapsibleSection label="KI-Scoring">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    {(() => {
-                      const sb = (cf?.score_breakdown ?? DUMMY_CF.score_breakdown) as Record<string, number>;
-                      const barLabels: Record<string, string> = {
-                        kontakt_vertrauen: 'Kontakt & Vertrauen',
-                        kaufbereitschaft: 'Kaufbereitschaft',
-                        unternehmensfit: 'Unternehmensfit',
-                        abzuege: 'Abzüge',
-                      };
-                      const barColors: Record<string, string> = {
-                        kontakt_vertrauen: '#818cf8',
-                        kaufbereitschaft: '#4ade80',
-                        unternehmensfit: '#fb923c',
-                        abzuege: '#f87171',
-                      };
-                      return Object.entries(sb).map(([k, v]) => {
-                        const maxVal = SCORE_MAX[k] ?? 35;
-                        const pct = Math.min((Math.abs(v) / maxVal) * 100, 100);
-                        const color = barColors[k] ?? '#818cf8';
-                        return (
-                          <div key={k}>
-                            <div
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                fontSize: '0.76rem',
-                                marginBottom: '0.3rem',
-                              }}
-                            >
-                              <span style={{ color: '#666' }}>{barLabels[k] ?? k}</span>
-                              <span style={{ color, fontWeight: 700 }}>
-                                {v > 0 ? '+' : ''}
-                                {v}
-                              </span>
-                            </div>
-                            <div style={{ height: 4, borderRadius: 2, background: '#1a1a1a' }}>
-                              <div
-                                style={{
-                                  height: '100%',
-                                  borderRadius: 2,
-                                  width: `${pct}%`,
-                                  background: color,
-                                  opacity: 0.75,
-                                  transition: 'width 0.5s ease',
-                                }}
-                              />
-                            </div>
-                          </div>
-                        );
+                    ✓ Als kontaktiert
+                  </button>
+                )}
+                {selectedLead.status === 'contacted' && (
+                  <button
+                    onClick={() => handleStatusUpdate(selectedLead.id, 'qualified')}
+                    style={{
+                      fontSize: 12,
+                      padding: '6px 12px',
+                      borderRadius: 7,
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: '#d1d5db',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ⭐ Qualifizieren
+                  </button>
+                )}
+                <div style={{ flex: 1 }} />
+                <button
+                  onClick={async () => {
+                    if (!tenantId || !selectedLead) return;
+                    setRescoring(true);
+                    try {
+                      const res = await fetch('/api/leads/rescore', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+                        body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
                       });
-                    })()}
+                      if (!res.ok) throw new Error('Scoring fehlgeschlagen');
+                      showToast('KI-Scoring gestartet — Score wird aktualisiert');
+                      setTimeout(() => {
+                        loadLeads();
+                        if (selectedLead) handleSelectLead(selectedLead);
+                      }, 5000);
+                    } catch {
+                      showToast('Scoring konnte nicht gestartet werden');
+                    } finally {
+                      setRescoring(false);
+                    }
+                  }}
+                  disabled={rescoring}
+                  style={{
+                    fontSize: 12,
+                    padding: '6px 12px',
+                    borderRadius: 7,
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: rescoring ? '#555' : '#d1d5db',
+                    cursor: rescoring ? 'default' : 'pointer',
+                  }}
+                >
+                  {rescoring ? 'Wird bewertet…' : '↻ Neu bewerten'}
+                </button>
+                <button
+                  onClick={() => handleStatusUpdate(selectedLead.id, 'archived')}
+                  style={{
+                    fontSize: 12,
+                    padding: '6px 12px',
+                    borderRadius: 7,
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: '#d1d5db',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🗑 Archivieren
+                </button>
+              </div>
+
+              {/* ── Two-Column Grid ── */}
+              <div
+                style={{ flex: 1, display: 'grid', gridTemplateColumns: '60% 40%', minHeight: 0, overflow: 'hidden' }}
+              >
+                {/* ── LEFT COLUMN ── */}
+                <div
+                  style={{
+                    overflowY: 'auto',
+                    padding: 24,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 20,
+                    borderRight: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  {/* Disposable email warning */}
+                  {!!cf?.is_disposable_email && (
                     <div
-                      style={{
-                        borderTop: '1px solid #1a1a1a',
-                        paddingTop: '0.5rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        fontSize: '0.78rem',
-                      }}
-                    >
-                      <span style={{ color: '#555' }}>Gesamt-Score</span>
-                      <span style={{ fontWeight: 700, color: getScoreColor(selectedLead.score).fg }}>
-                        {selectedLead.score ?? '—'} / 100
-                      </span>
-                    </div>
-                    {/* Stärken & Bedenken — 2-col */}
-                    {(() => {
-                      const strengths = ((cf?.strengths ?? DUMMY_CF.strengths) as string[]) ?? [];
-                      const concerns = ((cf?.concerns ?? DUMMY_CF.concerns) as string[]) ?? [];
-                      if (strengths.length === 0 && concerns.length === 0) return null;
-                      return (
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: '0.75rem',
-                            marginTop: '0.25rem',
-                          }}
-                        >
-                          <div>
-                            <div
-                              style={{
-                                fontSize: '0.67rem',
-                                color: '#4ade80',
-                                fontWeight: 600,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.04em',
-                                marginBottom: '0.4rem',
-                              }}
-                            >
-                              Stärken
-                            </div>
-                            {strengths.map((s, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  display: 'flex',
-                                  gap: '0.35rem',
-                                  fontSize: '0.76rem',
-                                  color: '#888',
-                                  marginBottom: '0.3rem',
-                                  lineHeight: 1.4,
-                                }}
-                              >
-                                <span style={{ color: '#4ade80', flexShrink: 0 }}>✓</span>
-                                {s}
-                              </div>
-                            ))}
-                          </div>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: '0.67rem',
-                                color: '#fde047',
-                                fontWeight: 600,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.04em',
-                                marginBottom: '0.4rem',
-                              }}
-                            >
-                              Bedenken
-                            </div>
-                            {concerns.map((s, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  display: 'flex',
-                                  gap: '0.35rem',
-                                  fontSize: '0.76rem',
-                                  color: '#888',
-                                  marginBottom: '0.3rem',
-                                  lineHeight: 1.4,
-                                }}
-                              >
-                                <span style={{ color: '#fde047', flexShrink: 0 }}>⚠</span>
-                                {s}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    {/* Red flags */}
-                    {((cf?.red_flags ?? DUMMY_CF.red_flags) as string[])?.length > 0 && (
-                      <div
-                        style={{
-                          background: 'rgba(239,68,68,0.06)',
-                          border: '1px solid rgba(239,68,68,0.15)',
-                          borderRadius: 7,
-                          padding: '0.6rem 0.8rem',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.3rem',
-                        }}
-                      >
-                        {((cf?.red_flags ?? DUMMY_CF.red_flags) as string[]).map((s, i) => (
-                          <div key={i} style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: '#888' }}>
-                            <span style={{ color: '#f87171', flexShrink: 0 }}>✕</span>
-                            {s}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <button
-                      onClick={async () => {
-                        if (!tenantId || !selectedLead) return;
-                        setRescoring(true);
-                        try {
-                          const res = await fetch('/api/leads/rescore', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
-                            body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
-                          });
-                          if (!res.ok) throw new Error('Scoring fehlgeschlagen');
-                          showToast('KI-Scoring gestartet — Score wird aktualisiert');
-                          setTimeout(() => {
-                            loadLeads();
-                            if (selectedLead) handleSelectLead(selectedLead);
-                          }, 5000);
-                        } catch {
-                          showToast('Scoring konnte nicht gestartet werden');
-                        } finally {
-                          setRescoring(false);
-                        }
-                      }}
-                      disabled={rescoring}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.4rem',
-                        width: '100%',
-                        marginTop: '0.25rem',
-                        background: '#1a1a1a',
-                        border: '1px solid #2a2a2a',
-                        color: rescoring ? '#555' : '#888',
-                        borderRadius: 7,
-                        padding: '0.45rem',
-                        fontSize: '0.76rem',
-                        cursor: rescoring ? 'default' : 'pointer',
+                        gap: '0.5rem',
+                        background: 'rgba(239,68,68,0.08)',
+                        border: '1px solid rgba(239,68,68,0.2)',
+                        borderRadius: 8,
+                        padding: '0.65rem 0.9rem',
                       }}
                     >
-                      {rescoring ? (
-                        <>
-                          <UniqueLoading size="sm" /> Wird bewertet…
-                        </>
-                      ) : (
-                        '↻ Neu bewerten'
-                      )}
-                    </button>
-                  </div>
-                </CollapsibleSection>
+                      <span style={{ color: '#f87171', fontWeight: 700, fontSize: '0.85rem' }}>!</span>
+                      <span style={{ fontSize: '0.79rem', color: '#f87171', fontWeight: 500 }}>
+                        Wegwerf-E-Mail erkannt — Lead wahrscheinlich unbrauchbar
+                      </span>
+                    </div>
+                  )}
 
-                {/* ── Follow-up Context ── */}
-                {!!cf?.follow_up_context &&
-                  (() => {
-                    const fuc = cf.follow_up_context as Record<string, unknown>;
-                    const items = [
-                      { label: 'Unternehmen', val: fuc.company_description as string | undefined },
-                      { label: 'Pain Points', val: fuc.pain_points as string | undefined },
-                      { label: 'Automatisierungspotenzial', val: fuc.automation_opportunities as string | undefined },
-                      {
-                        label: 'Gesprächseinstieg',
-                        val: fuc.conversation_opener as string | undefined,
-                        highlight: true,
-                      },
-                    ].filter((r) => r.val);
-                    if (items.length === 0) return null;
-                    return (
-                      <CollapsibleSection label="Follow-up Kontext">
-                        <div
+                  {/* AI Tags as colored badges */}
+                  {selectedLead.ai_tags && selectedLead.ai_tags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                      {selectedLead.ai_tags.map((tag) => {
+                        const t = tag.toLowerCase();
+                        let bg = 'rgba(100,116,139,0.12)';
+                        let fg = '#94a3b8';
+                        if (['premium_lead', 'gut_erreichbar'].includes(t)) {
+                          bg = 'rgba(74,222,128,0.12)';
+                          fg = '#4ade80';
+                        } else if (['firmen_email', 'telefon_vorhanden', 'linkedin_vorhanden'].includes(t)) {
+                          bg = 'rgba(96,165,250,0.12)';
+                          fg = '#60a5fa';
+                        } else if (['ki_affin', 'automatisierungspotenzial', 'digitale_praesenz'].includes(t)) {
+                          bg = 'rgba(167,139,250,0.12)';
+                          fg = '#a78bfa';
+                        }
+                        return (
+                          <span
+                            key={tag}
+                            style={{
+                              background: bg,
+                              color: fg,
+                              borderRadius: 999,
+                              padding: '2px 8px',
+                              fontSize: '0.68rem',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {tag.replace(/_/g, ' ')}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* ── E-Mail-Skript ── */}
+                  {selectedLead.email_draft && (
+                    <CollapsibleSection label="E-Mail-Skript">
+                      <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem', position: 'relative' }}>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard?.writeText(selectedLead.email_draft!).catch(() => {});
+                            setCopiedField('email_draft');
+                            setTimeout(() => setCopiedField(null), 500);
+                          }}
                           style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.65rem',
-                            background: '#0a0a0a',
-                            borderRadius: 8,
-                            padding: '0.85rem',
+                            position: 'absolute',
+                            top: '0.6rem',
+                            right: '0.6rem',
+                            background: copiedField === 'email_draft' ? 'rgba(74,222,128,0.12)' : '#1a1a1a',
+                            border: `1px solid ${copiedField === 'email_draft' ? 'rgba(74,222,128,0.3)' : '#2a2a2a'}`,
+                            color: copiedField === 'email_draft' ? '#4ade80' : '#888',
+                            borderRadius: 6,
+                            padding: '0.3rem 0.6rem',
+                            fontSize: '0.72rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
                           }}
                         >
-                          {items.map((r) => (
+                          {copiedField === 'email_draft' ? 'Kopiert ✓' : 'Kopieren'}
+                        </button>
+                        <p
+                          style={{
+                            fontSize: '0.79rem',
+                            color: '#888',
+                            lineHeight: 1.6,
+                            margin: 0,
+                            whiteSpace: 'pre-line',
+                            paddingRight: '4.5rem',
+                          }}
+                        >
+                          {selectedLead.email_draft}
+                        </p>
+                      </div>
+                    </CollapsibleSection>
+                  )}
+
+                  {/* AI Summary */}
+                  {selectedLead.ai_summary && (
+                    <CollapsibleSection label="KI-Zusammenfassung">
+                      <p
+                        style={{
+                          fontSize: '0.81rem',
+                          color: '#888',
+                          lineHeight: 1.6,
+                          background: '#0a0a0a',
+                          borderRadius: 8,
+                          padding: '0.85rem',
+                          margin: 0,
+                        }}
+                      >
+                        {selectedLead.ai_summary}
+                      </p>
+                    </CollapsibleSection>
+                  )}
+
+                  {/* AI Next Action */}
+                  {selectedLead.ai_next_action && (
+                    <div
+                      style={{
+                        background: 'rgba(234,179,8,0.05)',
+                        border: '1px solid rgba(234,179,8,0.15)',
+                        borderRadius: 8,
+                        padding: '0.85rem',
+                      }}
+                    >
+                      <label style={{ ...lbl, color: 'rgba(234,179,8,0.7)', marginBottom: '0.4rem', display: 'block' }}>
+                        Empfohlene Aktion
+                      </label>
+                      <p style={{ fontSize: '0.81rem', color: '#ccc', lineHeight: 1.5, margin: 0 }}>
+                        {selectedLead.ai_next_action}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ── Follow-up Context ── */}
+                  {!!cf?.follow_up_context &&
+                    (() => {
+                      const fuc = cf.follow_up_context as Record<string, unknown>;
+                      const items = [
+                        { label: 'Unternehmen', val: fuc.company_description as string | undefined },
+                        { label: 'Pain Points', val: fuc.pain_points as string | undefined },
+                        { label: 'Automatisierungspotenzial', val: fuc.automation_opportunities as string | undefined },
+                        {
+                          label: 'Gesprächseinstieg',
+                          val: fuc.conversation_opener as string | undefined,
+                          highlight: true,
+                        },
+                      ].filter((r) => r.val);
+                      if (items.length === 0) return null;
+                      return (
+                        <CollapsibleSection label="Follow-up Kontext">
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.65rem',
+                              background: '#0a0a0a',
+                              borderRadius: 8,
+                              padding: '0.85rem',
+                            }}
+                          >
+                            {items.map((r) => (
+                              <div key={r.label}>
+                                <div
+                                  style={{
+                                    fontSize: '0.67rem',
+                                    color: r.highlight ? 'rgba(107,122,255,0.7)' : '#444',
+                                    marginBottom: '0.2rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.04em',
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {r.label}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: '0.81rem',
+                                    color: r.highlight ? '#c4c8ff' : '#888',
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  {r.val}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CollapsibleSection>
+                      );
+                    })()}
+                </div>
+
+                {/* ── RIGHT COLUMN ── */}
+                <div style={{ overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {/* Kontaktdaten */}
+                  <CollapsibleSection label="Kontaktdaten">
+                    <div
+                      style={{
+                        background: '#0a0a0a',
+                        borderRadius: 8,
+                        padding: '0.85rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.45rem',
+                      }}
+                    >
+                      {selectedLead.email && (
+                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
+                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>E-Mail</span>
+                          <span style={{ color: '#ccc', wordBreak: 'break-all', flex: 1 }}>{selectedLead.email}</span>
+                          <button
+                            onClick={() => copyWithFeedback(selectedLead.email!, 'email')}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: copiedField === 'email' ? '#4ade80' : '#444',
+                              cursor: 'pointer',
+                              fontSize: '0.78rem',
+                              padding: '0 0.15rem',
+                              flexShrink: 0,
+                            }}
+                            title="Kopieren"
+                          >
+                            {copiedField === 'email' ? '✓' : '⎘'}
+                          </button>
+                        </div>
+                      )}
+                      {(cf?.normalized_phone ?? selectedLead.phone) && (
+                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
+                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Telefon</span>
+                          <span style={{ color: '#ccc', flex: 1 }}>
+                            {(cf?.normalized_phone as string) ?? selectedLead.phone}
+                          </span>
+                          <button
+                            onClick={() =>
+                              copyWithFeedback((cf?.normalized_phone as string) ?? selectedLead.phone!, 'phone')
+                            }
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: copiedField === 'phone' ? '#4ade80' : '#444',
+                              cursor: 'pointer',
+                              fontSize: '0.78rem',
+                              padding: '0 0.15rem',
+                              flexShrink: 0,
+                            }}
+                            title="Kopieren"
+                          >
+                            {copiedField === 'phone' ? '✓' : '⎘'}
+                          </button>
+                        </div>
+                      )}
+                      {!!cf?.job_title && (
+                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem' }}>
+                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Position</span>
+                          <span style={{ color: '#ccc' }}>{cf.job_title as string}</span>
+                        </div>
+                      )}
+                      {!!cf?.linkedin_url && (
+                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
+                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>LinkedIn</span>
+                          <a
+                            href={cf.linkedin_url as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#60a5fa', fontSize: '0.79rem', textDecoration: 'none' }}
+                          >
+                            Profil öffnen ↗
+                          </a>
+                        </div>
+                      )}
+                      {!!selectedLead.estimated_value && (
+                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem' }}>
+                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Deal-Wert</span>
+                          <span style={{ color: '#4ade80', fontWeight: 600 }}>
+                            {new Intl.NumberFormat('de-DE', {
+                              style: 'currency',
+                              currency: 'EUR',
+                              maximumFractionDigits: 0,
+                            }).format(selectedLead.estimated_value)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleSection>
+
+                  {/* ── KI-Scoring ── */}
+                  <CollapsibleSection label="KI-Scoring">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      {(() => {
+                        const sb = (cf?.score_breakdown ?? DUMMY_CF.score_breakdown) as Record<string, number>;
+                        const barLabels: Record<string, string> = {
+                          kontakt_vertrauen: 'Kontakt & Vertrauen',
+                          kaufbereitschaft: 'Kaufbereitschaft',
+                          unternehmensfit: 'Unternehmensfit',
+                          abzuege: 'Abzüge',
+                        };
+                        const barColors: Record<string, string> = {
+                          kontakt_vertrauen: '#818cf8',
+                          kaufbereitschaft: '#4ade80',
+                          unternehmensfit: '#fb923c',
+                          abzuege: '#f87171',
+                        };
+                        return Object.entries(sb).map(([k, v]) => {
+                          const maxVal = SCORE_MAX[k] ?? 35;
+                          const pct = Math.min((Math.abs(v) / maxVal) * 100, 100);
+                          const color = barColors[k] ?? '#818cf8';
+                          return (
+                            <div key={k}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  fontSize: '0.76rem',
+                                  marginBottom: '0.3rem',
+                                }}
+                              >
+                                <span style={{ color: '#666' }}>{barLabels[k] ?? k}</span>
+                                <span style={{ color, fontWeight: 700 }}>
+                                  {v > 0 ? '+' : ''}
+                                  {v}
+                                </span>
+                              </div>
+                              <div style={{ height: 4, borderRadius: 2, background: '#1a1a1a' }}>
+                                <div
+                                  style={{
+                                    height: '100%',
+                                    borderRadius: 2,
+                                    width: `${pct}%`,
+                                    background: color,
+                                    opacity: 0.75,
+                                    transition: 'width 0.5s ease',
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                      <div
+                        style={{
+                          borderTop: '1px solid #1a1a1a',
+                          paddingTop: '0.5rem',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: '0.78rem',
+                        }}
+                      >
+                        <span style={{ color: '#555' }}>Gesamt-Score</span>
+                        <span style={{ fontWeight: 700, color: getScoreColor(selectedLead.score).fg }}>
+                          {selectedLead.score ?? '—'} / 100
+                        </span>
+                      </div>
+                      {/* Stärken & Bedenken — 2-col */}
+                      {(() => {
+                        const strengths = ((cf?.strengths ?? DUMMY_CF.strengths) as string[]) ?? [];
+                        const concerns = ((cf?.concerns ?? DUMMY_CF.concerns) as string[]) ?? [];
+                        if (strengths.length === 0 && concerns.length === 0) return null;
+                        return (
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '1fr 1fr',
+                              gap: '0.75rem',
+                              marginTop: '0.25rem',
+                            }}
+                          >
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: '0.67rem',
+                                  color: '#4ade80',
+                                  fontWeight: 600,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.04em',
+                                  marginBottom: '0.4rem',
+                                }}
+                              >
+                                Stärken
+                              </div>
+                              {strengths.map((s, i) => (
+                                <div
+                                  key={i}
+                                  style={{
+                                    display: 'flex',
+                                    gap: '0.35rem',
+                                    fontSize: '0.76rem',
+                                    color: '#888',
+                                    marginBottom: '0.3rem',
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  <span style={{ color: '#4ade80', flexShrink: 0 }}>✓</span>
+                                  {s}
+                                </div>
+                              ))}
+                            </div>
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: '0.67rem',
+                                  color: '#fde047',
+                                  fontWeight: 600,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.04em',
+                                  marginBottom: '0.4rem',
+                                }}
+                              >
+                                Bedenken
+                              </div>
+                              {concerns.map((s, i) => (
+                                <div
+                                  key={i}
+                                  style={{
+                                    display: 'flex',
+                                    gap: '0.35rem',
+                                    fontSize: '0.76rem',
+                                    color: '#888',
+                                    marginBottom: '0.3rem',
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  <span style={{ color: '#fde047', flexShrink: 0 }}>⚠</span>
+                                  {s}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      {/* Red flags */}
+                      {((cf?.red_flags ?? DUMMY_CF.red_flags) as string[])?.length > 0 && (
+                        <div
+                          style={{
+                            background: 'rgba(239,68,68,0.06)',
+                            border: '1px solid rgba(239,68,68,0.15)',
+                            borderRadius: 7,
+                            padding: '0.6rem 0.8rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.3rem',
+                          }}
+                        >
+                          {((cf?.red_flags ?? DUMMY_CF.red_flags) as string[]).map((s, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: '#888' }}>
+                              <span style={{ color: '#f87171', flexShrink: 0 }}>✕</span>
+                              {s}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        onClick={async () => {
+                          if (!tenantId || !selectedLead) return;
+                          setRescoring(true);
+                          try {
+                            const res = await fetch('/api/leads/rescore', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+                              body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
+                            });
+                            if (!res.ok) throw new Error('Scoring fehlgeschlagen');
+                            showToast('KI-Scoring gestartet — Score wird aktualisiert');
+                            setTimeout(() => {
+                              loadLeads();
+                              if (selectedLead) handleSelectLead(selectedLead);
+                            }, 5000);
+                          } catch {
+                            showToast('Scoring konnte nicht gestartet werden');
+                          } finally {
+                            setRescoring(false);
+                          }
+                        }}
+                        disabled={rescoring}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.4rem',
+                          width: '100%',
+                          marginTop: '0.25rem',
+                          background: '#1a1a1a',
+                          border: '1px solid #2a2a2a',
+                          color: rescoring ? '#555' : '#888',
+                          borderRadius: 7,
+                          padding: '0.45rem',
+                          fontSize: '0.76rem',
+                          cursor: rescoring ? 'default' : 'pointer',
+                        }}
+                      >
+                        {rescoring ? (
+                          <>
+                            <UniqueLoading size="sm" /> Wird bewertet…
+                          </>
+                        ) : (
+                          '↻ Neu bewerten'
+                        )}
+                      </button>
+                    </div>
+                  </CollapsibleSection>
+
+                  {/* ── Website-Analyse ── */}
+                  {selectedLead.website_summary && (
+                    <CollapsibleSection label="Website-Analyse" defaultOpen={false}>
+                      <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem' }}>
+                        {selectedLead.website_title && (
+                          <div style={{ fontSize: '0.82rem', color: '#ccc', fontWeight: 600, marginBottom: '0.4rem' }}>
+                            {selectedLead.website_title}
+                          </div>
+                        )}
+                        <p
+                          style={{
+                            fontSize: '0.79rem',
+                            color: '#888',
+                            lineHeight: 1.6,
+                            margin: 0,
+                            whiteSpace: 'pre-line',
+                          }}
+                        >
+                          {selectedLead.website_summary}
+                        </p>
+                      </div>
+                    </CollapsibleSection>
+                  )}
+
+                  {/* ── Firmenprofil — 2-col grid ── */}
+                  <CollapsibleSection label="Firmenprofil" defaultOpen={false}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.65rem',
+                        background: '#0a0a0a',
+                        borderRadius: 8,
+                        padding: '0.85rem',
+                      }}
+                    >
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 0.75rem' }}>
+                        {[
+                          { label: 'Branche', val: cf?.industry },
+                          { label: 'Typ', val: cf?.company_type },
+                          { label: 'Größe', val: cf?.company_size },
+                          {
+                            label: 'Mitarbeiter',
+                            val: cf?.employee_count ? `${cf.employee_count} Mitarbeiter` : undefined,
+                          },
+                          { label: 'Position', val: cf?.job_title },
+                          { label: 'Budget', val: cf?.budget_estimate, highlight: true },
+                          { label: 'Jahresumsatz', val: cf?.annual_revenue },
+                        ]
+                          .filter((r) => r.val)
+                          .map((r) => (
                             <div key={r.label}>
                               <div
                                 style={{
                                   fontSize: '0.67rem',
-                                  color: r.highlight ? 'rgba(107,122,255,0.7)' : '#444',
-                                  marginBottom: '0.2rem',
+                                  color: '#444',
+                                  marginBottom: '0.15rem',
                                   textTransform: 'uppercase',
                                   letterSpacing: '0.04em',
-                                  fontWeight: 600,
                                 }}
                               >
                                 {r.label}
@@ -1938,294 +1999,216 @@ export function LeadsPage() {
                               <div
                                 style={{
                                   fontSize: '0.81rem',
-                                  color: r.highlight ? '#c4c8ff' : '#888',
-                                  lineHeight: 1.5,
+                                  color: r.highlight ? '#4ade80' : '#ccc',
+                                  fontWeight: r.highlight ? 600 : 400,
                                 }}
                               >
-                                {r.val}
+                                {r.val as string}
                               </div>
                             </div>
                           ))}
-                        </div>
-                      </CollapsibleSection>
-                    );
-                  })()}
-
-                {/* ── Website-Analyse ── */}
-                {selectedLead.website_summary && (
-                  <CollapsibleSection label="Website-Analyse">
-                    <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem' }}>
-                      {selectedLead.website_title && (
-                        <div style={{ fontSize: '0.82rem', color: '#ccc', fontWeight: 600, marginBottom: '0.4rem' }}>
-                          {selectedLead.website_title}
+                      </div>
+                      {(cf?.technologies as string[])?.length > 0 && (
+                        <div>
+                          <div
+                            style={{
+                              fontSize: '0.67rem',
+                              color: '#444',
+                              marginBottom: '0.3rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            Technologien
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                            {(cf!.technologies as string[]).map((t) => (
+                              <span
+                                key={t}
+                                style={{
+                                  background: 'rgba(107,122,255,0.1)',
+                                  color: '#818cf8',
+                                  borderRadius: 999,
+                                  padding: '2px 8px',
+                                  fontSize: '0.71rem',
+                                }}
+                              >
+                                {t}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       )}
+                      {!!cf?.linkedin_url && (
+                        <div>
+                          <div
+                            style={{
+                              fontSize: '0.67rem',
+                              color: '#444',
+                              marginBottom: '0.15rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            LinkedIn
+                          </div>
+                          <a
+                            href={cf.linkedin_url as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#60a5fa', fontSize: '0.79rem', textDecoration: 'none' }}
+                          >
+                            Profil öffnen ↗
+                          </a>
+                        </div>
+                      )}
+                      {!!cf?.email_status && (
+                        <div>
+                          <div
+                            style={{
+                              fontSize: '0.67rem',
+                              color: '#444',
+                              marginBottom: '0.15rem',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            E-Mail Status
+                          </div>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              fontSize: '0.79rem',
+                              color: (cf.email_status as string).toLowerCase() === 'verified' ? '#4ade80' : '#888',
+                            }}
+                          >
+                            {(cf.email_status as string).toLowerCase() === 'verified' && (
+                              <span
+                                style={{ width: 6, height: 6, borderRadius: 3, background: '#4ade80', flexShrink: 0 }}
+                              />
+                            )}
+                            {cf.email_status as string}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleSection>
+
+                  {/* ── Qualitätssignale — 2-col grid ── */}
+                  <CollapsibleSection label="Qualitätssignale" defaultOpen={false}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      {[
+                        { label: 'Firmen-E-Mail', val: cf?.is_company_email as boolean | undefined },
+                        { label: 'Telefon gültig', val: cf?.has_valid_phone as boolean | undefined },
+                        { label: 'Website erreichbar', val: cf?.website_loaded as boolean | undefined },
+                        {
+                          label: 'Kein Free-Mail',
+                          val: cf?.is_free_email !== undefined ? !(cf.is_free_email as boolean) : undefined,
+                        },
+                      ]
+                        .filter((r) => r.val !== undefined)
+                        .map((r) => {
+                          const ok = r.val as boolean;
+                          return (
+                            <div
+                              key={r.label}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                background: ok ? 'rgba(74,222,128,0.06)' : 'rgba(248,113,113,0.06)',
+                                border: `1px solid ${ok ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)'}`,
+                                borderRadius: 7,
+                                padding: '0.4rem 0.65rem',
+                              }}
+                            >
+                              <span style={{ fontSize: '0.8rem', color: ok ? '#4ade80' : '#f87171', flexShrink: 0 }}>
+                                {ok ? '✓' : '✕'}
+                              </span>
+                              <span style={{ fontSize: '0.74rem', color: '#777' }}>{r.label}</span>
+                            </div>
+                          );
+                        })}
+                      {!!cf?.message_quality &&
+                        (() => {
+                          const mq = (cf.message_quality as string).toLowerCase();
+                          const c = MESSAGE_QUALITY_COLORS[mq] ?? { bg: 'rgba(255,255,255,0.04)', fg: '#555' };
+                          return (
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                background: c.bg,
+                                border: `1px solid ${c.fg}22`,
+                                borderRadius: 7,
+                                padding: '0.4rem 0.65rem',
+                                gridColumn: 'span 2',
+                              }}
+                            >
+                              <span style={{ fontSize: '0.74rem', color: c.fg }}>
+                                Nachricht: {cf.message_quality as string}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                    </div>
+                  </CollapsibleSection>
+
+                  {/* Notes */}
+                  {selectedLead.notes && (
+                    <CollapsibleSection label="Nachricht / Notiz">
                       <p
                         style={{
-                          fontSize: '0.79rem',
+                          fontSize: '0.81rem',
                           color: '#888',
                           lineHeight: 1.6,
+                          background: '#0a0a0a',
+                          borderRadius: 8,
+                          padding: '0.85rem',
                           margin: 0,
-                          whiteSpace: 'pre-line',
                         }}
                       >
-                        {selectedLead.website_summary}
+                        {selectedLead.notes}
                       </p>
-                    </div>
-                  </CollapsibleSection>
-                )}
-
-                {/* ── Firmenprofil — 2-col grid ── */}
-                <CollapsibleSection label="Firmenprofil">
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.65rem',
-                      background: '#0a0a0a',
-                      borderRadius: 8,
-                      padding: '0.85rem',
-                    }}
-                  >
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 0.75rem' }}>
-                      {[
-                        { label: 'Branche', val: cf?.industry },
-                        { label: 'Typ', val: cf?.company_type },
-                        { label: 'Größe', val: cf?.company_size },
-                        {
-                          label: 'Mitarbeiter',
-                          val: cf?.employee_count ? `${cf.employee_count} Mitarbeiter` : undefined,
-                        },
-                        { label: 'Position', val: cf?.job_title },
-                        { label: 'Budget', val: cf?.budget_estimate, highlight: true },
-                        { label: 'Jahresumsatz', val: cf?.annual_revenue },
-                      ]
-                        .filter((r) => r.val)
-                        .map((r) => (
-                          <div key={r.label}>
-                            <div
-                              style={{
-                                fontSize: '0.67rem',
-                                color: '#444',
-                                marginBottom: '0.15rem',
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.04em',
-                              }}
-                            >
-                              {r.label}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: '0.81rem',
-                                color: r.highlight ? '#4ade80' : '#ccc',
-                                fontWeight: r.highlight ? 600 : 400,
-                              }}
-                            >
-                              {r.val as string}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                    {(cf?.technologies as string[])?.length > 0 && (
-                      <div>
-                        <div
-                          style={{
-                            fontSize: '0.67rem',
-                            color: '#444',
-                            marginBottom: '0.3rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                          }}
-                        >
-                          Technologien
-                        </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                          {(cf!.technologies as string[]).map((t) => (
-                            <span
-                              key={t}
-                              style={{
-                                background: 'rgba(107,122,255,0.1)',
-                                color: '#818cf8',
-                                borderRadius: 999,
-                                padding: '2px 8px',
-                                fontSize: '0.71rem',
-                              }}
-                            >
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {!!cf?.linkedin_url && (
-                      <div>
-                        <div
-                          style={{
-                            fontSize: '0.67rem',
-                            color: '#444',
-                            marginBottom: '0.15rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                          }}
-                        >
-                          LinkedIn
-                        </div>
-                        <a
-                          href={cf.linkedin_url as string}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: '#60a5fa', fontSize: '0.79rem', textDecoration: 'none' }}
-                        >
-                          Profil öffnen ↗
-                        </a>
-                      </div>
-                    )}
-                    {!!cf?.email_status && (
-                      <div>
-                        <div
-                          style={{
-                            fontSize: '0.67rem',
-                            color: '#444',
-                            marginBottom: '0.15rem',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                          }}
-                        >
-                          E-Mail Status
-                        </div>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem',
-                            fontSize: '0.79rem',
-                            color: (cf.email_status as string).toLowerCase() === 'verified' ? '#4ade80' : '#888',
-                          }}
-                        >
-                          {(cf.email_status as string).toLowerCase() === 'verified' && (
-                            <span
-                              style={{ width: 6, height: 6, borderRadius: 3, background: '#4ade80', flexShrink: 0 }}
-                            />
-                          )}
-                          {cf.email_status as string}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleSection>
-
-                {/* ── Qualitätssignale — 2-col grid ── */}
-                <CollapsibleSection label="Qualitätssignale">
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                    {[
-                      { label: 'Firmen-E-Mail', val: cf?.is_company_email as boolean | undefined },
-                      { label: 'Telefon gültig', val: cf?.has_valid_phone as boolean | undefined },
-                      { label: 'Website erreichbar', val: cf?.website_loaded as boolean | undefined },
-                      {
-                        label: 'Kein Free-Mail',
-                        val: cf?.is_free_email !== undefined ? !(cf.is_free_email as boolean) : undefined,
-                      },
-                    ]
-                      .filter((r) => r.val !== undefined)
-                      .map((r) => {
-                        const ok = r.val as boolean;
-                        return (
-                          <div
-                            key={r.label}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                              background: ok ? 'rgba(74,222,128,0.06)' : 'rgba(248,113,113,0.06)',
-                              border: `1px solid ${ok ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)'}`,
-                              borderRadius: 7,
-                              padding: '0.4rem 0.65rem',
-                            }}
-                          >
-                            <span style={{ fontSize: '0.8rem', color: ok ? '#4ade80' : '#f87171', flexShrink: 0 }}>
-                              {ok ? '✓' : '✕'}
-                            </span>
-                            <span style={{ fontSize: '0.74rem', color: '#777' }}>{r.label}</span>
-                          </div>
-                        );
-                      })}
-                    {!!cf?.message_quality &&
-                      (() => {
-                        const mq = (cf.message_quality as string).toLowerCase();
-                        const c = MESSAGE_QUALITY_COLORS[mq] ?? { bg: 'rgba(255,255,255,0.04)', fg: '#555' };
-                        return (
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.4rem',
-                              background: c.bg,
-                              border: `1px solid ${c.fg}22`,
-                              borderRadius: 7,
-                              padding: '0.4rem 0.65rem',
-                              gridColumn: 'span 2',
-                            }}
-                          >
-                            <span style={{ fontSize: '0.74rem', color: c.fg }}>
-                              Nachricht: {cf.message_quality as string}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                  </div>
-                </CollapsibleSection>
-
-                {/* Notes */}
-                {selectedLead.notes && (
-                  <CollapsibleSection label="Nachricht / Notiz">
-                    <p
-                      style={{
-                        fontSize: '0.81rem',
-                        color: '#888',
-                        lineHeight: 1.6,
-                        background: '#0a0a0a',
-                        borderRadius: 8,
-                        padding: '0.85rem',
-                        margin: 0,
-                      }}
-                    >
-                      {selectedLead.notes}
-                    </p>
-                  </CollapsibleSection>
-                )}
-
-                {/* Activities */}
-                <CollapsibleSection
-                  label={`Aktivitätsverlauf${displayActivities.length > 0 ? ` (${displayActivities.length})` : ''}`}
-                >
-                  {activitiesLoading ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                          <div
-                            style={{ width: 26, height: 26, borderRadius: 7, background: '#1a1a1a', flexShrink: 0 }}
-                          />
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                            <div style={{ height: 10, borderRadius: 4, background: '#1a1a1a', width: '60%' }} />
-                            <div style={{ height: 8, borderRadius: 4, background: '#141414', width: '40%' }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : displayActivities.length === 0 ? (
-                    <p style={{ fontSize: '0.79rem', color: '#333', textAlign: 'center', padding: '1rem 0' }}>
-                      Keine Aktivitäten vorhanden.
-                    </p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {[...displayActivities]
-                        .sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
-                        .map((act) => (
-                          <ActivityItem key={act.id} act={act} />
-                        ))}
-                    </div>
+                    </CollapsibleSection>
                   )}
-                </CollapsibleSection>
+
+                  {/* Activities */}
+                  <CollapsibleSection
+                    label={`Aktivitätsverlauf${displayActivities.length > 0 ? ` (${displayActivities.length})` : ''}`}
+                  >
+                    {activitiesLoading ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                            <div
+                              style={{ width: 26, height: 26, borderRadius: 7, background: '#1a1a1a', flexShrink: 0 }}
+                            />
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                              <div style={{ height: 10, borderRadius: 4, background: '#1a1a1a', width: '60%' }} />
+                              <div style={{ height: 8, borderRadius: 4, background: '#141414', width: '40%' }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : displayActivities.length === 0 ? (
+                      <p style={{ fontSize: '0.79rem', color: '#333', textAlign: 'center', padding: '1rem 0' }}>
+                        Keine Aktivitäten vorhanden.
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {[...displayActivities]
+                          .sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
+                          .map((act) => (
+                            <ActivityItem key={act.id} act={act} />
+                          ))}
+                      </div>
+                    )}
+                  </CollapsibleSection>
+                </div>
               </div>
             </div>
           </div>
