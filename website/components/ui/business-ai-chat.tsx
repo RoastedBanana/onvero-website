@@ -12,7 +12,6 @@ import {
   Mic,
   Paperclip,
   X,
-  Loader2,
   Plus,
   MessageSquare,
   Trash2,
@@ -20,6 +19,8 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { DottedSurface } from "@/components/ui/dotted-surface";
+import ReactMarkdown from "react-markdown";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 
 const WEBHOOK = "https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat";
 const STORAGE_KEY = "onvero_chat_sessions";
@@ -280,16 +281,23 @@ export function BusinessAIChat() {
                       <img src={msg.imageUrl} alt="Upload" className="rounded-lg mb-2 object-cover"
                         style={{ maxWidth: 180, maxHeight: 120, border: "1px solid rgba(255,255,255,0.1)" }} />
                     )}
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                    {msg.role === "ai" ? (
+                      <div className="prose prose-invert prose-sm max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:mb-2 [&_ol]:mb-2 [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mb-1 [&_strong]:text-white [&_a]:text-blue-400 [&_a]:underline [&_code]:bg-white/10 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-white/5 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto">
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                    )}
                   </div>
                 </div>
               ))}
               {loading && (
                 <div className="flex justify-start">
-                  <div className="rounded-2xl px-4 py-3 flex items-center gap-2"
+                  <div className="rounded-2xl px-4 py-3"
                     style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <Loader2 className="w-4 h-4 animate-spin" style={{ color: "rgba(255,255,255,0.4)" }} />
-                    <span className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>Denkt nach…</span>
+                    <TextShimmer className="text-sm font-medium" duration={1}>
+                      Denkt nach…
+                    </TextShimmer>
                   </div>
                 </div>
               )}
