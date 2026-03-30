@@ -1118,6 +1118,37 @@ export function LeadsPage() {
           );
         })()}
 
+        {/* Table Footer */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '10px 0',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            fontSize: 12,
+            color: '#4b5563',
+          }}
+        >
+          <span>
+            {filtered.length} Leads angezeigt · {scored} gescored · {withEmail} mit E-Mail
+          </span>
+          <button
+            onClick={() => setGeneratorOpen(true)}
+            style={{
+              fontSize: 12,
+              padding: '5px 12px',
+              borderRadius: 6,
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.04)',
+              color: '#9ca3af',
+              cursor: 'pointer',
+            }}
+          >
+            + Mehr Leads generieren
+          </button>
+        </div>
+
         {/* ── Detail Overlay ── */}
         {selectedLead && (
           <div
