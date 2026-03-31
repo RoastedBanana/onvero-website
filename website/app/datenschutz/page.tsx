@@ -183,9 +183,7 @@ export default function DatenschutzPage() {
                 Zur Ausübung Ihrer Rechte wenden Sie sich bitte an:{" "}
                 <a
                   href="mailto:info@onvero.de"
-                  style={{ color: "rgba(255,255,255,0.8)" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
+                  className="text-white/80 hover:text-white transition-colors"
                 >
                   info@onvero.de
                 </a>
