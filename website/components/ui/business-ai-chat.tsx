@@ -17,6 +17,7 @@ import {
   Trash2,
   PanelLeftClose,
   PanelLeftOpen,
+  Pencil,
 } from "lucide-react";
 import { DottedSurface } from "@/components/ui/dotted-surface";
 import ReactMarkdown from "react-markdown";
@@ -98,7 +99,7 @@ function SuggestionButton({ icon, label, onClick }: { icon: React.ReactNode; lab
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 function ChatSidebar({
-  sessions, activeId, collapsed, onSelect, onNew, onDelete, onToggle,
+  sessions, activeId, collapsed, onSelect, onNew, onDelete, onRename, onToggle,
 }: {
   sessions: ChatSession[];
   activeId: string;
@@ -106,8 +107,22 @@ function ChatSidebar({
   onSelect: (id: string) => void;
   onNew: () => void;
   onDelete: (id: string) => void;
+  onRename: (id: string, title: string) => void;
   onToggle: () => void;
 }) {
+  const [editingId, setEditingId] = useState("");
+  const [editValue, setEditValue] = useState("");
+  const editRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (id: string, title: string) => {
+    setEditingId(id); setEditValue(title);
+    setTimeout(() => editRef.current?.select(), 0);
+  };
+  const commitEdit = () => {
+    if (editingId && editValue.trim()) onRename(editingId, editValue.trim());
+    setEditingId("");
+  };
+
   const groups: { label: string; items: ChatSession[] }[] = [];
   const now = new Date();
   const todayStr = now.toDateString();
@@ -155,7 +170,7 @@ function ChatSidebar({
             <p className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em]"
               style={{ color: "rgba(255,255,255,0.25)" }}>{group.label}</p>
             {group.items.map(session => (
-              <div key={session.id} onClick={() => onSelect(session.id)}
+              <div key={session.id} onClick={() => { if (editingId !== session.id) onSelect(session.id); }}
                 className="group flex items-center gap-2 mx-2 px-3 py-2 rounded-lg cursor-pointer transition-colors"
                 style={{
                   background: session.id === activeId ? "rgba(255,255,255,0.08)" : "transparent",
@@ -164,7 +179,24 @@ function ChatSidebar({
                 onMouseEnter={e => { if (session.id !== activeId) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
                 onMouseLeave={e => { if (session.id !== activeId) (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" style={{ opacity: 0.5 }} />
-                <span className="text-xs truncate flex-1">{session.title}</span>
+                {editingId === session.id ? (
+                  <input ref={editRef} value={editValue}
+                    onChange={e => setEditValue(e.target.value)}
+                    onBlur={commitEdit}
+                    onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditingId(""); }}
+                    onClick={e => e.stopPropagation()}
+                    className="text-xs flex-1 bg-transparent border-b outline-none"
+                    style={{ color: "rgba(255,255,255,0.85)", borderColor: "rgba(255,255,255,0.3)" }} />
+                ) : (
+                  <span className="text-xs truncate flex-1">{session.title}</span>
+                )}
+                <button onClick={e => { e.stopPropagation(); startEdit(session.id, session.title); }}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}>
+                  <Pencil className="w-3 h-3" />
+                </button>
                 {sessions.length > 1 && (
                   <button onClick={e => { e.stopPropagation(); onDelete(session.id); }}
                     className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer"
@@ -302,6 +334,10 @@ export function BusinessAIChat() {
     });
   }
 
+  function handleRenameChat(id: string, title: string) {
+    setSessions(prev => prev.map(s => s.id === id ? { ...s, title } : s));
+  }
+
   async function sendMessage(text: string) {
     if ((!text.trim() && !preview) || !activeSession || !sessionReady) return;
     const userMsg: Message = { role: "user", text: text.trim(), imageUrl: preview?.url };
@@ -377,7 +413,7 @@ export function BusinessAIChat() {
       <div className="relative z-10 h-full">
         <ChatSidebar
           sessions={sessions} activeId={activeId} collapsed={!sidebarOpen}
-          onSelect={setActiveId} onNew={handleNewChat} onDelete={handleDeleteChat}
+          onSelect={setActiveId} onNew={handleNewChat} onDelete={handleDeleteChat} onRename={handleRenameChat}
           onToggle={() => setSidebarOpen(p => !p)}
         />
       </div>
