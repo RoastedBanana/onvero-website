@@ -649,6 +649,14 @@ export function LeadsPage() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
+              animation: leads.length === 0 ? 'pulse 2s ease-in-out infinite' : 'none',
+              transition: 'transform 0.1s ease',
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'scale(0.97)';
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
             <Zap size={13} /> Lead Generator
@@ -863,7 +871,8 @@ export function LeadsPage() {
                 borderRadius: tokens.radius.lg,
                 padding: '16px 20px',
                 cursor: 'pointer',
-                transition: 'border-color 0.15s',
+                transform: hoveredCard === c.id ? 'translateY(-2px)' : 'translateY(0)',
+                transition: 'transform 0.15s ease, border-color 0.15s ease',
               }}
             >
               <div
@@ -1360,8 +1369,31 @@ export function LeadsPage() {
                           transition: 'background 0.1s',
                         }}
                       >
-                        <td style={{ padding: '12px 16px', width: 70 }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                        <td
+                          style={{ padding: '12px 16px', width: 70 }}
+                          onMouseEnter={() => setHoveredScore(lead.id)}
+                          onMouseLeave={() => setHoveredScore(null)}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: 3,
+                              position: 'relative',
+                            }}
+                          >
+                            {hoveredScore === lead.id && (
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  inset: -6,
+                                  borderRadius: '50%',
+                                  border: '1px solid rgba(255,255,255,0.12)',
+                                  animation: 'ringPop 0.2s ease forwards',
+                                }}
+                              />
+                            )}
                             <span
                               style={{
                                 fontSize: 15,
