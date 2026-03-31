@@ -1080,20 +1080,32 @@ export function LeadsPage() {
             </div>
           </div>
           {(() => {
-            const W = 800,
-              H = 130,
-              PAD = 24,
-              PAD_TOP = 10,
-              PAD_BOTTOM = 20;
-            const drawH = H - PAD_TOP - PAD_BOTTOM;
+            const W = 800;
+            const SVG_H = 130;
+            const PAD_TOP = 12;
+            const PAD_BOTTOM = 24;
+            const PAD_LEFT = 28;
+            const PAD_RIGHT = 8;
+            const drawH = SVG_H - PAD_TOP - PAD_BOTTOM;
+            const drawW = W - PAD_LEFT - PAD_RIGHT;
+            const maxVal = Math.max(...chartData.map((d) => d.count), 1);
+            const nullY = PAD_TOP + drawH;
+
             const pts = chartData.map((d, i) => ({
-              x: PAD + (i / 13) * (W - PAD * 2),
-              y: PAD_TOP + drawH - (d.count / maxByDate) * drawH,
+              x: PAD_LEFT + (chartData.length > 1 ? (i / (chartData.length - 1)) * drawW : drawW / 2),
+              y: PAD_TOP + drawH - (maxVal > 0 ? (d.count / maxVal) * drawH : 0),
             }));
+
             const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-            const areaD = pathD + ` L ${pts[13].x} ${H - PAD_BOTTOM} L ${pts[0].x} ${H - PAD_BOTTOM} Z`;
+            const areaD =
+              pts.length > 0
+                ? `M ${pts[0].x} ${nullY} ` +
+                  pts.map((p) => `L ${p.x} ${p.y}`).join(' ') +
+                  ` L ${pts[pts.length - 1].x} ${nullY} Z`
+                : '';
+
             return (
-              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 130, overflow: 'visible' }}>
+              <svg viewBox={`0 0 ${W} ${SVG_H}`} style={{ width: '100%', height: 130, overflow: 'visible' }}>
                 <defs>
                   <linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="rgba(99,102,241,0.12)" />
@@ -1107,24 +1119,29 @@ export function LeadsPage() {
                     </feMerge>
                   </filter>
                 </defs>
+                {/* Grid lines at 25/50/75% */}
                 {[0.25, 0.5, 0.75].map((pct, i) => (
                   <line
                     key={i}
-                    x1={PAD}
+                    x1={PAD_LEFT}
                     y1={PAD_TOP + drawH * (1 - pct)}
-                    x2={W - PAD}
+                    x2={W - PAD_RIGHT}
                     y2={PAD_TOP + drawH * (1 - pct)}
                     stroke="rgba(255,255,255,0.04)"
                   />
                 ))}
-                <text x={PAD - 6} y={PAD_TOP + 4} textAnchor="end" fontSize={8} fill="rgba(255,255,255,0.2)">
-                  {maxByDate}
+                {/* Y-axis labels */}
+                <text x={PAD_LEFT - 4} y={PAD_TOP + 4} textAnchor="end" fontSize={8} fill="rgba(255,255,255,0.25)">
+                  {maxVal}
                 </text>
-                <text x={PAD - 6} y={PAD_TOP + drawH + 4} textAnchor="end" fontSize={8} fill="rgba(255,255,255,0.2)">
+                <text x={PAD_LEFT - 4} y={nullY + 4} textAnchor="end" fontSize={8} fill="rgba(255,255,255,0.25)">
                   0
                 </text>
+                {/* Area fill */}
                 <path d={areaD} fill="url(#areaG)" />
+                {/* Glow line */}
                 <path d={pathD} fill="none" stroke="rgba(99,102,241,0.4)" strokeWidth={1.5} filter="url(#glow)" />
+                {/* Animated line */}
                 <path
                   className="anim-line"
                   d={pathD}
@@ -1135,6 +1152,7 @@ export function LeadsPage() {
                   strokeDashoffset="2000"
                   style={{ animation: 'drawLine 1.2s cubic-bezier(0.4,0,0.2,1) forwards', animationDelay: '0.3s' }}
                 />
+                {/* Data points */}
                 {pts.map(
                   (p, i) =>
                     chartData[i].count > 0 && (
@@ -1148,18 +1166,19 @@ export function LeadsPage() {
                         style={{
                           opacity: 0,
                           animation: 'fadeIn 0.3s ease forwards',
-                          animationDelay: `${0.3 + (i / 14) * 1.2}s`,
+                          animationDelay: `${0.3 + (i / chartData.length) * 1.2}s`,
                         }}
                       />
                     )
                 )}
+                {/* X-axis labels */}
                 {pts.map(
                   (p, i) =>
                     i % 3 === 0 && (
                       <text
                         key={`t${i}`}
                         x={p.x}
-                        y={H - 4}
+                        y={SVG_H - 4}
                         textAnchor="middle"
                         fontSize={9}
                         fill="rgba(255,255,255,0.2)"
