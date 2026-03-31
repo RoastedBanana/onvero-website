@@ -1,22 +1,35 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { Providers } from "@/components/providers";
-import { CookieConsent } from "@/components/CookieConsent";
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono, DM_Sans, DM_Mono } from 'next/font/google';
+import './globals.css';
+import { Providers } from '@/components/providers';
+import { CookieConsent } from '@/components/CookieConsent';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
+
+const dmSans = DM_Sans({
+  variable: '--font-dm-sans',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+});
+
+const dmMono = DM_Mono({
+  variable: '--font-dm-mono',
+  subsets: ['latin'],
+  weight: ['400', '500'],
 });
 
 export const metadata: Metadata = {
-  title: "Onvero — KI-Infrastruktur für dein Unternehmen",
-  description: "Wir bauen KI-Infrastruktur für dein Unternehmen — von der Website bis zum internen Tool. Ohne technische Vorkenntnisse. Einfach wirksam.",
+  title: 'Onvero — KI-Infrastruktur für dein Unternehmen',
+  description:
+    'Wir bauen KI-Infrastruktur für dein Unternehmen — von der Website bis zum internen Tool. Ohne technische Vorkenntnisse. Einfach wirksam.',
 };
 
 export default function RootLayout({
@@ -27,10 +40,13 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      style={{ backgroundColor: "#0f0f0f" }}
+      className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+      style={{ backgroundColor: '#0f0f0f' }}
     >
-      <body className="min-h-full flex flex-col"><Providers>{children}</Providers><CookieConsent /></body>
+      <body className="min-h-full flex flex-col">
+        <Providers>{children}</Providers>
+        <CookieConsent />
+      </body>
     </html>
   );
 }
