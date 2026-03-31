@@ -470,17 +470,26 @@ export function LeadsPage() {
   const qualified = leads.filter((l) => l.status === 'qualified').length;
 
   // Leads over time (last 14 days)
-  const byDate = useMemo(() => {
-    const acc: Record<string, number> = {};
+  // 14-day chart data (includes days with 0 leads)
+  const chartData = useMemo(() => {
+    const days: { date: string; count: number }[] = [];
+    const counts: Record<string, number> = {};
     for (const l of leads) {
       const d = l.created_at.slice(0, 10);
-      acc[d] = (acc[d] || 0) + 1;
+      counts[d] = (counts[d] || 0) + 1;
     }
-    return Object.entries(acc)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-14);
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      days.push({ date: ds, count: counts[ds] || 0 });
+    }
+    return days;
   }, [leads]);
-  const maxByDate = Math.max(...byDate.map(([, v]) => v), 1);
+  const maxByDate = Math.max(...chartData.map((d) => d.count), 1);
+
+  // Keep byDate for backward compat
+  const byDate = chartData.filter((d) => d.count > 0).map((d) => [d.date, d.count] as [string, number]);
 
   // Top 5 industries
   const topIndustries = useMemo(() => {
@@ -839,8 +848,10 @@ export function LeadsPage() {
           ))}
         </div>
 
-        {/* ── MINI CHARTS ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginBottom: 16 }}>
+        {/* ── ANIMATED CHARTS ── */}
+        <style>{`@keyframes drawLine{to{stroke-dashoffset:0}}@keyframes fadeIn{to{opacity:1}}@keyframes expandBar{to{width:var(--tw)}}@media(prefers-reduced-motion:reduce){.anim-line,.anim-dot,.anim-bar{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}.anim-bar{width:var(--tw)!important}}`}</style>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+          {/* Line Chart */}
           <div
             style={{
               background: tokens.bg.surface,
@@ -849,32 +860,83 @@ export function LeadsPage() {
               padding: '16px 20px',
             }}
           >
-            <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 8 }}>Neue Leads (letzte 14 Tage)</div>
-            {byDate.length > 0 ? (
-              <svg viewBox={`0 0 ${byDate.length * 28} 60`} style={{ width: '100%', height: 50 }}>
-                {byDate.map(([day, count], i) => {
-                  const h = Math.max((count / maxByDate) * 44, 4);
-                  return (
-                    <g key={day}>
-                      <rect
-                        x={i * 28 + 4}
-                        y={44 - h}
-                        width={20}
-                        height={h}
-                        rx={3}
-                        fill={i === byDate.length - 1 ? '#f9fafb' : 'rgba(255,255,255,0.15)'}
-                      />
-                      <text x={i * 28 + 14} y={56} textAnchor="middle" fill="#4b5563" fontSize={9}>
-                        {day.slice(8)}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            ) : (
-              <div style={{ fontSize: 12, color: '#374151', padding: '10px 0' }}>Keine Daten</div>
-            )}
+            <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 8 }}>Neue Leads (14 Tage)</div>
+            {(() => {
+              const W = 600,
+                H = 80,
+                PAD = 8;
+              const pts = chartData.map((d, i) => ({
+                x: PAD + (i / 13) * (W - PAD * 2),
+                y: H - PAD - (d.count / maxByDate) * (H - PAD * 2),
+              }));
+              const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+              const areaD = pathD + ` L ${pts[13].x} ${H} L ${pts[0].x} ${H} Z`;
+              return (
+                <svg viewBox={`0 0 ${W} ${H + 16}`} style={{ width: '100%', height: 80, overflow: 'visible' }}>
+                  <defs>
+                    <linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(99,102,241,0.15)" />
+                      <stop offset="100%" stopColor="rgba(99,102,241,0)" />
+                    </linearGradient>
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="2" result="b" />
+                      <feMerge>
+                        <feMergeNode in="b" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <path d={areaD} fill="url(#areaG)" />
+                  <path d={pathD} fill="none" stroke="rgba(99,102,241,0.4)" strokeWidth={1.5} filter="url(#glow)" />
+                  <path
+                    className="anim-line"
+                    d={pathD}
+                    fill="none"
+                    stroke="rgba(99,102,241,0.9)"
+                    strokeWidth={1.5}
+                    strokeDasharray="2000"
+                    strokeDashoffset="2000"
+                    style={{ animation: 'drawLine 1.2s cubic-bezier(0.4,0,0.2,1) forwards', animationDelay: '0.2s' }}
+                  />
+                  {pts.map(
+                    (p, i) =>
+                      chartData[i].count > 0 && (
+                        <circle
+                          className="anim-dot"
+                          key={i}
+                          cx={p.x}
+                          cy={p.y}
+                          r={3}
+                          fill="rgba(99,102,241,1)"
+                          style={{
+                            opacity: 0,
+                            animation: 'fadeIn 0.3s ease forwards',
+                            animationDelay: `${0.2 + (i / 14) * 1.2}s`,
+                          }}
+                        />
+                      )
+                  )}
+                  {pts.map(
+                    (p, i) =>
+                      i % 3 === 0 && (
+                        <text
+                          key={`t${i}`}
+                          x={p.x}
+                          y={H + 14}
+                          textAnchor="middle"
+                          fontSize={9}
+                          fill="rgba(255,255,255,0.25)"
+                        >
+                          {chartData[i].date.slice(8)}
+                        </text>
+                      )
+                  )}
+                </svg>
+              );
+            })()}
           </div>
+
+          {/* Animated Industry Bars */}
           <div
             style={{
               background: tokens.bg.surface,
@@ -884,36 +946,94 @@ export function LeadsPage() {
             }}
           >
             <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 8 }}>Top Branchen</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {topIndustries.map(([name, count]) => (
-                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: '#9ca3af',
-                      width: 80,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {name}
-                  </span>
-                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
-                    <div
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {topIndustries.map(([name, count], i) => (
+                <div key={name}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span
                       style={{
-                        width: `${(count / maxInd) * 100}%`,
-                        height: '100%',
-                        borderRadius: 2,
-                        background: 'rgba(255,255,255,0.2)',
+                        fontSize: 11,
+                        color: 'rgba(255,255,255,0.5)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: 120,
                       }}
+                    >
+                      {name}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{count}</span>
+                  </div>
+                  <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+                    <div
+                      className="anim-bar"
+                      style={
+                        {
+                          height: '100%',
+                          borderRadius: 2,
+                          background: i === 0 ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.2)',
+                          width: 0,
+                          animation: 'expandBar 0.6s cubic-bezier(0.4,0,0.2,1) forwards',
+                          animationDelay: `${0.1 + i * 0.08}s`,
+                          '--tw': `${(count / maxInd) * 100}%`,
+                        } as React.CSSProperties
+                      }
                     />
                   </div>
-                  <span style={{ fontSize: 11, color: '#6b7280', width: 20, textAlign: 'right' }}>{count}</span>
                 </div>
               ))}
               {topIndustries.length === 0 && <div style={{ fontSize: 12, color: '#374151' }}>Keine Daten</div>}
+            </div>
+          </div>
+
+          {/* Conversion Funnel */}
+          <div
+            style={{
+              background: tokens.bg.surface,
+              border: `1px solid ${tokens.bg.border}`,
+              borderRadius: tokens.radius.lg,
+              padding: '16px 20px',
+            }}
+          >
+            <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 10 }}>Conversion Funnel</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+              {[
+                { label: 'Generiert', count: leads.length, color: 'rgba(255,255,255,0.15)' },
+                { label: 'Gescored', count: scored, color: 'rgba(255,255,255,0.25)' },
+                { label: 'Mit E-Mail', count: withEmail, color: 'rgba(99,102,241,0.4)' },
+                { label: 'Kontaktiert', count: contacted + qualified, color: 'rgba(99,102,241,0.7)' },
+                { label: 'Qualifiziert', count: qualified, color: 'rgba(99,102,241,1)' },
+              ].map((s, i) => {
+                const pct = leads.length > 0 ? Math.max((s.count / leads.length) * 100, 8) : 8;
+                return (
+                  <div key={i} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span
+                      style={{ fontSize: 10, color: tokens.text.muted, width: 70, textAlign: 'right', flexShrink: 0 }}
+                    >
+                      {s.label}
+                    </span>
+                    <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                      <div
+                        className="anim-bar"
+                        style={
+                          {
+                            height: 6,
+                            borderRadius: 3,
+                            background: s.color,
+                            width: 0,
+                            animation: 'expandBar 0.6s cubic-bezier(0.4,0,0.2,1) forwards',
+                            animationDelay: `${0.15 + i * 0.1}s`,
+                            '--tw': `${pct}%`,
+                          } as React.CSSProperties
+                        }
+                      />
+                    </div>
+                    <span style={{ fontSize: 11, color: tokens.text.secondary, width: 24, flexShrink: 0 }}>
+                      {s.count}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
