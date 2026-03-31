@@ -369,6 +369,12 @@ export function LeadsPage() {
   const [rescoring, setRescoring] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
+  const [activeTab, setActiveTab] = useState('E-Mail');
+
+  // Reset tab when lead changes
+  useEffect(() => {
+    if (selectedLead) setActiveTab(selectedLead.email_draft ? 'E-Mail' : 'KI-Zusammenfassung');
+  }, [selectedLead?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDeleteLead = useCallback(
     async (leadId: string) => {
@@ -1161,821 +1167,173 @@ export function LeadsPage() {
           </button>
         </div>
 
-        {/* ── Detail Overlay ── */}
-        {selectedLead && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 50,
-              background: 'rgba(0,0,0,0.7)',
-              backdropFilter: 'blur(4px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setSelectedLead(null);
-            }}
-          >
-            <div
-              style={{
-                background: tokens.bg.surface,
-                borderRadius: 16,
-                width: '90vw',
-                maxWidth: 1100,
-                maxHeight: '92vh',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
-            >
-              {/* ── Header ── */}
+        {/* ── Detail Overlay (Person View) ── */}
+        {selectedLead &&
+          (() => {
+            const cf = (selectedLead.custom_fields ?? {}) as Record<string, unknown>;
+            const breakdown = cf.score_breakdown as Record<string, number> | undefined;
+            const ghostBtn: React.CSSProperties = {
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 8,
+              padding: '6px 14px',
+              fontSize: 12,
+              color: '#a1a1aa',
+              cursor: 'pointer',
+            };
+            const handleCopyEmail = () => {
+              if (!selectedLead.email_draft) return;
+              navigator.clipboard?.writeText(selectedLead.email_draft).catch(() => {});
+              setCopiedField('overlay_email');
+              setTimeout(() => setCopiedField(null), 500);
+            };
+            return (
               <div
                 style={{
-                  padding: '20px 24px',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  position: 'fixed',
+                  inset: 0,
+                  zIndex: 50,
+                  background: 'rgba(0,0,0,0.75)',
+                  backdropFilter: 'blur(6px)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 18,
-                  flexShrink: 0,
+                  justifyContent: 'center',
+                }}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setSelectedLead(null);
                 }}
               >
                 <div
                   style={{
-                    fontSize: 42,
-                    fontWeight: 800,
-                    color: tokens.text.primary,
-                    lineHeight: 1,
-                    flexShrink: 0,
+                    background: tokens.bg.surface,
+                    borderRadius: 16,
+                    width: '94vw',
+                    maxWidth: 1200,
+                    maxHeight: '94vh',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    border: `1px solid ${tokens.bg.borderStrong}`,
                   }}
                 >
-                  {selectedLead.score ?? '—'}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* HEADER */}
                   <div
                     style={{
-                      fontSize: 18,
-                      fontWeight: 700,
-                      color: '#fff',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '16px 24px',
+                      borderBottom: `1px solid ${tokens.bg.border}`,
                     }}
                   >
-                    {selectedLead.company_name ||
-                      `${selectedLead.first_name ?? ''} ${selectedLead.last_name ?? ''}`.trim() ||
-                      '—'}
-                  </div>
-                  <div style={{ fontSize: 14, color: '#9ca3af', marginTop: 2 }}>
-                    {[selectedLead.first_name, selectedLead.last_name].filter(Boolean).join(' ')}
-                  </div>
-                  {selectedLead.city && (
-                    <div style={{ fontSize: 12, color: '#4b5563', marginTop: 2 }}>{selectedLead.city}</div>
-                  )}
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-                    <StatusBadge status={selectedLead.status} />
-                    {!!cf?.lead_quality &&
-                      (() => {
-                        const q = (cf.lead_quality as string).toLowerCase();
-                        const { bg, fg } = QUALITY_COLORS[q] ?? { bg: '#1a1a1a', fg: '#666' };
-                        return (
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              background: bg,
-                              color: fg,
-                              borderRadius: 999,
-                              padding: '2px 8px',
-                              fontSize: 11,
-                              fontWeight: 500,
-                            }}
-                          >
-                            {cf.lead_quality as string}
-                          </span>
-                        );
-                      })()}
-                    {selectedLead.source && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: '#555',
-                          background: '#1a1a1a',
-                          borderRadius: 999,
-                          padding: '2px 8px',
-                        }}
-                      >
-                        {selectedLead.source}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedLead(null)}
-                  aria-label="Overlay schließen"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#666',
-                    cursor: 'pointer',
-                    fontSize: 28,
-                    lineHeight: 1,
-                    padding: 4,
-                    flexShrink: 0,
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* Delete confirmation */}
-              {deleteConfirmId === selectedLead.id && (
-                <div
-                  style={{
-                    padding: '0.75rem 1.25rem',
-                    background: 'rgba(239,68,68,0.06)',
-                    borderBottom: '1px solid rgba(239,68,68,0.15)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '0.5rem',
-                    flexShrink: 0,
-                  }}
-                >
-                  <span style={{ fontSize: '0.79rem', color: '#f87171' }}>
-                    Lead löschen? Kann nicht rückgängig gemacht werden.
-                  </span>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
                     <button
-                      onClick={() => setDeleteConfirmId(null)}
+                      onClick={() => setSelectedLead(null)}
                       style={{
                         background: 'none',
-                        border: '1px solid #333',
-                        color: '#888',
-                        borderRadius: 6,
-                        padding: '0.3rem 0.7rem',
-                        fontSize: '0.75rem',
+                        border: 'none',
+                        color: '#a1a1aa',
                         cursor: 'pointer',
+                        fontSize: 18,
+                        padding: '4px 8px',
                       }}
                     >
-                      Abbrechen
+                      ←
                     </button>
+                    <h2 style={{ fontSize: 20, fontWeight: 700, color: tokens.text.primary, margin: 0 }}>
+                      {selectedLead.first_name} {selectedLead.last_name}
+                    </h2>
+                    {selectedLead.company_name && (
+                      <span
+                        style={{
+                          background: 'rgba(255,255,255,0.08)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          borderRadius: 20,
+                          padding: '3px 12px',
+                          fontSize: 13,
+                          color: '#a1a1aa',
+                        }}
+                      >
+                        {selectedLead.company_name}
+                      </span>
+                    )}
+                    <div style={{ flex: 1 }} />
                     <button
-                      onClick={() => handleDeleteLead(selectedLead.id)}
+                      onClick={() => handleStatusUpdate(selectedLead.id, 'qualified')}
                       style={{
-                        background: '#ef4444',
-                        border: 'none',
-                        color: '#fff',
-                        borderRadius: 6,
-                        padding: '0.3rem 0.7rem',
-                        fontSize: '0.75rem',
+                        background: selectedLead.status === 'qualified' ? tokens.brand.primary : 'transparent',
+                        color: selectedLead.status === 'qualified' ? tokens.text.inverse : '#a1a1aa',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: 20,
+                        padding: '6px 20px',
+                        fontSize: 13,
                         fontWeight: 600,
                         cursor: 'pointer',
                       }}
                     >
-                      Löschen
+                      Qualifiziert
+                    </button>
+                    <button
+                      onClick={() => handleStatusUpdate(selectedLead.id, 'lost')}
+                      style={{
+                        background: selectedLead.status === 'lost' ? 'rgba(255,255,255,0.08)' : 'transparent',
+                        color: selectedLead.status === 'lost' ? tokens.text.primary : tokens.text.muted,
+                        border: `1px solid ${tokens.bg.border}`,
+                        borderRadius: 20,
+                        padding: '6px 20px',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Verloren
                     </button>
                   </div>
-                </div>
-              )}
 
-              {/* ── Quick Actions Bar ── */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '10px 24px',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                  flexShrink: 0,
-                  flexWrap: 'wrap',
-                }}
-              >
-                {selectedLead.email_draft && (
-                  <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(selectedLead.email_draft!).catch(() => {});
-                      setCopiedField('email_draft_action');
-                      setTimeout(() => setCopiedField(null), 1500);
-                    }}
+                  {/* SCORE + ACTIONS */}
+                  <div
                     style={{
-                      fontSize: 12,
-                      padding: '6px 12px',
-                      borderRadius: 7,
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      background:
-                        copiedField === 'email_draft_action' ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.05)',
-                      color: copiedField === 'email_draft_action' ? '#4ade80' : '#d1d5db',
-                      cursor: 'pointer',
+                      padding: '20px 24px',
+                      borderBottom: `1px solid ${tokens.bg.border}`,
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    {copiedField === 'email_draft_action' ? '✓ Kopiert' : '✉ E-Mail kopieren'}
-                  </button>
-                )}
-                {selectedLead.status === 'new' && (
-                  <button
-                    onClick={() => handleStatusUpdate(selectedLead.id, 'contacted')}
-                    style={{
-                      fontSize: 12,
-                      padding: '6px 12px',
-                      borderRadius: 7,
-                      background: tokens.brand.primary,
-                      color: tokens.text.inverse,
-                      border: 'none',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ✓ Als kontaktiert
-                  </button>
-                )}
-                {selectedLead.status === 'contacted' && (
-                  <button
-                    onClick={() => handleStatusUpdate(selectedLead.id, 'qualified')}
-                    style={{
-                      fontSize: 12,
-                      padding: '6px 12px',
-                      borderRadius: 7,
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      background: 'rgba(255,255,255,0.05)',
-                      color: '#d1d5db',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    ⭐ Qualifizieren
-                  </button>
-                )}
-                <div style={{ flex: 1 }} />
-                <button
-                  onClick={async () => {
-                    if (!tenantId || !selectedLead) return;
-                    setRescoring(true);
-                    try {
-                      const res = await fetch('/api/leads/rescore', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
-                        body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
-                      });
-                      if (!res.ok) throw new Error('Scoring fehlgeschlagen');
-                      showToast('KI-Scoring gestartet — Score wird aktualisiert');
-                      setTimeout(() => {
-                        loadLeads();
-                        if (selectedLead) handleSelectLead(selectedLead);
-                      }, 5000);
-                    } catch {
-                      showToast('Scoring konnte nicht gestartet werden');
-                    } finally {
-                      setRescoring(false);
-                    }
-                  }}
-                  disabled={rescoring}
-                  style={{
-                    fontSize: 12,
-                    padding: '6px 12px',
-                    borderRadius: 7,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.05)',
-                    color: rescoring ? '#555' : '#d1d5db',
-                    cursor: rescoring ? 'default' : 'pointer',
-                  }}
-                >
-                  {rescoring ? 'Wird bewertet…' : '↻ Neu bewerten'}
-                </button>
-                <button
-                  onClick={() => {
-                    if (window.confirm('Lead wirklich archivieren?')) handleStatusUpdate(selectedLead.id, 'archived');
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = '#ef4444';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#6b7280';
-                  }}
-                  style={{
-                    fontSize: 12,
-                    padding: '6px 12px',
-                    borderRadius: 7,
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'rgba(255,255,255,0.05)',
-                    color: '#6b7280',
-                    cursor: 'pointer',
-                    transition: 'color 0.15s',
-                  }}
-                >
-                  Archivieren
-                </button>
-              </div>
-
-              {/* ── Two-Column Grid ── */}
-              <div
-                style={{ flex: 1, display: 'grid', gridTemplateColumns: '60% 40%', minHeight: 0, overflow: 'hidden' }}
-              >
-                {/* ── LEFT COLUMN ── */}
-                <div
-                  style={{
-                    overflowY: 'auto',
-                    padding: 24,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 20,
-                    borderRight: '1px solid rgba(255,255,255,0.06)',
-                  }}
-                >
-                  {/* Disposable email warning */}
-                  {!!cf?.is_disposable_email && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        background: 'rgba(239,68,68,0.08)',
-                        border: '1px solid rgba(239,68,68,0.2)',
-                        borderRadius: 8,
-                        padding: '0.65rem 0.9rem',
-                      }}
-                    >
-                      <span style={{ color: '#f87171', fontWeight: 700, fontSize: '0.85rem' }}>!</span>
-                      <span style={{ fontSize: '0.79rem', color: '#f87171', fontWeight: 500 }}>
-                        Wegwerf-E-Mail erkannt — Lead wahrscheinlich unbrauchbar
-                      </span>
-                    </div>
-                  )}
-
-                  {/* AI Tags as colored badges (max 4 visible, toggle for rest) */}
-                  {selectedLead.ai_tags &&
-                    selectedLead.ai_tags.length > 0 &&
-                    (() => {
-                      const allTags = selectedLead.ai_tags;
-                      const visible = showAllTags ? allTags : allTags.slice(0, 4);
-                      const hiddenCount = allTags.length - 4;
-                      const tagColor = (_t: string) => {
-                        return { bg: 'rgba(255,255,255,0.06)', fg: '#a1a1aa' };
-                      };
-                      return (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {visible.map((tag) => {
-                            const { bg, fg } = tagColor(tag.toLowerCase());
-                            return (
-                              <span
-                                key={tag}
-                                style={{
-                                  background: bg,
-                                  color: fg,
-                                  borderRadius: 999,
-                                  padding: '2px 8px',
-                                  fontSize: 11,
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {tag.replace(/_/g, ' ')}
-                              </span>
-                            );
-                          })}
-                          {hiddenCount > 0 && !showAllTags && (
-                            <button
-                              onClick={() => setShowAllTags(true)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#6b7280',
-                                fontSize: 11,
-                                cursor: 'pointer',
-                                padding: '2px 4px',
-                              }}
-                            >
-                              +{hiddenCount} weitere
-                            </button>
-                          )}
-                          {showAllTags && hiddenCount > 0 && (
-                            <button
-                              onClick={() => setShowAllTags(false)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: '#6b7280',
-                                fontSize: 11,
-                                cursor: 'pointer',
-                                padding: '2px 4px',
-                              }}
-                            >
-                              weniger
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                  {/* ── E-Mail-Skript ── */}
-                  {selectedLead.email_draft && (
-                    <CollapsibleSection label="E-Mail-Skript">
-                      <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem', position: 'relative' }}>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard?.writeText(selectedLead.email_draft!).catch(() => {});
-                            setCopiedField('email_draft');
-                            setTimeout(() => setCopiedField(null), 500);
-                          }}
-                          style={{
-                            position: 'absolute',
-                            top: '0.6rem',
-                            right: '0.6rem',
-                            background: copiedField === 'email_draft' ? 'rgba(74,222,128,0.12)' : '#1a1a1a',
-                            border: `1px solid ${copiedField === 'email_draft' ? 'rgba(74,222,128,0.3)' : '#2a2a2a'}`,
-                            color: copiedField === 'email_draft' ? '#4ade80' : '#888',
-                            borderRadius: 6,
-                            padding: '0.3rem 0.6rem',
-                            fontSize: '0.72rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s',
-                          }}
-                        >
-                          {copiedField === 'email_draft' ? 'Kopiert ✓' : 'Kopieren'}
-                        </button>
-                        <p
-                          style={{
-                            fontSize: '0.79rem',
-                            color: '#888',
-                            lineHeight: 1.6,
-                            margin: 0,
-                            whiteSpace: 'pre-line',
-                            paddingRight: '4.5rem',
-                          }}
-                        >
-                          {selectedLead.email_draft}
-                        </p>
-                      </div>
-                    </CollapsibleSection>
-                  )}
-
-                  {/* AI Summary */}
-                  {selectedLead.ai_summary && (
-                    <CollapsibleSection label="KI-Zusammenfassung">
-                      <p
-                        style={{
-                          fontSize: '0.81rem',
-                          color: '#888',
-                          lineHeight: 1.6,
-                          background: '#0a0a0a',
-                          borderRadius: 8,
-                          padding: '0.85rem',
-                          margin: 0,
-                        }}
-                      >
-                        {selectedLead.ai_summary}
-                      </p>
-                    </CollapsibleSection>
-                  )}
-
-                  {/* AI Next Action */}
-                  {selectedLead.ai_next_action && (
-                    <div
-                      style={{
-                        background: 'rgba(234,179,8,0.05)',
-                        border: '1px solid rgba(234,179,8,0.15)',
-                        borderRadius: 8,
-                        padding: '0.85rem',
-                      }}
-                    >
-                      <label style={{ ...lbl, color: 'rgba(234,179,8,0.7)', marginBottom: '0.4rem', display: 'block' }}>
-                        Empfohlene Aktion
-                      </label>
-                      <p style={{ fontSize: '0.81rem', color: '#ccc', lineHeight: 1.5, margin: 0 }}>
-                        {selectedLead.ai_next_action}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* ── Follow-up Context ── */}
-                  {!!cf?.follow_up_context &&
-                    (() => {
-                      const fuc = cf.follow_up_context as Record<string, unknown>;
-                      const items = [
-                        { label: 'Unternehmen', val: fuc.company_description as string | undefined },
-                        { label: 'Pain Points', val: fuc.pain_points as string | undefined },
-                        { label: 'Automatisierungspotenzial', val: fuc.automation_opportunities as string | undefined },
-                        {
-                          label: 'Gesprächseinstieg',
-                          val: fuc.conversation_opener as string | undefined,
-                          highlight: true,
-                        },
-                      ].filter((r) => r.val);
-                      if (items.length === 0) return null;
-                      return (
-                        <CollapsibleSection label="Follow-up Kontext">
-                          <div
-                            style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '0.65rem',
-                              background: '#0a0a0a',
-                              borderRadius: 8,
-                              padding: '0.85rem',
-                            }}
-                          >
-                            {items.map((r) => (
-                              <div key={r.label}>
-                                <div
-                                  style={{
-                                    fontSize: '0.67rem',
-                                    color: r.highlight ? 'rgba(107,122,255,0.7)' : '#444',
-                                    marginBottom: '0.2rem',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.04em',
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {r.label}
-                                </div>
-                                <div
-                                  style={{
-                                    fontSize: '0.81rem',
-                                    color: r.highlight ? '#c4c8ff' : '#888',
-                                    lineHeight: 1.5,
-                                  }}
-                                >
-                                  {r.val}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CollapsibleSection>
-                      );
-                    })()}
-                </div>
-
-                {/* ── RIGHT COLUMN ── */}
-                <div style={{ overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  {/* Kontaktdaten */}
-                  <CollapsibleSection label="Kontaktdaten">
-                    <div
-                      style={{
-                        background: '#0a0a0a',
-                        borderRadius: 8,
-                        padding: '0.85rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.45rem',
-                      }}
-                    >
-                      {selectedLead.email && (
-                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
-                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>E-Mail</span>
-                          <span style={{ color: '#ccc', wordBreak: 'break-all', flex: 1 }}>{selectedLead.email}</span>
-                          <button
-                            onClick={() => copyWithFeedback(selectedLead.email!, 'email')}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: copiedField === 'email' ? '#4ade80' : '#444',
-                              cursor: 'pointer',
-                              fontSize: '0.78rem',
-                              padding: '0 0.15rem',
-                              flexShrink: 0,
-                            }}
-                            title="Kopieren"
-                          >
-                            {copiedField === 'email' ? '✓' : '⎘'}
-                          </button>
-                        </div>
-                      )}
-                      {(cf?.normalized_phone ?? selectedLead.phone) && (
-                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
-                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Telefon</span>
-                          <span style={{ color: '#ccc', flex: 1 }}>
-                            {(cf?.normalized_phone as string) ?? selectedLead.phone}
-                          </span>
-                          <button
-                            onClick={() =>
-                              copyWithFeedback((cf?.normalized_phone as string) ?? selectedLead.phone!, 'phone')
-                            }
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: copiedField === 'phone' ? '#4ade80' : '#444',
-                              cursor: 'pointer',
-                              fontSize: '0.78rem',
-                              padding: '0 0.15rem',
-                              flexShrink: 0,
-                            }}
-                            title="Kopieren"
-                          >
-                            {copiedField === 'phone' ? '✓' : '⎘'}
-                          </button>
-                        </div>
-                      )}
-                      {!!cf?.job_title && (
-                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem' }}>
-                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Position</span>
-                          <span style={{ color: '#ccc' }}>{cf.job_title as string}</span>
-                        </div>
-                      )}
-                      {!!cf?.linkedin_url && (
-                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem', alignItems: 'center' }}>
-                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>LinkedIn</span>
-                          <a
-                            href={cf.linkedin_url as string}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ color: '#60a5fa', fontSize: '0.79rem', textDecoration: 'none' }}
-                          >
-                            Profil öffnen ↗
-                          </a>
-                        </div>
-                      )}
-                      {!!selectedLead.estimated_value && (
-                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.81rem' }}>
-                          <span style={{ color: '#444', minWidth: 72, flexShrink: 0 }}>Deal-Wert</span>
-                          <span style={{ color: '#4ade80', fontWeight: 600 }}>
-                            {new Intl.NumberFormat('de-DE', {
-                              style: 'currency',
-                              currency: 'EUR',
-                              maximumFractionDigits: 0,
-                            }).format(selectedLead.estimated_value)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </CollapsibleSection>
-
-                  {/* ── KI-Scoring ── */}
-                  <CollapsibleSection label="KI-Scoring">
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                      {(() => {
-                        const sb = (cf?.score_breakdown ?? DUMMY_CF.score_breakdown) as Record<string, number>;
-                        const dims = [
-                          {
-                            key: 'kontaktqualitaet',
-                            alt: 'kontakt_vertrauen',
-                            label: 'Kontaktqualität',
-                            max: 25,
-                            color: 'rgba(255,255,255,0.9)',
-                          },
-                          {
-                            key: 'unternehmensfit',
-                            alt: 'unternehmensfit',
-                            label: 'Unternehmensfit',
-                            max: 35,
-                            color: 'rgba(255,255,255,0.9)',
-                          },
-                          {
-                            key: 'entscheidungsposition',
-                            alt: 'kaufbereitschaft',
-                            label: 'Entscheidungsposition',
-                            max: 25,
-                            color: 'rgba(255,255,255,0.9)',
-                          },
-                          {
-                            key: 'kaufsignale',
-                            alt: 'kaufsignale',
-                            label: 'Kaufsignale',
-                            max: 15,
-                            color: 'rgba(255,255,255,0.9)',
-                          },
-                          { key: 'abzuege', alt: 'abzuege', label: 'Abzüge', max: 15, color: 'rgba(255,255,255,0.3)' },
-                        ];
-                        return dims.map(({ key, alt, label, max, color }) => {
-                          const v = sb[key] ?? sb[alt] ?? 0;
-                          const pct = Math.min((Math.abs(v) / max) * 100, 100);
-                          return (
-                            <div key={key} style={{ marginBottom: 8 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                <span style={{ fontSize: 11, color: '#9ca3af' }}>{label}</span>
-                                <span style={{ fontSize: 11, fontWeight: 600, color: '#f9fafb' }}>
-                                  {v}/{max}
-                                </span>
-                              </div>
-                              <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}>
-                                <div
-                                  style={{
-                                    width: `${pct}%`,
-                                    height: '100%',
-                                    borderRadius: 2,
-                                    background: color,
-                                    transition: 'width 0.5s ease',
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
+                    <div>
                       <div
                         style={{
-                          borderTop: '1px solid #1a1a1a',
-                          paddingTop: '0.5rem',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: '0.78rem',
+                          fontSize: 52,
+                          fontWeight: 700,
+                          color: tokens.text.primary,
+                          lineHeight: 1,
+                          letterSpacing: '-0.03em',
                         }}
                       >
-                        <span style={{ color: '#555' }}>Gesamt-Score</span>
-                        <span style={{ fontWeight: 700, color: getScoreColor(selectedLead.score).fg }}>
-                          {selectedLead.score ?? '—'} / 100
+                        {selectedLead.score ?? '—'}
+                        <span style={{ fontSize: 22, color: tokens.text.muted, fontWeight: 400, marginLeft: 4 }}>
+                          /100
                         </span>
                       </div>
-                      {/* Stärken & Bedenken — 2-col */}
-                      {(() => {
-                        const strengths = ((cf?.strengths ?? DUMMY_CF.strengths) as string[]) ?? [];
-                        const concerns = ((cf?.concerns ?? DUMMY_CF.concerns) as string[]) ?? [];
-                        if (strengths.length === 0 && concerns.length === 0) return null;
-                        return (
-                          <div
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: '1fr 1fr',
-                              gap: '0.75rem',
-                              marginTop: '0.25rem',
-                            }}
-                          >
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: '0.67rem',
-                                  color: '#4ade80',
-                                  fontWeight: 600,
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.04em',
-                                  marginBottom: '0.4rem',
-                                }}
-                              >
-                                Stärken
-                              </div>
-                              {strengths.map((s, i) => (
-                                <div
-                                  key={i}
-                                  style={{
-                                    display: 'flex',
-                                    gap: '0.35rem',
-                                    fontSize: '0.76rem',
-                                    color: '#888',
-                                    marginBottom: '0.3rem',
-                                    lineHeight: 1.4,
-                                  }}
-                                >
-                                  <span style={{ color: '#4ade80', flexShrink: 0 }}>✓</span>
-                                  {s}
-                                </div>
-                              ))}
-                            </div>
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: '0.67rem',
-                                  color: '#fde047',
-                                  fontWeight: 600,
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.04em',
-                                  marginBottom: '0.4rem',
-                                }}
-                              >
-                                Bedenken
-                              </div>
-                              {concerns.map((s, i) => (
-                                <div
-                                  key={i}
-                                  style={{
-                                    display: 'flex',
-                                    gap: '0.35rem',
-                                    fontSize: '0.76rem',
-                                    color: '#888',
-                                    marginBottom: '0.3rem',
-                                    lineHeight: 1.4,
-                                  }}
-                                >
-                                  <span style={{ color: '#fde047', flexShrink: 0 }}>⚠</span>
-                                  {s}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      {/* Red flags */}
-                      {((cf?.red_flags ?? DUMMY_CF.red_flags) as string[])?.length > 0 && (
-                        <div
-                          style={{
-                            background: 'rgba(239,68,68,0.06)',
-                            border: '1px solid rgba(239,68,68,0.15)',
-                            borderRadius: 7,
-                            padding: '0.6rem 0.8rem',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.3rem',
-                          }}
-                        >
-                          {((cf?.red_flags ?? DUMMY_CF.red_flags) as string[]).map((s, i) => (
-                            <div key={i} style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: '#888' }}>
-                              <span style={{ color: '#f87171', flexShrink: 0 }}>✕</span>
-                              {s}
-                            </div>
-                          ))}
-                        </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: tokens.text.muted,
+                          marginTop: 6,
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Lead Score
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {selectedLead.email_draft && (
+                        <button onClick={handleCopyEmail} style={ghostBtn}>
+                          {copiedField === 'overlay_email' ? 'Kopiert' : 'E-Mail kopieren'}
+                        </button>
                       )}
                       <button
                         onClick={async () => {
-                          if (!tenantId || !selectedLead) return;
+                          if (!tenantId) return;
                           setRescoring(true);
                           try {
                             const res = await fetch('/api/leads/rescore', {
@@ -1983,326 +1341,535 @@ export function LeadsPage() {
                               headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
                               body: JSON.stringify({ lead_id: selectedLead.id, tenant_id: tenantId }),
                             });
-                            if (!res.ok) throw new Error('Scoring fehlgeschlagen');
-                            showToast('KI-Scoring gestartet — Score wird aktualisiert');
+                            if (!res.ok) throw new Error();
+                            showToast('KI-Scoring gestartet');
                             setTimeout(() => {
                               loadLeads();
-                              if (selectedLead) handleSelectLead(selectedLead);
+                              handleSelectLead(selectedLead);
                             }, 5000);
                           } catch {
-                            showToast('Scoring konnte nicht gestartet werden');
+                            showToast('Scoring fehlgeschlagen');
                           } finally {
                             setRescoring(false);
                           }
                         }}
                         disabled={rescoring}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.4rem',
-                          width: '100%',
-                          marginTop: '0.25rem',
-                          background: '#1a1a1a',
-                          border: '1px solid #2a2a2a',
-                          color: rescoring ? '#555' : '#888',
-                          borderRadius: 7,
-                          padding: '0.45rem',
-                          fontSize: '0.76rem',
-                          cursor: rescoring ? 'default' : 'pointer',
-                        }}
+                        style={ghostBtn}
                       >
-                        {rescoring ? (
-                          <>
-                            <UniqueLoading size="sm" /> Wird bewertet…
-                          </>
-                        ) : (
-                          '↻ Neu bewerten'
-                        )}
+                        {rescoring ? 'Wird bewertet...' : 'Neu bewerten'}
                       </button>
                     </div>
-                  </CollapsibleSection>
+                  </div>
 
-                  {/* ── Website-Analyse ── */}
-                  {selectedLead.website_summary && (
-                    <CollapsibleSection label="Website-Analyse" defaultOpen={false}>
-                      <div style={{ background: '#0a0a0a', borderRadius: 8, padding: '0.85rem' }}>
-                        {selectedLead.website_title && (
-                          <div style={{ fontSize: '0.82rem', color: '#ccc', fontWeight: 600, marginBottom: '0.4rem' }}>
-                            {selectedLead.website_title}
-                          </div>
-                        )}
-                        <p
+                  {/* SCORING DIMENSIONS */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      borderBottom: `1px solid ${tokens.bg.border}`,
+                    }}
+                  >
+                    {[
+                      { label: 'Kontaktqualitaet', key: 'kontaktqualitaet', alt: 'kontakt_vertrauen', max: 25 },
+                      { label: 'Unternehmensfit', key: 'unternehmensfit', alt: 'unternehmensfit', max: 35 },
+                      { label: 'Entscheidung', key: 'entscheidungsposition', alt: 'kaufbereitschaft', max: 25 },
+                      { label: 'Kaufsignale', key: 'kaufsignale', alt: 'kaufsignale', max: 15 },
+                    ].map((dim, i) => {
+                      const val = breakdown?.[dim.key] ?? breakdown?.[dim.alt] ?? 0;
+                      const pct = val / dim.max;
+                      return (
+                        <div
+                          key={i}
                           style={{
-                            fontSize: '0.79rem',
-                            color: '#888',
-                            lineHeight: 1.6,
-                            margin: 0,
-                            whiteSpace: 'pre-line',
+                            padding: '12px 16px',
+                            borderRight: i < 3 ? `1px solid rgba(255,255,255,0.06)` : 'none',
                           }}
                         >
-                          {selectedLead.website_summary}
-                        </p>
-                      </div>
-                    </CollapsibleSection>
-                  )}
-
-                  {/* ── Firmenprofil — 2-col grid ── */}
-                  <CollapsibleSection label="Firmenprofil" defaultOpen={false}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.65rem',
-                        background: '#0a0a0a',
-                        borderRadius: 8,
-                        padding: '0.85rem',
-                      }}
-                    >
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 0.75rem' }}>
-                        {[
-                          { label: 'Branche', val: cf?.industry },
-                          { label: 'Typ', val: cf?.company_type },
-                          { label: 'Größe', val: cf?.company_size },
-                          {
-                            label: 'Mitarbeiter',
-                            val: cf?.employee_count ? `${cf.employee_count} Mitarbeiter` : undefined,
-                          },
-                          { label: 'Position', val: cf?.job_title },
-                          { label: 'Budget', val: cf?.budget_estimate, highlight: true },
-                          { label: 'Jahresumsatz', val: cf?.annual_revenue },
-                        ]
-                          .filter((r) => r.val)
-                          .map((r) => (
-                            <div key={r.label}>
-                              <div
-                                style={{
-                                  fontSize: '0.67rem',
-                                  color: '#444',
-                                  marginBottom: '0.15rem',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.04em',
-                                }}
-                              >
-                                {r.label}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: '0.81rem',
-                                  color: r.highlight ? '#4ade80' : '#ccc',
-                                  fontWeight: r.highlight ? 600 : 400,
-                                }}
-                              >
-                                {r.val as string}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                      {(cf?.technologies as string[])?.length > 0 && (
-                        <div>
                           <div
                             style={{
-                              fontSize: '0.67rem',
-                              color: '#444',
-                              marginBottom: '0.3rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            Technologien
-                          </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-                            {(cf!.technologies as string[]).map((t) => (
-                              <span
-                                key={t}
-                                style={{
-                                  background: 'rgba(107,122,255,0.1)',
-                                  color: '#818cf8',
-                                  borderRadius: 999,
-                                  padding: '2px 8px',
-                                  fontSize: '0.71rem',
-                                }}
-                              >
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {!!cf?.linkedin_url && (
-                        <div>
-                          <div
-                            style={{
-                              fontSize: '0.67rem',
-                              color: '#444',
-                              marginBottom: '0.15rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            LinkedIn
-                          </div>
-                          <a
-                            href={cf.linkedin_url as string}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ color: '#60a5fa', fontSize: '0.79rem', textDecoration: 'none' }}
-                          >
-                            Profil öffnen ↗
-                          </a>
-                        </div>
-                      )}
-                      {!!cf?.email_status && (
-                        <div>
-                          <div
-                            style={{
-                              fontSize: '0.67rem',
-                              color: '#444',
-                              marginBottom: '0.15rem',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.04em',
-                            }}
-                          >
-                            E-Mail Status
-                          </div>
-                          <span
-                            style={{
+                              background:
+                                pct >= 0.8
+                                  ? 'rgba(255,255,255,0.15)'
+                                  : pct >= 0.5
+                                    ? 'rgba(255,255,255,0.08)'
+                                    : 'rgba(255,255,255,0.03)',
+                              border: `1px solid rgba(255,255,255,${pct >= 0.8 ? '0.2' : '0.08'})`,
+                              borderRadius: 20,
+                              padding: '4px 10px',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '0.3rem',
-                              fontSize: '0.79rem',
-                              color: (cf.email_status as string).toLowerCase() === 'verified' ? '#4ade80' : '#888',
+                              gap: 6,
+                              marginBottom: 6,
                             }}
                           >
-                            {(cf.email_status as string).toLowerCase() === 'verified' && (
-                              <span
-                                style={{ width: 6, height: 6, borderRadius: 3, background: '#4ade80', flexShrink: 0 }}
-                              />
-                            )}
-                            {cf.email_status as string}
-                          </span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: tokens.text.primary }}>
+                              {val}/{dim.max}
+                            </span>
+                            {pct >= 0.8 && <span style={{ fontSize: 11, color: '#a1a1aa' }}>✓</span>}
+                          </div>
+                          <div style={{ fontSize: 11, color: tokens.text.muted }}>{dim.label}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* TWO-COLUMN BODY */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', flex: 1, overflow: 'hidden' }}>
+                    {/* LEFT: Details + KI-Analyse */}
+                    <div
+                      style={{
+                        overflowY: 'auto',
+                        padding: 20,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        borderRight: `1px solid ${tokens.bg.border}`,
+                      }}
+                    >
+                      {/* Details Card */}
+                      <div
+                        style={{
+                          background: tokens.bg.raised,
+                          border: `1px solid ${tokens.bg.border}`,
+                          borderRadius: 12,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div style={{ padding: '12px 16px', borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#a1a1aa' }}>Details</span>
+                        </div>
+                        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          {[
+                            {
+                              label: 'Name',
+                              value: `${selectedLead.first_name ?? ''} ${selectedLead.last_name ?? ''}`.trim() || '—',
+                            },
+                            { label: 'Firma', value: selectedLead.company_name ?? '—' },
+                            { label: 'E-Mail', value: selectedLead.email ?? '—' },
+                            { label: 'Telefon', value: (cf.normalized_phone as string) ?? selectedLead.phone ?? '—' },
+                            { label: 'Stadt', value: selectedLead.city ?? '—' },
+                          ].map(({ label, value }) => (
+                            <div key={label}>
+                              <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 2 }}>{label}</div>
+                              <div style={{ fontSize: 13, fontWeight: 500, color: tokens.text.primary }}>{value}</div>
+                            </div>
+                          ))}
+                          {!!cf.linkedin_url && (
+                            <div>
+                              <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 2 }}>LinkedIn</div>
+                              <a
+                                href={cf.linkedin_url as string}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  color: tokens.text.primary,
+                                  textDecoration: 'none',
+                                  borderBottom: '1px solid rgba(255,255,255,0.2)',
+                                }}
+                              >
+                                Profil offnen
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* KI-Analyse Card */}
+                      <div
+                        style={{
+                          background: tokens.bg.raised,
+                          border: `1px solid ${tokens.bg.border}`,
+                          borderRadius: 12,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div style={{ padding: '12px 16px', borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#a1a1aa' }}>KI-Analyse</span>
+                        </div>
+                        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {[
+                            { label: 'Qualitaet', value: cf.lead_quality ?? '—' },
+                            { label: 'Branche', value: (cf.industry_de as string) ?? (cf.industry as string) ?? '—' },
+                            { label: 'Budget', value: cf.budget_estimate ?? '—' },
+                            { label: 'Kontakt in', value: cf.contact_in_hours ? `${cf.contact_in_hours}h` : '—' },
+                            { label: 'Quelle', value: selectedLead.source ?? '—' },
+                          ].map(({ label, value }) => (
+                            <div key={label} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: 12, color: tokens.text.muted }}>{label}</span>
+                              <span style={{ fontSize: 12, fontWeight: 500, color: tokens.text.secondary }}>
+                                {String(value)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      {selectedLead.ai_tags && selectedLead.ai_tags.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                          {selectedLead.ai_tags.map((tag) => (
+                            <span
+                              key={tag}
+                              style={{
+                                background: 'rgba(255,255,255,0.06)',
+                                color: '#a1a1aa',
+                                borderRadius: 6,
+                                padding: '2px 8px',
+                                fontSize: 11,
+                              }}
+                            >
+                              {tag.replace(/_/g, ' ')}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
-                  </CollapsibleSection>
 
-                  {/* ── Qualitätssignale — 2-col grid ── */}
-                  <CollapsibleSection label="Qualitätssignale" defaultOpen={false}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                      {[
-                        { label: 'Firmen-E-Mail', val: cf?.is_company_email as boolean | undefined },
-                        { label: 'Telefon gültig', val: cf?.has_valid_phone as boolean | undefined },
-                        { label: 'Website erreichbar', val: cf?.website_loaded as boolean | undefined },
-                        {
-                          label: 'Kein Free-Mail',
-                          val: cf?.is_free_email !== undefined ? !(cf.is_free_email as boolean) : undefined,
-                        },
-                      ]
-                        .filter((r) => r.val !== undefined)
-                        .map((r) => {
-                          const ok = r.val as boolean;
-                          return (
-                            <div
-                              key={r.label}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                background: ok ? 'rgba(74,222,128,0.06)' : 'rgba(248,113,113,0.06)',
-                                border: `1px solid ${ok ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)'}`,
-                                borderRadius: 7,
-                                padding: '0.4rem 0.65rem',
-                              }}
-                            >
-                              <span style={{ fontSize: '0.8rem', color: ok ? '#4ade80' : '#f87171', flexShrink: 0 }}>
-                                {ok ? '✓' : '✕'}
-                              </span>
-                              <span style={{ fontSize: '0.74rem', color: '#777' }}>{r.label}</span>
-                            </div>
-                          );
-                        })}
-                      {!!cf?.message_quality &&
-                        (() => {
-                          const mq = (cf.message_quality as string).toLowerCase();
-                          const c = MESSAGE_QUALITY_COLORS[mq] ?? { bg: 'rgba(255,255,255,0.04)', fg: '#555' };
-                          return (
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                background: c.bg,
-                                border: `1px solid ${c.fg}22`,
-                                borderRadius: 7,
-                                padding: '0.4rem 0.65rem',
-                                gridColumn: 'span 2',
-                              }}
-                            >
-                              <span style={{ fontSize: '0.74rem', color: c.fg }}>
-                                Nachricht: {cf.message_quality as string}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                    </div>
-                  </CollapsibleSection>
-
-                  {/* Notes */}
-                  {selectedLead.notes && (
-                    <CollapsibleSection label="Nachricht / Notiz">
-                      <p
+                    {/* RIGHT: Tabs */}
+                    <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                      {/* Tab Navigation */}
+                      <div
                         style={{
-                          fontSize: '0.81rem',
-                          color: '#888',
-                          lineHeight: 1.6,
-                          background: '#0a0a0a',
-                          borderRadius: 8,
-                          padding: '0.85rem',
-                          margin: 0,
+                          display: 'flex',
+                          gap: 0,
+                          borderBottom: `1px solid ${tokens.bg.border}`,
+                          padding: '0 20px',
+                          position: 'sticky',
+                          top: 0,
+                          background: tokens.bg.surface,
+                          zIndex: 1,
                         }}
                       >
-                        {selectedLead.notes}
-                      </p>
-                    </CollapsibleSection>
-                  )}
-
-                  {/* Activities */}
-                  <CollapsibleSection
-                    label={`Aktivitätsverlauf${displayActivities.length > 0 ? ` (${displayActivities.length})` : ''}`}
-                  >
-                    {activitiesLoading ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {[1, 2, 3].map((i) => (
-                          <div key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                            <div
-                              style={{ width: 26, height: 26, borderRadius: 7, background: '#1a1a1a', flexShrink: 0 }}
-                            />
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                              <div style={{ height: 10, borderRadius: 4, background: '#1a1a1a', width: '60%' }} />
-                              <div style={{ height: 8, borderRadius: 4, background: '#141414', width: '40%' }} />
-                            </div>
-                          </div>
+                        {['E-Mail', 'KI-Zusammenfassung', 'Website', 'Aktivitaeten'].map((tab) => (
+                          <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '12px 16px',
+                              fontSize: 13,
+                              color: activeTab === tab ? tokens.text.primary : tokens.text.muted,
+                              borderBottom:
+                                activeTab === tab ? `2px solid ${tokens.text.primary}` : '2px solid transparent',
+                              fontWeight: activeTab === tab ? 600 : 400,
+                            }}
+                          >
+                            {tab}
+                          </button>
                         ))}
                       </div>
-                    ) : displayActivities.length === 0 ? (
-                      <p style={{ fontSize: '0.79rem', color: '#333', textAlign: 'center', padding: '1rem 0' }}>
-                        Keine Aktivitäten vorhanden.
-                      </p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {[...displayActivities]
-                          .sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
-                          .map((act) => (
-                            <ActivityItem key={act.id} act={act} />
-                          ))}
+
+                      {/* Tab Content */}
+                      <div style={{ padding: 20, flex: 1 }}>
+                        {activeTab === 'E-Mail' && (
+                          <div>
+                            {selectedLead.email_draft ? (
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: tokens.text.muted,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginBottom: 12,
+                                  }}
+                                >
+                                  Bereit zum Senden
+                                </div>
+                                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                                  <div
+                                    style={{
+                                      width: 36,
+                                      height: 36,
+                                      borderRadius: '50%',
+                                      flexShrink: 0,
+                                      background: 'rgba(255,255,255,0.06)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: 14,
+                                      color: '#a1a1aa',
+                                    }}
+                                  >
+                                    @
+                                  </div>
+                                  <div
+                                    style={{
+                                      flex: 1,
+                                      background: tokens.bg.raised,
+                                      border: `1px solid ${tokens.bg.border}`,
+                                      borderRadius: 10,
+                                      padding: '12px 16px',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                      <span style={{ fontSize: 13, fontWeight: 600, color: tokens.text.primary }}>
+                                        {selectedLead.email_draft.split('\n')[0]}
+                                      </span>
+                                      <button
+                                        onClick={handleCopyEmail}
+                                        style={{
+                                          background: tokens.brand.primary,
+                                          color: tokens.text.inverse,
+                                          border: 'none',
+                                          borderRadius: 6,
+                                          padding: '4px 12px',
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          cursor: 'pointer',
+                                        }}
+                                      >
+                                        {copiedField === 'overlay_email' ? 'Kopiert' : 'Kopieren'}
+                                      </button>
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: 13,
+                                        color: tokens.text.secondary,
+                                        lineHeight: 1.6,
+                                        whiteSpace: 'pre-line',
+                                      }}
+                                    >
+                                      {selectedLead.email_draft.split('\n').slice(1).join('\n')}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ color: tokens.text.muted, fontSize: 13 }}>
+                                Kein E-Mail-Entwurf vorhanden.
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {activeTab === 'KI-Zusammenfassung' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            {selectedLead.ai_summary && (
+                              <div
+                                style={{
+                                  background: tokens.bg.raised,
+                                  border: `1px solid ${tokens.bg.border}`,
+                                  borderRadius: 10,
+                                  padding: '14px 16px',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: tokens.text.muted,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginBottom: 8,
+                                  }}
+                                >
+                                  Zusammenfassung
+                                </div>
+                                <p style={{ fontSize: 13, color: tokens.text.secondary, lineHeight: 1.7, margin: 0 }}>
+                                  {selectedLead.ai_summary}
+                                </p>
+                              </div>
+                            )}
+                            {selectedLead.ai_next_action && (
+                              <div
+                                style={{
+                                  background: 'rgba(255,255,255,0.04)',
+                                  border: `1px solid rgba(255,255,255,0.12)`,
+                                  borderRadius: 10,
+                                  padding: '14px 16px',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: tokens.text.secondary,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginBottom: 8,
+                                  }}
+                                >
+                                  Empfohlene Aktion
+                                </div>
+                                <p style={{ fontSize: 14, color: tokens.text.primary, fontWeight: 500, margin: 0 }}>
+                                  {selectedLead.ai_next_action}
+                                </p>
+                              </div>
+                            )}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: tokens.text.muted,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginBottom: 8,
+                                  }}
+                                >
+                                  Staerken
+                                </div>
+                                {((cf.strengths ?? []) as string[]).map((s, i) => (
+                                  <div
+                                    key={i}
+                                    style={{
+                                      display: 'flex',
+                                      gap: 8,
+                                      marginBottom: 6,
+                                      fontSize: 13,
+                                      color: tokens.text.secondary,
+                                    }}
+                                  >
+                                    <span style={{ color: tokens.text.primary }}>+</span> {s}
+                                  </div>
+                                ))}
+                              </div>
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: tokens.text.muted,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginBottom: 8,
+                                  }}
+                                >
+                                  Bedenken
+                                </div>
+                                {((cf.concerns ?? []) as string[]).map((c, i) => (
+                                  <div
+                                    key={i}
+                                    style={{
+                                      display: 'flex',
+                                      gap: 8,
+                                      marginBottom: 6,
+                                      fontSize: 13,
+                                      color: tokens.text.secondary,
+                                    }}
+                                  >
+                                    <span style={{ color: tokens.text.muted }}>—</span> {c}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            {selectedLead.notes && (
+                              <div
+                                style={{
+                                  background: tokens.bg.raised,
+                                  border: `1px solid ${tokens.bg.border}`,
+                                  borderRadius: 10,
+                                  padding: '14px 16px',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: tokens.text.muted,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginBottom: 8,
+                                  }}
+                                >
+                                  Notizen
+                                </div>
+                                <p
+                                  style={{
+                                    fontSize: 13,
+                                    color: tokens.text.secondary,
+                                    lineHeight: 1.6,
+                                    margin: 0,
+                                    whiteSpace: 'pre-line',
+                                  }}
+                                >
+                                  {selectedLead.notes}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {activeTab === 'Website' && (
+                          <div>
+                            {selectedLead.website_summary ? (
+                              <div
+                                style={{
+                                  background: tokens.bg.raised,
+                                  border: `1px solid ${tokens.bg.border}`,
+                                  borderRadius: 10,
+                                  padding: '14px 16px',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: tokens.text.muted,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginBottom: 8,
+                                  }}
+                                >
+                                  Website-Analyse
+                                </div>
+                                {selectedLead.website_title && (
+                                  <div
+                                    style={{
+                                      fontSize: 14,
+                                      fontWeight: 600,
+                                      color: tokens.text.primary,
+                                      marginBottom: 8,
+                                    }}
+                                  >
+                                    {selectedLead.website_title}
+                                  </div>
+                                )}
+                                <p
+                                  style={{
+                                    fontSize: 13,
+                                    color: tokens.text.secondary,
+                                    lineHeight: 1.7,
+                                    whiteSpace: 'pre-line',
+                                    margin: 0,
+                                  }}
+                                >
+                                  {selectedLead.website_summary}
+                                </p>
+                              </div>
+                            ) : (
+                              <div style={{ color: tokens.text.muted, fontSize: 13 }}>
+                                Keine Website-Daten vorhanden.
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {activeTab === 'Aktivitaeten' && (
+                          <div>
+                            {activitiesLoading ? (
+                              <div style={{ color: tokens.text.muted, fontSize: 13 }}>Lade Aktivitaeten...</div>
+                            ) : displayActivities.length === 0 ? (
+                              <div style={{ color: tokens.text.muted, fontSize: 13 }}>
+                                Keine Aktivitaeten vorhanden.
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                {displayActivities.map((act) => (
+                                  <ActivityItem key={act.id} act={act} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </CollapsibleSection>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            );
+          })()}
       </div>
       {toast && <Toast msg={toast} onDone={() => setToast(null)} />}
     </>
