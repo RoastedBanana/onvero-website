@@ -27,7 +27,7 @@ export default function LeadKPICards({
     setMounted(true);
   }, []);
 
-  const scoreColor = avgScore >= 70 ? '#FF5C2E' : avgScore >= 45 ? '#F59E0B' : '#6B7AFF';
+  const scoreColor = '#6B7AFF';
 
   const cards = [
     {

@@ -30,14 +30,14 @@ export default function LeadsLineChart({ data, total }: LeadsLineChartProps) {
           const { ctx: canvasCtx, chartArea } = chart;
           if (!chartArea) return 'transparent';
           const gradient = canvasCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(107,122,255,0.15)');
+          gradient.addColorStop(0, 'rgba(107,122,255,0.25)');
           gradient.addColorStop(1, 'transparent');
           return gradient;
         },
         fill: true,
         tension: 0.4,
         borderWidth: 2,
-        pointRadius: 3,
+        pointRadius: (ctx: any) => (ctx.parsed.y > 0 ? 3 : 0),
         pointBackgroundColor: '#6B7AFF',
         pointBorderColor: '#ffffff',
         pointBorderWidth: 2,

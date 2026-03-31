@@ -18,7 +18,7 @@ export default function ScoreDonut({ premium, warm, cold, avgScore }: ScoreDonut
     datasets: [
       {
         data: [premium, warm, cold],
-        backgroundColor: ['#F59E0B', '#6B7AFF', 'rgba(107,122,255,0.3)'],
+        backgroundColor: ['#F59E0B', '#6B7AFF', 'rgba(107,122,255,0.25)'],
         borderWidth: 0,
       },
     ],
@@ -45,7 +45,7 @@ export default function ScoreDonut({ premium, warm, cold, avgScore }: ScoreDonut
   };
 
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#111111] p-5 px-6">
+    <div className="rounded-[12px] border border-white/[0.06] bg-[#111111] p-5 px-6">
       <div className="mb-4 text-[13px] font-semibold text-white">Score-Verteilung</div>
       <div className="flex items-center gap-6">
         <div className="relative h-[120px] w-[120px] flex-shrink-0">

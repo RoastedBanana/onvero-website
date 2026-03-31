@@ -7,6 +7,7 @@ import LeadsLineChart from '@/components/leads/LeadsLineChart';
 import TopBranchen from '@/components/leads/TopBranchen';
 import ScoreDonut from '@/components/leads/ScoreDonut';
 import ConversionFunnel from '@/components/leads/ConversionFunnel';
+import LeadsTable from '@/components/leads/LeadsTable';
 
 type StatusFilter = 'alle' | 'neu' | 'kontaktiert' | 'qualifiziert' | 'verloren';
 
@@ -53,79 +54,85 @@ export default function LeadsDashboardPage() {
 
   return (
     <div className="min-h-screen" style={{ background: '#0a0a0a', fontFamily: 'var(--font-dm-sans)' }}>
-      <div className="max-w-[1400px] mx-auto px-6 py-6">
-        {/* ── HEADER ── */}
+      <div className="max-w-[1400px] mx-auto px-6 pt-0 pb-6">
+        {/* ── STICKY HEADER ── */}
         <div
-          className="flex items-center gap-3 mb-6"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? 'translateY(0)' : 'translateY(8px)',
-            transition: 'opacity 0.4s ease, transform 0.4s ease',
-          }}
+          className="sticky top-0 z-20 flex items-center justify-between py-4 border-b border-white/5 -mx-6 px-6"
+          style={{ background: '#0a0a0a' }}
         >
-          <div className="flex-1">
-            <h1 className="text-[22px] font-semibold tracking-tight" style={{ color: '#ffffff' }}>
-              Leads
-            </h1>
-            <p className="text-[13px] mt-0.5" style={{ color: 'rgba(255,255,255,0.30)' }}>
-              Lead Intelligence Dashboard
-            </p>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.03em', color: '#fff' }}>Leads</h1>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Lead Intelligence Dashboard</p>
           </div>
-
-          {/* Search */}
-          <div className="relative" style={{ width: 260 }}>
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="rgba(255,255,255,0.30)"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Suchen..."
-              className="w-full rounded-lg text-[13px] outline-none"
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div
               style={{
-                background: '#181818',
-                border: '1px solid rgba(255,255,255,0.07)',
-                padding: '8px 12px 8px 32px',
-                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#111',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 8,
+                padding: '7px 14px',
+                width: 220,
               }}
-            />
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="rgba(255,255,255,0.3)"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Suchen..."
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  color: '#fff',
+                  fontSize: 12,
+                  width: '100%',
+                }}
+              />
+            </div>
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: '#fff',
+                color: '#000',
+                border: 'none',
+                borderRadius: 8,
+                padding: '8px 16px',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Lead Generator
+            </button>
+            <button
+              style={{
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.5)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                padding: '7px 14px',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              Filter
+            </button>
           </div>
-
-          {/* Lead Generator */}
-          <button
-            className="flex items-center gap-1.5 rounded-lg text-[13px] font-semibold cursor-pointer"
-            style={{
-              background: '#181818',
-              border: '1px solid rgba(255,255,255,0.12)',
-              padding: '8px 16px',
-              color: '#ffffff',
-            }}
-          >
-            <span style={{ fontSize: 14 }}>⚡</span> Lead Generator
-          </button>
-
-          {/* Filter */}
-          <button
-            className="rounded-lg text-[13px] cursor-pointer"
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.07)',
-              padding: '8px 14px',
-              color: 'rgba(255,255,255,0.55)',
-            }}
-          >
-            Filter
-          </button>
         </div>
 
         {/* ── STATUS TABS ── */}
@@ -253,6 +260,8 @@ export default function LeadsDashboardPage() {
             qualified={stats.byStatus.qualifiziert}
           />
         </div>
+
+        <LeadsTable />
       </div>
     </div>
   );
