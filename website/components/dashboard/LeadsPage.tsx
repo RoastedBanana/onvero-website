@@ -879,41 +879,39 @@ export function LeadsPage() {
         <div
           style={{
             display: 'flex',
-            gap: 6,
+            gap: 3,
             marginBottom: 16,
-            alignItems: 'stretch',
-            height: 36,
+            height: 40,
             opacity: mounted ? 1 : 0,
             transform: mounted ? 'translateY(0)' : 'translateY(8px)',
             transition: 'opacity 0.4s ease 100ms, transform 0.4s ease 100ms',
           }}
         >
           {[
-            { key: 'new', label: 'Neu' },
-            { key: 'contacted', label: 'Kontaktiert' },
-            { key: 'qualified', label: 'Qualifiziert' },
-            { key: 'lost', label: 'Verloren' },
-          ].map((stage) => {
-            const count = leads.filter((l) => l.status === stage.key).length;
-            const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
-            const isActive = pct > 0;
+            { key: 'new', label: 'Neu', count: leads.filter((l) => l.status === 'new').length },
+            { key: 'contacted', label: 'Kontaktiert', count: leads.filter((l) => l.status === 'contacted').length },
+            { key: 'qualified', label: 'Qualifiziert', count: leads.filter((l) => l.status === 'qualified').length },
+            { key: 'lost', label: 'Verloren', count: leads.filter((l) => l.status === 'lost').length },
+          ].map((stage, i, arr) => {
+            const pct = leads.length > 0 ? stage.count / leads.length : 0;
+            const isActive = stage.count > 0;
             return (
               <div
                 key={stage.key}
                 onClick={() => setStatusFilter(stage.key)}
                 style={{
                   flex: 1,
-                  borderRadius: 8,
                   position: 'relative',
                   overflow: 'hidden',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: `1px solid rgba(255,255,255,${isActive ? '0.12' : '0.06'})`,
+                  borderRadius: i === 0 ? '8px 0 0 8px' : i === arr.length - 1 ? '0 8px 8px 0' : 2,
+                  background: isActive ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '0 12px',
+                  padding: '0 14px',
                   cursor: 'pointer',
-                  transition: 'border-color 0.2s ease',
+                  transition: 'background 0.2s ease',
                 }}
               >
                 <div
@@ -922,17 +920,16 @@ export function LeadsPage() {
                     left: 0,
                     top: 0,
                     bottom: 0,
-                    width: `${pct}%`,
-                    background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
-                    transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
-                    borderRadius: 7,
+                    width: `${Math.max(pct * 100, isActive ? 8 : 0)}%`,
+                    background: i === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)',
+                    transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)',
                   }}
                 />
                 <span
                   style={{
                     fontSize: 12,
-                    color: isActive ? tokens.text.primary : tokens.text.muted,
-                    fontWeight: isActive ? 500 : 400,
+                    color: isActive ? '#e4e4e7' : '#374151',
+                    fontWeight: 500,
                     position: 'relative',
                     zIndex: 1,
                   }}
@@ -941,14 +938,14 @@ export function LeadsPage() {
                 </span>
                 <span
                   style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 700,
-                    color: isActive ? tokens.text.primary : '#374151',
+                    color: isActive ? '#f5f5f5' : '#374151',
                     position: 'relative',
                     zIndex: 1,
                   }}
                 >
-                  {count}
+                  {stage.count}
                 </span>
               </div>
             );
@@ -1084,16 +1081,19 @@ export function LeadsPage() {
           </div>
           {(() => {
             const W = 800,
-              H = 110,
-              PAD = 8;
+              H = 130,
+              PAD = 24,
+              PAD_TOP = 10,
+              PAD_BOTTOM = 20;
+            const drawH = H - PAD_TOP - PAD_BOTTOM;
             const pts = chartData.map((d, i) => ({
               x: PAD + (i / 13) * (W - PAD * 2),
-              y: H - PAD - (d.count / maxByDate) * (H - PAD * 2),
+              y: PAD_TOP + drawH - (d.count / maxByDate) * drawH,
             }));
             const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-            const areaD = pathD + ` L ${pts[13].x} ${H} L ${pts[0].x} ${H} Z`;
+            const areaD = pathD + ` L ${pts[13].x} ${H - PAD_BOTTOM} L ${pts[0].x} ${H - PAD_BOTTOM} Z`;
             return (
-              <svg viewBox={`0 0 ${W} ${H + 16}`} style={{ width: '100%', height: 110, overflow: 'visible' }}>
+              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 130, overflow: 'visible' }}>
                 <defs>
                   <linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="rgba(99,102,241,0.12)" />
@@ -1107,16 +1107,22 @@ export function LeadsPage() {
                     </feMerge>
                   </filter>
                 </defs>
-                {[1, 2, 3].map((i) => (
+                {[0.25, 0.5, 0.75].map((pct, i) => (
                   <line
                     key={i}
                     x1={PAD}
-                    y1={PAD + ((H - PAD * 2) / 4) * i}
+                    y1={PAD_TOP + drawH * (1 - pct)}
                     x2={W - PAD}
-                    y2={PAD + ((H - PAD * 2) / 4) * i}
+                    y2={PAD_TOP + drawH * (1 - pct)}
                     stroke="rgba(255,255,255,0.04)"
                   />
                 ))}
+                <text x={PAD - 6} y={PAD_TOP + 4} textAnchor="end" fontSize={8} fill="rgba(255,255,255,0.2)">
+                  {maxByDate}
+                </text>
+                <text x={PAD - 6} y={PAD_TOP + drawH + 4} textAnchor="end" fontSize={8} fill="rgba(255,255,255,0.2)">
+                  0
+                </text>
                 <path d={areaD} fill="url(#areaG)" />
                 <path d={pathD} fill="none" stroke="rgba(99,102,241,0.4)" strokeWidth={1.5} filter="url(#glow)" />
                 <path
@@ -1153,7 +1159,7 @@ export function LeadsPage() {
                       <text
                         key={`t${i}`}
                         x={p.x}
-                        y={H + 14}
+                        y={H - 4}
                         textAnchor="middle"
                         fontSize={9}
                         fill="rgba(255,255,255,0.2)"
@@ -1181,7 +1187,7 @@ export function LeadsPage() {
             <div style={{ fontSize: 13, fontWeight: 600, color: tokens.text.primary, marginBottom: 12 }}>
               Top Branchen
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
               {topIndustries.map(([name, count], i) => (
                 <div key={name}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -1197,9 +1203,9 @@ export function LeadsPage() {
                     >
                       {name}
                     </span>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{count}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{count}</span>
                   </div>
-                  <div style={{ height: 5, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>
+                  <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>
                     <div
                       className="anim-bar"
                       style={
@@ -1209,7 +1215,7 @@ export function LeadsPage() {
                           background: i === 0 ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.18)',
                           width: 0,
                           animation: 'expandBar 0.6s cubic-bezier(0.4,0,0.2,1) forwards',
-                          animationDelay: `${0.1 + i * 0.08}s`,
+                          animationDelay: `${i * 0.06}s`,
                           '--tw': `${(count / maxInd) * 100}%`,
                         } as React.CSSProperties
                       }
@@ -1242,7 +1248,7 @@ export function LeadsPage() {
                 alignSelf: 'flex-start',
               }}
             >
-              Score
+              Score-Verteilung
             </div>
             {(() => {
               const R = 28,
@@ -1290,14 +1296,17 @@ export function LeadsPage() {
                     ))}
                     <text
                       x={CX}
-                      y={CY + 1}
+                      y={CY - 3}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fontSize={14}
+                      fontSize={13}
                       fontWeight={700}
                       fill="rgba(255,255,255,0.9)"
                     >
-                      {leads.length}
+                      {avgScore}
+                    </text>
+                    <text x={CX} y={CY + 10} textAnchor="middle" fontSize={8} fill="rgba(255,255,255,0.3)">
+                      Score
                     </text>
                   </svg>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
