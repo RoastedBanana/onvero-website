@@ -288,6 +288,13 @@ export function LeadsPage() {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [notes, setNotes] = useState<LeadNote[]>([]);
   const [newNote, setNewNote] = useState('');
+  const [hoveredScore, setHoveredScore] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -900,129 +907,155 @@ export function LeadsPage() {
         </div>
 
         {/* ── ANIMATED CHARTS ── */}
-        <style>{`@keyframes drawLine{to{stroke-dashoffset:0}}@keyframes fadeIn{to{opacity:1}}@keyframes expandBar{to{width:var(--tw)}}@media(prefers-reduced-motion:reduce){.anim-line,.anim-dot,.anim-bar{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}.anim-bar{width:var(--tw)!important}}`}</style>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
-          {/* Line Chart */}
-          <div
-            style={{
-              background: tokens.bg.surface,
-              border: `1px solid ${tokens.bg.border}`,
-              borderRadius: tokens.radius.lg,
-              padding: '16px 20px',
-            }}
-          >
-            <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 8 }}>Neue Leads (14 Tage)</div>
-            {(() => {
-              const W = 600,
-                H = 80,
-                PAD = 8;
-              const pts = chartData.map((d, i) => ({
-                x: PAD + (i / 13) * (W - PAD * 2),
-                y: H - PAD - (d.count / maxByDate) * (H - PAD * 2),
-              }));
-              const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-              const areaD = pathD + ` L ${pts[13].x} ${H} L ${pts[0].x} ${H} Z`;
-              return (
-                <svg viewBox={`0 0 ${W} ${H + 16}`} style={{ width: '100%', height: 80, overflow: 'visible' }}>
-                  <defs>
-                    <linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(99,102,241,0.15)" />
-                      <stop offset="100%" stopColor="rgba(99,102,241,0)" />
-                    </linearGradient>
-                    <filter id="glow">
-                      <feGaussianBlur stdDeviation="2" result="b" />
-                      <feMerge>
-                        <feMergeNode in="b" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <path d={areaD} fill="url(#areaG)" />
-                  <path d={pathD} fill="none" stroke="rgba(99,102,241,0.4)" strokeWidth={1.5} filter="url(#glow)" />
-                  <path
-                    className="anim-line"
-                    d={pathD}
-                    fill="none"
-                    stroke="rgba(99,102,241,0.9)"
-                    strokeWidth={1.5}
-                    strokeDasharray="2000"
-                    strokeDashoffset="2000"
-                    style={{ animation: 'drawLine 1.2s cubic-bezier(0.4,0,0.2,1) forwards', animationDelay: '0.2s' }}
-                  />
-                  {pts.map(
-                    (p, i) =>
-                      chartData[i].count > 0 && (
-                        <circle
-                          className="anim-dot"
-                          key={i}
-                          cx={p.x}
-                          cy={p.y}
-                          r={3}
-                          fill="rgba(99,102,241,1)"
-                          style={{
-                            opacity: 0,
-                            animation: 'fadeIn 0.3s ease forwards',
-                            animationDelay: `${0.2 + (i / 14) * 1.2}s`,
-                          }}
-                        />
-                      )
-                  )}
-                  {pts.map(
-                    (p, i) =>
-                      i % 3 === 0 && (
-                        <text
-                          key={`t${i}`}
-                          x={p.x}
-                          y={H + 14}
-                          textAnchor="middle"
-                          fontSize={9}
-                          fill="rgba(255,255,255,0.25)"
-                        >
-                          {chartData[i].date.slice(8)}
-                        </text>
-                      )
-                  )}
-                </svg>
-              );
-            })()}
-          </div>
+        <style>{`@keyframes drawLine{to{stroke-dashoffset:0}}@keyframes fadeIn{to{opacity:1}}@keyframes expandBar{to{width:var(--tw)}}@keyframes donutDraw{from{stroke-dasharray:0 176}to{stroke-dasharray:var(--dash) 176}}@keyframes funnelGrow{from{width:0}to{width:var(--tw)}}@keyframes ringPop{from{transform:scale(0.6);opacity:0}to{transform:scale(1);opacity:1}}@keyframes tooltipFade{from{opacity:0;transform:translateX(-50%) translateY(4px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.1)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}}@media(prefers-reduced-motion:reduce){.anim-line,.anim-dot,.anim-bar,.anim-donut,.anim-funnel{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}.anim-bar,.anim-funnel{width:var(--tw)!important}.anim-donut{stroke-dasharray:var(--dash) 176!important}}`}</style>
 
-          {/* Animated Industry Bars */}
+        {/* Row 1: Full-width Line Chart */}
+        <div
+          style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'opacity 0.4s ease 220ms, transform 0.4s ease 220ms',
+            background: tokens.bg.surface,
+            border: `1px solid ${tokens.bg.border}`,
+            borderRadius: 12,
+            padding: '20px 24px',
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: tokens.text.primary }}>Neue Leads</div>
+              <div style={{ fontSize: 11, color: tokens.text.muted }}>Letzte 14 Tage</div>
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: tokens.text.primary, lineHeight: 1 }}>
+              {chartData.reduce((s, d) => s + d.count, 0)}
+            </div>
+          </div>
+          {(() => {
+            const W = 800,
+              H = 110,
+              PAD = 8;
+            const pts = chartData.map((d, i) => ({
+              x: PAD + (i / 13) * (W - PAD * 2),
+              y: H - PAD - (d.count / maxByDate) * (H - PAD * 2),
+            }));
+            const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+            const areaD = pathD + ` L ${pts[13].x} ${H} L ${pts[0].x} ${H} Z`;
+            return (
+              <svg viewBox={`0 0 ${W} ${H + 16}`} style={{ width: '100%', height: 110, overflow: 'visible' }}>
+                <defs>
+                  <linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(99,102,241,0.12)" />
+                    <stop offset="100%" stopColor="rgba(99,102,241,0)" />
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="b" />
+                    <feMerge>
+                      <feMergeNode in="b" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+                {[1, 2, 3].map((i) => (
+                  <line
+                    key={i}
+                    x1={PAD}
+                    y1={PAD + ((H - PAD * 2) / 4) * i}
+                    x2={W - PAD}
+                    y2={PAD + ((H - PAD * 2) / 4) * i}
+                    stroke="rgba(255,255,255,0.04)"
+                  />
+                ))}
+                <path d={areaD} fill="url(#areaG)" />
+                <path d={pathD} fill="none" stroke="rgba(99,102,241,0.4)" strokeWidth={1.5} filter="url(#glow)" />
+                <path
+                  className="anim-line"
+                  d={pathD}
+                  fill="none"
+                  stroke="rgba(99,102,241,0.9)"
+                  strokeWidth={1.5}
+                  strokeDasharray="2000"
+                  strokeDashoffset="2000"
+                  style={{ animation: 'drawLine 1.2s cubic-bezier(0.4,0,0.2,1) forwards', animationDelay: '0.3s' }}
+                />
+                {pts.map(
+                  (p, i) =>
+                    chartData[i].count > 0 && (
+                      <circle
+                        className="anim-dot"
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r={3}
+                        fill="rgba(99,102,241,1)"
+                        style={{
+                          opacity: 0,
+                          animation: 'fadeIn 0.3s ease forwards',
+                          animationDelay: `${0.3 + (i / 14) * 1.2}s`,
+                        }}
+                      />
+                    )
+                )}
+                {pts.map(
+                  (p, i) =>
+                    i % 3 === 0 && (
+                      <text
+                        key={`t${i}`}
+                        x={p.x}
+                        y={H + 14}
+                        textAnchor="middle"
+                        fontSize={9}
+                        fill="rgba(255,255,255,0.2)"
+                      >
+                        {chartData[i].date.slice(8)}
+                      </text>
+                    )
+                )}
+              </svg>
+            );
+          })()}
+        </div>
+
+        {/* Row 2: Branchen + Donut + Funnel */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.8fr', gap: 12, marginBottom: 16 }}>
+          {/* Branchen Bars */}
           <div
             style={{
               background: tokens.bg.surface,
               border: `1px solid ${tokens.bg.border}`,
-              borderRadius: tokens.radius.lg,
-              padding: '16px 20px',
+              borderRadius: 12,
+              padding: '18px 20px',
             }}
           >
-            <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 8 }}>Top Branchen</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: tokens.text.primary, marginBottom: 12 }}>
+              Top Branchen
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {topIndustries.map(([name, count], i) => (
                 <div key={name}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span
                       style={{
-                        fontSize: 11,
+                        fontSize: 12,
                         color: 'rgba(255,255,255,0.5)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        maxWidth: 120,
+                        maxWidth: 140,
                       }}
                     >
                       {name}
                     </span>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{count}</span>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{count}</span>
                   </div>
-                  <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+                  <div style={{ height: 5, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>
                     <div
                       className="anim-bar"
                       style={
                         {
                           height: '100%',
-                          borderRadius: 2,
-                          background: i === 0 ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.2)',
+                          borderRadius: 3,
+                          background: i === 0 ? 'rgba(99,102,241,0.8)' : 'rgba(255,255,255,0.18)',
                           width: 0,
                           animation: 'expandBar 0.6s cubic-bezier(0.4,0,0.2,1) forwards',
                           animationDelay: `${0.1 + i * 0.08}s`,
@@ -1037,50 +1070,147 @@ export function LeadsPage() {
             </div>
           </div>
 
+          {/* Score Donut */}
+          <div
+            style={{
+              background: tokens.bg.surface,
+              border: `1px solid ${tokens.bg.border}`,
+              borderRadius: 12,
+              padding: '18px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: tokens.text.primary,
+                marginBottom: 12,
+                alignSelf: 'flex-start',
+              }}
+            >
+              Score
+            </div>
+            {(() => {
+              const R = 28,
+                CX = 36,
+                CY = 36,
+                SW = 7,
+                circ = 2 * Math.PI * R;
+              const segs = [
+                { val: hot, color: 'rgba(255,255,255,0.9)', label: 'Premium' },
+                { val: warm, color: 'rgba(255,255,255,0.35)', label: 'Warm' },
+                { val: cold, color: 'rgba(255,255,255,0.1)', label: 'Cold' },
+              ];
+              let off = 0;
+              const arcs = segs.map((s) => {
+                const d = leads.length > 0 ? (s.val / leads.length) * circ : 0;
+                const a = { ...s, dash: d, offset: -off };
+                off += d;
+                return a;
+              });
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <svg width={72} height={72} viewBox="0 0 72 72">
+                    <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={SW} />
+                    {arcs.map((a, i) => (
+                      <circle
+                        className="anim-donut"
+                        key={i}
+                        cx={CX}
+                        cy={CY}
+                        r={R}
+                        fill="none"
+                        stroke={a.color}
+                        strokeWidth={SW}
+                        strokeDasharray={`${a.dash} ${circ}`}
+                        strokeDashoffset={a.offset}
+                        transform={`rotate(-90 ${CX} ${CY})`}
+                        style={
+                          {
+                            '--dash': `${a.dash}`,
+                            animation: 'donutDraw 0.8s cubic-bezier(0.4,0,0.2,1) forwards',
+                            animationDelay: `${i * 0.15}s`,
+                          } as React.CSSProperties
+                        }
+                      />
+                    ))}
+                    <text
+                      x={CX}
+                      y={CY + 1}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fontSize={14}
+                      fontWeight={700}
+                      fill="rgba(255,255,255,0.9)"
+                    >
+                      {leads.length}
+                    </text>
+                  </svg>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {segs.map((s, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />
+                        <span style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          {s.val} {s.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
           {/* Conversion Funnel */}
           <div
             style={{
               background: tokens.bg.surface,
               border: `1px solid ${tokens.bg.border}`,
-              borderRadius: tokens.radius.lg,
-              padding: '16px 20px',
+              borderRadius: 12,
+              padding: '18px 20px',
             }}
           >
-            <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 10 }}>Conversion Funnel</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: tokens.text.primary, marginBottom: 12 }}>
+              Conversion Funnel
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
               {[
-                { label: 'Generiert', count: leads.length, color: 'rgba(255,255,255,0.15)' },
-                { label: 'Gescored', count: scored, color: 'rgba(255,255,255,0.25)' },
-                { label: 'Mit E-Mail', count: withEmail, color: 'rgba(99,102,241,0.4)' },
-                { label: 'Kontaktiert', count: contacted + qualified, color: 'rgba(99,102,241,0.7)' },
-                { label: 'Qualifiziert', count: qualified, color: 'rgba(99,102,241,1)' },
+                { label: 'Generiert', count: leads.length, color: 'rgba(255,255,255,0.08)' },
+                { label: 'Gescored', count: scored, color: 'rgba(255,255,255,0.15)' },
+                { label: 'Mit E-Mail', count: withEmail, color: 'rgba(99,102,241,0.3)' },
+                { label: 'Kontaktiert', count: contacted + qualified, color: 'rgba(99,102,241,0.6)' },
+                { label: 'Qualifiziert', count: qualified, color: 'rgba(99,102,241,0.9)' },
               ].map((s, i) => {
-                const pct = leads.length > 0 ? Math.max((s.count / leads.length) * 100, 8) : 8;
+                const pct = leads.length > 0 ? Math.max((s.count / leads.length) * 100, 6) : 6;
+                const convPct = leads.length > 0 ? Math.round((s.count / leads.length) * 100) : 0;
                 return (
                   <div key={i} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span
-                      style={{ fontSize: 10, color: tokens.text.muted, width: 70, textAlign: 'right', flexShrink: 0 }}
+                      style={{ fontSize: 11, color: tokens.text.muted, width: 75, textAlign: 'right', flexShrink: 0 }}
                     >
                       {s.label}
                     </span>
                     <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                       <div
-                        className="anim-bar"
+                        className="anim-funnel"
                         style={
                           {
-                            height: 6,
-                            borderRadius: 3,
+                            height: 8,
+                            borderRadius: 4,
                             background: s.color,
                             width: 0,
-                            animation: 'expandBar 0.6s cubic-bezier(0.4,0,0.2,1) forwards',
+                            animation: 'funnelGrow 0.6s cubic-bezier(0.4,0,0.2,1) forwards',
                             animationDelay: `${0.15 + i * 0.1}s`,
                             '--tw': `${pct}%`,
                           } as React.CSSProperties
                         }
                       />
                     </div>
-                    <span style={{ fontSize: 11, color: tokens.text.secondary, width: 24, flexShrink: 0 }}>
-                      {s.count}
+                    <span style={{ fontSize: 11, color: tokens.text.secondary, width: 40, flexShrink: 0 }}>
+                      {s.count} <span style={{ color: tokens.text.muted, fontSize: 10 }}>{convPct}%</span>
                     </span>
                   </div>
                 );
@@ -1088,7 +1218,6 @@ export function LeadsPage() {
             </div>
           </div>
         </div>
-
         {/* ── LEAD TABLE ── */}
         {(() => {
           const TAG_PRIO = ['premium_lead', 'ki_affin', 'inhaber_kontakt', 'automatisierungspotenzial', 'firmen_email'];
