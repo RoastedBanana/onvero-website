@@ -598,7 +598,18 @@ export function LeadsPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 0, minHeight: 0 }}>
         {/* ── HEADER ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 0 20px 0', marginBottom: 4 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '0 0 20px 0',
+            marginBottom: 4,
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'opacity 0.4s ease 0ms, transform 0.4s ease 0ms',
+          }}
+        >
           <div style={{ flex: 1 }}>
             <h1
               style={{ fontSize: 22, fontWeight: 700, color: tokens.text.primary, margin: 0, letterSpacing: '-0.02em' }}
@@ -777,7 +788,17 @@ export function LeadsPage() {
           })()}
 
         {/* ── PIPELINE STAGES ── */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            marginBottom: 16,
+            alignItems: 'center',
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'opacity 0.4s ease 60ms, transform 0.4s ease 60ms',
+          }}
+        >
           {[
             { key: 'all', label: 'Alle Leads', count: leads.length },
             { key: 'new', label: 'Neu', count: leads.filter((l) => l.status === 'new').length },
@@ -823,8 +844,98 @@ export function LeadsPage() {
           </span>
         </div>
 
+        {/* ── PIPELINE PROGRESS BAR ── */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            marginBottom: 16,
+            alignItems: 'stretch',
+            height: 36,
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'opacity 0.4s ease 100ms, transform 0.4s ease 100ms',
+          }}
+        >
+          {[
+            { key: 'new', label: 'Neu' },
+            { key: 'contacted', label: 'Kontaktiert' },
+            { key: 'qualified', label: 'Qualifiziert' },
+            { key: 'lost', label: 'Verloren' },
+          ].map((stage) => {
+            const count = leads.filter((l) => l.status === stage.key).length;
+            const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
+            const isActive = pct > 0;
+            return (
+              <div
+                key={stage.key}
+                onClick={() => setStatusFilter(stage.key)}
+                style={{
+                  flex: 1,
+                  borderRadius: 8,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `1px solid rgba(255,255,255,${isActive ? '0.12' : '0.06'})`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0 12px',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s ease',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: `${pct}%`,
+                    background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+                    transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+                    borderRadius: 7,
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: isActive ? tokens.text.primary : tokens.text.muted,
+                    fontWeight: isActive ? 500 : 400,
+                    position: 'relative',
+                    zIndex: 1,
+                  }}
+                >
+                  {stage.label}
+                </span>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: isActive ? tokens.text.primary : '#374151',
+                    position: 'relative',
+                    zIndex: 1,
+                  }}
+                >
+                  {count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
         {/* ── METRIC CARDS ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: 10,
+            marginBottom: 16,
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'opacity 0.4s ease 160ms, transform 0.4s ease 160ms',
+          }}
+        >
           {[
             {
               id: 'total',
@@ -1252,6 +1363,9 @@ export function LeadsPage() {
                 border: `1px solid ${tokens.bg.border}`,
                 borderRadius: 12,
                 overflow: 'hidden',
+                opacity: mounted ? 1 : 0,
+                transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'opacity 0.4s ease 300ms, transform 0.4s ease 300ms',
               }}
             >
               <thead>
