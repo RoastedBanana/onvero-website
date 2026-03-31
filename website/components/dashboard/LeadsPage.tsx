@@ -273,6 +273,10 @@ export function LeadsPage() {
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [noteInput, setNoteInput] = useState('');
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -525,92 +529,327 @@ export function LeadsPage() {
         />
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, minHeight: 0 }}>
+        {/* ── HEADER ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 0 20px 0', marginBottom: 4 }}>
+          <div style={{ flex: 1 }}>
             <h1
-              style={{ fontSize: 28, fontWeight: 700, color: tokens.text.primary, margin: 0, letterSpacing: '-0.02em' }}
+              style={{ fontSize: 22, fontWeight: 700, color: tokens.text.primary, margin: 0, letterSpacing: '-0.02em' }}
             >
               Leads
             </h1>
-            <p style={{ fontSize: 14, color: tokens.text.muted, marginTop: 4 }}>Lead Intelligence Dashboard</p>
+            <p style={{ fontSize: 13, color: tokens.text.muted, margin: '2px 0 0' }}>Lead Intelligence Dashboard</p>
+          </div>
+          <div style={{ position: 'relative', flex: '0 0 260px' }}>
+            <Search
+              size={14}
+              style={{
+                position: 'absolute',
+                left: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: tokens.text.muted,
+                pointerEvents: 'none',
+              }}
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Suchen..."
+              style={{
+                width: '100%',
+                background: tokens.bg.raised,
+                border: `1px solid ${tokens.bg.border}`,
+                borderRadius: 8,
+                padding: '8px 12px 8px 32px',
+                fontSize: 13,
+                color: tokens.text.primary,
+                outline: 'none',
+              }}
+            />
           </div>
           <button
             onClick={() => setGeneratorOpen(true)}
             style={{
+              background: tokens.brand.primary,
+              color: tokens.text.inverse,
+              border: 'none',
+              borderRadius: 8,
+              padding: '8px 16px',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              padding: '9px 18px',
-              borderRadius: tokens.radius.md,
-              cursor: 'pointer',
-              background: tokens.brand.primary,
-              border: 'none',
-              color: tokens.text.inverse,
-              fontSize: 14,
-              fontWeight: 600,
+              gap: 6,
             }}
           >
-            <Zap size={14} /> Lead Generator
+            <Zap size={13} /> Lead Generator
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            style={{
+              background: showFilters ? 'rgba(255,255,255,0.08)' : 'transparent',
+              border: `1px solid ${tokens.bg.borderStrong}`,
+              borderRadius: 8,
+              padding: '8px 14px',
+              fontSize: 13,
+              color: tokens.text.secondary,
+              cursor: 'pointer',
+            }}
+          >
+            Filter
           </button>
         </div>
 
-        {/* Stats Dashboard — 5 Metric Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#f9fafb', lineHeight: 1 }}>{leads.length}</div>
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Leads gesamt</div>
-            <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>{scored} gescored</div>
-          </div>
-          <div style={cardStyle}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: scoreColor(avgScore), lineHeight: 1 }}>{avgScore}</div>
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Ø Score</div>
-            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', marginTop: 6 }}>
-              <div
-                style={{ width: `${avgScore}%`, height: '100%', borderRadius: 2, background: scoreColor(avgScore) }}
-              />
-            </div>
-          </div>
-          <div style={cardStyle}>
-            <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span>
-                <span style={{ color: '#22c55e' }}>●</span> {hot} Premium
-              </span>
-              <span>
-                <span style={{ color: '#f59e0b' }}>●</span> {warm} Warm
-              </span>
-              <span>
-                <span style={{ color: '#4b5563' }}>●</span> {cold} Cold
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Score-Verteilung</div>
-          </div>
-          <div style={cardStyle}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#f9fafb', lineHeight: 1 }}>{withEmail}</div>
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>E-Mail bereit</div>
-            <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', marginTop: 6 }}>
+        {/* ── COLLAPSIBLE FILTERS ── */}
+        {showFilters &&
+          (() => {
+            const afb: React.CSSProperties = {
+              background: tokens.brand.primary,
+              color: tokens.text.inverse,
+              border: 'none',
+              borderRadius: 6,
+              padding: '5px 12px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+            };
+            const ifb: React.CSSProperties = {
+              background: 'transparent',
+              color: '#6b7280',
+              border: `1px solid ${tokens.bg.border}`,
+              borderRadius: 6,
+              padding: '5px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+            };
+            return (
               <div
                 style={{
-                  width: leads.length ? `${(withEmail / leads.length) * 100}%` : '0%',
-                  height: '100%',
-                  borderRadius: 2,
-                  background: '#6b7280',
+                  background: tokens.bg.surface,
+                  border: `1px solid ${tokens.bg.border}`,
+                  borderRadius: 10,
+                  padding: 16,
+                  marginBottom: 16,
+                  display: 'flex',
+                  gap: 20,
+                  flexWrap: 'wrap',
+                  alignItems: 'flex-end',
                 }}
-              />
-            </div>
-          </div>
-          <div style={cardStyle}>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#f9fafb', lineHeight: 1 }}>{contacted}</div>
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>Kontaktiert</div>
-            <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>{qualified} qualifiziert</div>
-          </div>
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: tokens.text.muted,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      marginBottom: 6,
+                    }}
+                  >
+                    Score
+                  </div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {(['all', '70+', '45-69', '<45'] as const).map((f) => (
+                      <button key={f} onClick={() => setScoreRange(f)} style={scoreRange === f ? afb : ifb}>
+                        {f === 'all' ? 'Alle' : f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: tokens.text.muted,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      marginBottom: 6,
+                    }}
+                  >
+                    Tags
+                  </div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button onClick={() => toggleTag('has_email')} style={tagToggles.has_email ? afb : ifb}>
+                      Hat E-Mail
+                    </button>
+                    <button onClick={() => toggleTag('premium')} style={tagToggles.premium ? afb : ifb}>
+                      Premium
+                    </button>
+                    <button onClick={() => toggleTag('ki_affin')} style={tagToggles.ki_affin ? afb : ifb}>
+                      KI-affin
+                    </button>
+                  </div>
+                </div>
+                {hasFilters && (
+                  <button
+                    onClick={resetFilters}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: tokens.text.muted,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      padding: '5px 0',
+                    }}
+                  >
+                    Zurücksetzen
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+
+        {/* ── PIPELINE STAGES ── */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+          {[
+            { key: 'all', label: 'Alle Leads', count: leads.length },
+            { key: 'new', label: 'Neu', count: leads.filter((l) => l.status === 'new').length },
+            { key: 'contacted', label: 'Kontaktiert', count: leads.filter((l) => l.status === 'contacted').length },
+            { key: 'qualified', label: 'Qualifiziert', count: leads.filter((l) => l.status === 'qualified').length },
+            { key: 'lost', label: 'Verloren', count: leads.filter((l) => l.status === 'lost').length },
+          ].map((stage) => (
+            <button
+              key={stage.key}
+              onClick={() => setStatusFilter(stage.key)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 16px',
+                borderRadius: 20,
+                cursor: 'pointer',
+                border: `1px solid ${tokens.bg.border}`,
+                background: statusFilter === stage.key ? 'rgba(255,255,255,0.1)' : 'transparent',
+                color: statusFilter === stage.key ? tokens.text.primary : tokens.text.muted,
+                fontSize: 13,
+                fontWeight: 500,
+                transition: 'all 0.15s',
+              }}
+            >
+              <span
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  borderRadius: 10,
+                  padding: '1px 7px',
+                  fontSize: 11,
+                  color: tokens.text.secondary,
+                }}
+              >
+                {stage.count}
+              </span>
+              {stage.label}
+            </button>
+          ))}
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+          <span style={{ fontSize: 12, color: tokens.text.muted }}>
+            {filtered.length} von {leads.length} Leads
+          </span>
         </div>
 
-        {/* Mini Charts */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
-          <div style={cardStyle}>
-            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8 }}>Neue Leads (letzte 14 Tage)</div>
+        {/* ── METRIC CARDS ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 16 }}>
+          {[
+            {
+              id: 'total',
+              label: 'Leads gesamt',
+              value: leads.length,
+              sub: `${scored} gescored`,
+              action: () => resetFilters(),
+            },
+            { id: 'score', label: 'Ø Score', value: avgScore, sub: null, action: () => {} },
+            {
+              id: 'premium',
+              label: 'Premium',
+              value: premium,
+              sub: `Score 70+`,
+              action: () => {
+                toggleTag('premium');
+              },
+            },
+            {
+              id: 'email',
+              label: 'E-Mail bereit',
+              value: withEmail,
+              sub: `${leads.length ? Math.round((withEmail / leads.length) * 100) : 0}%`,
+              action: () => {
+                toggleTag('has_email');
+              },
+            },
+            {
+              id: 'contacted',
+              label: 'Kontaktiert',
+              value: contacted,
+              sub: `${qualified} qualifiziert`,
+              action: () => setStatusFilter('contacted'),
+            },
+          ].map((c) => (
+            <div
+              key={c.id}
+              onClick={c.action}
+              onMouseEnter={() => setHoveredCard(c.id)}
+              onMouseLeave={() => setHoveredCard(null)}
+              style={{
+                background: tokens.bg.surface,
+                border: `1px solid ${hoveredCard === c.id ? tokens.bg.borderStrong : tokens.bg.border}`,
+                borderRadius: tokens.radius.lg,
+                padding: '16px 20px',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: c.id === 'score' ? getScoreStyle(avgScore).color : tokens.text.primary,
+                  lineHeight: 1,
+                }}
+              >
+                {c.value}
+              </div>
+              <div style={{ fontSize: 11, color: tokens.text.muted, marginTop: 4 }}>{c.label}</div>
+              {c.sub && <div style={{ fontSize: 11, color: '#374151', marginTop: 2 }}>{c.sub}</div>}
+              {c.id === 'score' && (
+                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', marginTop: 6 }}>
+                  <div
+                    style={{
+                      width: `${avgScore}%`,
+                      height: '100%',
+                      borderRadius: 2,
+                      background: getScoreStyle(avgScore).bar,
+                    }}
+                  />
+                </div>
+              )}
+              {c.id === 'email' && (
+                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)', marginTop: 6 }}>
+                  <div
+                    style={{
+                      width: leads.length ? `${(withEmail / leads.length) * 100}%` : '0%',
+                      height: '100%',
+                      borderRadius: 2,
+                      background: 'rgba(255,255,255,0.3)',
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* ── MINI CHARTS ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginBottom: 16 }}>
+          <div
+            style={{
+              background: tokens.bg.surface,
+              border: `1px solid ${tokens.bg.border}`,
+              borderRadius: tokens.radius.lg,
+              padding: '16px 20px',
+            }}
+          >
+            <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 8 }}>Neue Leads (letzte 14 Tage)</div>
             {byDate.length > 0 ? (
               <svg viewBox={`0 0 ${byDate.length * 28} 60`} style={{ width: '100%', height: 50 }}>
                 {byDate.map(([day, count], i) => {
@@ -636,8 +875,15 @@ export function LeadsPage() {
               <div style={{ fontSize: 12, color: '#374151', padding: '10px 0' }}>Keine Daten</div>
             )}
           </div>
-          <div style={cardStyle}>
-            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8 }}>Top Branchen</div>
+          <div
+            style={{
+              background: tokens.bg.surface,
+              border: `1px solid ${tokens.bg.border}`,
+              borderRadius: tokens.radius.lg,
+              padding: '16px 20px',
+            }}
+          >
+            <div style={{ fontSize: 11, color: tokens.text.muted, marginBottom: 8 }}>Top Branchen</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topIndustries.map(([name, count]) => (
                 <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -672,128 +918,29 @@ export function LeadsPage() {
           </div>
         </div>
 
-        {/* Filter toolbar */}
-        {(() => {
-          const fb = (active: boolean): React.CSSProperties => ({
-            fontSize: 12,
-            padding: '4px 10px',
-            borderRadius: 6,
-            cursor: 'pointer',
-            border: active ? '1px solid transparent' : '1px solid ' + tokens.bg.border,
-            background: active ? tokens.brand.primary : 'transparent',
-            color: active ? tokens.text.inverse : tokens.text.muted,
-            fontWeight: active ? 600 : undefined,
-            transition: 'all 0.12s',
-            whiteSpace: 'nowrap',
-          });
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-                <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
-                  <Search
-                    size={14}
-                    style={{
-                      position: 'absolute',
-                      left: 10,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: '#6b7280',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Name oder Firma…"
-                    style={{
-                      width: '100%',
-                      background: 'transparent',
-                      border: '1px solid #2a2a2a',
-                      borderRadius: 6,
-                      color: '#fff',
-                      fontSize: 13,
-                      padding: '5px 10px 5px 30px',
-                      outline: 'none',
-                    }}
-                  />
-                </div>
-                <span style={{ color: '#333', margin: '0 2px' }}>|</span>
-                {(['all', '70+', '45-69', '<45'] as const).map((r) => (
-                  <button key={r} onClick={() => setScoreRange(r)} style={fb(scoreRange === r)}>
-                    {r === 'all' ? 'Alle Scores' : r}
-                  </button>
-                ))}
-                <span style={{ color: '#333', margin: '0 2px' }}>|</span>
-                {[
-                  ['all', 'Alle'],
-                  ['new', 'New'],
-                  ['contacted', 'Contacted'],
-                  ['qualified', 'Qualified'],
-                  ['lost', 'Lost'],
-                ].map(([k, l]) => (
-                  <button key={k} onClick={() => setStatusFilter(k)} style={fb(statusFilter === k)}>
-                    {l}
-                  </button>
-                ))}
-                <span style={{ color: '#333', margin: '0 2px' }}>|</span>
-                <button onClick={() => toggleTag('has_email')} style={fb(!!tagToggles.has_email)}>
-                  ✉ Hat E-Mail
-                </button>
-                <button onClick={() => toggleTag('premium')} style={fb(!!tagToggles.premium)}>
-                  Premium
-                </button>
-                <button onClick={() => toggleTag('ki_affin')} style={fb(!!tagToggles.ki_affin)}>
-                  KI-affin
-                </button>
-                <div style={{ flex: 1 }} />
-                <span style={{ fontSize: 12, color: '#4b5563' }}>
-                  {filtered.length} von {leads.length} Leads
-                </span>
-                {hasFilters && (
-                  <button
-                    onClick={resetFilters}
-                    style={{
-                      fontSize: 12,
-                      color: '#6b7280',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                      padding: 0,
-                    }}
-                  >
-                    Zurücksetzen
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Lead Table */}
+        {/* ── LEAD TABLE ── */}
         {(() => {
           const TAG_PRIO = ['premium_lead', 'ki_affin', 'inhaber_kontakt', 'automatisierungspotenzial', 'firmen_email'];
           const thStyle: React.CSSProperties = {
             fontSize: 11,
             fontWeight: 500,
-            color: '#9ca3af',
+            color: '#6b7280',
             textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            padding: '10px 12px',
+            letterSpacing: '0.06em',
+            borderBottom: `1px solid ${tokens.bg.border}`,
+            padding: '8px 16px',
             textAlign: 'left',
-            borderBottom: '1px solid #e5e7eb',
             cursor: 'pointer',
             userSelect: 'none',
             whiteSpace: 'nowrap',
           };
-          const scoreColor = (s: number | null) => getScoreStyle(s).color;
           return (
             <table
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
-                background: '#0a0a0a',
-                border: '1px solid #1f1f1f',
+                background: tokens.bg.surface,
+                border: `1px solid ${tokens.bg.border}`,
                 borderRadius: 12,
                 overflow: 'hidden',
               }}
@@ -803,15 +950,20 @@ export function LeadsPage() {
                   {[
                     { key: 'score', label: 'Score', w: 70 },
                     { key: 'name', label: 'Name / Firma', w: undefined },
-                    { key: 'industry', label: 'Branche', w: 130 },
-                    { key: 'tags', label: 'Tags', w: 170 },
-                    { key: 'status', label: 'Status', w: 130 },
-                    { key: 'email_draft', label: '✉', w: 40 },
-                    { key: 'action', label: '', w: 90 },
+                    { key: 'industry', label: 'Branche', w: 140 },
+                    { key: 'status', label: 'Status', w: 140 },
+                    { key: 'actions', label: '', w: 180 },
                   ].map((col) => (
                     <th
                       key={col.key}
-                      style={{ ...thStyle, width: col.w }}
+                      style={{
+                        ...thStyle,
+                        width: col.w,
+                        color:
+                          sortBy.startsWith(col.key) || (col.key === 'score' && sortBy.startsWith('score'))
+                            ? '#f9fafb'
+                            : '#6b7280',
+                      }}
                       onClick={() => {
                         if (col.key === 'score') setSortBy(sortBy === 'score_desc' ? 'score_asc' : 'score_desc');
                         else if (col.key === 'name') setSortBy(sortBy === 'name_asc' ? 'name_desc' : 'name_asc');
@@ -838,20 +990,33 @@ export function LeadsPage() {
                 {loading || tenantLoading ? (
                   [1, 2, 3].map((i) => (
                     <tr key={i}>
-                      <td colSpan={7} style={{ padding: '14px 12px', borderBottom: '1px solid #f3f4f6' }}>
-                        <div style={{ height: 10, borderRadius: 4, background: '#1a1a1a', width: `${40 + i * 15}%` }} />
+                      <td
+                        colSpan={5}
+                        style={{ padding: '14px 16px', borderBottom: `1px solid rgba(255,255,255,0.04)` }}
+                      >
+                        <div
+                          style={{
+                            height: 10,
+                            borderRadius: 4,
+                            background: tokens.bg.raised,
+                            width: `${40 + i * 15}%`,
+                          }}
+                        />
                       </td>
                     </tr>
                   ))
                 ) : error ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#f87171', fontSize: 14 }}>
+                    <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#f87171', fontSize: 14 }}>
                       {error}
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: '#6b7280', fontSize: 14 }}>
+                    <td
+                      colSpan={5}
+                      style={{ padding: '3rem', textAlign: 'center', color: tokens.text.muted, fontSize: 14 }}
+                    >
                       Keine Leads gefunden
                       {hasFilters && (
                         <>
@@ -862,7 +1027,7 @@ export function LeadsPage() {
                             style={{
                               background: 'none',
                               border: 'none',
-                              color: '#6b7280',
+                              color: tokens.text.muted,
                               textDecoration: 'underline',
                               cursor: 'pointer',
                               fontSize: 14,
@@ -876,258 +1041,205 @@ export function LeadsPage() {
                   </tr>
                 ) : (
                   filtered.map((lead) => {
-                    const isSelected = selectedLead?.id === lead.id;
                     const name = [lead.first_name, lead.last_name].filter(Boolean).join(' ') || '—';
-                    const tags = (lead.ai_tags ?? []).filter((t) => TAG_PRIO.includes(t));
-                    const visibleTags = tags.slice(0, 2);
-                    const extraTags = tags.length - 2;
+                    const ind =
+                      ((lead.custom_fields as Record<string, unknown>)?.industry_de as string) ||
+                      ((lead.custom_fields as Record<string, unknown>)?.industry as string) ||
+                      '—';
+                    const isHovered = hoveredRow === lead.id;
                     return (
-                      <React.Fragment key={lead.id}>
-                        <tr
-                          className="lead-row"
-                          style={{
-                            height: 48,
-                            borderBottom: '1px solid #1a1a1a',
-                            cursor: 'pointer',
-                            transition: 'background 0.1s',
-                            background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) e.currentTarget.style.background = 'transparent';
-                          }}
-                          onClick={() => handleSelectLead(lead)}
-                        >
-                          <td style={{ padding: '0 12px', width: 70 }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                              <span
-                                style={{
-                                  fontSize: 15,
-                                  fontWeight: 700,
-                                  color: scoreColor(lead.score),
-                                  fontVariantNumeric: 'tabular-nums',
-                                }}
+                      <tr
+                        key={lead.id}
+                        onMouseEnter={() => setHoveredRow(lead.id)}
+                        onMouseLeave={() => setHoveredRow(null)}
+                        onClick={() => handleSelectLead(lead)}
+                        style={{
+                          borderBottom: `1px solid rgba(255,255,255,0.05)`,
+                          background: isHovered ? 'rgba(255,255,255,0.03)' : 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background 0.1s',
+                        }}
+                      >
+                        <td style={{ padding: '12px 16px', width: 70 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                            <span
+                              style={{
+                                fontSize: 15,
+                                fontWeight: 700,
+                                color: getScoreStyle(lead.score).color,
+                                fontVariantNumeric: 'tabular-nums',
+                              }}
+                            >
+                              {lead.score ?? '—'}
+                            </span>
+                            {lead.score !== null && (
+                              <div
+                                style={{ width: 32, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.08)' }}
                               >
-                                {lead.score ?? '—'}
-                              </span>
-                              {lead.score !== null && (
                                 <div
                                   style={{
-                                    width: 32,
-                                    height: 3,
+                                    width: `${lead.score}%`,
+                                    height: '100%',
                                     borderRadius: 2,
-                                    background: 'rgba(255,255,255,0.08)',
+                                    background: getScoreStyle(lead.score).bar,
                                   }}
-                                >
-                                  <div
-                                    style={{
-                                      width: `${lead.score}%`,
-                                      height: '100%',
-                                      borderRadius: 2,
-                                      background: scoreColor(lead.score),
-                                    }}
-                                  />
-                                </div>
-                              )}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                flexShrink: 0,
+                                background: 'rgba(255,255,255,0.06)',
+                                border: `1px solid ${tokens.bg.border}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: '#6b7280',
+                                userSelect: 'none',
+                              }}
+                            >
+                              {(lead.first_name?.[0] ?? '?').toUpperCase()}
+                              {(lead.last_name?.[0] ?? '').toUpperCase()}
                             </div>
-                          </td>
-                          <td style={{ padding: '6px 12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ minWidth: 0 }}>
                               <div
                                 style={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: '50%',
-                                  flexShrink: 0,
-                                  background: 'rgba(255,255,255,0.06)',
-                                  border: '1px solid rgba(255,255,255,0.1)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                  color: '#9ca3af',
-                                  userSelect: 'none',
+                                  fontSize: 14,
+                                  fontWeight: 500,
+                                  color: tokens.text.primary,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
                                 }}
                               >
-                                {(lead.first_name?.[0] ?? '?').toUpperCase()}
-                                {(lead.last_name?.[0] ?? '').toUpperCase()}
+                                {name}
                               </div>
-                              <div style={{ minWidth: 0 }}>
+                              {lead.company_name && (
                                 <div
                                   style={{
-                                    fontSize: 14,
-                                    color: '#f9fafb',
-                                    fontWeight: 500,
+                                    fontSize: 12,
+                                    color: tokens.text.muted,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
                                   }}
                                 >
-                                  {name}
+                                  {lead.company_name}
                                 </div>
-                                {lead.company_name && (
-                                  <div
-                                    style={{
-                                      fontSize: 12,
-                                      color: '#6b7280',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap',
-                                    }}
-                                  >
-                                    {lead.company_name}
-                                  </div>
-                                )}
-                              </div>
+                              )}
                             </div>
-                          </td>
-                          {(() => {
-                            const branche =
-                              ((lead.custom_fields as Record<string, unknown>)?.industry_de as string) ||
-                              ((lead.custom_fields as Record<string, unknown>)?.industry as string) ||
-                              '—';
-                            return (
-                              <td
-                                title={branche}
-                                style={{
-                                  padding: '0 12px',
-                                  fontSize: 12,
-                                  color: '#9ca3af',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  maxWidth: 130,
-                                }}
-                              >
-                                {branche}
-                              </td>
-                            );
-                          })()}
-                          <td style={{ padding: '0 12px' }}>
-                            <div style={{ display: 'flex', gap: 4, flexWrap: 'nowrap' }}>
-                              {visibleTags.map((t) => (
-                                <span
-                                  key={t}
-                                  style={{
-                                    fontSize: 11,
-                                    padding: '2px 6px',
-                                    borderRadius: 4,
-                                    background: '#1a1a1a',
-                                    color: '#9ca3af',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  {t.replace(/_/g, ' ')}
-                                </span>
-                              ))}
-                              {extraTags > 0 && <span style={{ fontSize: 11, color: '#6b7280' }}>+{extraTags}</span>}
-                            </div>
-                          </td>
-                          <td style={{ padding: '0 12px' }} onClick={(e) => e.stopPropagation()}>
-                            <select
-                              value={lead.status}
-                              onChange={(e) => handleStatusUpdate(lead.id, e.target.value)}
-                              disabled={statusUpdating}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: STATUS_FG[lead.status] ?? '#888',
-                                fontSize: 13,
-                                cursor: 'pointer',
-                                outline: 'none',
-                                padding: '2px 0',
-                              }}
-                            >
-                              {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                                <option key={k} value={k}>
-                                  {v}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td style={{ padding: '0 12px', textAlign: 'center' }}>
+                          </div>
+                        </td>
+                        <td
+                          title={ind}
+                          style={{
+                            padding: '12px 16px',
+                            fontSize: 12,
+                            color: '#6b7280',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: 130,
+                          }}
+                        >
+                          {ind}
+                        </td>
+                        <td style={{ padding: '12px 16px' }} onClick={(e) => e.stopPropagation()}>
+                          <select
+                            value={lead.status}
+                            onChange={(e) => handleStatusUpdate(lead.id, e.target.value)}
+                            disabled={statusUpdating}
+                            style={{
+                              background: 'rgba(255,255,255,0.05)',
+                              border: `1px solid ${tokens.bg.border}`,
+                              borderRadius: 6,
+                              padding: '4px 8px',
+                              fontSize: 12,
+                              color: tokens.text.secondary,
+                              cursor: 'pointer',
+                              outline: 'none',
+                            }}
+                          >
+                            {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                              <option key={k} value={k}>
+                                {v}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={{ padding: '12px 16px' }} onClick={(e) => e.stopPropagation()}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: 4,
+                              alignItems: 'center',
+                              opacity: isHovered ? 1 : 0,
+                              transition: 'opacity 0.15s',
+                            }}
+                          >
                             {lead.email_draft && (
-                              <span
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                              <button
+                                onClick={() => {
                                   navigator.clipboard?.writeText(lead.email_draft!).catch(() => {});
-                                  setCopiedField(`email_${lead.id}`);
+                                  setCopiedField(`row_${lead.id}`);
                                   setTimeout(() => setCopiedField(null), 500);
                                 }}
                                 style={{
-                                  color: copiedField === `email_${lead.id}` ? '#22c55e' : '#2563eb',
+                                  background: 'rgba(255,255,255,0.06)',
+                                  border: `1px solid ${tokens.bg.borderStrong}`,
+                                  borderRadius: 6,
+                                  padding: '4px 8px',
+                                  fontSize: 11,
+                                  color: tokens.text.secondary,
                                   cursor: 'pointer',
-                                  fontSize: copiedField === `email_${lead.id}` ? 11 : 14,
                                 }}
-                                title="E-Mail kopieren"
                               >
-                                {copiedField === `email_${lead.id}` ? 'Kopiert!' : '✉'}
-                              </span>
+                                {copiedField === `row_${lead.id}` ? 'Kopiert' : 'Mail'}
+                              </button>
                             )}
-                          </td>
-                          <td style={{ padding: '0 12px' }}>
-                            <span
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSelectLead(lead);
-                              }}
-                              style={{ color: '#6b7280', fontSize: 13, cursor: 'pointer' }}
-                            >
-                              Details →
-                            </span>
-                          </td>
-                        </tr>
-                        {deleteConfirmId === lead.id && (
-                          <tr>
-                            <td
-                              colSpan={7}
+                            {lead.status === 'new' && (
+                              <button
+                                onClick={() => handleStatusUpdate(lead.id, 'contacted')}
+                                style={{
+                                  background: 'rgba(255,255,255,0.06)',
+                                  border: `1px solid ${tokens.bg.borderStrong}`,
+                                  borderRadius: 6,
+                                  padding: '4px 8px',
+                                  fontSize: 11,
+                                  color: tokens.text.secondary,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Kontaktiert
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleSelectLead(lead)}
                               style={{
-                                padding: '8px 12px',
-                                background: 'rgba(239,68,68,0.06)',
-                                borderBottom: '1px solid rgba(239,68,68,0.12)',
+                                background: tokens.brand.primary,
+                                color: tokens.text.inverse,
+                                border: 'none',
+                                borderRadius: 6,
+                                padding: '4px 10px',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: 'pointer',
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span style={{ fontSize: 13, color: '#f87171' }}>Lead löschen?</span>
-                                <div style={{ display: 'flex', gap: 6 }}>
-                                  <button
-                                    onClick={() => setDeleteConfirmId(null)}
-                                    style={{
-                                      background: 'none',
-                                      border: '1px solid #333',
-                                      color: '#888',
-                                      borderRadius: 6,
-                                      padding: '4px 10px',
-                                      fontSize: 12,
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    Abbrechen
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteLead(lead.id)}
-                                    style={{
-                                      background: '#ef4444',
-                                      border: 'none',
-                                      color: '#fff',
-                                      borderRadius: 6,
-                                      padding: '4px 10px',
-                                      fontSize: 12,
-                                      fontWeight: 600,
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    Löschen
-                                  </button>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
+                              Details
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })
                 )}
@@ -1136,35 +1248,77 @@ export function LeadsPage() {
           );
         })()}
 
-        {/* Table Footer */}
+        {/* ── NOTE INPUT ── */}
+        <div
+          style={{
+            marginTop: 16,
+            display: 'flex',
+            gap: 10,
+            alignItems: 'center',
+            padding: '12px 0',
+            borderTop: `1px solid rgba(255,255,255,0.06)`,
+          }}
+        >
+          <input
+            value={noteInput}
+            onChange={(e) => setNoteInput(e.target.value)}
+            placeholder="Notiz eingeben..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && noteInput.trim()) {
+                console.log('TODO: save note', noteInput);
+                setNoteInput('');
+              }
+            }}
+            style={{
+              flex: 1,
+              background: tokens.bg.raised,
+              border: `1px solid ${tokens.bg.border}`,
+              borderRadius: 8,
+              padding: '10px 14px',
+              fontSize: 13,
+              color: tokens.text.primary,
+              outline: 'none',
+            }}
+          />
+          <button
+            onClick={() => {
+              console.log('TODO: add note');
+              setNoteInput('');
+            }}
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: `1px solid ${tokens.bg.borderStrong}`,
+              borderRadius: 8,
+              padding: '10px 16px',
+              fontSize: 13,
+              color: tokens.text.secondary,
+              cursor: 'pointer',
+              fontWeight: 500,
+            }}
+          >
+            + Hinzufuegen
+          </button>
+        </div>
+
+        {/* ── TABLE FOOTER ── */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '10px 0',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
             fontSize: 12,
-            color: '#4b5563',
+            color: tokens.text.muted,
           }}
         >
           <span>
-            {filtered.length} Leads angezeigt · {scored} gescored · {withEmail} mit E-Mail
+            {filtered.length} Leads{filtered.length !== leads.length ? ` (von ${leads.length} gesamt)` : ''} ·{' '}
+            {withEmail} mit E-Mail · {scored} gescored
           </span>
-          <button
-            onClick={() => setGeneratorOpen(true)}
-            style={{
-              fontSize: 12,
-              padding: '5px 12px',
-              borderRadius: 6,
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.04)',
-              color: '#9ca3af',
-              cursor: 'pointer',
-            }}
-          >
-            + Mehr Leads generieren
-          </button>
+          <span style={{ color: '#374151', fontSize: 11 }}>
+            Zuletzt aktualisiert:{' '}
+            {new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </span>
         </div>
 
         {/* ── Detail Overlay (Person View) ── */}
