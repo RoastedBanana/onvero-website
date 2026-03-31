@@ -27,6 +27,15 @@ import {
 } from './leads-shared';
 import { tokens, getScoreStyle, getStatusStyle } from '@/lib/design-tokens';
 
+interface LeadNote {
+  id: string;
+  lead_id: string;
+  tenant_id: string;
+  content: string;
+  created_at: string;
+  created_by: string;
+}
+
 // ── Internal Components ──────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
@@ -277,10 +286,52 @@ export function LeadsPage() {
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [notes, setNotes] = useState<LeadNote[]>([]);
+  const [newNote, setNewNote] = useState('');
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
   }, []);
+
+  const loadNotes = useCallback(
+    async (leadId: string) => {
+      if (!tenantId) return;
+      try {
+        const { data } = await supabase
+          .from('lead_notes')
+          .select('*')
+          .eq('lead_id', leadId)
+          .eq('tenant_id', tenantId)
+          .order('created_at', { ascending: false });
+        setNotes(data ?? []);
+      } catch {
+        setNotes([]);
+      }
+    },
+    [supabase, tenantId]
+  );
+
+  useEffect(() => {
+    if (selectedLead) loadNotes(selectedLead.id);
+    else {
+      setNotes([]);
+      setNewNote('');
+    }
+  }, [selectedLead?.id, loadNotes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSaveNote = useCallback(async () => {
+    if (!selectedLead || !tenantId || !newNote.trim()) return;
+    try {
+      await supabase
+        .from('lead_notes')
+        .insert({ lead_id: selectedLead.id, tenant_id: tenantId, content: newNote.trim() });
+      setNewNote('');
+      loadNotes(selectedLead.id);
+      showToast('Notiz gespeichert');
+    } catch {
+      showToast('Fehler beim Speichern');
+    }
+  }, [supabase, selectedLead, tenantId, newNote, loadNotes, showToast]);
 
   const loadLeads = useCallback(async () => {
     if (!tenantId) return;
@@ -1380,13 +1431,23 @@ export function LeadsPage() {
           }}
         >
           <input
-            value={noteInput}
+            value={hoveredRow ? noteInput : ''}
             onChange={(e) => setNoteInput(e.target.value)}
-            placeholder="Notiz eingeben..."
+            placeholder={hoveredRow ? 'Notiz eingeben...' : 'Lead auswaehlen um Notiz hinzuzufuegen'}
+            disabled={!hoveredRow}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && noteInput.trim()) {
-                console.log('TODO: save note', noteInput);
-                setNoteInput('');
+              if (e.key === 'Enter' && noteInput.trim() && hoveredRow) {
+                (async () => {
+                  try {
+                    await supabase
+                      .from('lead_notes')
+                      .insert({ lead_id: hoveredRow, tenant_id: tenantId!, content: noteInput.trim() });
+                    setNoteInput('');
+                    showToast('Notiz gespeichert');
+                  } catch {
+                    showToast('Fehler beim Speichern');
+                  }
+                })();
               }
             }}
             style={{
@@ -1396,28 +1457,11 @@ export function LeadsPage() {
               borderRadius: 8,
               padding: '10px 14px',
               fontSize: 13,
-              color: tokens.text.primary,
+              color: hoveredRow ? tokens.text.primary : tokens.text.muted,
               outline: 'none',
+              cursor: hoveredRow ? 'text' : 'default',
             }}
           />
-          <button
-            onClick={() => {
-              console.log('TODO: add note');
-              setNoteInput('');
-            }}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: `1px solid ${tokens.bg.borderStrong}`,
-              borderRadius: 8,
-              padding: '10px 16px',
-              fontSize: 13,
-              color: tokens.text.secondary,
-              cursor: 'pointer',
-              fontWeight: 500,
-            }}
-          >
-            + Hinzufuegen
-          </button>
         </div>
 
         {/* ── TABLE FOOTER ── */}
@@ -2122,18 +2166,131 @@ export function LeadsPage() {
 
                         {activeTab === 'Aktivitaeten' && (
                           <div>
-                            {activitiesLoading ? (
-                              <div style={{ color: tokens.text.muted, fontSize: 13 }}>Lade Aktivitaeten...</div>
-                            ) : displayActivities.length === 0 ? (
-                              <div style={{ color: tokens.text.muted, fontSize: 13 }}>
-                                Keine Aktivitaeten vorhanden.
-                              </div>
-                            ) : (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                {displayActivities.map((act) => (
-                                  <ActivityItem key={act.id} act={act} />
-                                ))}
-                              </div>
+                            {/* Notes */}
+                            <div
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: tokens.text.muted,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.08em',
+                                marginBottom: 12,
+                              }}
+                            >
+                              Notizen
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                              {notes.map((note) => (
+                                <div key={note.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                                  <div
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: '50%',
+                                      flexShrink: 0,
+                                      background: 'rgba(255,255,255,0.06)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: 11,
+                                      color: '#6b7280',
+                                    }}
+                                  >
+                                    N
+                                  </div>
+                                  <div
+                                    style={{
+                                      flex: 1,
+                                      background: tokens.bg.raised,
+                                      border: `1px solid rgba(255,255,255,0.06)`,
+                                      borderRadius: 8,
+                                      padding: '10px 12px',
+                                    }}
+                                  >
+                                    <div style={{ fontSize: 13, color: '#e4e4e7', lineHeight: 1.5 }}>
+                                      {note.content}
+                                    </div>
+                                    <div style={{ fontSize: 11, color: tokens.text.muted, marginTop: 4 }}>
+                                      {new Date(note.created_at).toLocaleDateString('de-DE', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              {notes.length === 0 && (
+                                <div style={{ fontSize: 13, color: tokens.text.muted }}>Noch keine Notizen.</div>
+                              )}
+                            </div>
+                            {/* New note input */}
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <textarea
+                                value={newNote}
+                                onChange={(e) => setNewNote(e.target.value)}
+                                placeholder="Notiz hinzufuegen..."
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && e.metaKey && newNote.trim()) handleSaveNote();
+                                }}
+                                style={{
+                                  flex: 1,
+                                  background: tokens.bg.raised,
+                                  border: `1px solid ${tokens.bg.border}`,
+                                  borderRadius: 8,
+                                  padding: '10px 12px',
+                                  fontSize: 13,
+                                  color: tokens.text.primary,
+                                  resize: 'none',
+                                  height: 72,
+                                  outline: 'none',
+                                }}
+                              />
+                              <button
+                                onClick={handleSaveNote}
+                                style={{
+                                  background: tokens.brand.primary,
+                                  color: tokens.text.inverse,
+                                  border: 'none',
+                                  borderRadius: 8,
+                                  padding: '0 16px',
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  alignSelf: 'flex-end',
+                                  height: 36,
+                                }}
+                              >
+                                Speichern
+                              </button>
+                            </div>
+                            <div style={{ fontSize: 11, color: tokens.text.muted, marginTop: 4 }}>
+                              Cmd+Enter zum Speichern
+                            </div>
+
+                            {/* Activities */}
+                            {displayActivities.length > 0 && (
+                              <>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: tokens.text.muted,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.08em',
+                                    marginTop: 24,
+                                    marginBottom: 12,
+                                  }}
+                                >
+                                  Aktivitaeten
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                  {displayActivities.map((act) => (
+                                    <ActivityItem key={act.id} act={act} />
+                                  ))}
+                                </div>
+                              </>
                             )}
                           </div>
                         )}
