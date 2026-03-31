@@ -36,6 +36,19 @@ interface LeadNote {
   created_by: string;
 }
 
+interface LeadStats {
+  total: number;
+  avg_score: number;
+  score_distribution: { premium: number; warm: number; cold: number };
+  with_email: number;
+  scored: number;
+  leads_by_day: { date: string; count: number }[];
+  top_industries: { name: string; count: number }[];
+  funnel: { label: string; count: number }[];
+  by_status: Record<string, number>;
+  generated_at: string;
+}
+
 // ── Internal Components ──────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
@@ -281,6 +294,7 @@ export function LeadsPage() {
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [stats, setStats] = useState<LeadStats | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
@@ -362,6 +376,17 @@ export function LeadsPage() {
   useEffect(() => {
     if (!tenantLoading) loadLeads();
   }, [tenantLoading, loadLeads]);
+
+  // Fetch stats from n8n webhook (cached 60s)
+  useEffect(() => {
+    if (!tenantId || tenantLoading) return;
+    fetch(`/api/leads/stats?tenant_id=${tenantId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setStats(data);
+      })
+      .catch(() => {});
+  }, [tenantId, tenantLoading]);
 
   const loadActivities = useCallback(
     async (leadId: string) => {
@@ -508,28 +533,33 @@ export function LeadsPage() {
     [leads, search, scoreRange, statusFilter, tagToggles, sortBy]
   );
 
-  const scored = leads.filter((l) => l.score !== null).length;
-  const premium = leads.filter((l) => (l.ai_tags ?? []).includes('premium_lead')).length;
-  const withEmail = leads.filter((l) => l.email_draft !== null).length;
-  const avgScore = scored > 0 ? Math.round(leads.reduce((sum, l) => sum + (l.score ?? 0), 0) / scored) : 0;
+  // Stats: prefer API data, fallback to client-side
+  const scored = stats?.scored ?? leads.filter((l) => l.score !== null).length;
+  const premium =
+    stats?.score_distribution?.premium ?? leads.filter((l) => (l.ai_tags ?? []).includes('premium_lead')).length;
+  const withEmail = stats?.with_email ?? leads.filter((l) => l.email_draft !== null).length;
+  const avgScore =
+    stats?.avg_score ?? (scored > 0 ? Math.round(leads.reduce((sum, l) => sum + (l.score ?? 0), 0) / scored) : 0);
 
-  const hot = leads.filter((l) => (l.score ?? 0) >= 70).length;
-  const warm = leads.filter((l) => {
-    const s = l.score ?? 0;
-    return s >= 45 && s < 70;
-  }).length;
-  const newCount = leads.filter((l) => l.status === 'new').length;
+  const hot = stats?.score_distribution?.premium ?? leads.filter((l) => (l.score ?? 0) >= 70).length;
+  const warm =
+    stats?.score_distribution?.warm ??
+    leads.filter((l) => {
+      const s = l.score ?? 0;
+      return s >= 45 && s < 70;
+    }).length;
+  const newCount = stats?.by_status?.new ?? leads.filter((l) => l.status === 'new').length;
 
   const cf = (selectedLead?.custom_fields ?? DUMMY_CF) as unknown as Record<string, unknown>;
   const displayActivities = activities.length > 0 ? activities : DUMMY_ACTIVITIES;
 
-  const cold = leads.length - hot - warm;
-  const contacted = leads.filter((l) => l.status === 'contacted').length;
-  const qualified = leads.filter((l) => l.status === 'qualified').length;
+  const cold = stats?.score_distribution?.cold ?? leads.length - hot - warm;
+  const contacted = stats?.by_status?.contacted ?? leads.filter((l) => l.status === 'contacted').length;
+  const qualified = stats?.by_status?.qualified ?? leads.filter((l) => l.status === 'qualified').length;
 
-  // Leads over time (last 14 days)
-  // 14-day chart data (includes days with 0 leads)
+  // Chart data: prefer API, fallback to client-side
   const chartData = useMemo(() => {
+    if (stats?.leads_by_day?.length) return stats.leads_by_day;
     const days: { date: string; count: number }[] = [];
     const counts: Record<string, number> = {};
     for (const l of leads) {
@@ -543,14 +573,15 @@ export function LeadsPage() {
       days.push({ date: ds, count: counts[ds] || 0 });
     }
     return days;
-  }, [leads]);
+  }, [leads, stats]);
   const maxByDate = Math.max(...chartData.map((d) => d.count), 1);
 
   // Keep byDate for backward compat
   const byDate = chartData.filter((d) => d.count > 0).map((d) => [d.date, d.count] as [string, number]);
 
-  // Top 5 industries
+  // Top 5 industries: prefer API, fallback to client-side
   const topIndustries = useMemo(() => {
+    if (stats?.top_industries?.length) return stats.top_industries.map((i) => [i.name, i.count] as [string, number]);
     const acc: Record<string, number> = {};
     for (const l of leads) {
       const ind =
@@ -562,7 +593,7 @@ export function LeadsPage() {
     return Object.entries(acc)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5);
-  }, [leads]);
+  }, [leads, stats]);
   const maxInd = topIndustries.length > 0 ? topIndustries[0][1] : 1;
 
   // ESC handler for overlay
