@@ -981,37 +981,50 @@ function WebsitePage({ user }: { user: UserInfo | null }) {
       if (form.imageFile) fd.append('image', form.imageFile);
       const res = await fetch(N8N_WEBHOOK, { method: 'POST', body: fd });
       if (!res.ok) throw new Error();
-      setCreateState('success');
-      setCreateConfetti(true);
-      setTimeout(() => setCreateConfetti(false), 5000);
-    } catch {
-      setCreateState('idle');
-      alert('Fehler beim Erstellen des Blogposts.');
-    }
+      const json = await res.json();
+
+      // Add new post to local state immediately
+      const newPost: BlogPost = {
+        id: json.id, documentId: json.documentId, title: form.title.trim(),
+        content: form.content.trim(), tags: form.tags.join(','), author: form.author.trim(),
+        imageUrl: form.imageFile ? URL.createObjectURL(form.imageFile) : null,
+        imageId: null, createdAt: new Date().toISOString(),
+      };
+      setPosts(prev => [newPost, ...prev]);
+
+      setCreateState('success'); setCreateConfetti(true);
+      setTimeout(()=>setCreateConfetti(false), 5000);
+    } catch { setCreateState('idle'); alert('Fehler beim Erstellen des Blogposts.'); }
   };
 
   const handleUpdate = async (form: BlogFormValues) => {
     if (!selectedPost) return;
+
+    // Optimistic update — reflect changes immediately
+    const newImageUrl = form.imageFile ? URL.createObjectURL(form.imageFile) : form.imageRemoved ? null : selectedPost.imageUrl;
+    const updated: BlogPost = { ...selectedPost, title: form.title.trim(), content: form.content.trim(), tags: form.tags.join(','), author: form.author.trim(), imageUrl: newImageUrl };
+    setSelectedPost(updated);
+    setPosts(prev => prev.map(p => p.documentId === updated.documentId ? updated : p));
     setUpdateState('loading');
+
     try {
       const fd = new FormData();
-      fd.append('action', 'update');
-      fd.append('documentId', selectedPost.documentId);
-      fd.append('id', String(selectedPost.id));
-      fd.append('imageId', selectedPost.imageId ?? '');
-      fd.append('title', form.title.trim());
-      fd.append('content', form.content.trim());
-      fd.append('tags', form.tags.join(','));
-      fd.append('author', form.author.trim());
-      if (form.imageFile) fd.append('image', form.imageFile);
-      const res = await fetch(N8N_WEBHOOK, { method: 'POST', body: fd });
+      fd.append('action','update'); fd.append('documentId',selectedPost.documentId);
+      fd.append('id',String(selectedPost.id)); fd.append('imageId',selectedPost.imageId??'');
+      fd.append('title',form.title.trim()); fd.append('content',form.content.trim());
+      fd.append('tags',form.tags.join(',')); fd.append('author',form.author.trim());
+      if (form.imageFile) fd.append('image',form.imageFile);
+      if (form.imageRemoved) fd.append('imageRemoved','true');
+      const res = await fetch(N8N_WEBHOOK, { method:'POST', body:fd });
       if (!res.ok) throw new Error();
-      setUpdateState('success');
-      setUpdateConfetti(true);
-      setTimeout(() => setUpdateConfetti(false), 5000);
+
+      setUpdateState('success'); setUpdateConfetti(true);
+      setTimeout(()=>setUpdateConfetti(false), 5000);
     } catch {
-      setUpdateState('idle');
-      alert('Fehler beim Aktualisieren.');
+      // Revert on failure
+      setSelectedPost(selectedPost);
+      setPosts(prev => prev.map(p => p.documentId === selectedPost.documentId ? selectedPost : p));
+      setUpdateState('idle'); alert('Fehler beim Aktualisieren.');
     }
   };
 

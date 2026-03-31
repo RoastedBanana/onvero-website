@@ -24,31 +24,47 @@ import { TextShimmer } from "@/components/ui/text-shimmer";
 import { createBrowserClient } from "@supabase/ssr";
 
 const WEBHOOK = "https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat";
-const STORAGE_KEY = "onvero_chat_sessions";
+const IMAGE_WEBHOOK = "https://n8n.srv1223027.hstgr.cloud/webhook/session-add-image";
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
-function parseCookieUser(): { firstName: string; lastName: string } | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/onvero_user=([^;]+)/);
-  if (!match) return null;
-  try { return JSON.parse(decodeURIComponent(match[1])); } catch { return null; }
-}
-
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Message { role: "user" | "ai"; text: string; imageUrl?: string; }
 interface ChatSession { id: string; title: string; messages: Message[]; createdAt: string; }
 
-// ── localStorage helpers ─────────────────────────────────────────────────────
-function loadSessions(): ChatSession[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; }
+// ── Supabase session_context helpers ─────────────────────────────────────────
+interface DbMessage { role: "user" | "assistant"; content: string; created_at: string; }
+
+function dbToMessage(m: DbMessage): Message {
+  return { role: m.role === "assistant" ? "ai" : "user", text: m.content };
 }
-function saveSessions(s: ChatSession[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
-function createSession(): ChatSession {
-  return { id: crypto.randomUUID(), title: "Neues Gespräch", messages: [], createdAt: new Date().toISOString() };
+
+async function loadAllSessions(userId: string): Promise<ChatSession[]> {
+  const { data: rows } = await supabase
+    .from("session_context")
+    .select("session_id, messages, created_at")
+    .eq("user_id", userId)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+  if (!rows || rows.length === 0) return [];
+
+  return rows
+    .filter(r => {
+      const msgs = (r.messages ?? []) as DbMessage[];
+      return msgs.length > 0;
+    })
+    .map(r => {
+      const msgs = (r.messages ?? []) as DbMessage[];
+      const messages = msgs.map(dbToMessage);
+      const firstUser = messages.find(m => m.role === "user");
+      const title = firstUser
+        ? firstUser.text.slice(0, 40) + (firstUser.text.length > 40 ? "…" : "")
+        : "Gespräch";
+      return { id: r.session_id, title, messages, createdAt: r.created_at };
+    });
 }
 
 // ── Auto-resize hook ─────────────────────────────────────────────────────────
@@ -149,13 +165,15 @@ function ChatSidebar({
                 onMouseLeave={e => { if (session.id !== activeId) (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
                 <MessageSquare className="w-3.5 h-3.5 shrink-0" style={{ opacity: 0.5 }} />
                 <span className="text-xs truncate flex-1">{session.title}</span>
-                <button onClick={e => { e.stopPropagation(); onDelete(session.id); }}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer"
-                  style={{ color: "rgba(255,255,255,0.3)" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,100,100,0.8)")}
-                  onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}>
-                  <Trash2 className="w-3 h-3" />
-                </button>
+                {sessions.length > 1 && (
+                  <button onClick={e => { e.stopPropagation(); onDelete(session.id); }}
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer"
+                    style={{ color: "rgba(255,255,255,0.3)" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,100,100,0.8)")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}>
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -175,46 +193,117 @@ export function BusinessAIChat() {
   const [value, setValue] = useState("");
   const [preview, setPreview] = useState<{ url: string; name: string; file: File } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [sessionId, setSessionId] = useState("");
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({ minHeight: 56, maxHeight: 200 });
 
+  // Always create a new chat on mount, load past sessions from Supabase
+  const initRef = useRef(false);
   useEffect(() => {
-    const loaded = loadSessions();
-    if (loaded.length > 0) { setSessions(loaded); setActiveId(loaded[0].id); }
-    else { const f = createSession(); setSessions([f]); setActiveId(f.id); saveSessions([f]); }
+    if (initRef.current) return;
+    initRef.current = true;
+
+    async function init() {
+      // Wait for auth session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      console.log("Auth user:", session.user.id);
+
+      // Fetch tenant_id
+      let tid = "";
+      const { data: tuRows, error: tuErr } = await supabase
+        .from("tenant_users")
+        .select("tenant_id")
+        .eq("user_id", session.user.id)
+        .limit(1);
+      console.log("tenant_users query:", { tuRows, tuErr });
+      if (tuRows?.[0]?.tenant_id) {
+        tid = tuRows[0].tenant_id;
+      }
+
+      console.log("Tenant ID:", tid);
+      if (!tid) {
+        console.error("Keine tenant_id gefunden — kann keine Session erstellen");
+        setSessionReady(true);
+        return;
+      }
+
+      // Create new session
+      const sid = `${tid}_${crypto.randomUUID()}`;
+      console.log("New sessionId:", sid);
+
+      const { error: insertErr } = await supabase.from("session_context").insert({
+        session_id: sid,
+        tenant_id: tid,
+        user_id: session.user.id,
+      });
+      console.log("Insert result:", insertErr ? insertErr.message : "OK");
+
+      setSessionId(sid);
+      sessionStorage.setItem("onvero_chat_sid", sid);
+
+      // Load past sessions, put new chat on top
+      const past = await loadAllSessions(session.user.id);
+      const current: ChatSession = { id: sid, title: "Neues Gespräch", messages: [], createdAt: new Date().toISOString() };
+      const allSessions = [current, ...past.filter(s => s.id !== sid)];
+
+      setSessions(allSessions);
+      setActiveId(sid);
+      setSessionReady(true);
+    }
+
+    init();
   }, []);
 
   const activeSession = sessions.find(s => s.id === activeId);
   const messages = activeSession?.messages ?? [];
   const hasMessages = messages.length > 0;
-
-  useEffect(() => { if (sessions.length > 0) saveSessions(sessions); }, [sessions]);
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages, loading]);
 
   function updateSession(id: string, updater: (s: ChatSession) => ChatSession) {
     setSessions(prev => prev.map(s => s.id === id ? updater(s) : s));
   }
 
-  function handleNewChat() {
-    const s = createSession(); setSessions(prev => [s, ...prev]); setActiveId(s.id);
+  async function handleNewChat() {
+    const parts = sessionId.split("_");
+    const tid = parts.length > 1 ? parts[0] : "";
+    const newSid = tid ? `${tid}_${crypto.randomUUID()}` : crypto.randomUUID();
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && tid) {
+      const { error } = await supabase.from("session_context").insert({
+        session_id: newSid,
+        tenant_id: tid,
+        user_id: session.user.id,
+      });
+      if (error) console.error("session_context insert failed:", error);
+    }
+
+    setSessionId(newSid);
+    sessionStorage.setItem("onvero_chat_sid", newSid);
+    const s: ChatSession = { id: newSid, title: "Neues Gespräch", messages: [], createdAt: new Date().toISOString() };
+    setSessions(prev => [s, ...prev]);
+    setActiveId(newSid);
   }
 
-  function handleDeleteChat(id: string) {
+  async function handleDeleteChat(id: string) {
+    if (sessions.length <= 1) return; // last chat is undeletable
+    await supabase.from("session_context").delete().eq("session_id", id);
+
     setSessions(prev => {
       const next = prev.filter(s => s.id !== id);
-      if (id === activeId) {
-        if (next.length > 0) setActiveId(next[0].id);
-        else { const f = createSession(); next.push(f); setActiveId(f.id); }
-      }
+      if (id === activeId && next.length > 0) setActiveId(next[0].id);
       return next;
     });
   }
 
   async function sendMessage(text: string) {
-    if ((!text.trim() && !preview) || !activeSession) return;
+    if ((!text.trim() && !preview) || !activeSession || !sessionReady) return;
     const userMsg: Message = { role: "user", text: text.trim(), imageUrl: preview?.url };
     const isFirst = activeSession.messages.length === 0;
     updateSession(activeId, s => ({
@@ -226,24 +315,38 @@ export function BusinessAIChat() {
     setPreview(null); setLoading(true);
 
     try {
+      // Save user message to session_context
+      await supabase.rpc("append_chat_message", {
+        p_session_id: sessionId,
+        p_role: "user",
+        p_content: text.trim(),
+      });
+
+      // Upload image to separate endpoint if present
+      if (currentFile) {
+        const imgForm = new FormData();
+        imgForm.append("sessionId", sessionId);
+        imgForm.append("image", currentFile);
+        await fetch(IMAGE_WEBHOOK, { method: "POST", body: imgForm });
+      }
+
       const form = new FormData();
       form.append("chatInput", text.trim());
-      form.append("sessionId", activeId);
-      if (currentFile) form.append("data", currentFile);
-
-      // Attach JWT and user name
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) form.append("jwt", session.access_token);
-      const cookieUser = parseCookieUser();
-      if (cookieUser) {
-        form.append("firstName", cookieUser.firstName);
-        form.append("lastName", cookieUser.lastName);
-      }
+      form.append("sessionId", sessionId);
 
       const res = await fetch(WEBHOOK, { method: "POST", body: form });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      updateSession(activeId, s => ({ ...s, messages: [...s.messages, { role: "ai", text: json.output ?? "Keine Antwort erhalten." }] }));
+      const aiText = json.output ?? "Keine Antwort erhalten.";
+
+      // Save AI response to session_context
+      await supabase.rpc("append_chat_message", {
+        p_session_id: sessionId,
+        p_role: "assistant",
+        p_content: aiText,
+      });
+
+      updateSession(activeId, s => ({ ...s, messages: [...s.messages, { role: "ai", text: aiText }] }));
     } catch {
       updateSession(activeId, s => ({ ...s, messages: [...s.messages, { role: "ai", text: "Es gab einen Fehler. Bitte versuche es erneut." }] }));
     } finally { setLoading(false); }
@@ -252,6 +355,17 @@ export function BusinessAIChat() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(value); }
   };
+
+  // Loading screen while auth + init runs
+  if (!sessionReady) {
+    return (
+      <div className="flex items-center justify-center w-full h-full min-h-[calc(100vh-5rem)]">
+        <TextShimmer className="text-sm font-medium" duration={1}>
+          Chat wird geladen…
+        </TextShimmer>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex w-full h-full min-h-[calc(100vh-5rem)] overflow-hidden">
@@ -389,7 +503,7 @@ export function BusinessAIChat() {
                     <Paperclip className="w-4 h-4" />
                   </button>
                 </div>
-                <button type="button" onClick={() => sendMessage(value)} disabled={loading}
+                <button type="button" onClick={() => sendMessage(value)} disabled={loading || !sessionReady}
                   className={cn(
                     "p-2 rounded-lg text-sm transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:pointer-events-none",
                     value.trim() || preview ? "bg-white text-black" : "border text-white/30",
