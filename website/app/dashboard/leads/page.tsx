@@ -8,6 +8,7 @@ import TopBranchen from '@/components/leads/TopBranchen';
 import ScoreDonut from '@/components/leads/ScoreDonut';
 import ConversionFunnel from '@/components/leads/ConversionFunnel';
 import LeadsTable from '@/components/leads/LeadsTable';
+import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
 
 type StatusFilter = 'alle' | 'neu' | 'kontaktiert' | 'qualifiziert' | 'verloren';
 
@@ -15,6 +16,7 @@ export default function LeadsDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('alle');
   const [search, setSearch] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
 
   useState(() => {
     setTimeout(() => setMounted(true), 50);
@@ -261,8 +263,13 @@ export default function LeadsDashboardPage() {
           />
         </div>
 
-        <LeadsTable />
+        <LeadsTable selectedId={selectedLeadId} onSelect={setSelectedLeadId} />
       </div>
+
+      <LeadDetailPanel
+        lead={mockLeads.find((l) => l.id === selectedLeadId) ?? null}
+        onClose={() => setSelectedLeadId(null)}
+      />
     </div>
   );
 }

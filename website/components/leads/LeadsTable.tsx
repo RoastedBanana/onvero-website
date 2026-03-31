@@ -73,9 +73,13 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-export default function LeadsTable() {
+interface LeadsTableProps {
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}
+
+export default function LeadsTable({ selectedId, onSelect }: LeadsTableProps) {
   const [sortBy, setSortBy] = useState<'score' | 'date'>('score');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const sorted = [...mockLeads].sort((a, b) =>
     sortBy === 'score' ? b.score - a.score : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -128,7 +132,7 @@ export default function LeadsTable() {
       {sorted.map((lead, i) => (
         <div
           key={lead.id}
-          onClick={() => setSelectedId(selectedId === lead.id ? null : lead.id)}
+          onClick={() => onSelect(selectedId === lead.id ? null : lead.id)}
           style={{
             display: 'grid',
             gridTemplateColumns: '64px 1fr 200px 140px 120px 100px',

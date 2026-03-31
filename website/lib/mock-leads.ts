@@ -10,6 +10,10 @@ export interface MockLead {
   website: string;
   email_draft: string | null;
   ai_tags: string[];
+  ai_summary: string | null;
+  city: string;
+  employees: string;
+  next_action: string;
 }
 
 const industries = [
@@ -131,10 +135,82 @@ export const mockLeads: MockLead[] = Array.from({ length: 27 }, (_, i) => ({
       : null,
   ai_tags:
     scores[i] >= 70
-      ? ['premium_lead', 'ki_affin', 'firmen_email']
+      ? ['premium_lead', 'ki_affin', 'firmen_email', 'B2B', 'Entscheider']
       : scores[i] >= 45
-        ? ['firmen_email', 'automatisierungspotenzial']
-        : ['firmen_email'],
+        ? ['firmen_email', 'automatisierungspotenzial', 'B2B', 'Wachstum']
+        : ['firmen_email', 'B2B'],
+  ai_summary:
+    i < 8
+      ? [
+          'Wachstumsstarkes Unternehmen im Medizintechnik-Bereich mit hohem Digitalisierungsbedarf. Entscheider ist direkt erreichbar und hat Budget signalisiert.',
+          'Traditionsreicher Maschinenbauer mit 180 Mitarbeitern. Aktuell Evaluation von Automatisierungslösungen für die Produktion. Zeitnahe Entscheidung wahrscheinlich.',
+          'Spezialisierter Medizintechnik-Hersteller mit starkem Wachstum. Sucht aktiv nach KI-Lösungen für Qualitätskontrolle. Budget vorhanden.',
+          'Engineering-Dienstleister mit Fokus auf Industrie 4.0. Hoher Bedarf an Workflow-Automatisierung, Entscheider ist CTO.',
+          'Mittelständischer Maschinenbauer, digitalaffin. Nutzt bereits HubSpot und Slack. Gute Voraussetzungen für KI-Integration.',
+          'Medizintechnik-Zulieferer mit FDA-Zulassungen. Sucht Automatisierung für Dokumentationsprozesse. Budget 15-25k signalisiert.',
+          'Bauunternehmen im Wachstum. Digitalisierung der Projektplanung priorisiert. Mittleres Budget.',
+          'Silikonverarbeiter für Medizinprodukte. Nischenmarkt mit hohem Automatisierungspotenzial.',
+        ][i]
+      : null,
+  city: [
+    'Hamburg',
+    'München',
+    'Berlin',
+    'Düsseldorf',
+    'Frankfurt',
+    'Stuttgart',
+    'Köln',
+    'Dresden',
+    'Leipzig',
+    'Hannover',
+    'Nürnberg',
+    'Bremen',
+    'Essen',
+    'Dortmund',
+    'Karlsruhe',
+    'Mannheim',
+    'Augsburg',
+    'Wiesbaden',
+    'Münster',
+    'Aachen',
+    'Freiburg',
+    'Kiel',
+    'Lübeck',
+    'Rostock',
+    'Ulm',
+    'Regensburg',
+    'Mainz',
+  ][i],
+  employees: [
+    '50-200',
+    '200-500',
+    '50-200',
+    '10-50',
+    '200-500',
+    '50-200',
+    '500+',
+    '10-50',
+    '200-500',
+    '50-200',
+    '10-50',
+    '50-200',
+    '10-50',
+    '50-200',
+    '200-500',
+    '10-50',
+    '50-200',
+    '200-500',
+    '50-200',
+    '10-50',
+    '500+',
+    '50-200',
+    '200-500',
+    '10-50',
+    '50-200',
+    '10-50',
+    '200-500',
+  ][i],
+  next_action: scores[i] >= 70 ? 'Sofort kontaktieren' : scores[i] >= 45 ? 'E-Mail senden' : 'Beobachten',
 }));
 
 // Aggregated stats
