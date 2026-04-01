@@ -453,6 +453,7 @@ export default function AnalyticsClient() {
   const [pageSpeed, setPageSpeed] = useState<any>(null);
   const [trendData, setTrendData] = useState<any>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [clock, setClock] = useState(new Date());
   const [leadsData, setLeadsData] = useState<any>(null);
   const [leadsLoading, setLeadsLoading] = useState(false);
   const [barsAnimated, setBarsAnimated] = useState(false);
@@ -604,6 +605,12 @@ export default function AnalyticsClient() {
         .catch(() => {});
     }, 120000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Live clock tick every 30s
+  useEffect(() => {
+    const tick = setInterval(() => setClock(new Date()), 30000);
+    return () => clearInterval(tick);
   }, []);
 
   // Close dropdown on outside click
@@ -775,7 +782,7 @@ export default function AnalyticsClient() {
               </div>
             </div>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
-              Onvero BusinessOS · {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+              Onvero BusinessOS · {clock.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
         </div>
