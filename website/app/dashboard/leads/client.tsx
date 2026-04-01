@@ -31,9 +31,10 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
   const [industryFilter, setIndustryFilter] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<'hot' | 'warm' | 'cold' | null>(null);
 
-  useState(() => {
-    setTimeout(() => setMounted(true), 50);
-  });
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
 
   // Refresh leads from API
   const refreshLeads = useCallback(async () => {
