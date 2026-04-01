@@ -28,11 +28,11 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+              `script-src 'self' 'unsafe-inline' https://plausible.io${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://jnaqmsvozkpqawqwslrl.supabase.co",
               "font-src 'self' data:",
-              "connect-src 'self' https://jnaqmsvozkpqawqwslrl.supabase.co wss://jnaqmsvozkpqawqwslrl.supabase.co https://n8n.srv1223027.hstgr.cloud",
+              "connect-src 'self' https://jnaqmsvozkpqawqwslrl.supabase.co wss://jnaqmsvozkpqawqwslrl.supabase.co https://n8n.srv1223027.hstgr.cloud https://plausible.io",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
