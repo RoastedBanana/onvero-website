@@ -47,6 +47,10 @@ export default function AnalyticsClient() {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [period, setPeriod] = useState('30d');
   const [loading, setLoading] = useState(true);
+  const [activityData, setActivityData] = useState<any>(null);
+  const [contentData, setContentData] = useState<any>(null);
+  const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
   const [leadsData, setLeadsData] = useState<any>(null);
   const [leadsLoading, setLeadsLoading] = useState(false);
 
@@ -54,6 +58,64 @@ export default function AnalyticsClient() {
   const fmtEur = (n: number) =>
     new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
   const fmtDur = (s: number) => `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
+
+  const typeLabels: Record<string, string> = {
+    ai_analysis: 'KI-Analyse abgeschlossen',
+    score_update: 'Score aktualisiert',
+    status_change: 'Status geaendert',
+    task: 'Aufgabe erstellt',
+    form_submit: 'Formular eingereicht',
+    score_alert: 'HOT Lead Alert',
+  };
+  const typeColors: Record<string, string> = {
+    ai_analysis: '#8B5CF6',
+    score_update: '#F59E0B',
+    status_change: '#22C55E',
+    task: '#6B7AFF',
+    form_submit: '#FF5C2E',
+    score_alert: '#FF5C2E',
+  };
+  const formatRelTime = (iso: string) => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'gerade eben';
+    if (mins < 60) return `vor ${mins} Min`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `vor ${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    return days < 7
+      ? `vor ${days} Tagen`
+      : new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  };
+  const updateLeadStatus = async (leadId: string, newStatus: string) => {
+    setLeadsData((prev: any) =>
+      prev
+        ? { ...prev, hotLeads: prev.hotLeads?.map((l: any) => (l.id === leadId ? { ...l, status: newStatus } : l)) }
+        : prev
+    );
+    setStatusDropdown(null);
+    await fetch(`/api/leads/${leadId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+  };
+  const exportCSV = (data: any[], filename: string) => {
+    if (!data?.length) return;
+    const headers = Object.keys(data[0]).join(',');
+    const rows = data.map((r) =>
+      Object.values(r)
+        .map((v) => JSON.stringify(v ?? ''))
+        .join(',')
+    );
+    const blob = new Blob([headers + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -68,6 +130,49 @@ export default function AnalyticsClient() {
       })
       .catch(() => setLoading(false));
   }, [period]);
+
+  // Load activity data on mount
+  useEffect(() => {
+    fetch('/api/analytics/activity')
+      .then((r) => r.json())
+      .then(setActivityData)
+      .catch(() => {});
+  }, []);
+
+  // Load content data lazily for website tab
+  useEffect(() => {
+    if (tab === 'website' && !contentData) {
+      fetch('/api/analytics/content')
+        .then((r) => r.json())
+        .then(setContentData)
+        .catch(() => {});
+    }
+  }, [tab, contentData]);
+
+  // Auto-refresh every 2 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch('/api/analytics/master')
+        .then((r) => r.json())
+        .then((d) => {
+          setMasterData(d);
+          setLastRefresh(new Date());
+        })
+        .catch(() => {});
+      fetch('/api/analytics/activity')
+        .then((r) => r.json())
+        .then(setActivityData)
+        .catch(() => {});
+    }, 120000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const close = () => setStatusDropdown(null);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, []);
 
   useEffect(() => {
     if (tab !== 'leads' || leadsData) return;
@@ -187,6 +292,9 @@ export default function AnalyticsClient() {
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E' }} />
             Live
           </div>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>
+            {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+          </span>
         </div>
       </div>
 
@@ -423,20 +531,15 @@ export default function AnalyticsClient() {
             <div style={{ ...S.card, padding: 20 }}>
               <div style={S.chartTitle}>Aktivitaet</div>
               <div style={S.chartSub}>Letzte Ereignisse</div>
-              {[
-                { label: `${leads.aiScored} Leads KI-bewertet`, time: 'Heute', color: '#22C55E' },
-                { label: `${leads.withEmail} E-Mail Drafts`, time: 'Heute', color: '#8B5CF6' },
-                { label: `${leads.last7d} Leads generiert`, time: 'Diese Woche', color: '#F59E0B' },
-                { label: `${leads.total} Leads gesamt`, time: 'Gesamt', color: '#6B7AFF' },
-              ].map((item, i) => (
+              {(activityData?.activities || []).slice(0, 5).map((a: any) => (
                 <div
-                  key={i}
+                  key={a.id}
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: 10,
                     padding: '7px 0',
-                    borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.05)' : '',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
                   }}
                 >
                   <div
@@ -444,17 +547,34 @@ export default function AnalyticsClient() {
                       width: 6,
                       height: 6,
                       borderRadius: '50%',
-                      background: item.color,
+                      background: typeColors[a.type] || 'rgba(255,255,255,0.2)',
                       flexShrink: 0,
                       marginTop: 4,
                     }}
                   />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{item.label}</div>
-                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 1 }}>{item.time}</div>
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'rgba(255,255,255,0.7)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {a.title || typeLabels[a.type] || a.type}
+                    </div>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 1 }}>
+                      {formatRelTime(a.created_at)}
+                    </div>
                   </div>
                 </div>
               ))}
+              {(!activityData || activityData.activities?.length === 0) && (
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '12px 0' }}>
+                  Noch keine Aktivitaeten
+                </div>
+              )}
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
