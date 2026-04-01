@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { tokens } from '@/lib/design-tokens';
 import { useTenant } from '@/hooks/useTenant';
+import Markdown from 'react-markdown';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -198,7 +199,7 @@ function MeetingResultPopup({
 }: {
   transcript: string;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: () => Promise<void> | void;
   tenantId: string;
   supabase: ReturnType<typeof import('@/hooks/useTenant').useTenant>['supabase'];
 }) {
@@ -282,7 +283,7 @@ function MeetingResultPopup({
       console.error('Save failed:', error);
       alert('Fehler beim Speichern: ' + error.message);
     } else {
-      onSaved();
+      await onSaved();
       onClose();
     }
     setSaving(false);
@@ -485,42 +486,42 @@ function MeetingResultPopup({
           {/* ── AI Summary (collapsible) ── */}
           {summary && (
             <CollapsibleSection title="KI-Zusammenfassung" defaultOpen={true}>
-              <p style={{
+              <div className="meeting-md" style={{
                 fontSize: '0.88rem', color: tokens.text.primary,
-                lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0,
+                lineHeight: 1.65,
                 background: 'rgba(255,255,255,0.03)', borderRadius: 8,
                 padding: '0.85rem', border: `1px solid ${tokens.bg.border}`,
               }}>
-                {summary}
-              </p>
+                <Markdown>{summary}</Markdown>
+              </div>
             </CollapsibleSection>
           )}
 
           {/* ── Todos (collapsible) ── */}
           {todos && (
             <CollapsibleSection title="To-Dos" defaultOpen={true}>
-              <p style={{
+              <div className="meeting-md" style={{
                 fontSize: '0.88rem', color: tokens.text.primary,
-                lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0,
+                lineHeight: 1.65,
                 background: 'rgba(255,255,255,0.03)', borderRadius: 8,
                 padding: '0.85rem', border: `1px solid ${tokens.bg.border}`,
               }}>
-                {todos}
-              </p>
+                <Markdown>{todos}</Markdown>
+              </div>
             </CollapsibleSection>
           )}
 
           {/* ── Transcript (collapsible) ── */}
           <CollapsibleSection title="Transkript" defaultOpen={true}>
-            <p style={{
+            <div style={{
               fontSize: '0.85rem', color: tokens.text.secondary,
-              lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0,
+              lineHeight: 1.65, whiteSpace: 'pre-wrap',
               background: 'rgba(255,255,255,0.02)', borderRadius: 8,
               padding: '0.85rem', border: `1px solid ${tokens.bg.border}`,
               maxHeight: 300, overflowY: 'auto',
             }}>
               {transcript}
-            </p>
+            </div>
           </CollapsibleSection>
 
           {/* ── Participants ── */}
@@ -1034,24 +1035,24 @@ export function MeetingsPage() {
 
             {detailMeeting.summary && (
               <CollapsibleSection title="Zusammenfassung" defaultOpen={true}>
-                <p style={{ fontSize: '0.9rem', color: tokens.text.primary, lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
-                  {detailMeeting.summary}
-                </p>
+                <div className="meeting-md" style={{ fontSize: '0.9rem', color: tokens.text.primary, lineHeight: 1.6 }}>
+                  <Markdown>{detailMeeting.summary}</Markdown>
+                </div>
               </CollapsibleSection>
             )}
 
             {detailMeeting.todos && (
               <CollapsibleSection title="To-Dos" defaultOpen={true}>
-                <p style={{ fontSize: '0.9rem', color: tokens.text.primary, lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
-                  {detailMeeting.todos}
-                </p>
+                <div className="meeting-md" style={{ fontSize: '0.9rem', color: tokens.text.primary, lineHeight: 1.6 }}>
+                  <Markdown>{detailMeeting.todos}</Markdown>
+                </div>
               </CollapsibleSection>
             )}
 
             <CollapsibleSection title="Transkript" defaultOpen={true}>
-              <p style={{ fontSize: '0.85rem', color: tokens.text.secondary, lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 }}>
+              <div style={{ fontSize: '0.85rem', color: tokens.text.secondary, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
                 {detailMeeting.transcript}
-              </p>
+              </div>
             </CollapsibleSection>
           </div>
         </div>
@@ -1059,6 +1060,21 @@ export function MeetingsPage() {
 
       {/* ── Keyframes ───────────────────────────────────────────────────── */}
       <style>{`
+        .meeting-md h1, .meeting-md h2, .meeting-md h3, .meeting-md h4 {
+          margin: 0.8rem 0 0.4rem; font-weight: 600; color: #f5f5f5;
+        }
+        .meeting-md h1 { font-size: 1.1rem; }
+        .meeting-md h2 { font-size: 1rem; }
+        .meeting-md h3 { font-size: 0.92rem; }
+        .meeting-md h4 { font-size: 0.88rem; color: rgba(255,255,255,0.7); }
+        .meeting-md p { margin: 0.4rem 0; }
+        .meeting-md ul, .meeting-md ol { margin: 0.4rem 0; padding-left: 1.4rem; }
+        .meeting-md li { margin: 0.2rem 0; }
+        .meeting-md li::marker { color: rgba(255,255,255,0.3); }
+        .meeting-md strong { color: #fff; font-weight: 600; }
+        .meeting-md hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 0.75rem 0; }
+        .meeting-md > *:first-child { margin-top: 0; }
+        .meeting-md > *:last-child { margin-bottom: 0; }
         @keyframes glowRing {
           0%, 100% { transform: scale(1); opacity: 0.6; }
           50% { transform: scale(1.12); opacity: 1; }
