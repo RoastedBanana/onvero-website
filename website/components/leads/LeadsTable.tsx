@@ -325,7 +325,7 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
   const allSelected = sorted.length > 0 && selected.size === sorted.length;
   const someSelected = selected.size > 0 && !allSelected;
 
-  const gridCols = selectMode ? '36px 64px 1fr 200px 140px 120px 100px' : '64px 1fr 200px 140px 120px 100px';
+  const gridCols = selectMode ? '36px 64px 1fr 200px 140px 120px 100px' : '64px 1fr 200px 140px 120px 100px 80px';
 
   return (
     <div
@@ -591,7 +591,6 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           background: 'rgba(255,255,255,0.02)',
           alignItems: 'center',
-          position: 'relative',
         }}
       >
         {selectMode && <Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleAll} />}
@@ -628,44 +627,44 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
             {key && sortBy === key ? ' ↓' : ''}
           </div>
         ))}
-        {!selectMode && sorted.length > 0 && (
-          <button
-            onClick={() => setSelectMode(true)}
-            style={{
-              position: 'absolute',
-              right: 20,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 6,
-              padding: '4px 10px',
-              fontSize: 10,
-              color: 'rgba(255,255,255,0.35)',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-              e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-              e.currentTarget.style.color = 'rgba(255,255,255,0.35)';
-            }}
-          >
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-              <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-              <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-              <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-              <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-            </svg>
-            Auswählen
-          </button>
+        {!selectMode && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            {sorted.length > 0 && (
+              <button
+                onClick={() => setSelectMode(true)}
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  fontSize: 10,
+                  color: 'rgba(255,255,255,0.35)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.35)';
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                  <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                  <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                  <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                  <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                </svg>
+                Auswählen
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -737,6 +736,7 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
               {new Date(lead.createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
             </div>
+            {!selectMode && <div />}
           </div>
         );
       })}
