@@ -43,6 +43,7 @@ export type Lead = {
   concerns: string[];
   scoreBreakdown?: ScoreBreakdown;
   nextAction?: string;
+  aiSources?: { label: string; url: string; info: string }[];
 };
 
 export type LeadStats = {
@@ -96,6 +97,7 @@ export function mapLead(raw: any): Lead {
     concerns: cf.concerns ?? [],
     scoreBreakdown: cf.score_breakdown,
     nextAction: raw.ai_next_action ?? cf.next_action,
+    aiSources: raw.ai_sources ?? [],
   };
 }
 

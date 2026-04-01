@@ -568,10 +568,77 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                     padding: 12,
                   }}
                 >
-                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, margin: 0 }}>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: 'rgba(255,255,255,0.6)',
+                      lineHeight: 1.7,
+                      margin: 0,
+                      whiteSpace: 'pre-line',
+                    }}
+                  >
                     {lead.aiSummary ?? `${lead.company} — weitere KI-Analyse wird durchgeführt.`}
                   </p>
                 </div>
+
+                {lead.aiSources && lead.aiSources.length > 0 && (
+                  <div style={{ marginTop: 10 }}>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 600,
+                        color: 'rgba(255,255,255,0.2)',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        marginBottom: 6,
+                      }}
+                    >
+                      Quellen
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {lead.aiSources.map((src, i) => (
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          <a
+                            href={src.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: 11,
+                              color: '#60a5fa',
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              transition: 'color 0.15s',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = '#93c5fd')}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = '#60a5fa')}
+                          >
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              style={{ flexShrink: 0 }}
+                            >
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                            {src.label}
+                          </a>
+                          {src.info && (
+                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', paddingLeft: 15 }}>
+                              {src.info}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {(lead.strengths.length > 0 || lead.redFlags.length > 0 || lead.concerns.length > 0) && (
                   <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
