@@ -57,24 +57,20 @@ const S = {
 
 function TooltipBox({ text, children }: { text: string; children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-  const showTip = () => {
-    if (ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      setPos({ top: rect.top - 8, left: rect.left + rect.width / 2 });
-    }
-    setVisible(true);
-  };
   return (
-    <>
+    <div
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      {children}
       {visible && (
         <div
           style={{
-            position: 'fixed',
-            top: pos.top,
-            left: pos.left,
-            transform: 'translate(-50%, -100%)',
+            position: 'absolute',
+            bottom: '130%',
+            left: '50%',
+            transform: 'translateX(-50%)',
             zIndex: 9999,
             background: '#1e1e1e',
             border: '1px solid rgba(255,255,255,0.15)',
@@ -88,15 +84,7 @@ function TooltipBox({ text, children }: { text: string; children: React.ReactNod
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{text}</div>
         </div>
       )}
-      <div
-        ref={ref}
-        style={{ display: 'inline-flex', alignItems: 'center' }}
-        onMouseEnter={showTip}
-        onMouseLeave={() => setVisible(false)}
-      >
-        {children}
-      </div>
-    </>
+    </div>
   );
 }
 
