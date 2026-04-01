@@ -123,7 +123,7 @@ function InfoIcon({ tooltip }: { tooltip: string }) {
 }
 
 function LeadDevelopmentChart({ weeklyData, trendData }: { weeklyData: any[]; trendData: any[] }) {
-  const [view, setView] = useState<'weekly' | 'daily'>('weekly');
+  const [view, setView] = useState<'weekly' | 'daily'>('daily');
   const data = view === 'weekly' ? weeklyData : trendData;
   const total = weeklyData.reduce((s: number, w: any) => s + w.total, 0);
   const totalHot = weeklyData.reduce((s: number, w: any) => s + w.hot, 0);
