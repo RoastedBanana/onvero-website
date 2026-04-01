@@ -43,6 +43,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
       style={{ backgroundColor: '#0f0f0f' }}
     >
+      <head>
+        <script async src="https://plausible.io/js/pa-kKZb9OGJJyFPeOOINz23w.js" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
         <CookieConsent />
