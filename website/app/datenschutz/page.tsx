@@ -1,3 +1,5 @@
+'use client';
+
 import { Navbar } from "@/components/ui/navbar";
 import { FooterComponent } from "@/components/ui/flickering-footer";
 
