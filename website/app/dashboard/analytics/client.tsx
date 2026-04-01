@@ -13,6 +13,8 @@ import {
   Cell,
   ReferenceLine,
   CartesianGrid,
+  ComposedChart,
+  Area,
 } from 'recharts';
 
 type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki';
@@ -345,38 +347,94 @@ function LeadDevelopmentChart({ weeklyData, trendData }: { weeklyData: any[]; tr
           </div>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart
-          data={data}
-          barSize={view === 'daily' ? 18 : 32}
-          barGap={2}
-          margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-        >
-          <XAxis
-            dataKey={view === 'weekly' ? 'week' : 'label'}
-            tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
-            axisLine={false}
-            tickLine={false}
-            interval={view === 'daily' ? 2 : 0}
-          />
-          <YAxis
-            tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-            axisLine={false}
-            tickLine={false}
-            allowDecimals={false}
-          />
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-          <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-          <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
-          <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
-          <Bar dataKey="cold" stackId="a" fill="#6B7AFF" name="COLD" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-      {view === 'weekly' && data.filter((d: any) => d.total > 0).length <= 2 && (
-        <div style={{ marginTop: 8, fontSize: 10, color: 'rgba(255,255,255,0.2)', textAlign: 'center' }}>
-          Wenige aktive Wochen — wechsle zu Taeglich fuer mehr Detail
-        </div>
-      )}
+      <div style={{ position: 'relative' }}>
+        <ResponsiveContainer width="100%" height={200}>
+          <ComposedChart data={data} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gradCold" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6B7AFF" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#6B7AFF" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="gradWarm" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="gradHot" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#FF5C2E" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#FF5C2E" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+            <XAxis
+              dataKey={view === 'weekly' ? 'week' : 'label'}
+              tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+              interval={view === 'daily' ? 2 : 0}
+            />
+            <YAxis
+              tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+              width={22}
+            />
+            <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1 }} />
+            <Area
+              type="monotone"
+              dataKey="cold"
+              stackId="1"
+              stroke="#6B7AFF"
+              strokeWidth={1.5}
+              fill="url(#gradCold)"
+              name="COLD"
+              dot={{ fill: '#6B7AFF', r: 2, strokeWidth: 0 }}
+              activeDot={{ r: 4, fill: '#6B7AFF', strokeWidth: 0 }}
+            />
+            <Area
+              type="monotone"
+              dataKey="warm"
+              stackId="1"
+              stroke="#F59E0B"
+              strokeWidth={1.5}
+              fill="url(#gradWarm)"
+              name="WARM"
+              dot={{ fill: '#F59E0B', r: 2, strokeWidth: 0 }}
+              activeDot={{ r: 4, fill: '#F59E0B', strokeWidth: 0 }}
+            />
+            <Area
+              type="monotone"
+              dataKey="hot"
+              stackId="1"
+              stroke="#FF5C2E"
+              strokeWidth={2}
+              fill="url(#gradHot)"
+              name="HOT"
+              dot={{ fill: '#FF5C2E', r: 2, strokeWidth: 0 }}
+              activeDot={{ r: 4, fill: '#FF5C2E', strokeWidth: 0 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+        {view === 'weekly' && weeklyData.filter((w: any) => w.total > 0).length < 3 && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 40,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              fontSize: 10,
+              color: 'rgba(255,255,255,0.2)',
+              background: 'rgba(0,0,0,0.4)',
+              padding: '4px 10px',
+              borderRadius: 20,
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+            }}
+          >
+            Taeglich ansehen fuer mehr Detail
+          </div>
+        )}
+      </div>
       <div
         style={{
           marginTop: 10,
@@ -944,52 +1002,101 @@ export default function AnalyticsClient() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px 280px', gap: 12, marginBottom: 12 }}>
               <LeadDevelopmentChart weeklyData={weekly} trendData={trendData?.trend || []} />
               <div style={{ ...S.card, padding: 20 }}>
-                <div style={S.chartTitle}>System-Status</div>
-                <div style={S.chartSub}>BusinessOS Komponenten</div>
-                {systemStatus.map((s: any, i: number) => {
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 4 }}>System-Status</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 14 }}>Aktive KI-Prozesse</div>
+                {[
+                  {
+                    name: 'Lead Generator',
+                    detail: `${leads.total} Leads`,
+                    status: 'active',
+                    tip: 'Sucht taeglich neue Kontakte ueber eine 270-Mio-Datenbank. Filtert nach Branche, Groesse und Position.',
+                  },
+                  {
+                    name: 'KI-Bewertung',
+                    detail: `${leads.aiScored} bewertet`,
+                    status: 'active',
+                    tip: 'Analysiert jeden Lead mit Claude AI: Website, Branche, Technologien, Senioritaet. Score 0-100.',
+                  },
+                  {
+                    name: 'E-Mail Drafts',
+                    detail: `${leads.withEmail} erstellt`,
+                    status: 'active',
+                    tip: 'Schreibt personalisierte Erstkontakt-E-Mails basierend auf der Firmenwebsite des Leads.',
+                  },
+                  {
+                    name: 'Website-Tracking',
+                    detail: 'Script einbinden',
+                    status: hasPlausible ? 'active' : 'pending',
+                    tip: 'Plausible Analytics: DSGVO-konform, ohne Cookie-Banner.',
+                  },
+                  {
+                    name: 'E-Mail Versand',
+                    detail: 'In Planung',
+                    status: 'planned',
+                    tip: 'Automatischer Versand der KI-Drafts nach Einrichtung der E-Mail-Integration.',
+                  },
+                ].map((item, i, arr) => {
                   const color =
-                    s.status === 'active'
+                    item.status === 'active'
                       ? '#22C55E'
-                      : s.status === 'pending'
+                      : item.status === 'pending'
                         ? '#F59E0B'
-                        : s.status === 'planned'
-                          ? 'rgba(255,255,255,0.2)'
-                          : '#FF5C2E';
-                  const label =
-                    s.status === 'active'
-                      ? 'Aktiv'
-                      : s.status === 'pending'
-                        ? 'Pending'
-                        : s.status === 'planned'
-                          ? 'Geplant'
-                          : 'Setup';
+                        : 'rgba(255,255,255,0.2)';
+                  const label = item.status === 'active' ? 'Aktiv' : item.status === 'pending' ? 'Setup' : 'Geplant';
                   return (
                     <div
                       key={i}
                       style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
                         alignItems: 'center',
-                        padding: '7px 0',
-                        borderBottom: i < systemStatus.length - 1 ? '1px solid rgba(255,255,255,0.05)' : '',
+                        gap: 10,
+                        padding: '9px 0',
+                        borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : '',
                       }}
                     >
-                      <div>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginBottom: 1 }}>{s.name}</div>
-                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>{s.detail}</div>
+                      <div style={{ position: 'relative', flexShrink: 0, width: 8, height: 8 }}>
+                        <div
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background: color,
+                            position: 'relative',
+                            zIndex: 1,
+                          }}
+                        />
+                        {item.status === 'active' && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              inset: -3,
+                              borderRadius: '50%',
+                              background: color,
+                              opacity: 0.2,
+                              animation: 'livePulse 2.5s ease-in-out infinite',
+                            }}
+                          />
+                        )}
                       </div>
-                      <div
-                        style={{
-                          fontSize: 9,
-                          padding: '2px 7px',
-                          borderRadius: 4,
-                          background: `${color}18`,
-                          color,
-                          fontWeight: 600,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {label}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{item.name}</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{item.detail}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 9,
+                            padding: '2px 7px',
+                            borderRadius: 4,
+                            background: `${color}18`,
+                            color,
+                            fontWeight: 600,
+                            border: `1px solid ${color}25`,
+                          }}
+                        >
+                          {label}
+                        </div>
+                        <InfoIcon tooltip={item.tip} />
                       </div>
                     </div>
                   );
@@ -998,45 +1105,120 @@ export default function AnalyticsClient() {
               <div style={{ ...S.card, padding: 20 }}>
                 <div style={S.chartTitle}>Aktivitaet</div>
                 <div style={S.chartSub}>Letzte Ereignisse</div>
-                {(activityData?.activities || []).slice(0, 5).map((a: any) => (
-                  <div
-                    key={a.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 10,
-                      padding: '7px 0',
-                      borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    }}
-                  >
+                {(activityData?.activities || []).slice(0, 5).map((a: any, i: number) => {
+                  const color = typeColors[a.type] || 'rgba(255,255,255,0.2)';
+                  const icon =
+                    a.type === 'status_change'
+                      ? '⊙'
+                      : a.type === 'ai_analysis'
+                        ? '◆'
+                        : a.type === 'score_update'
+                          ? '↑'
+                          : a.type === 'task'
+                            ? '✓'
+                            : '●';
+                  const getTitle = () => {
+                    if (a.type === 'status_change' && a.metadata) {
+                      const labels: Record<string, string> = {
+                        new: 'Neu',
+                        contacted: 'Kontaktiert',
+                        qualified: 'Qualifiziert',
+                        lost: 'Verloren',
+                      };
+                      return `${labels[a.metadata.old_status] || a.metadata.old_status || 'Neu'} → ${labels[a.metadata.new_status] || a.metadata.new_status || '?'}`;
+                    }
+                    return typeLabels[a.type] || a.title || a.type;
+                  };
+                  return (
                     <div
+                      key={a.id}
                       style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        background: typeColors[a.type] || 'rgba(255,255,255,0.2)',
-                        flexShrink: 0,
-                        marginTop: 4,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        marginBottom: 2,
+                        background: i === 0 ? 'rgba(255,255,255,0.03)' : 'transparent',
+                        border: i === 0 ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
                       }}
-                    />
-                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                    >
                       <div
                         style={{
-                          fontSize: 11,
-                          color: 'rgba(255,255,255,0.7)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                          width: 26,
+                          height: 26,
+                          borderRadius: 7,
+                          flexShrink: 0,
+                          background: `${color}15`,
+                          border: `1px solid ${color}25`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 10,
+                          color,
+                          marginTop: 1,
                         }}
                       >
-                        {a.title || typeLabels[a.type] || a.type}
+                        {icon}
                       </div>
-                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 1 }}>
-                        {formatRelTime(a.created_at)}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: i === 0 ? 500 : 400 }}>
+                          {getTitle()}
+                        </div>
+                        {(a.lead_name || a.company) && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                            {a.lead_name && (
+                              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>{a.lead_name}</span>
+                            )}
+                            {a.company && (
+                              <>
+                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</span>
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    color: 'rgba(255,255,255,0.35)',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    maxWidth: 100,
+                                  }}
+                                >
+                                  {a.company}
+                                </span>
+                              </>
+                            )}
+                            {a.score != null && (
+                              <>
+                                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>·</span>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    fontWeight: 700,
+                                    fontFamily: 'var(--font-dm-mono)',
+                                    color: a.score >= 75 ? '#FF5C2E' : a.score >= 45 ? '#F59E0B' : '#6B7AFF',
+                                    padding: '1px 5px',
+                                    background:
+                                      a.score >= 75
+                                        ? 'rgba(255,92,46,0.1)'
+                                        : a.score >= 45
+                                          ? 'rgba(245,158,11,0.1)'
+                                          : 'rgba(107,122,255,0.1)',
+                                    borderRadius: 4,
+                                  }}
+                                >
+                                  {a.score}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>
+                          {formatRelTime(a.created_at)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {(!activityData || activityData.activities?.length === 0) && (
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '12px 0' }}>
                     Noch keine Aktivitaeten
