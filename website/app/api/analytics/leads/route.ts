@@ -105,6 +105,26 @@ export async function GET(req: Request) {
   });
   const avgDataQuality = all.length > 0 ? Math.round(qualityScores.reduce((a, b) => a + b, 0) / all.length) : 0;
 
+  // Score ranges for histogram
+  const scoreRanges: Record<string, number> = {
+    '0-9': 0,
+    '10-19': 0,
+    '20-29': 0,
+    '30-39': 0,
+    '40-49': 0,
+    '50-59': 0,
+    '60-69': 0,
+    '70-79': 0,
+    '80-89': 0,
+    '90-99': 0,
+  };
+  all.forEach((l) => {
+    if (l.score === null || l.score === undefined) return;
+    const bucket = Math.min(Math.floor(l.score / 10) * 10, 90);
+    const key = `${bucket}-${bucket + 9}`;
+    if (scoreRanges[key] !== undefined) scoreRanges[key]++;
+  });
+
   return NextResponse.json({
     total: all.length,
     hot: all.filter((l) => (l.score || 0) >= 75).length,
@@ -114,6 +134,7 @@ export async function GET(req: Request) {
     withEmail: all.filter((l) => l.email_draft).length,
     scored: all.filter((l) => l.score !== null).length,
     avgDataQuality,
+    scoreRanges,
     industries,
     topTech,
     topCities,

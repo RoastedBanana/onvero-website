@@ -3,6 +3,22 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createServerSupabaseClient();
+  const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
+
+  const { data: activities } = await supabase
+    .from('lead_activities')
+    .select('id, type, title, content, created_at, metadata')
+    .eq('lead_id', id)
+    .eq('tenant_id', TENANT)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  return NextResponse.json({ activities: activities || [] });
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createServerSupabaseClient();

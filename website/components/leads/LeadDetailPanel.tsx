@@ -267,15 +267,82 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
 
   const breakdown = lead?.scoreBreakdown;
 
-  const activities = lead
-    ? [
-        { date: lead.createdAt, text: 'Lead generiert', color: '#22C55E' },
-        ...(lead.aiScoredAt
-          ? [{ date: lead.aiScoredAt, text: `KI-Score: ${lead.score}`, color: '#6B7AFF' }]
-          : [{ date: lead.createdAt, text: `KI-Score: ${lead.score}`, color: '#6B7AFF' }]),
-        ...(lead.lastContactedAt ? [{ date: lead.lastContactedAt, text: 'Kontaktiert', color: '#a78bfa' }] : []),
-      ]
-    : [];
+  // Real activities from API
+  const [realActivities, setRealActivities] = useState<
+    {
+      id: string;
+      type: string;
+      title: string;
+      content: string | null;
+      created_at: string;
+      metadata: Record<string, unknown> | null;
+    }[]
+  >([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+
+  useEffect(() => {
+    if (!lead?.id) {
+      setRealActivities([]);
+      return;
+    }
+    setActivitiesLoading(true);
+    fetch(`/api/leads/${lead.id}`)
+      .then((r) => r.json())
+      .then((d) => setRealActivities(d.activities || []))
+      .catch(() => setRealActivities([]))
+      .finally(() => setActivitiesLoading(false));
+  }, [lead?.id]);
+
+  const ACTIVITY_META: Record<string, { icon: string; color: string; label: string }> = {
+    lead_created: { icon: '＋', color: '#22C55E', label: 'Lead erstellt' },
+    scored: { icon: '⚡', color: '#6B7AFF', label: 'KI-Score' },
+    email_generated: { icon: '✉', color: '#8B5CF6', label: 'E-Mail generiert' },
+    status_change: { icon: '↻', color: '#F59E0B', label: 'Status geändert' },
+    website_analysis: { icon: '🌐', color: '#3B82F6', label: 'Website-Analyse' },
+    enrichment: { icon: '★', color: '#22C55E', label: 'Anreicherung' },
+    contact: { icon: '☎', color: '#a78bfa', label: 'Kontaktiert' },
+  };
+
+  // Merge API activities with fallback timeline entries
+  const activities =
+    realActivities.length > 0
+      ? realActivities.map((a) => {
+          const meta = ACTIVITY_META[a.type] || { icon: '●', color: 'rgba(255,255,255,0.3)', label: a.type };
+          return {
+            date: a.created_at,
+            text: a.title || meta.label,
+            content: a.content,
+            color: meta.color,
+            icon: meta.icon,
+          };
+        })
+      : lead
+        ? [
+            { date: lead.createdAt, text: 'Lead generiert', content: null, color: '#22C55E', icon: '＋' },
+            ...(lead.aiScoredAt
+              ? [
+                  {
+                    date: lead.aiScoredAt,
+                    text: `KI-Score: ${lead.score}`,
+                    content: null,
+                    color: '#6B7AFF',
+                    icon: '⚡',
+                  },
+                ]
+              : [
+                  {
+                    date: lead.createdAt,
+                    text: `KI-Score: ${lead.score}`,
+                    content: null,
+                    color: '#6B7AFF',
+                    icon: '⚡',
+                  },
+                ]),
+            ...(lead.lastContactedAt
+              ? [{ date: lead.lastContactedAt, text: 'Kontaktiert', content: null, color: '#a78bfa', icon: '☎' }]
+              : []),
+          ]
+        : [];
 
   return (
     <>
@@ -797,57 +864,96 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
 
               {/* Aktivität */}
               <div>
-                <SectionHeader title="Aktivität" />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  {activities.map((act, i, arr) => (
-                    <div key={i} style={{ display: 'flex', gap: 12, position: 'relative' }}>
-                      {i < arr.length - 1 && (
+                <SectionHeader title={`Aktivität${realActivities.length > 0 ? ` (${realActivities.length})` : ''}`} />
+                {activitiesLoading ? (
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', padding: '8px 0' }}>
+                    Lade Aktivitäten…
+                  </div>
+                ) : activities.length === 0 ? (
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '8px 0' }}>
+                    Keine Aktivitäten vorhanden
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                    {activities.map((act, i, arr) => (
+                      <div key={i} style={{ display: 'flex', gap: 10, position: 'relative' }}>
+                        {i < arr.length - 1 && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              left: 9,
+                              top: 22,
+                              bottom: -2,
+                              width: 1,
+                              borderLeft: '1px dashed rgba(255,255,255,0.08)',
+                            }}
+                          />
+                        )}
                         <div
                           style={{
-                            position: 'absolute',
-                            left: 3,
-                            top: 10,
-                            bottom: -6,
-                            width: 1,
-                            borderLeft: '1px dashed rgba(255,255,255,0.08)',
-                          }}
-                        />
-                      )}
-                      <div
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: '50%',
-                          background: act.color,
-                          marginTop: 4,
-                          flexShrink: 0,
-                          position: 'relative',
-                          zIndex: 1,
-                        }}
-                      />
-                      <div style={{ paddingBottom: 12 }}>
-                        <div
-                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            background: `${act.color}18`,
+                            border: `1px solid ${act.color}30`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             fontSize: 10,
-                            color: 'rgba(255,255,255,0.25)',
-                            marginBottom: 2,
-                            fontFamily: 'var(--font-dm-mono)',
+                            flexShrink: 0,
+                            position: 'relative',
+                            zIndex: 1,
+                            color: act.color,
                           }}
                         >
-                          {act.date
-                            ? new Date(act.date).toLocaleDateString('de-DE', {
-                                day: 'numeric',
-                                month: 'short',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
-                            : '—'}
+                          {act.icon}
                         </div>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>{act.text}</div>
+                        <div style={{ paddingBottom: 14, flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}
+                          >
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 500 }}>
+                              {act.text}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 9,
+                                color: 'rgba(255,255,255,0.2)',
+                                fontFamily: 'var(--font-dm-mono)',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {act.date
+                                ? new Date(act.date).toLocaleDateString('de-DE', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—'}
+                            </div>
+                          </div>
+                          {act.content && (
+                            <div
+                              style={{
+                                fontSize: 10,
+                                color: 'rgba(255,255,255,0.3)',
+                                marginTop: 2,
+                                lineHeight: 1.4,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {act.content}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

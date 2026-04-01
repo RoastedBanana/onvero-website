@@ -1013,8 +1013,9 @@ export default function AnalyticsClient() {
                   },
                   {
                     name: 'Website-Tracking',
-                    detail: 'Script einbinden',
-                    status: hasPlausible ? 'active' : 'pending',
+                    detail:
+                      website?.visitors > 0 ? fmt(website.visitors) + ' Besucher' : 'Script auf Website einbinden',
+                    status: website?.visitors > 0 ? 'active' : 'pending',
                     tip: 'Plausible Analytics: DSGVO-konform, ohne Cookie-Banner.',
                   },
                   {
@@ -1118,8 +1119,9 @@ export default function AnalyticsClient() {
                     return typeLabels[a.type] || a.title || a.type;
                   };
                   return (
-                    <div
+                    <a
                       key={a.id}
+                      href={a.lead_id ? `/dashboard/leads?highlight=${a.lead_id}` : '/dashboard/leads'}
                       style={{
                         display: 'flex',
                         alignItems: 'flex-start',
@@ -1127,6 +1129,9 @@ export default function AnalyticsClient() {
                         padding: '8px 10px',
                         borderRadius: 8,
                         marginBottom: 2,
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        transition: 'background 0.15s',
                         background: i === 0 ? 'rgba(255,255,255,0.03)' : 'transparent',
                         border: i === 0 ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
                       }}
@@ -1154,7 +1159,16 @@ export default function AnalyticsClient() {
                           {getTitle()}
                         </div>
                         {(a.lead_name || a.company) && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              marginTop: 3,
+                              flexWrap: 'nowrap',
+                              overflow: 'hidden',
+                            }}
+                          >
                             {a.lead_name && (
                               <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>{a.lead_name}</span>
                             )}
@@ -1204,7 +1218,7 @@ export default function AnalyticsClient() {
                           {formatRelTime(a.created_at)}
                         </div>
                       </div>
-                    </div>
+                    </a>
                   );
                 })}
                 {(!activityData || activityData.activities?.length === 0) && (
@@ -1461,33 +1475,149 @@ export default function AnalyticsClient() {
 
                 <LeadDevelopmentChart weeklyData={leadsData?.weeklyLeads || []} trendData={trendData?.trend || []} />
 
-                {/* Score Histogram */}
                 <div style={{ ...S.card, padding: 20, marginBottom: 12 }}>
-                  <div style={S.chartTitle}>Score-Histogramm</div>
-                  <div style={S.chartSub}>Verteilung aller Lead-Scores</div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={leadsData.scoreHistogram} barSize={28}>
-                      <XAxis
-                        dataKey="range"
-                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 9 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={24}
-                      />
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="count" name="Leads" radius={[3, 3, 0, 0]}>
-                        {(leadsData.scoreHistogram || []).map((_: any, i: number) => (
-                          <Cell key={i} fill={i >= 8 ? '#FF5C2E' : i >= 5 ? '#F59E0B' : '#6B7AFF'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#8B5CF6' }} />
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Score-Verteilung</div>
+                    <InfoIcon tooltip="Verteilung aller Lead-Scores von 0-100." />
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>
+                    {leadsData?.total || 0} Leads bewertet
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
+                    {[
+                      { label: 'COLD', range: '0-44', count: leadsData?.cold || 0, color: '#6B7AFF' },
+                      { label: 'WARM', range: '45-74', count: leadsData?.warm || 0, color: '#F59E0B' },
+                      { label: 'HOT', range: '75-100', count: leadsData?.hot || 0, color: '#FF5C2E' },
+                    ].map((zone) => {
+                      const pct =
+                        (leadsData?.total || 1) > 0 ? Math.round((zone.count / (leadsData?.total || 1)) * 100) : 0;
+                      return (
+                        <div
+                          key={zone.label}
+                          style={{
+                            padding: '12px 14px',
+                            background: `${zone.color}08`,
+                            border: `1px solid ${zone.color}20`,
+                            borderRadius: 10,
+                            position: 'relative',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: 0,
+                              width: `${pct}%`,
+                              height: 3,
+                              background: zone.color,
+                              opacity: 0.6,
+                            }}
+                          />
+                          <div
+                            style={{
+                              fontSize: 9,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.1em',
+                              color: zone.color,
+                              fontWeight: 700,
+                              marginBottom: 6,
+                            }}
+                          >
+                            {zone.label}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 26,
+                              fontWeight: 800,
+                              fontFamily: 'var(--font-dm-mono)',
+                              color: zone.color,
+                              lineHeight: 1,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {zone.count}
+                          </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              fontSize: 10,
+                              color: 'rgba(255,255,255,0.3)',
+                            }}
+                          >
+                            <span>{zone.range}</span>
+                            <span>{pct}%</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {leadsData?.scoreRanges && Object.values(leadsData.scoreRanges).some((v: any) => v > 0) && (
+                    <div>
+                      {['0-9', '10-19', '20-29', '30-39', '40-49', '50-59', '60-69', '70-79', '80-89', '90-99'].map(
+                        (range, i) => {
+                          const count = leadsData.scoreRanges?.[range] || 0;
+                          const rangeStart = parseInt(range);
+                          const color = rangeStart >= 75 ? '#FF5C2E' : rangeStart >= 45 ? '#F59E0B' : '#6B7AFF';
+                          const maxCount = Math.max(
+                            ...Object.values(leadsData.scoreRanges as Record<string, number>),
+                            1
+                          );
+                          const barPct = Math.round((count / maxCount) * 100);
+                          return (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '3px 0' }}>
+                              <div
+                                style={{
+                                  fontSize: 9,
+                                  fontFamily: 'var(--font-dm-mono)',
+                                  color: 'rgba(255,255,255,0.3)',
+                                  width: 40,
+                                  flexShrink: 0,
+                                  textAlign: 'right',
+                                }}
+                              >
+                                {range}
+                              </div>
+                              <div
+                                style={{
+                                  flex: 1,
+                                  height: 8,
+                                  background: 'rgba(255,255,255,0.04)',
+                                  borderRadius: 4,
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    width: `${barPct}%`,
+                                    height: '100%',
+                                    background: color,
+                                    borderRadius: 4,
+                                    opacity: 0.8,
+                                    transition: 'width 0.6s ease',
+                                  }}
+                                />
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontFamily: 'var(--font-dm-mono)',
+                                  color: count > 0 ? color : 'rgba(255,255,255,0.15)',
+                                  width: 20,
+                                  flexShrink: 0,
+                                  fontWeight: count > 0 ? 700 : 400,
+                                }}
+                              >
+                                {count}
+                              </div>
+                            </div>
+                          );
+                        }
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Detail Cards Row */}
@@ -1825,14 +1955,18 @@ export default function AnalyticsClient() {
                       </div>
                     </div>
                     {activityData.activities.slice(0, 10).map((a: any) => (
-                      <div
+                      <a
                         key={a.id}
+                        href={a.lead_id ? `/dashboard/leads?highlight=${a.lead_id}` : '/dashboard/leads'}
                         style={{
                           display: 'flex',
                           gap: 10,
                           padding: '8px 0',
                           borderBottom: '1px solid rgba(255,255,255,0.04)',
                           alignItems: 'flex-start',
+                          textDecoration: 'none',
+                          cursor: 'pointer',
+                          transition: 'background 0.15s',
                         }}
                       >
                         <div
@@ -1875,7 +2009,7 @@ export default function AnalyticsClient() {
                         <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>
                           {formatRelTime(a.created_at)}
                         </div>
-                      </div>
+                      </a>
                     ))}
                   </div>
                 )}
@@ -2186,174 +2320,335 @@ export default function AnalyticsClient() {
         {/* PIPELINE */}
         {tab === 'pipeline' && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
               {[
                 {
-                  label: 'Pipeline min.',
-                  val: fmtEur(leads.pipelineMin),
-                  sub: `${leads.hot} HOT x 5.000`,
-                  color: '#22C55E',
-                },
-                {
-                  label: 'Pipeline max.',
-                  val: fmtEur(leads.pipelineMax),
-                  sub: `${leads.hot} HOT x 20.000`,
-                  color: '#22C55E',
-                },
-                {
-                  label: 'Kontaktiert',
-                  val: fmt(leads.contacted),
-                  sub: `${leads.total > 0 ? Math.round((leads.contacted / leads.total) * 100) : 0}%`,
-                  color: '#F59E0B',
-                },
-                { label: 'Qualifiziert', val: fmt(leads.qualified), sub: 'Abschluss-bereit', color: '#FF5C2E' },
-              ].map((kpi) => (
-                <div key={kpi.label} style={S.kpiCard}>
-                  <div style={S.label}>{kpi.label}</div>
-                  <div style={{ ...S.val, color: kpi.color }}>{kpi.val}</div>
-                  <div style={S.sub}>{kpi.sub}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ ...S.card, padding: 20 }}>
-              <div style={S.chartTitle}>Sales Funnel</div>
-              <div style={S.chartSub}>Lead → Qualifiziert</div>
-              {[
-                { label: 'Generiert', count: leads.total, pct: 100, color: '#6B7AFF' },
-                {
-                  label: 'KI-bewertet',
-                  count: leads.aiScored,
-                  pct: leads.total > 0 ? Math.round((leads.aiScored / leads.total) * 100) : 0,
-                  color: '#8B5CF6',
-                },
-                {
-                  label: 'E-Mail bereit',
-                  count: leads.withEmail,
-                  pct: leads.total > 0 ? Math.round((leads.withEmail / leads.total) * 100) : 0,
-                  color: '#F59E0B',
-                },
-                {
-                  label: 'Kontaktiert',
-                  count: leads.contacted,
-                  pct: leads.total > 0 ? Math.round((leads.contacted / leads.total) * 100) : 0,
+                  label: 'Aktive Chancen',
+                  val: String(leads.hot + leads.warm),
+                  sub: `${leads.hot} HOT · ${leads.warm} WARM`,
                   color: '#FF5C2E',
+                  tip: 'Leads mit Score >= 45',
                 },
                 {
-                  label: 'Qualifiziert',
-                  count: leads.qualified,
-                  pct: leads.total > 0 ? Math.round((leads.qualified / leads.total) * 100) : 0,
-                  color: '#22C55E',
+                  label: 'Kontaktiert',
+                  val: String(leads.contacted),
+                  sub: `${leads.total > 0 ? Math.round((leads.contacted / leads.total) * 100) : 0}% Kontaktrate`,
+                  color: '#F59E0B',
+                  tip: 'Erster Kontakt aufgenommen',
                 },
-              ].map((step, i) => (
+                {
+                  label: 'Conversion',
+                  val: leads.contacted > 0 ? `${Math.round((leads.qualified / leads.contacted) * 100)}%` : '—',
+                  sub: `${leads.qualified} qualifiziert`,
+                  color: '#22C55E',
+                  tip: 'Kontaktiert → Qualifiziert',
+                },
+                {
+                  label: 'Tage bis Kontakt',
+                  val: '—',
+                  sub: 'Wird gemessen',
+                  color: 'rgba(255,255,255,0.4)',
+                  tip: 'Durchschnittliche Zeit bis Erstkontakt',
+                },
+              ].map((kpi) => (
                 <div
-                  key={i}
+                  key={kpi.label}
+                  className="analytics-card"
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '8px 0',
-                    borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.05)' : '',
+                    background: '#111',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 12,
+                    padding: '16px 18px 16px 22px',
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
                 >
-                  <div style={{ width: 90, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{step.label}</div>
                   <div
                     style={{
-                      flex: 1,
-                      height: 6,
-                      background: 'rgba(255,255,255,0.05)',
-                      borderRadius: 3,
-                      overflow: 'hidden',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: 3,
+                      height: '100%',
+                      background: kpi.color,
+                      opacity: 0.5,
+                      borderRadius: '12px 0 0 12px',
                     }}
-                  >
-                    <div
-                      style={{
-                        width: `${step.pct}%`,
-                        height: '100%',
-                        background: step.color,
-                        borderRadius: 3,
-                        transition: 'width 0.8s ease',
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      width: 30,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      fontFamily: 'var(--font-dm-mono)',
-                      color: step.color,
-                      textAlign: 'right',
-                    }}
-                  >
-                    {step.count}
-                  </div>
-                  <div style={{ width: 36, fontSize: 10, color: 'rgba(255,255,255,0.25)', textAlign: 'right' }}>
-                    {step.pct}%
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ ...S.card, padding: 20, marginTop: 12 }}>
-              <div style={S.chartTitle}>Naechste Massnahmen</div>
-              <div style={S.chartSub}>Priorisiert nach Pipeline-Impact</div>
-              {masterData?.leads &&
-                [
-                  {
-                    prio: 'HOCH',
-                    text: `${masterData.leads.hot} HOT Leads warten auf Kontakt`,
-                    sub: `${Math.round(masterData.leads.hot * 12500).toLocaleString('de-DE')} EUR Pipeline-Wert`,
-                    color: '#FF5C2E',
-                    href: '/dashboard/leads',
-                  },
-                  {
-                    prio: 'MITTEL',
-                    text: `${masterData.leads.withEmail} E-Mail Drafts bereit`,
-                    sub: 'KI hat personalisierte E-Mails vorbereitet',
-                    color: '#F59E0B',
-                    href: '/dashboard/leads',
-                  },
-                  {
-                    prio: 'NIEDRIG',
-                    text: `${masterData.leads.warm} WARM Leads nachfassen`,
-                    sub: 'Score 45-74, noch nicht kontaktiert',
-                    color: '#6B7AFF',
-                    href: '/dashboard/leads',
-                  },
-                ].map((item, i) => (
-                  <a
-                    key={i}
-                    href={item.href}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '11px 0',
-                      borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : '',
-                      textDecoration: 'none',
-                    }}
-                  >
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, gap: 4 }}>
                     <div
                       style={{
                         fontSize: 9,
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        background: `${item.color}18`,
-                        color: item.color,
-                        fontWeight: 700,
-                        flexShrink: 0,
-                        width: 56,
-                        textAlign: 'center',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        color: 'rgba(255,255,255,0.3)',
+                        fontWeight: 600,
                       }}
                     >
-                      {item.prio}
+                      {kpi.label}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{item.text}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{item.sub}</div>
+                    <InfoIcon tooltip={kpi.tip} />
+                  </div>
+                  <div
+                    className="kpi-value"
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-dm-mono)',
+                      color: kpi.color,
+                      lineHeight: 1,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {kpi.val}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{kpi.sub}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ ...S.card, padding: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 4 }}>Sales Funnel</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>
+                  Von Lead bis Abschluss
+                </div>
+                {[
+                  {
+                    step: 1,
+                    label: 'Generiert',
+                    count: leads.total,
+                    pct: 100,
+                    color: '#6B7AFF',
+                    desc: 'Kontakt gefunden',
+                  },
+                  {
+                    step: 2,
+                    label: 'KI-bewertet',
+                    count: leads.aiScored,
+                    pct: leads.total > 0 ? Math.round((leads.aiScored / leads.total) * 100) : 0,
+                    color: '#8B5CF6',
+                    desc: 'Score vergeben',
+                  },
+                  {
+                    step: 3,
+                    label: 'E-Mail bereit',
+                    count: leads.withEmail,
+                    pct: leads.total > 0 ? Math.round((leads.withEmail / leads.total) * 100) : 0,
+                    color: '#F59E0B',
+                    desc: 'Nachricht verfasst',
+                  },
+                  {
+                    step: 4,
+                    label: 'Kontaktiert',
+                    count: leads.contacted,
+                    pct: leads.total > 0 ? Math.round((leads.contacted / leads.total) * 100) : 0,
+                    color: '#FF8C42',
+                    desc: 'Kontakt aufgenommen',
+                  },
+                  {
+                    step: 5,
+                    label: 'Qualifiziert',
+                    count: leads.qualified,
+                    pct: leads.total > 0 ? Math.round((leads.qualified / leads.total) * 100) : 0,
+                    color: '#22C55E',
+                    desc: 'Interesse bestaetigt',
+                  },
+                ].map((s, i, arr) => (
+                  <div key={i} style={{ marginBottom: i < arr.length - 1 ? 12 : 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 }}>
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: 6,
+                          flexShrink: 0,
+                          background: `${s.color}18`,
+                          border: `1px solid ${s.color}30`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 10,
+                          color: s.color,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {s.step}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'baseline',
+                            marginBottom: 4,
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>
+                              {s.label}
+                            </span>
+                            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginLeft: 6 }}>{s.desc}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                            <span
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 700,
+                                fontFamily: 'var(--font-dm-mono)',
+                                color: s.color,
+                              }}
+                            >
+                              {s.count}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: 'rgba(255,255,255,0.3)',
+                                fontFamily: 'var(--font-dm-mono)',
+                                width: 32,
+                                textAlign: 'right',
+                              }}
+                            >
+                              {s.pct}%
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            height: 4,
+                            background: 'rgba(255,255,255,0.05)',
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${s.pct}%`,
+                              height: '100%',
+                              background: s.color,
+                              borderRadius: 2,
+                              transition: 'width 0.8s ease',
+                              boxShadow: s.pct > 0 ? `0 0 6px ${s.color}40` : 'none',
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, color: item.color, flexShrink: 0 }}>→</div>
-                  </a>
+                    {i < arr.length - 1 && arr[i + 1].pct < s.pct && (
+                      <div
+                        style={{
+                          paddingLeft: 32,
+                          fontSize: 9,
+                          color: 'rgba(255,92,46,0.5)',
+                          marginTop: 2,
+                          marginBottom: -4,
+                        }}
+                      >
+                        ↓ -{s.pct - arr[i + 1].pct}% Drop-Off
+                      </div>
+                    )}
+                  </div>
                 ))}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ ...S.card, padding: 18 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Jetzt handeln</div>
+                  {[
+                    {
+                      icon: '●',
+                      text: leads.hot > 0 ? `${leads.hot} HOT Leads warten` : 'Keine HOT Leads',
+                      sub: leads.hot > 0 ? 'E-Mail Drafts bereit' : 'Generator laeuft',
+                      color: '#FF5C2E',
+                      href: '/dashboard/leads',
+                    },
+                    {
+                      icon: '✉',
+                      text: `${leads.withEmail} E-Mail Drafts`,
+                      sub: 'KI hat Texte vorbereitet',
+                      color: '#F59E0B',
+                      href: '/dashboard/leads',
+                    },
+                    {
+                      icon: '⊙',
+                      text: `${leads.warm} WARM Leads`,
+                      sub: 'Score 45-74',
+                      color: '#6B7AFF',
+                      href: '/dashboard/leads',
+                    },
+                  ].map((item, i) => (
+                    <a
+                      key={i}
+                      href={item.href}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        padding: '10px 0',
+                        borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : '',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <div style={{ fontSize: 14, flexShrink: 0, color: item.color }}>{item.icon}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>{item.text}</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{item.sub}</div>
+                      </div>
+                      <div style={{ fontSize: 11, color: item.color, flexShrink: 0 }}>→</div>
+                    </a>
+                  ))}
+                </div>
+                <div style={{ ...S.card, padding: 18 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#fff', marginBottom: 10 }}>
+                    Pipeline-Insights
+                  </div>
+                  {[
+                    {
+                      label: 'Kontaktrate',
+                      value: leads.total > 0 ? `${Math.round((leads.contacted / leads.total) * 100)}%` : '—',
+                      bench: '> 20%',
+                      good: leads.total > 0 && leads.contacted / leads.total > 0.2,
+                    },
+                    {
+                      label: 'Draft-Abdeckung',
+                      value: leads.total > 0 ? `${Math.round((leads.withEmail / leads.total) * 100)}%` : '—',
+                      bench: '> 80%',
+                      good: leads.total > 0 && leads.withEmail / leads.total > 0.8,
+                    },
+                    {
+                      label: 'HOT-Rate',
+                      value: leads.total > 0 ? `${Math.round((leads.hot / leads.total) * 100)}%` : '—',
+                      bench: '15-25%',
+                      good: leads.total > 0 && leads.hot / leads.total >= 0.15,
+                    },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '6px 0',
+                        borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : '',
+                      }}
+                    >
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>{item.label}</div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{item.bench}</div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-dm-mono)',
+                            color: item.good ? '#22C55E' : '#F59E0B',
+                          }}
+                        >
+                          {item.value}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
