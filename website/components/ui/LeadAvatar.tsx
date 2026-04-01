@@ -46,64 +46,84 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
   const domain = getDomain(website);
 
   const sources = domain
-    ? [
-        `https://cdn.brandfetch.io/${domain}/w/128/h/128?c=1idTb0Ld_5jkL_5OCVJ`,
-        `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
-      ]
+    ? [`https://icons.duckduckgo.com/ip3/${domain}.ico`, `https://www.google.com/s2/favicons?domain=${domain}&sz=64`]
     : [];
 
-  const [imgIndex, setImgIndex] = useState(0);
+  const [srcIndex, setSrcIndex] = useState(0);
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'initials'>(domain ? 'loading' : 'initials');
 
   useEffect(() => {
-    setImgIndex(0);
+    setSrcIndex(0);
+    setStatus(getDomain(website) ? 'loading' : 'initials');
   }, [website]);
 
-  const showInitials = !domain || imgIndex >= sources.length;
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+      handleError();
+      return;
+    }
+    setStatus('loaded');
+  };
 
-  if (showInitials) {
-    const s = getScoreStyle(score);
-    return (
-      <div
-        style={{
-          width: px,
-          height: px,
-          borderRadius: '50%',
-          background: s.bg,
-          border: `1px solid ${s.border}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: size === 'lg' ? 16 : px * 0.32,
-          fontWeight: 500,
-          color: s.color,
-          flexShrink: 0,
-          fontFamily: 'var(--font-dm-mono)',
-        }}
-      >
-        {getInitials(companyName || '?')}
-      </div>
-    );
-  }
+  const handleError = () => {
+    if (srcIndex < sources.length - 1) {
+      setSrcIndex((prev) => prev + 1);
+    } else {
+      setStatus('initials');
+    }
+  };
 
-  return (
-    <img
-      key={sources[imgIndex]}
-      src={sources[imgIndex]}
-      alt={companyName}
-      width={px}
-      height={px}
-      referrerPolicy="no-referrer"
-      onError={() => setImgIndex((prev) => prev + 1)}
+  const s = getScoreStyle(score);
+  const initialsEl = (
+    <div
       style={{
         width: px,
         height: px,
         borderRadius: '50%',
-        objectFit: 'contain',
+        background: s.bg,
+        border: `1px solid ${s.border}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: size === 'lg' ? 16 : px * 0.32,
+        fontWeight: 500,
+        color: s.color,
         flexShrink: 0,
-        background: 'rgba(30,41,59,0.8)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        padding: 2,
+        fontFamily: 'var(--font-dm-mono)',
       }}
-    />
+    >
+      {getInitials(companyName || '?')}
+    </div>
+  );
+
+  if (status === 'initials' || !domain) return initialsEl;
+
+  return (
+    <div style={{ position: 'relative', width: px, height: px, flexShrink: 0 }}>
+      {status === 'loading' && initialsEl}
+      <img
+        key={sources[srcIndex]}
+        src={sources[srcIndex]}
+        alt={companyName}
+        width={px}
+        height={px}
+        referrerPolicy="no-referrer"
+        onLoad={handleLoad}
+        onError={handleError}
+        style={{
+          width: px,
+          height: px,
+          borderRadius: '50%',
+          objectFit: 'contain',
+          background: 'rgba(30,41,59,0.8)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          padding: 2,
+          ...(status === 'loaded'
+            ? { position: 'absolute', top: 0, left: 0 }
+            : { position: 'absolute', top: 0, left: 0, opacity: 0, pointerEvents: 'none' as const }),
+        }}
+      />
+    </div>
   );
 }
