@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, DM_Sans, DM_Mono } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { CookieConsent } from '@/components/CookieConsent';
@@ -43,17 +44,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
       style={{ backgroundColor: '#0f0f0f' }}
     >
-      <head>
-        <script async src="https://plausible.io/js/pa-kKZb9OGJJyFPeOOINz23w.js" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`,
-          }}
-        />
-      </head>
+      <head />
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
         <CookieConsent />
+        <Script src="https://plausible.io/js/pa-kKZb9OGJJyFPeOOINz23w.js" strategy="afterInteractive" />
+        <Script id="plausible-init" strategy="afterInteractive">
+          {`window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`}
+        </Script>
       </body>
     </html>
   );
