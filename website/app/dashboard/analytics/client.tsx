@@ -169,10 +169,16 @@ export default function AnalyticsClient() {
 
   // Close dropdown on outside click
   useEffect(() => {
+    if (!statusDropdown) return;
     const close = () => setStatusDropdown(null);
-    document.addEventListener('click', close);
-    return () => document.removeEventListener('click', close);
-  }, []);
+    const timer = setTimeout(() => {
+      document.addEventListener('click', close, { once: true });
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', close);
+    };
+  }, [statusDropdown]);
 
   useEffect(() => {
     if (tab !== 'leads' || leadsData) return;
@@ -873,6 +879,7 @@ export default function AnalyticsClient() {
                               <div
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  e.nativeEvent.stopImmediatePropagation();
                                   setStatusDropdown((prev) => (prev === l.id ? null : l.id));
                                 }}
                                 style={{
@@ -912,12 +919,13 @@ export default function AnalyticsClient() {
                               </div>
                               {statusDropdown === l.id && (
                                 <div
+                                  onClick={(e) => e.stopPropagation()}
                                   style={{
                                     position: 'absolute',
-                                    top: '100%',
+                                    top: '110%',
                                     right: 0,
                                     marginTop: 4,
-                                    zIndex: 200,
+                                    zIndex: 500,
                                     background: '#1a1a1a',
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     borderRadius: 8,
@@ -997,6 +1005,102 @@ export default function AnalyticsClient() {
                   </div>
                 )}
               </div>
+              {activityData && (
+                <div style={{ ...S.card, padding: 20, marginTop: 12 }}>
+                  <div
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
+                  >
+                    <div>
+                      <div style={S.chartTitle}>Lead-Aktivitaeten</div>
+                      <div style={S.chartSub}>{fmt(activityData.total)} Aktionen gesamt</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {[
+                        { label: 'KI', key: 'ai_analysis', color: '#8B5CF6' },
+                        { label: 'Score', key: 'score_update', color: '#F59E0B' },
+                        { label: 'Status', key: 'status_change', color: '#22C55E' },
+                      ].map((t) => (
+                        <div
+                          key={t.key}
+                          style={{
+                            padding: '4px 10px',
+                            background: `${t.color}12`,
+                            border: `1px solid ${t.color}25`,
+                            borderRadius: 6,
+                            textAlign: 'center',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 700,
+                              fontFamily: 'var(--font-dm-mono)',
+                              color: t.color,
+                              lineHeight: 1,
+                            }}
+                          >
+                            {activityData.typeCounts?.[t.key] || 0}
+                          </div>
+                          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{t.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {activityData.activities.slice(0, 10).map((a: any) => (
+                    <div
+                      key={a.id}
+                      style={{
+                        display: 'flex',
+                        gap: 10,
+                        padding: '8px 0',
+                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          flexShrink: 0,
+                          marginTop: 3,
+                          background: typeColors[a.type] || 'rgba(255,255,255,0.2)',
+                        }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: 'rgba(255,255,255,0.75)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {a.title || typeLabels[a.type] || a.type}
+                        </div>
+                        {a.content && (
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: 'rgba(255,255,255,0.3)',
+                              marginTop: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {a.content}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>
+                        {formatRelTime(a.created_at)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -1103,6 +1207,60 @@ export default function AnalyticsClient() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          <div style={{ margin: '20px 0 12px', paddingBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div
+              style={{
+                fontSize: 10,
+                textTransform: 'uppercase',
+                letterSpacing: '0.09em',
+                color: 'rgba(255,255,255,0.25)',
+                fontWeight: 600,
+              }}
+            >
+              Content und Blog
+            </div>
+          </div>
+          {contentData ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+              <div style={S.kpiCard}>
+                <div style={S.label}>Blogposts gesamt</div>
+                <div style={{ ...S.val, color: '#8B5CF6', fontSize: 22 }}>{contentData.blogs.total}</div>
+                <div style={S.sub}>+{contentData.blogs.thisMonth} diesen Monat</div>
+              </div>
+              <div style={S.kpiCard}>
+                <div style={S.label}>Letzter Monat</div>
+                <div style={{ ...S.val, color: 'rgba(255,255,255,0.4)', fontSize: 22 }}>
+                  {contentData.blogs.lastMonth}
+                </div>
+                <div style={S.sub}>Veroeffentlicht</div>
+              </div>
+              <div style={S.kpiCard}>
+                <div style={S.label}>Top Tags</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 }}>
+                  {(contentData.blogs.topTags || []).slice(0, 4).map((t: any) => (
+                    <span
+                      key={t.tag}
+                      style={{
+                        fontSize: 9,
+                        padding: '2px 6px',
+                        background: 'rgba(139,92,246,0.1)',
+                        borderRadius: 4,
+                        color: '#8B5CF6',
+                      }}
+                    >
+                      {t.tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} style={{ ...S.kpiCard, height: 80 }} />
+              ))}
             </div>
           )}
         </div>
@@ -1218,6 +1376,68 @@ export default function AnalyticsClient() {
               </div>
             ))}
           </div>
+          <div style={{ ...S.card, padding: 20, marginTop: 12 }}>
+            <div style={S.chartTitle}>Naechste Massnahmen</div>
+            <div style={S.chartSub}>Priorisiert nach Pipeline-Impact</div>
+            {masterData?.leads &&
+              [
+                {
+                  prio: 'HOCH',
+                  text: `${masterData.leads.hot} HOT Leads warten auf Kontakt`,
+                  sub: `${Math.round(masterData.leads.hot * 12500).toLocaleString('de-DE')} EUR Pipeline-Wert`,
+                  color: '#FF5C2E',
+                  href: '/dashboard/leads',
+                },
+                {
+                  prio: 'MITTEL',
+                  text: `${masterData.leads.withEmail} E-Mail Drafts bereit`,
+                  sub: 'KI hat personalisierte E-Mails vorbereitet',
+                  color: '#F59E0B',
+                  href: '/dashboard/leads',
+                },
+                {
+                  prio: 'NIEDRIG',
+                  text: `${masterData.leads.warm} WARM Leads nachfassen`,
+                  sub: 'Score 45-74, noch nicht kontaktiert',
+                  color: '#6B7AFF',
+                  href: '/dashboard/leads',
+                },
+              ].map((item, i) => (
+                <a
+                  key={i}
+                  href={item.href}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '11px 0',
+                    borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : '',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 9,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      background: `${item.color}18`,
+                      color: item.color,
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      width: 56,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {item.prio}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{item.text}</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{item.sub}</div>
+                  </div>
+                  <div style={{ fontSize: 13, color: item.color, flexShrink: 0 }}>→</div>
+                </a>
+              ))}
+          </div>
         </div>
       )}
 
@@ -1306,6 +1526,87 @@ export default function AnalyticsClient() {
                 </div>
               );
             })}
+          </div>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 16, marginBottom: 16 }}
+          >
+            {[
+              { label: 'KI-Analysen', key: 'ai_analysis', color: '#8B5CF6' },
+              { label: 'Score-Updates', key: 'score_update', color: '#F59E0B' },
+              { label: 'Status-Aenderungen', key: 'status_change', color: '#22C55E' },
+              { label: 'Aufgaben', key: 'task', color: '#6B7AFF' },
+            ].map((kpi) => (
+              <div key={kpi.key} style={S.kpiCard}>
+                <div style={S.label}>{kpi.label}</div>
+                <div style={{ ...S.val, color: kpi.color, fontSize: 22 }}>
+                  {fmt(activityData?.typeCounts?.[kpi.key] || 0)}
+                </div>
+                <div style={S.sub}>Aktionen gesamt</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ ...S.card, padding: 20 }}>
+            <div style={S.chartTitle}>n8n Automations-Uebersicht</div>
+            <div style={S.chartSub}>Alle Workflows</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
+              {[
+                { name: 'Lead Generator', id: 'QbbshYhF1X9B31wR', desc: 'Apollo → Supabase' },
+                { name: 'KI-Scoring', id: 'BAuiSrhV0hByqFiQ', desc: 'Claude + E-Mail Draft' },
+                { name: 'Follow-up', id: 'Ouefa7el4Rl4lrPe', desc: 'Lead Outreach' },
+                { name: 'Daily Analytics', id: 'Pmwt819gnFKYa3tJ', desc: 'Statistiken 07:00' },
+                { name: 'Meeting Summary', id: 'O5Z7PK1raE21QDMD', desc: 'KI-Transkription' },
+                { name: 'Blog Generator', id: 'GoqKJqwmIQXqowc-fz2mR', desc: 'CMS Content' },
+                { name: 'Rechnungen', id: 'NH9h-npETtgCVs3nhzZ0B', desc: 'PDF + Drive' },
+                { name: 'Kontaktformular', id: 'd2q9RgfkMGxxxQ0B', desc: 'Website → Supabase' },
+                { name: 'Error Handler', id: 'jBopjm1K3zCt3gbf', desc: 'Monitoring' },
+              ].map((wf) => (
+                <a
+                  key={wf.id}
+                  href={`https://n8n.srv1223027.hstgr.cloud/workflow/${wf.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    ...S.card,
+                    padding: '14px 16px',
+                    textDecoration: 'none',
+                    display: 'block',
+                    transition: 'border-color 0.15s, background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
+                    e.currentTarget.style.background = '#181818';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
+                    e.currentTarget.style.background = '#111';
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 5,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{wf.name}</div>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        padding: '2px 6px',
+                        background: 'rgba(34,197,94,0.1)',
+                        color: '#22C55E',
+                        borderRadius: 4,
+                        flexShrink: 0,
+                      }}
+                    >
+                      Aktiv
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{wf.desc}</div>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       )}
