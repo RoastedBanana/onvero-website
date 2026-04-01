@@ -91,6 +91,20 @@ export async function GET(req: Request) {
 
   const weeklyLeads = buildWeekly(all);
 
+  // Data quality score per lead
+  const qualityScores = all.map((l) => {
+    let q = 0;
+    if (l.email_draft) q += 20;
+    if (l.custom_fields?.industry || l.custom_fields?.industry_de) q += 15;
+    if (l.city) q += 10;
+    if (l.custom_fields?.linkedin_url) q += 10;
+    if (l.score !== null) q += 20;
+    if (l.custom_fields?.technologies?.length > 0) q += 15;
+    if (l.ai_summary) q += 10;
+    return q;
+  });
+  const avgDataQuality = all.length > 0 ? Math.round(qualityScores.reduce((a, b) => a + b, 0) / all.length) : 0;
+
   return NextResponse.json({
     total: all.length,
     hot: all.filter((l) => (l.score || 0) >= 75).length,
@@ -99,6 +113,7 @@ export async function GET(req: Request) {
     avgScore: all.length > 0 ? Math.round(all.reduce((s, l) => s + (l.score || 0), 0) / all.length) : 0,
     withEmail: all.filter((l) => l.email_draft).length,
     scored: all.filter((l) => l.score !== null).length,
+    avgDataQuality,
     industries,
     topTech,
     topCities,

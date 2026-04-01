@@ -1,7 +1,18 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  ReferenceLine,
+} from 'recharts';
 
 type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki';
 
@@ -108,6 +119,240 @@ function InfoIcon({ tooltip }: { tooltip: string }) {
         ?
       </div>
     </TooltipBox>
+  );
+}
+
+function LeadDevelopmentChart({ weeklyData, trendData }: { weeklyData: any[]; trendData: any[] }) {
+  const [view, setView] = useState<'weekly' | 'daily'>('weekly');
+  const data = view === 'weekly' ? weeklyData : trendData;
+  const total = weeklyData.reduce((s: number, w: any) => s + w.total, 0);
+  const totalHot = weeklyData.reduce((s: number, w: any) => s + w.hot, 0);
+  const totalWarm = weeklyData.reduce((s: number, w: any) => s + w.warm, 0);
+  const totalCold = weeklyData.reduce((s: number, w: any) => s + w.cold, 0);
+
+  const ChartTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0]?.payload;
+    if (!d) return null;
+    return (
+      <div
+        style={{
+          background: '#1a1a1a',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 10,
+          padding: '12px 14px',
+          minWidth: 160,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 8, fontWeight: 600 }}>
+          {d.week || d.label}
+        </div>
+        {[
+          { key: 'hot', label: 'HOT', color: '#FF5C2E' },
+          { key: 'warm', label: 'WARM', color: '#F59E0B' },
+          { key: 'cold', label: 'COLD', color: '#6B7AFF' },
+        ].map((item) => (
+          <div key={item.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>{item.label}</span>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: item.color }}>
+              {d[item.key] || 0}
+            </span>
+          </div>
+        ))}
+        <div
+          style={{
+            marginTop: 8,
+            paddingTop: 8,
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Gesamt</span>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: '#fff' }}>
+            {d.total || 0}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      style={{
+        background: '#111',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 12,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Lead-Entwicklung</div>
+            <InfoIcon tooltip="Neue Leads pro Periode, aufgeteilt nach KI-Qualitaet. HOT = Score >= 75, WARM = 45-74, COLD = unter 45." />
+          </div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+            Neue Leads pro {view === 'weekly' ? 'Woche' : 'Tag'}
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: 2,
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: 8,
+            padding: 3,
+            border: '1px solid rgba(255,255,255,0.06)',
+          }}
+        >
+          {(['weekly', 'daily'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              style={{
+                padding: '4px 12px',
+                borderRadius: 6,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 600,
+                background: view === v ? 'rgba(255,255,255,0.12)' : 'transparent',
+                color: view === v ? '#fff' : 'rgba(255,255,255,0.35)',
+                transition: 'all 0.15s',
+              }}
+            >
+              {v === 'weekly' ? 'Woechentlich' : 'Taeglich'}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {[
+            { label: 'HOT', count: totalHot, color: '#FF5C2E', bg: 'rgba(255,92,46,0.12)' },
+            { label: 'WARM', count: totalWarm, color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+            { label: 'COLD', count: totalCold, color: '#6B7AFF', bg: 'rgba(107,122,255,0.12)' },
+          ].map((item) => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{item.label}</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-dm-mono)',
+                  color: item.color,
+                  padding: '1px 6px',
+                  background: item.bg,
+                  borderRadius: 4,
+                }}
+              >
+                {item.count}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ textAlign: 'right' }}>
+            <div
+              style={{
+                fontSize: 9,
+                color: 'rgba(255,255,255,0.25)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}
+            >
+              Gesamt
+            </div>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                fontFamily: 'var(--font-dm-mono)',
+                color: '#fff',
+                lineHeight: 1.2,
+              }}
+            >
+              {total}
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div
+              style={{
+                fontSize: 9,
+                color: 'rgba(255,255,255,0.25)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}
+            >
+              HOT-Rate
+            </div>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                fontFamily: 'var(--font-dm-mono)',
+                color: '#FF5C2E',
+                lineHeight: 1.2,
+              }}
+            >
+              {total > 0 ? Math.round((totalHot / total) * 100) : 0}%
+            </div>
+          </div>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart
+          data={data}
+          barSize={view === 'daily' ? 18 : 32}
+          barGap={2}
+          margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+        >
+          <XAxis
+            dataKey={view === 'weekly' ? 'week' : 'label'}
+            tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            interval={view === 'daily' ? 2 : 0}
+          />
+          <YAxis
+            tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            allowDecimals={false}
+          />
+          <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+          <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
+          <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
+          <Bar dataKey="cold" stackId="a" fill="#6B7AFF" name="COLD" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+      {view === 'weekly' && data.filter((d: any) => d.total > 0).length <= 2 && (
+        <div style={{ marginTop: 8, fontSize: 10, color: 'rgba(255,255,255,0.2)', textAlign: 'center' }}>
+          Wenige aktive Wochen — wechsle zu Taeglich fuer mehr Detail
+        </div>
+      )}
+      <div
+        style={{
+          marginTop: 10,
+          paddingTop: 8,
+          borderTop: '1px solid rgba(255,255,255,0.04)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: 9,
+          color: 'rgba(255,255,255,0.2)',
+        }}
+      >
+        <span>Quelle: Supabase · leads · {view === 'weekly' ? 'Kalenderwoche' : 'Tag'}</span>
+        <span>Live</span>
+      </div>
+    </div>
   );
 }
 
@@ -845,7 +1090,7 @@ export default function AnalyticsClient() {
           ) : (
             <>
               {/* KPI Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 20 }}>
                 {[
                   {
                     label: 'Leads gesamt',
@@ -867,6 +1112,12 @@ export default function AnalyticsClient() {
                     sub: `${leadsData.withEmail} mit E-Mail`,
                     color: '#8B5CF6',
                   },
+                  {
+                    label: 'Datenqualitaet',
+                    val: `${leadsData.avgDataQuality || 0}%`,
+                    sub: 'Vollstaendigkeit',
+                    color: '#22C55E',
+                  },
                 ].map((kpi) => (
                   <div key={kpi.label} style={S.kpiCard}>
                     <div style={S.label}>{kpi.label}</div>
@@ -876,58 +1127,34 @@ export default function AnalyticsClient() {
                 ))}
               </div>
 
-              {/* Charts Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                <div style={{ ...S.card, padding: 20 }}>
-                  <div style={S.chartTitle}>Lead-Entwicklung</div>
-                  <div style={S.chartSub}>HOT / WARM / COLD pro Woche</div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={leadsData.weeklyLeads} barSize={22}>
-                      <XAxis
-                        dataKey="week"
-                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={24}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
-                      <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
-                      <Bar dataKey="cold" stackId="a" fill="#6B7AFF" radius={[4, 4, 0, 0]} name="COLD" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div style={{ ...S.card, padding: 20 }}>
-                  <div style={S.chartTitle}>Score-Histogramm</div>
-                  <div style={S.chartSub}>Verteilung aller Lead-Scores</div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={leadsData.scoreHistogram} barSize={28}>
-                      <XAxis
-                        dataKey="range"
-                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 9 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                        width={24}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="count" name="Leads" radius={[3, 3, 0, 0]}>
-                        {(leadsData.scoreHistogram || []).map((_: any, i: number) => (
-                          <Cell key={i} fill={i >= 8 ? '#FF5C2E' : i >= 5 ? '#F59E0B' : '#6B7AFF'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              <LeadDevelopmentChart weeklyData={leadsData?.weeklyLeads || []} trendData={trendData?.trend || []} />
+
+              {/* Score Histogram */}
+              <div style={{ ...S.card, padding: 20, marginBottom: 12 }}>
+                <div style={S.chartTitle}>Score-Histogramm</div>
+                <div style={S.chartSub}>Verteilung aller Lead-Scores</div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={leadsData.scoreHistogram} barSize={28}>
+                    <XAxis
+                      dataKey="range"
+                      tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 9 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={24}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="count" name="Leads" radius={[3, 3, 0, 0]}>
+                      {(leadsData.scoreHistogram || []).map((_: any, i: number) => (
+                        <Cell key={i} fill={i >= 8 ? '#FF5C2E' : i >= 5 ? '#F59E0B' : '#6B7AFF'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
 
               {/* Detail Cards Row */}
