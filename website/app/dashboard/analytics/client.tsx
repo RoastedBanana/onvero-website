@@ -439,6 +439,22 @@ export default function AnalyticsClient() {
   const displayVal = (val: number, emptyText = '—') => (val === 0 ? emptyText : fmt(val));
 
   useEffect(() => {
+    const s = document.createElement('style');
+    s.textContent = `
+      @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.85)}}
+      @keyframes count-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes tab-slide{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+      .analytics-card{transition:border-color 0.2s ease,box-shadow 0.2s ease,transform 0.15s ease}
+      .analytics-card:hover{border-color:rgba(255,255,255,0.12)!important}
+      .kpi-value{animation:count-up 0.4s ease forwards}
+    `;
+    document.head.appendChild(s);
+    return () => {
+      document.head.removeChild(s);
+    };
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
     Promise.all([
       fetch('/api/analytics/master').then((r) => r.json()),
@@ -539,18 +555,27 @@ export default function AnalyticsClient() {
         style={{
           background: '#1a1a1a',
           border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 8,
-          padding: '8px 12px',
+          borderRadius: 10,
+          padding: '10px 14px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
         }}
       >
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 6, fontWeight: 600 }}>{label}</div>
         {payload.map((p: any, i: number) => (
-          <div
-            key={i}
-            style={{ fontSize: 13, fontWeight: 700, color: p.color || '#fff', fontFamily: 'var(--font-dm-mono)' }}
-          >
-            {fmt(p.value)}{' '}
-            <span style={{ fontSize: 10, fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>{p.name}</span>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{p.name}</span>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: p.color,
+                fontFamily: 'var(--font-dm-mono)',
+                marginLeft: 'auto',
+              }}
+            >
+              {typeof p.value === 'number' ? p.value.toLocaleString('de-DE') : p.value}
+            </span>
           </div>
         ))}
       </div>
@@ -580,21 +605,70 @@ export default function AnalyticsClient() {
   return (
     <div style={{ padding: '24px 32px', maxWidth: 1440 }}>
       {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Analytics</h1>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>Onvero BusinessOS</p>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 28,
+          paddingBottom: 24,
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+          <div
+            style={{
+              width: 3,
+              height: 44,
+              borderRadius: 2,
+              background: 'linear-gradient(to bottom, #6B7AFF, rgba(107,122,255,0))',
+              flexShrink: 0,
+              marginTop: 4,
+            }}
+          />
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>
+                Analytics
+              </h1>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '3px 8px',
+                  background: 'rgba(34,197,94,0.1)',
+                  border: '1px solid rgba(34,197,94,0.2)',
+                  borderRadius: 20,
+                }}
+              >
+                <div
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: '#22C55E',
+                    animation: 'pulse-dot 2s ease infinite',
+                  }}
+                />
+                <span style={{ fontSize: 10, color: '#22C55E', fontWeight: 600 }}>Live</span>
+              </div>
+            </div>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+              Onvero BusinessOS · {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {(tab === 'leads' || tab === 'website' || tab === 'pipeline') && (
             <div
               style={{
                 display: 'flex',
-                gap: 2,
-                background: '#111',
-                borderRadius: 8,
+                gap: 1,
+                background: 'rgba(255,255,255,0.04)',
+                borderRadius: 10,
                 padding: 3,
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.07)',
               }}
             >
               {['7d', '30d', '3mo', '12mo'].map((p) => (
@@ -602,14 +676,14 @@ export default function AnalyticsClient() {
                   key={p}
                   onClick={() => setPeriod(p)}
                   style={{
-                    padding: '5px 12px',
-                    borderRadius: 6,
+                    padding: '5px 14px',
+                    borderRadius: 8,
                     border: 'none',
                     cursor: 'pointer',
                     fontSize: 11,
                     fontWeight: 600,
-                    background: period === p ? '#fff' : 'transparent',
-                    color: period === p ? '#000' : 'rgba(255,255,255,0.35)',
+                    background: period === p ? 'rgba(255,255,255,0.12)' : 'transparent',
+                    color: period === p ? '#fff' : 'rgba(255,255,255,0.3)',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -618,25 +692,6 @@ export default function AnalyticsClient() {
               ))}
             </div>
           )}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 11,
-              color: 'rgba(255,255,255,0.4)',
-              padding: '6px 12px',
-              background: '#111',
-              borderRadius: 8,
-              border: '1px solid rgba(255,255,255,0.08)',
-            }}
-          >
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E' }} />
-            Live
-          </div>
-          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)' }}>
-            {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-          </span>
         </div>
       </div>
 
@@ -644,34 +699,50 @@ export default function AnalyticsClient() {
       <div
         style={{
           display: 'flex',
-          gap: 2,
+          gap: 0,
           marginBottom: 24,
-          background: '#111',
-          borderRadius: 10,
-          padding: 4,
-          border: '1px solid rgba(255,255,255,0.07)',
-          width: 'fit-content',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          paddingBottom: 0,
         }}
       >
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            style={{
-              padding: '7px 18px',
-              borderRadius: 8,
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 600,
-              background: tab === t.id ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: tab === t.id ? '#fff' : 'rgba(255,255,255,0.35)',
-              transition: 'all 0.15s',
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+        {TABS.map((t) => {
+          const isActive = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: isActive ? 600 : 400,
+                background: 'transparent',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
+                transition: 'all 0.2s',
+                position: 'relative',
+                borderBottom: isActive ? '2px solid #6B7AFF' : '2px solid transparent',
+                marginBottom: -1,
+              }}
+            >
+              {t.label}
+              {isActive && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: -1,
+                    left: '10%',
+                    right: '10%',
+                    height: 2,
+                    background: '#6B7AFF',
+                    boxShadow: '0 0 8px rgba(107,122,255,0.6)',
+                    borderRadius: 1,
+                  }}
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* MASTER */}
@@ -979,9 +1050,46 @@ export default function AnalyticsClient() {
                 color: '#6B7AFF',
               },
             ].map((kpi) => (
-              <div key={kpi.label} style={S.kpiCard}>
+              <div
+                key={kpi.label}
+                className="analytics-card"
+                style={{
+                  background: '#111',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 12,
+                  padding: '16px 18px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 2,
+                    background: `linear-gradient(to right, ${kpi.color}, transparent)`,
+                    borderRadius: '12px 12px 0 0',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: -20,
+                    left: -20,
+                    width: 80,
+                    height: 80,
+                    background: kpi.color,
+                    opacity: 0.04,
+                    borderRadius: '50%',
+                    pointerEvents: 'none',
+                  }}
+                />
                 <div style={S.label}>{kpi.label}</div>
-                <div style={{ ...S.val, color: kpi.color, fontSize: 22 }}>{kpi.val}</div>
+                <div className="kpi-value" style={{ ...S.val, color: kpi.color, fontSize: 22 }}>
+                  {kpi.val}
+                </div>
                 <div style={S.sub}>{kpi.sub}</div>
               </div>
             ))}
