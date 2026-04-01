@@ -11,10 +11,16 @@ interface LeadAvatarProps {
 
 function getDomain(url: string): string | null {
   try {
-    return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace('www.', '');
+    return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
   } catch {
     return null;
   }
+}
+
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
 }
 
 function getScoreStyle(score?: number) {
@@ -31,15 +37,9 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
   const px = SIZES[size];
   const domain = website ? getDomain(website) : null;
 
-  const [imgState, setImgState] = useState<'clearbit' | 'google' | 'initials'>(domain ? 'clearbit' : 'initials');
+  const [imgState, setImgState] = useState<'iconhorse' | 'google' | 'initials'>(domain ? 'iconhorse' : 'initials');
 
-  const initials = companyName
-    .split(/[\s&+\-./]+/)
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = getInitials(companyName || '?');
 
   if (imgState === 'initials' || !domain) {
     const s = getScoreStyle(score);
@@ -54,22 +54,22 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: px * 0.32,
+          fontSize: size === 'lg' ? 16 : px * 0.32,
           fontWeight: 500,
           color: s.color,
           flexShrink: 0,
           fontFamily: 'var(--font-dm-mono)',
         }}
       >
-        {initials || '?'}
+        {initials}
       </div>
     );
   }
 
   const src =
-    imgState === 'clearbit'
-      ? `https://logo.clearbit.com/${domain}`
-      : `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    imgState === 'iconhorse'
+      ? `https://icon.horse/icon/${domain}`
+      : `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
   return (
     <img
@@ -78,7 +78,7 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
       width={px}
       height={px}
       onError={() => {
-        if (imgState === 'clearbit') setImgState('google');
+        if (imgState === 'iconhorse') setImgState('google');
         else setImgState('initials');
       }}
       style={{
