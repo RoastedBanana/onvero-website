@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Lead } from '@/lib/leads-client';
 import { updateLeadStatus } from '@/lib/leads-client';
 import { createClient } from '@/lib/supabase';
@@ -231,6 +231,22 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelected(new Set());
+    setBulkStatusOpen(false);
+    setDeleteConfirm(false);
+  }, []);
+
+  useEffect(() => {
+    if (!selectMode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') exitSelectMode();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [selectMode, exitSelectMode]);
+
   const sorted = [...leads].sort((a, b) =>
     sortBy === 'score' ? b.score - a.score : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -250,13 +266,6 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
     } else {
       setSelected(new Set(sorted.map((l) => l.id)));
     }
-  }
-
-  function exitSelectMode() {
-    setSelectMode(false);
-    setSelected(new Set());
-    setBulkStatusOpen(false);
-    setDeleteConfirm(false);
   }
 
   async function bulkStatusChange(newStatus: string) {
@@ -576,96 +585,87 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
       {/* ── Table Header ── */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: gridCols,
+          display: 'flex',
+          alignItems: 'center',
           padding: '10px 20px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           background: 'rgba(255,255,255,0.02)',
-          alignItems: 'center',
         }}
       >
-        {selectMode && <Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleAll} />}
-        {[
-          { key: 'score', label: 'SCORE' },
-          { key: null, label: 'NAME / FIRMA' },
-          { key: null, label: 'E-MAIL' },
-          { key: null, label: 'BRANCHE' },
-          { key: null, label: 'STATUS' },
-          { key: 'date', label: 'DATUM' },
-        ].map(({ key, label }) => (
-          <div
-            key={label}
-            onClick={() => key && setSortBy(key as 'score' | 'date')}
+        <div style={{ display: 'grid', gridTemplateColumns: gridCols, alignItems: 'center', flex: 1 }}>
+          {selectMode && <Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleAll} />}
+          {[
+            { key: 'score', label: 'SCORE' },
+            { key: null, label: 'NAME / FIRMA' },
+            { key: null, label: 'E-MAIL' },
+            { key: null, label: 'BRANCHE' },
+            { key: null, label: 'STATUS' },
+            { key: 'date', label: 'DATUM' },
+          ].map(({ key, label }) => (
+            <div
+              key={label}
+              onClick={() => key && setSortBy(key as 'score' | 'date')}
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
+                letterSpacing: '0.08em',
+                cursor: key ? 'pointer' : 'default',
+                userSelect: 'none',
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                if (key) e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+              }}
+              onMouseLeave={(e) => {
+                if (key)
+                  e.currentTarget.style.color =
+                    key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
+              }}
+            >
+              {label}
+              {key && sortBy === key ? ' ↓' : ''}
+            </div>
+          ))}
+        </div>
+        {!selectMode && sorted.length > 0 && (
+          <button
+            onClick={() => setSelectMode(true)}
             style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 6,
+              padding: '4px 10px',
               fontSize: 10,
-              fontWeight: 600,
-              color: key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
-              letterSpacing: '0.08em',
-              cursor: key ? 'pointer' : 'default',
-              userSelect: 'none',
-              transition: 'color 0.15s',
-              borderBottom: key ? '1px solid transparent' : 'none',
-              paddingBottom: key ? 2 : 0,
+              color: 'rgba(255,255,255,0.35)',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              marginLeft: 8,
             }}
             onMouseEnter={(e) => {
-              if (key) {
-                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.25)';
-              }
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
             }}
             onMouseLeave={(e) => {
-              if (key) {
-                e.currentTarget.style.color =
-                  key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
-                e.currentTarget.style.borderBottomColor = 'transparent';
-              }
+              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.35)';
             }}
           >
-            {label}
-            {key && sortBy === key ? ' ↓' : ''}
-          </div>
-        ))}
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+              <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+              <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+            </svg>
+            Auswählen
+          </button>
+        )}
       </div>
-
-      {/* ── Select Mode Toggle (when not in select mode) ── */}
-      {!selectMode && sorted.length > 0 && (
-        <button
-          onClick={() => setSelectMode(true)}
-          style={{
-            position: 'absolute',
-            top: 8,
-            right: 14,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 6,
-            padding: '4px 10px',
-            fontSize: 10,
-            color: 'rgba(255,255,255,0.35)',
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-            zIndex: 5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-            e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-            e.currentTarget.style.color = 'rgba(255,255,255,0.35)';
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-            <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-            <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-            <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-            <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-          </svg>
-          Auswählen
-        </button>
-      )}
 
       {/* ── Rows ── */}
       {sorted.map((lead, i) => {
