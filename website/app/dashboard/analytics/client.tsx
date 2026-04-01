@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki';
@@ -42,35 +42,47 @@ const S = {
 };
 
 function TooltipBox({ text, children }: { text: string; children: React.ReactNode }) {
-  const [show, setShow] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const showTip = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setPos({ top: rect.top - 8, left: rect.left + rect.width / 2 });
+    }
+    setVisible(true);
+  };
   return (
-    <div
-      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
-      {children}
-      {show && (
+    <>
+      {visible && (
         <div
           style={{
-            position: 'absolute',
-            bottom: '120%',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            position: 'fixed',
+            top: pos.top,
+            left: pos.left,
+            transform: 'translate(-50%, -100%)',
+            zIndex: 9999,
             background: '#1e1e1e',
-            border: '1px solid rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.15)',
             borderRadius: 8,
             padding: '8px 12px',
-            zIndex: 1000,
             width: 220,
             pointerEvents: 'none',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
           }}
         >
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{text}</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{text}</div>
         </div>
       )}
-    </div>
+      <div
+        ref={ref}
+        style={{ display: 'inline-flex', alignItems: 'center' }}
+        onMouseEnter={showTip}
+        onMouseLeave={() => setVisible(false)}
+      >
+        {children}
+      </div>
+    </>
   );
 }
 
@@ -109,6 +121,7 @@ export default function AnalyticsClient() {
   const [contentData, setContentData] = useState<any>(null);
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
   const [pageSpeed, setPageSpeed] = useState<any>(null);
+  const [trendData, setTrendData] = useState<any>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [leadsData, setLeadsData] = useState<any>(null);
   const [leadsLoading, setLeadsLoading] = useState(false);
@@ -197,6 +210,10 @@ export default function AnalyticsClient() {
     fetch('/api/analytics/activity')
       .then((r) => r.json())
       .then(setActivityData)
+      .catch(() => {});
+    fetch('/api/analytics/trend')
+      .then((r) => r.json())
+      .then(setTrendData)
       .catch(() => {});
   }, []);
 
@@ -655,6 +672,65 @@ export default function AnalyticsClient() {
               )}
             </div>
           </div>
+          {trendData?.trend && (
+            <div style={{ ...S.card, padding: 20, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={S.chartTitle}>Taeglich</div>
+                <InfoIcon tooltip="Neu generierte Leads pro Tag, letzte 14 Tage." />
+              </div>
+              <div style={S.chartSub}>14 Tage</div>
+              <ResponsiveContainer width="100%" height={160}>
+                <LineChart data={trendData.trend}>
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 9 }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={2}
+                  />
+                  <YAxis
+                    tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={20}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    stroke="#6B7AFF"
+                    strokeWidth={2}
+                    dot={{ fill: '#6B7AFF', r: 3 }}
+                    name="Leads"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="hot"
+                    stroke="#FF5C2E"
+                    strokeWidth={1.5}
+                    dot={false}
+                    name="HOT"
+                    strokeDasharray="3 3"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+              <div
+                style={{
+                  fontSize: 9,
+                  color: 'rgba(255,255,255,0.18)',
+                  marginTop: 6,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid rgba(255,255,255,0.04)',
+                  paddingTop: 6,
+                }}
+              >
+                <span>Quelle: Supabase · leads</span>
+                <span>Live</span>
+              </div>
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
             {[
               { label: 'Leads gesamt', val: fmt(leads.total), sub: `+${leads.last24h} letzte 24h`, color: '#fff' },
@@ -1337,40 +1413,100 @@ export default function AnalyticsClient() {
                   </div>
                 ))}
               </div>
-              {pageSpeed && (
+              {pageSpeed && !pageSpeed.error && (
                 <div style={{ ...S.card, padding: 20, marginBottom: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <div style={S.chartTitle}>Website Performance</div>
-                    <InfoIcon tooltip="Google PageSpeed Insights analysiert Ladezeit, SEO und Nutzerfreundlichkeit. Daten werden stuendlich aktualisiert." />
+                    <div style={S.chartTitle}>Website-Status</div>
+                    <InfoIcon tooltip="Direkte Messung von onvero.de. Ladezeit, Erreichbarkeit und SEO-Signale. Alle 5 Min aktualisiert." />
                   </div>
-                  <div style={S.chartSub}>onvero.de · Mobile</div>
+                  <div style={S.chartSub}>onvero.de · Live-Check</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 12 }}>
                     {[
                       {
-                        label: 'Performance',
-                        val: `${pageSpeed.performance}`,
-                        color:
-                          pageSpeed.performance >= 90 ? '#22C55E' : pageSpeed.performance >= 50 ? '#F59E0B' : '#FF5C2E',
-                        suffix: '/100',
+                        label: 'Erreichbarkeit',
+                        val: pageSpeed.ok ? 'Online' : 'Offline',
+                        color: pageSpeed.ok ? '#22C55E' : '#FF5C2E',
+                        sub: `Status ${pageSpeed.status || '—'}`,
                       },
                       {
-                        label: 'SEO Score',
-                        val: `${pageSpeed.seo}`,
-                        color: pageSpeed.seo >= 90 ? '#22C55E' : '#F59E0B',
-                        suffix: '/100',
+                        label: 'Ladezeit',
+                        val: pageSpeed.loadTimeFormatted || '—',
+                        color:
+                          pageSpeed.speedScore >= 70 ? '#22C55E' : pageSpeed.speedScore >= 50 ? '#F59E0B' : '#FF5C2E',
+                        sub: pageSpeed.speed || '—',
                       },
-                      { label: 'LCP', val: pageSpeed.lcp, color: 'rgba(255,255,255,0.7)', suffix: '' },
-                      { label: 'FCP', val: pageSpeed.fcp, color: 'rgba(255,255,255,0.7)', suffix: '' },
+                      {
+                        label: 'SEO Signale',
+                        val: `${pageSpeed.seoScore}%`,
+                        color: pageSpeed.seoScore >= 80 ? '#22C55E' : '#F59E0B',
+                        sub: `${Object.values(pageSpeed.checks || {}).filter(Boolean).length}/6 OK`,
+                      },
+                      {
+                        label: 'HTTPS',
+                        val: pageSpeed.hasHttps ? 'Sicher' : 'Unsicher',
+                        color: pageSpeed.hasHttps ? '#22C55E' : '#FF5C2E',
+                        sub: pageSpeed.isResponsive ? 'Mobil-optimiert' : 'Kein Viewport',
+                      },
                     ].map((kpi) => (
                       <div key={kpi.label} style={S.kpiCard}>
                         <div style={S.label}>{kpi.label}</div>
-                        <div style={{ ...S.val, color: kpi.color, fontSize: 22 }}>
-                          {kpi.val}
-                          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{kpi.suffix}</span>
-                        </div>
+                        <div style={{ ...S.val, color: kpi.color, fontSize: 20 }}>{kpi.val}</div>
+                        <div style={S.sub}>{kpi.sub}</div>
                       </div>
                     ))}
                   </div>
+                  {pageSpeed.checks && (
+                    <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {[
+                        { key: 'title', label: 'Seitentitel' },
+                        { key: 'description', label: 'Beschreibung' },
+                        { key: 'ogImage', label: 'Social-Bild' },
+                        { key: 'viewport', label: 'Mobile' },
+                        { key: 'https', label: 'HTTPS' },
+                        { key: 'online', label: 'Online' },
+                      ].map((c) => (
+                        <div
+                          key={c.key}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            padding: '4px 10px',
+                            borderRadius: 20,
+                            background: pageSpeed.checks[c.key] ? 'rgba(34,197,94,0.08)' : 'rgba(255,92,46,0.08)',
+                            border: `1px solid ${pageSpeed.checks[c.key] ? 'rgba(34,197,94,0.2)' : 'rgba(255,92,46,0.15)'}`,
+                          }}
+                        >
+                          <div style={{ fontSize: 10, color: pageSpeed.checks[c.key] ? '#22C55E' : '#FF5C2E' }}>
+                            {pageSpeed.checks[c.key] ? '✓' : '✗'}
+                          </div>
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>{c.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {pageSpeed.title && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: '10px 12px',
+                        background: 'rgba(255,255,255,0.03)',
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginBottom: 3 }}>
+                        Wie Google onvero.de sieht:
+                      </div>
+                      <div style={{ fontSize: 12, color: '#6B7AFF', marginBottom: 2 }}>{pageSpeed.title}</div>
+                      {pageSpeed.description && (
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+                          {pageSpeed.description.slice(0, 150)}
+                          {pageSpeed.description.length > 150 ? '...' : ''}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               <div style={{ ...S.card, padding: 20 }}>
@@ -1683,60 +1819,6 @@ export default function AnalyticsClient() {
                 <div style={S.sub}>{kpi.sub}</div>
               </div>
             ))}
-          </div>
-          <div style={{ ...S.card, padding: 20 }}>
-            <div style={S.chartTitle}>KI-Workflow Status</div>
-            <div style={S.chartSub}>n8n Automations-Pipeline</div>
-            {systemStatus.map((s: any, i: number) => {
-              const color =
-                s.status === 'active'
-                  ? '#22C55E'
-                  : s.status === 'pending'
-                    ? '#F59E0B'
-                    : s.status === 'planned'
-                      ? 'rgba(255,255,255,0.2)'
-                      : '#FF5C2E';
-              const label =
-                s.status === 'active'
-                  ? 'Aktiv'
-                  : s.status === 'pending'
-                    ? 'Pending'
-                    : s.status === 'planned'
-                      ? 'Geplant'
-                      : 'Setup';
-              return (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '10px 0',
-                    borderBottom: i < systemStatus.length - 1 ? '1px solid rgba(255,255,255,0.05)' : '',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 1 }}>{s.name}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{s.detail}</div>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      padding: '3px 8px',
-                      borderRadius: 4,
-                      background: `${color}18`,
-                      color,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {label}
-                  </div>
-                </div>
-              );
-            })}
           </div>
           <div
             style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 16, marginBottom: 16 }}
