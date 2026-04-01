@@ -585,53 +585,57 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
       {/* ── Table Header ── */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
+          display: 'grid',
+          gridTemplateColumns: gridCols,
           padding: '10px 20px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           background: 'rgba(255,255,255,0.02)',
+          alignItems: 'center',
+          position: 'relative',
         }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: gridCols, alignItems: 'center', flex: 1 }}>
-          {selectMode && <Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleAll} />}
-          {[
-            { key: 'score', label: 'SCORE' },
-            { key: null, label: 'NAME / FIRMA' },
-            { key: null, label: 'E-MAIL' },
-            { key: null, label: 'BRANCHE' },
-            { key: null, label: 'STATUS' },
-            { key: 'date', label: 'DATUM' },
-          ].map(({ key, label }) => (
-            <div
-              key={label}
-              onClick={() => key && setSortBy(key as 'score' | 'date')}
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
-                letterSpacing: '0.08em',
-                cursor: key ? 'pointer' : 'default',
-                userSelect: 'none',
-                transition: 'color 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                if (key) e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-              }}
-              onMouseLeave={(e) => {
-                if (key)
-                  e.currentTarget.style.color =
-                    key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
-              }}
-            >
-              {label}
-              {key && sortBy === key ? ' ↓' : ''}
-            </div>
-          ))}
-        </div>
+        {selectMode && <Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleAll} />}
+        {[
+          { key: 'score', label: 'SCORE' },
+          { key: null, label: 'NAME / FIRMA' },
+          { key: null, label: 'E-MAIL' },
+          { key: null, label: 'BRANCHE' },
+          { key: null, label: 'STATUS' },
+          { key: 'date', label: 'DATUM' },
+        ].map(({ key, label }) => (
+          <div
+            key={label}
+            onClick={() => key && setSortBy(key as 'score' | 'date')}
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
+              letterSpacing: '0.08em',
+              cursor: key ? 'pointer' : 'default',
+              userSelect: 'none',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              if (key) e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+            }}
+            onMouseLeave={(e) => {
+              if (key)
+                e.currentTarget.style.color =
+                  key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
+            }}
+          >
+            {label}
+            {key && sortBy === key ? ' ↓' : ''}
+          </div>
+        ))}
         {!selectMode && sorted.length > 0 && (
           <button
             onClick={() => setSelectMode(true)}
             style={{
+              position: 'absolute',
+              right: 20,
+              top: '50%',
+              transform: 'translateY(-50%)',
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 6,
@@ -644,8 +648,6 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
               alignItems: 'center',
               gap: 5,
               whiteSpace: 'nowrap',
-              flexShrink: 0,
-              marginLeft: 8,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
