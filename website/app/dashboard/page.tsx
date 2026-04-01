@@ -867,22 +867,55 @@ function Sidebar({
 
 // ── AutoResizeTextarea ───────────────────────────────────────────────────────
 
-function AutoResizeTextarea({ id, label: labelText, value, onChange }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+function AutoResizeTextarea({
+  id,
+  label: labelText,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div id={id} style={{ marginBottom: '0.75rem' }}>
       <label style={lbl}>{labelText}</label>
-      <textarea ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
-        value={value} onChange={e => { onChange(e.target.value); const el = e.target; el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }}
+      <textarea
+        ref={(el) => {
+          if (el) {
+            el.style.height = 'auto';
+            el.style.height = `${el.scrollHeight}px`;
+          }
+        }}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          const el = e.target;
+          el.style.height = 'auto';
+          el.style.height = `${el.scrollHeight}px`;
+        }}
         style={{ ...field, resize: 'none' as const, overflow: 'hidden', minHeight: 56 }}
-        onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-        onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')} />
+        onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+        onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+      />
     </div>
   );
 }
 
 // ── WebsiteTextsEditor ───────────────────────────────────────────────────────
 
-interface WebsiteText { id: number; text_id: string; page: string; section: string; type: string; label: string; sort_order: number; content: Record<string, unknown>; is_editable: boolean; }
+interface WebsiteText {
+  id: number;
+  text_id: string;
+  page: string;
+  section: string;
+  type: string;
+  label: string;
+  sort_order: number;
+  content: Record<string, unknown>;
+  is_editable: boolean;
+}
 
 function WebsiteTextsEditor() {
   const [texts, setTexts] = useState<WebsiteText[]>([]);
@@ -892,7 +925,7 @@ function WebsiteTextsEditor() {
   const [saving, setSaving] = useState(false);
   const [saveOk, setSaveOk] = useState(false);
   const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set());
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const [scrollToField, setScrollToField] = useState<string | null>(null);
@@ -908,7 +941,7 @@ function WebsiteTextsEditor() {
     })();
   }, []);
 
-  const pages = [...new Set(texts.map(t => t.page))];
+  const pages = [...new Set(texts.map((t) => t.page))];
 
   const handleSelect = (t: WebsiteText) => {
     setSelected(t);
@@ -920,22 +953,35 @@ function WebsiteTextsEditor() {
     if (!selected) return;
     setSaving(true);
     const sb = createClient();
-    const { error } = await sb.from('website_texts').update({ content: editContent, updated_at: new Date().toISOString() }).eq('id', selected.id);
+    const { error } = await sb
+      .from('website_texts')
+      .update({ content: editContent, updated_at: new Date().toISOString() })
+      .eq('id', selected.id);
     if (error) {
       console.error('website_texts update failed:', error);
       alert('Fehler beim Speichern: ' + error.message);
     } else {
-      setTexts(prev => prev.map(t => t.id === selected.id ? { ...t, content: editContent } : t));
-      setSelected(prev => prev ? { ...prev, content: editContent } : prev);
-      setSaveOk(true); setTimeout(() => setSaveOk(false), 3000);
+      setTexts((prev) => prev.map((t) => (t.id === selected.id ? { ...t, content: editContent } : t)));
+      setSelected((prev) => (prev ? { ...prev, content: editContent } : prev));
+      setSaveOk(true);
+      setTimeout(() => setSaveOk(false), 3000);
     }
     setSaving(false);
   };
 
-  const togglePage = (p: string) => setExpandedPages(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
+  const togglePage = (p: string) =>
+    setExpandedPages((prev) => {
+      const n = new Set(prev);
+      n.has(p) ? n.delete(p) : n.add(p);
+      return n;
+    });
 
   // Search result types: section-level or individual field
-  interface SearchResult { text: WebsiteText; fieldPath?: string[]; fieldValue?: string; }
+  interface SearchResult {
+    text: WebsiteText;
+    fieldPath?: string[];
+    fieldValue?: string;
+  }
 
   const searchResults: SearchResult[] = (() => {
     const q = search.trim().toLowerCase();
@@ -944,7 +990,11 @@ function WebsiteTextsEditor() {
 
     for (const t of texts) {
       // Match section-level (label, section, page)
-      if ((t.label || '').toLowerCase().includes(q) || t.section.toLowerCase().includes(q) || t.page.toLowerCase().includes(q)) {
+      if (
+        (t.label || '').toLowerCase().includes(q) ||
+        t.section.toLowerCase().includes(q) ||
+        t.page.toLowerCase().includes(q)
+      ) {
         results.push({ text: t });
       }
       // Match individual string fields in content
@@ -965,9 +1015,9 @@ function WebsiteTextsEditor() {
 
   const handleSearchSelect = (r: SearchResult) => {
     handleSelect(r.text);
-    setExpandedPages(prev => new Set([...prev, r.text.page]));
+    setExpandedPages((prev) => new Set([...prev, r.text.page]));
     if (r.fieldPath) setScrollToField(r.fieldPath.join('.'));
-    setSearch("");
+    setSearch('');
     setSearchFocused(false);
   };
 
@@ -976,7 +1026,14 @@ function WebsiteTextsEditor() {
     if (!scrollToField) return;
     const timeout = setTimeout(() => {
       const el = document.getElementById(`field-${scrollToField}`);
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.style.outline = '2px solid rgba(255,255,255,0.3)'; el.style.borderRadius = '8px'; setTimeout(() => { el.style.outline = 'none'; }, 2000); }
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.outline = '2px solid rgba(255,255,255,0.3)';
+        el.style.borderRadius = '8px';
+        setTimeout(() => {
+          el.style.outline = 'none';
+        }, 2000);
+      }
       setScrollToField(null);
     }, 100);
     return () => clearTimeout(timeout);
@@ -998,10 +1055,10 @@ function WebsiteTextsEditor() {
     const fieldId = `field-${pathKey}`;
 
     // Detect image fields by key name or URL pattern
-    const isImageField = typeof value === 'string' && (
-      /image|img|logo|cover|banner|thumbnail|avatar|icon|src|foto|photo|bild/i.test(key) ||
-      (value.includes('supabase') && /\.(jpg|jpeg|png|gif|webp|svg)/i.test(value))
-    );
+    const isImageField =
+      typeof value === 'string' &&
+      (/image|img|logo|cover|banner|thumbnail|avatar|icon|src|foto|photo|bild/i.test(key) ||
+        (value.includes('supabase') && /\.(jpg|jpeg|png|gif|webp|svg)/i.test(value)));
 
     if (isImageField) {
       const imgUrl = value as string;
@@ -1009,8 +1066,13 @@ function WebsiteTextsEditor() {
         const sb = createClient();
         const ext = file.name.split('.').pop() ?? 'jpg';
         const fileName = `${selected?.text_id ?? 'img'}/${fullPath.join('_')}_${Date.now()}.${ext}`;
-        const { error: upErr } = await sb.storage.from('website-assets').upload(fileName, file, { contentType: file.type, upsert: true });
-        if (upErr) { console.error('Upload failed:', upErr); return; }
+        const { error: upErr } = await sb.storage
+          .from('website-assets')
+          .upload(fileName, file, { contentType: file.type, upsert: true });
+        if (upErr) {
+          console.error('Upload failed:', upErr);
+          return;
+        }
         const { data: urlData } = sb.storage.from('website-assets').getPublicUrl(fileName);
         updateField(fullPath, urlData.publicUrl);
       };
@@ -1020,18 +1082,73 @@ function WebsiteTextsEditor() {
           {imgUrl ? (
             <div style={{ position: 'relative', display: 'inline-block', marginBottom: '0.5rem' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imgUrl} alt={key} style={{ maxWidth: 260, maxHeight: 160, borderRadius: 8, display: 'block', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
-              <button type="button" onClick={() => updateField(fullPath, '')}
-                style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.75)', border: 'none', color: '#fff', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', fontSize: '0.9rem', lineHeight: '24px', textAlign: 'center' }}>×</button>
+              <img
+                src={imgUrl}
+                alt={key}
+                style={{
+                  maxWidth: 260,
+                  maxHeight: 160,
+                  borderRadius: 8,
+                  display: 'block',
+                  objectFit: 'cover',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => updateField(fullPath, '')}
+                style={{
+                  position: 'absolute',
+                  top: 6,
+                  right: 6,
+                  background: 'rgba(0,0,0,0.75)',
+                  border: 'none',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  width: 24,
+                  height: 24,
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  lineHeight: '24px',
+                  textAlign: 'center',
+                }}
+              >
+                ×
+              </button>
             </div>
           ) : null}
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <input value={imgUrl} onChange={e => updateField(fullPath, e.target.value)} placeholder="Bild-URL oder hochladen…" style={{ ...field, flex: 1 }}
-              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')} />
-            <label style={{ padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <input
+              value={imgUrl}
+              onChange={(e) => updateField(fullPath, e.target.value)}
+              placeholder="Bild-URL oder hochladen…"
+              style={{ ...field, flex: 1 }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+            />
+            <label
+              style={{
+                padding: '0.5rem 0.75rem',
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                color: 'rgba(255,255,255,0.6)',
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
               Hochladen
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ''; }} />
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImageUpload(f);
+                  e.target.value = '';
+                }}
+              />
             </label>
           </div>
         </div>
@@ -1041,21 +1158,37 @@ function WebsiteTextsEditor() {
     if (typeof value === 'string') {
       const isLong = value.length > 80 || /paragraph|text|description|content|subheadline|bio|quote/i.test(key);
       if (isLong) {
-        return <AutoResizeTextarea key={pathKey} id={fieldId} label={key} value={value} onChange={v => updateField(fullPath, v)} />;
+        return (
+          <AutoResizeTextarea
+            key={pathKey}
+            id={fieldId}
+            label={key}
+            value={value}
+            onChange={(v) => updateField(fullPath, v)}
+          />
+        );
       }
       return (
         <div key={pathKey} id={fieldId} style={{ marginBottom: '0.75rem' }}>
           <label style={lbl}>{key}</label>
-          <input value={value} onChange={e => updateField(fullPath, e.target.value)} style={field}
-            onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-            onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')} />
+          <input
+            value={value}
+            onChange={(e) => updateField(fullPath, e.target.value)}
+            style={field}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+          />
         </div>
       );
     }
     if (typeof value === 'boolean') {
       return (
-        <div key={pathKey} id={fieldId} style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <input type="checkbox" checked={value} onChange={e => updateField(fullPath, e.target.checked)} />
+        <div
+          key={pathKey}
+          id={fieldId}
+          style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+        >
+          <input type="checkbox" checked={value} onChange={(e) => updateField(fullPath, e.target.checked)} />
           <label style={{ ...lbl, margin: 0 }}>{key}</label>
         </div>
       );
@@ -1064,32 +1197,56 @@ function WebsiteTextsEditor() {
       return (
         <div key={pathKey} id={fieldId} style={{ marginBottom: '0.75rem' }}>
           <label style={lbl}>{key}</label>
-          <input type="number" value={value} onChange={e => updateField(fullPath, Number(e.target.value))} style={field}
-            onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-            onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')} />
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => updateField(fullPath, Number(e.target.value))}
+            style={field}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+          />
         </div>
       );
     }
     if (Array.isArray(value)) {
       return (
         <div key={pathKey} id={fieldId} style={{ marginBottom: '0.75rem' }}>
-          <label style={{ ...lbl, marginBottom: '0.5rem' }}>{key} ({value.length})</label>
+          <label style={{ ...lbl, marginBottom: '0.5rem' }}>
+            {key} ({value.length})
+          </label>
           <div style={{ paddingLeft: '0.75rem', borderLeft: '2px solid rgba(255,255,255,0.06)' }}>
             {value.map((item, i) => {
               if (typeof item === 'object' && item !== null) {
                 return (
-                  <div key={`${pathKey}.${i}`} style={{ marginBottom: '0.75rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)', marginBottom: '0.5rem' }}>{key}[{i}]</p>
+                  <div
+                    key={`${pathKey}.${i}`}
+                    style={{
+                      marginBottom: '0.75rem',
+                      padding: '0.75rem',
+                      background: 'rgba(255,255,255,0.02)',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)', marginBottom: '0.5rem' }}>
+                      {key}[{i}]
+                    </p>
                     {Object.entries(item).map(([k, v]) => renderField(k, v, [...fullPath, String(i)]))}
                   </div>
                 );
               }
               return (
                 <div key={`${pathKey}.${i}`} style={{ marginBottom: '0.4rem' }}>
-                  <label style={lbl}>{key}[{i}]</label>
-                  <input value={String(item)} onChange={e => updateField([...fullPath, String(i)], e.target.value)} style={field}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-                    onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')} />
+                  <label style={lbl}>
+                    {key}[{i}]
+                  </label>
+                  <input
+                    value={String(item)}
+                    onChange={(e) => updateField([...fullPath, String(i)], e.target.value)}
+                    style={field}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+                  />
                 </div>
               );
             })}
@@ -1124,10 +1281,25 @@ function WebsiteTextsEditor() {
     return 'Sonstiges';
   };
 
-  const categoryOrder = ['Headlines', 'Texte', 'Buttons', 'Badges', 'Features', 'Bilder', 'Elemente', 'Links', 'Sonstiges'];
+  const categoryOrder = [
+    'Headlines',
+    'Texte',
+    'Buttons',
+    'Badges',
+    'Features',
+    'Bilder',
+    'Elemente',
+    'Links',
+    'Sonstiges',
+  ];
 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  const toggleGroup = (g: string) => setCollapsedGroups(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
+  const toggleGroup = (g: string) =>
+    setCollapsedGroups((prev) => {
+      const n = new Set(prev);
+      n.has(g) ? n.delete(g) : n.add(g);
+      return n;
+    });
 
   const renderGroupedContent = (content: Record<string, unknown>) => {
     const groups = new Map<string, [string, unknown][]>();
@@ -1137,31 +1309,58 @@ function WebsiteTextsEditor() {
       groups.get(cat)!.push([k, v]);
     }
 
-    const sorted = categoryOrder.filter(c => groups.has(c));
+    const sorted = categoryOrder.filter((c) => groups.has(c));
 
-    return sorted.map(cat => {
+    return sorted.map((cat) => {
       const fields = groups.get(cat)!;
       const isCollapsed = collapsedGroups.has(cat);
       return (
         <div key={cat} style={{ marginBottom: '0.5rem' }}>
-          <button type="button" onClick={() => toggleGroup(cat)}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.5rem 0', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer', marginBottom: isCollapsed ? 0 : '0.75rem' }}>
-            <ChevronDown size={12} style={{ color: 'rgba(255,255,255,0.3)', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }} />
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{cat}</span>
+          <button
+            type="button"
+            onClick={() => toggleGroup(cat)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              width: '100%',
+              padding: '0.5rem 0',
+              background: 'none',
+              border: 'none',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              cursor: 'pointer',
+              marginBottom: isCollapsed ? 0 : '0.75rem',
+            }}
+          >
+            <ChevronDown
+              size={12}
+              style={{
+                color: 'rgba(255,255,255,0.3)',
+                transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.15s',
+              }}
+            />
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.5)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              {cat}
+            </span>
             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)' }}>({fields.length})</span>
           </button>
-          {!isCollapsed && (
-            <div style={{ paddingLeft: '0.25rem' }}>
-              {fields.map(([k, v]) => renderField(k, v))}
-            </div>
-          )}
+          {!isCollapsed && <div style={{ paddingLeft: '0.25rem' }}>{fields.map(([k, v]) => renderField(k, v))}</div>}
         </div>
       );
     });
   };
 
   const updateField = (path: string[], value: unknown) => {
-    setEditContent(prev => {
+    setEditContent((prev) => {
       const clone = structuredClone(prev);
       let obj: Record<string, unknown> = clone;
       for (let i = 0; i < path.length - 1; i++) {
@@ -1178,98 +1377,291 @@ function WebsiteTextsEditor() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: 400 }}>
       {/* Search bar */}
       <div ref={searchRef} style={{ position: 'relative', maxWidth: 480 }}>
-        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }} />
-        <input value={search}
-          onChange={e => setSearch(e.target.value)}
+        <Search
+          size={14}
+          style={{
+            position: 'absolute',
+            left: 10,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'rgba(255,255,255,0.25)',
+            pointerEvents: 'none',
+          }}
+        />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           onFocus={() => setSearchFocused(true)}
           placeholder="Texte durchsuchen…"
-          style={{ ...field, paddingLeft: '2rem' }} />
+          style={{ ...field, paddingLeft: '2rem' }}
+        />
         {searchFocused && search.trim() && (
-          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, maxHeight: 260, overflowY: 'auto', zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              marginTop: 4,
+              background: '#1a1a1a',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8,
+              maxHeight: 260,
+              overflowY: 'auto',
+              zIndex: 50,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            }}
+          >
             {searchResults.length === 0 ? (
-              <p style={{ padding: '0.75rem 1rem', color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem' }}>Keine Ergebnisse</p>
-            ) : searchResults.map((r, i) => {
-              const t = r.text;
-              const displayName = r.fieldPath ? r.fieldPath[r.fieldPath.length - 1] : (t.label || t.section);
-              const breadcrumb = r.fieldPath
-                ? `${t.page} / ${t.label || t.section} / ${r.fieldPath.join(' / ')}`
-                : `${t.page} / ${t.label || t.section}`;
-              const preview = r.fieldValue && r.fieldValue.length > 60 ? r.fieldValue.slice(0, 60) + '…' : r.fieldValue;
+              <p style={{ padding: '0.75rem 1rem', color: 'rgba(255,255,255,0.25)', fontSize: '0.8rem' }}>
+                Keine Ergebnisse
+              </p>
+            ) : (
+              searchResults.map((r, i) => {
+                const t = r.text;
+                const displayName = r.fieldPath ? r.fieldPath[r.fieldPath.length - 1] : t.label || t.section;
+                const breadcrumb = r.fieldPath
+                  ? `${t.page} / ${t.label || t.section} / ${r.fieldPath.join(' / ')}`
+                  : `${t.page} / ${t.label || t.section}`;
+                const preview =
+                  r.fieldValue && r.fieldValue.length > 60 ? r.fieldValue.slice(0, 60) + '…' : r.fieldValue;
 
-              return (
-                <button key={`${t.id}-${i}`} onClick={() => handleSearchSelect(r)}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', width: '100%', padding: '0.6rem 1rem', background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                  <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {preview || (t.label || t.section)}
-                  </p>
-                  <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {breadcrumb}
-                  </p>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={`${t.id}-${i}`}
+                    onClick={() => handleSearchSelect(r)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.2rem',
+                      width: '100%',
+                      padding: '0.6rem 1rem',
+                      background: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                  >
+                    <p
+                      style={{
+                        fontSize: '0.85rem',
+                        color: 'rgba(255,255,255,0.85)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {preview || t.label || t.section}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: '0.68rem',
+                        color: 'rgba(255,255,255,0.25)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {breadcrumb}
+                    </p>
+                  </button>
+                );
+              })
+            )}
           </div>
         )}
       </div>
 
       <div style={{ display: 'flex', gap: '1.5rem', flex: 1 }}>
-      {/* File tree */}
-      <div style={{ width: 240, flexShrink: 0, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '0.75rem 0.5rem', overflowY: 'auto' }}>
-        <p style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem', fontWeight: 600, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.35rem' }}>Seiten</p>
-        {pages.map(page => (
-          <div key={page}>
-            <button onClick={() => togglePage(page)}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', padding: '0.4rem 0.6rem', background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', borderRadius: 6, transition: 'background 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-              <ChevronDown size={11} style={{ color: 'rgba(255,255,255,0.3)', transform: expandedPages.has(page) ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.15s', flexShrink: 0 }} />
-              {expandedPages.has(page)
-                ? <FolderOpen size={14} style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
-                : <Folder size={14} style={{ color: 'rgba(255,255,255,0.35)', flexShrink: 0 }} />}
-              <span style={{ textTransform: 'capitalize' }}>{page}</span>
-            </button>
-            {expandedPages.has(page) && (
-              <div style={{ position: 'relative', marginLeft: '0.65rem', paddingLeft: '0.75rem', borderLeft: '1px solid rgba(255,255,255,0.06)' }}>
-                {texts.filter(t => t.page === page).map(t => (
-                  <button key={t.id} onClick={() => handleSelect(t)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%', textAlign: 'left', padding: '0.35rem 0.5rem', background: selected?.id === t.id ? 'rgba(255,255,255,0.08)' : 'none', border: 'none', color: selected?.id === t.id ? '#fff' : 'rgba(255,255,255,0.45)', fontSize: '0.78rem', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s' }}
-                    onMouseEnter={e => { if (selected?.id !== t.id) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-                    onMouseLeave={e => { if (selected?.id !== t.id) e.currentTarget.style.background = 'none'; }}>
-                    <File size={12} style={{ color: selected?.id === t.id ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)', flexShrink: 0 }} />
-                    {t.label || t.section}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Editor */}
-      <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '1.5rem', overflowY: 'auto' }}>
-        {selected ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <div>
-                <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: '#fff' }}>{selected.label || selected.section}</h3>
-                <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.15rem' }}>{selected.page} / {selected.section} — {selected.type}</p>
-              </div>
-              <button onClick={handleSave} disabled={saving}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', borderRadius: 8, border: saveOk ? '1px solid rgba(74,222,128,0.4)' : 'none', background: saveOk ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.95)', color: saveOk ? '#4ade80' : '#0a0a0a', fontWeight: 600, fontSize: '0.8rem', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'all 0.2s' }}>
-                <Save size={13} />
-                {saveOk ? 'Gespeichert' : saving ? 'Speichern…' : 'Speichern'}
+        {/* File tree */}
+        <div
+          style={{
+            width: 240,
+            flexShrink: 0,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 12,
+            padding: '0.75rem 0.5rem',
+            overflowY: 'auto',
+          }}
+        >
+          <p
+            style={{
+              padding: '0.3rem 0.6rem',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.25)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginBottom: '0.35rem',
+            }}
+          >
+            Seiten
+          </p>
+          {pages.map((page) => (
+            <div key={page}>
+              <button
+                onClick={() => togglePage(page)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  width: '100%',
+                  padding: '0.4rem 0.6rem',
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontSize: '0.8rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  borderRadius: 6,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+              >
+                <ChevronDown
+                  size={11}
+                  style={{
+                    color: 'rgba(255,255,255,0.3)',
+                    transform: expandedPages.has(page) ? 'rotate(0deg)' : 'rotate(-90deg)',
+                    transition: 'transform 0.15s',
+                    flexShrink: 0,
+                  }}
+                />
+                {expandedPages.has(page) ? (
+                  <FolderOpen size={14} style={{ color: 'rgba(255,255,255,0.5)', flexShrink: 0 }} />
+                ) : (
+                  <Folder size={14} style={{ color: 'rgba(255,255,255,0.35)', flexShrink: 0 }} />
+                )}
+                <span style={{ textTransform: 'capitalize' }}>{page}</span>
               </button>
+              {expandedPages.has(page) && (
+                <div
+                  style={{
+                    position: 'relative',
+                    marginLeft: '0.65rem',
+                    paddingLeft: '0.75rem',
+                    borderLeft: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  {texts
+                    .filter((t) => t.page === page)
+                    .map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => handleSelect(t)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '0.35rem 0.5rem',
+                          background: selected?.id === t.id ? 'rgba(255,255,255,0.08)' : 'none',
+                          border: 'none',
+                          color: selected?.id === t.id ? '#fff' : 'rgba(255,255,255,0.45)',
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          borderRadius: 6,
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selected?.id !== t.id) e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selected?.id !== t.id) e.currentTarget.style.background = 'none';
+                        }}
+                      >
+                        <File
+                          size={12}
+                          style={{
+                            color: selected?.id === t.id ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)',
+                            flexShrink: 0,
+                          }}
+                        />
+                        {t.label || t.section}
+                      </button>
+                    ))}
+                </div>
+              )}
             </div>
-            {renderGroupedContent(editContent)}
-          </>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'rgba(255,255,255,0.2)', fontSize: '0.85rem' }}>
-            Wähle einen Abschnitt aus der linken Seite
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+
+        {/* Editor */}
+        <div
+          style={{
+            flex: 1,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 12,
+            padding: '1.5rem',
+            overflowY: 'auto',
+          }}
+        >
+          {selected ? (
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <div>
+                  <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: '#fff' }}>
+                    {selected.label || selected.section}
+                  </h3>
+                  <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.15rem' }}>
+                    {selected.page} / {selected.section} — {selected.type}
+                  </p>
+                </div>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.5rem 1rem',
+                    borderRadius: 8,
+                    border: saveOk ? '1px solid rgba(74,222,128,0.4)' : 'none',
+                    background: saveOk ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.95)',
+                    color: saveOk ? '#4ade80' : '#0a0a0a',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    cursor: saving ? 'default' : 'pointer',
+                    opacity: saving ? 0.7 : 1,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <Save size={13} />
+                  {saveOk ? 'Gespeichert' : saving ? 'Speichern…' : 'Speichern'}
+                </button>
+              </div>
+              {renderGroupedContent(editContent)}
+            </>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                color: 'rgba(255,255,255,0.2)',
+                fontSize: '0.85rem',
+              }}
+            >
+              Wähle einen Abschnitt aus der linken Seite
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1401,46 +1793,72 @@ function WebsitePage({ user }: { user: UserInfo | null }) {
 
       // Add new post to local state immediately
       const newPost: BlogPost = {
-        id: json.id, documentId: json.documentId, title: form.title.trim(),
-        content: form.content.trim(), tags: form.tags.join(','), author: form.author.trim(),
+        id: json.id,
+        documentId: json.documentId,
+        title: form.title.trim(),
+        content: form.content.trim(),
+        tags: form.tags.join(','),
+        author: form.author.trim(),
         imageUrl: form.imageFile ? URL.createObjectURL(form.imageFile) : null,
-        imageId: null, createdAt: new Date().toISOString(),
+        imageId: null,
+        createdAt: new Date().toISOString(),
       };
-      setPosts(prev => [newPost, ...prev]);
+      setPosts((prev) => [newPost, ...prev]);
 
-      setCreateState('success'); setCreateConfetti(true);
-      setTimeout(()=>setCreateConfetti(false), 5000);
-    } catch { setCreateState('idle'); alert('Fehler beim Erstellen des Blogposts.'); }
+      setCreateState('success');
+      setCreateConfetti(true);
+      setTimeout(() => setCreateConfetti(false), 5000);
+    } catch {
+      setCreateState('idle');
+      alert('Fehler beim Erstellen des Blogposts.');
+    }
   };
 
   const handleUpdate = async (form: BlogFormValues) => {
     if (!selectedPost) return;
 
     // Optimistic update — reflect changes immediately
-    const newImageUrl = form.imageFile ? URL.createObjectURL(form.imageFile) : form.imageRemoved ? null : selectedPost.imageUrl;
-    const updated: BlogPost = { ...selectedPost, title: form.title.trim(), content: form.content.trim(), tags: form.tags.join(','), author: form.author.trim(), imageUrl: newImageUrl };
+    const newImageUrl = form.imageFile
+      ? URL.createObjectURL(form.imageFile)
+      : form.imageRemoved
+        ? null
+        : selectedPost.imageUrl;
+    const updated: BlogPost = {
+      ...selectedPost,
+      title: form.title.trim(),
+      content: form.content.trim(),
+      tags: form.tags.join(','),
+      author: form.author.trim(),
+      imageUrl: newImageUrl,
+    };
     setSelectedPost(updated);
-    setPosts(prev => prev.map(p => p.documentId === updated.documentId ? updated : p));
+    setPosts((prev) => prev.map((p) => (p.documentId === updated.documentId ? updated : p)));
     setUpdateState('loading');
 
     try {
       const fd = new FormData();
-      fd.append('action','update'); fd.append('documentId',selectedPost.documentId);
-      fd.append('id',String(selectedPost.id)); fd.append('imageId',selectedPost.imageId??'');
-      fd.append('title',form.title.trim()); fd.append('content',form.content.trim());
-      fd.append('tags',form.tags.join(',')); fd.append('author',form.author.trim());
-      if (form.imageFile) fd.append('image',form.imageFile);
-      if (form.imageRemoved) fd.append('imageRemoved','true');
-      const res = await fetch(N8N_WEBHOOK, { method:'POST', body:fd });
+      fd.append('action', 'update');
+      fd.append('documentId', selectedPost.documentId);
+      fd.append('id', String(selectedPost.id));
+      fd.append('imageId', selectedPost.imageId ?? '');
+      fd.append('title', form.title.trim());
+      fd.append('content', form.content.trim());
+      fd.append('tags', form.tags.join(','));
+      fd.append('author', form.author.trim());
+      if (form.imageFile) fd.append('image', form.imageFile);
+      if (form.imageRemoved) fd.append('imageRemoved', 'true');
+      const res = await fetch(N8N_WEBHOOK, { method: 'POST', body: fd });
       if (!res.ok) throw new Error();
 
-      setUpdateState('success'); setUpdateConfetti(true);
-      setTimeout(()=>setUpdateConfetti(false), 5000);
+      setUpdateState('success');
+      setUpdateConfetti(true);
+      setTimeout(() => setUpdateConfetti(false), 5000);
     } catch {
       // Revert on failure
       setSelectedPost(selectedPost);
-      setPosts(prev => prev.map(p => p.documentId === selectedPost.documentId ? selectedPost : p));
-      setUpdateState('idle'); alert('Fehler beim Aktualisieren.');
+      setPosts((prev) => prev.map((p) => (p.documentId === selectedPost.documentId ? selectedPost : p)));
+      setUpdateState('idle');
+      alert('Fehler beim Aktualisieren.');
     }
   };
 
@@ -1673,14 +2091,10 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#080808', color: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a', color: '#f5f5f5' }}>
       <style>{`* { box-sizing: border-box; } @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } .lead-row:hover .row-trash { opacity: 1 !important; color: #666 !important; } .lead-row:hover .row-trash:hover { color: #f87171 !important; }`}</style>
 
-      <Sidebar active={activePage} onNav={setActivePage} user={user} onLogout={handleLogout} />
-
-      <main style={{ flex: 1, overflowY: 'auto', padding: activePage === 'business-ai' ? '0' : '2.5rem 2.75rem' }}>
-        {renderContent()}
-      </main>
+      <div style={{ padding: activePage === 'business-ai' ? '0' : '2.5rem 2.75rem' }}>{renderContent()}</div>
     </div>
   );
 }

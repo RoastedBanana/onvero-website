@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { mockLeads } from '@/lib/mock-leads';
+import type { Lead } from '@/lib/leads-client';
+import { updateLeadStatus } from '@/lib/leads-client';
+import { useRouter } from 'next/navigation';
 
 function ScoreBadge({ score }: { score: number }) {
   const isHot = score >= 75;
@@ -26,20 +28,109 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; color: string; bg: string }> = {
-    neu: { label: 'Neu', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
-    kontaktiert: { label: 'Kontaktiert', color: '#6B7AFF', bg: 'rgba(107,122,255,0.12)' },
-    qualifiziert: { label: 'Qualifiziert', color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-    verloren: { label: 'Verloren', color: 'rgba(255,255,255,0.3)', bg: 'rgba(255,255,255,0.06)' },
-  };
-  const s = map[status] ?? map.neu;
+const STATUS_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  new: { label: 'Neu', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
+  contacted: { label: 'Kontaktiert', color: '#6B7AFF', bg: 'rgba(107,122,255,0.12)' },
+  qualified: { label: 'Qualifiziert', color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
+  lost: { label: 'Verloren', color: 'rgba(255,255,255,0.3)', bg: 'rgba(255,255,255,0.06)' },
+};
+
+const STATUS_OPTIONS = [
+  { value: 'new', label: 'Neu' },
+  { value: 'contacted', label: 'Kontaktiert' },
+  { value: 'qualified', label: 'Qualifiziert' },
+  { value: 'lost', label: 'Verloren' },
+];
+
+function InlineStatusDropdown({ lead }: { lead: Lead }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const s = STATUS_MAP[lead.status] ?? STATUS_MAP.new;
+
+  async function handleChange(newStatus: string) {
+    setUpdating(true);
+    try {
+      await updateLeadStatus(lead.id, newStatus);
+      setOpen(false);
+      router.refresh();
+    } catch (e) {
+      console.error('Status update failed:', e);
+    } finally {
+      setUpdating(false);
+    }
+  }
+
   return (
-    <span
-      style={{ background: s.bg, color: s.color, borderRadius: 20, padding: '3px 10px', fontSize: 11, fontWeight: 500 }}
-    >
-      {s.label}
-    </span>
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
+        style={{
+          background: s.bg,
+          color: s.color,
+          borderRadius: 20,
+          padding: '3px 10px',
+          fontSize: 11,
+          fontWeight: 500,
+          border: 'none',
+          cursor: 'pointer',
+          transition: 'opacity 0.15s',
+          opacity: updating ? 0.5 : 1,
+        }}
+      >
+        {s.label} ▾
+      </button>
+      {open && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 30 }} onClick={() => setOpen(false)} />
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              marginTop: 4,
+              background: '#181818',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8,
+              overflow: 'hidden',
+              zIndex: 31,
+              minWidth: 130,
+            }}
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleChange(opt.value);
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '7px 12px',
+                  background: lead.status === opt.value ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  color: lead.status === opt.value ? '#fff' : 'rgba(255,255,255,0.5)',
+                  border: 'none',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                onMouseLeave={(e) => {
+                  if (lead.status !== opt.value) e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -74,15 +165,16 @@ function Avatar({ name }: { name: string }) {
 }
 
 interface LeadsTableProps {
+  leads: Lead[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
 }
 
-export default function LeadsTable({ selectedId, onSelect }: LeadsTableProps) {
+export default function LeadsTable({ leads, selectedId, onSelect }: LeadsTableProps) {
   const [sortBy, setSortBy] = useState<'score' | 'date'>('score');
 
-  const sorted = [...mockLeads].sort((a, b) =>
-    sortBy === 'score' ? b.score - a.score : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  const sorted = [...leads].sort((a, b) =>
+    sortBy === 'score' ? b.score - a.score : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   return (
@@ -122,10 +214,26 @@ export default function LeadsTable({ selectedId, onSelect }: LeadsTableProps) {
               letterSpacing: '0.08em',
               cursor: key ? 'pointer' : 'default',
               userSelect: 'none',
+              transition: 'color 0.15s',
+              borderBottom: key ? '1px solid transparent' : 'none',
+              paddingBottom: key ? 2 : 0,
+            }}
+            onMouseEnter={(e) => {
+              if (key) {
+                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.25)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (key) {
+                e.currentTarget.style.color =
+                  key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
+                e.currentTarget.style.borderBottomColor = 'transparent';
+              }
             }}
           >
             {label}
-            {key && sortBy === key ? ' \u2193' : ''}
+            {key && sortBy === key ? ' ↓' : ''}
           </div>
         ))}
       </div>
@@ -169,10 +277,10 @@ export default function LeadsTable({ selectedId, onSelect }: LeadsTableProps) {
           >
             {lead.email}
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{lead.industry?.split('/')[0] ?? '\u2014'}</div>
-          <StatusBadge status={lead.status} />
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{lead.industry?.split('/')[0] ?? '—'}</div>
+          <InlineStatusDropdown lead={lead} />
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
-            {new Date(lead.created_at).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
+            {new Date(lead.createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
           </div>
         </div>
       ))}
