@@ -28,6 +28,7 @@ export default function PageHeader({ title, badge, subtitle, showTime = true }: 
 
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+      <style>{`@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(0.85)}}@keyframes liveRing{0%{opacity:0.6;transform:scale(1)}100%{opacity:0;transform:scale(2.5)}}`}</style>
       <div
         style={{
           width: 3,
