@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki';
@@ -41,6 +41,64 @@ const S = {
   chartSub: { fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 12 } as React.CSSProperties,
 };
 
+function TooltipBox({ text, children }: { text: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      {children}
+      {show && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '120%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#1e1e1e',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 8,
+            padding: '8px 12px',
+            zIndex: 1000,
+            width: 220,
+            pointerEvents: 'none',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          }}
+        >
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>{text}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InfoIcon({ tooltip }: { tooltip: string }) {
+  return (
+    <TooltipBox text={tooltip}>
+      <div
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          border: '1px solid rgba(255,255,255,0.2)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 9,
+          color: 'rgba(255,255,255,0.3)',
+          cursor: 'help',
+          marginLeft: 5,
+          flexShrink: 0,
+        }}
+      >
+        ?
+      </div>
+    </TooltipBox>
+  );
+}
+
 export default function AnalyticsClient() {
   const [tab, setTab] = useState<Tab>('master');
   const [masterData, setMasterData] = useState<any>(null);
@@ -50,6 +108,7 @@ export default function AnalyticsClient() {
   const [activityData, setActivityData] = useState<any>(null);
   const [contentData, setContentData] = useState<any>(null);
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
+  const [pageSpeed, setPageSpeed] = useState<any>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [leadsData, setLeadsData] = useState<any>(null);
   const [leadsLoading, setLeadsLoading] = useState(false);
@@ -117,6 +176,8 @@ export default function AnalyticsClient() {
     URL.revokeObjectURL(url);
   };
 
+  const displayVal = (val: number, emptyText = '—') => (val === 0 ? emptyText : fmt(val));
+
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -148,6 +209,17 @@ export default function AnalyticsClient() {
         .catch(() => {});
     }
   }, [tab, contentData]);
+
+  useEffect(() => {
+    if (tab === 'website' && !pageSpeed) {
+      fetch('/api/analytics/pagespeed')
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d.error) setPageSpeed(d);
+        })
+        .catch(() => {});
+    }
+  }, [tab, pageSpeed]);
 
   // Auto-refresh every 2 minutes
   useEffect(() => {
@@ -613,6 +685,67 @@ export default function AnalyticsClient() {
               </div>
             ))}
           </div>
+          {(!hasPlausible || website.visitors === 0) && (
+            <div style={{ ...S.card, padding: 20, marginTop: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 10 }}>Setup-Checkliste</div>
+              {[
+                { done: true, text: 'Lead Generator aktiv', sub: `${fmt(leads.total)} Leads generiert` },
+                { done: leads.aiScored > 0, text: 'KI-Scoring eingerichtet', sub: `${leads.aiScored} Leads bewertet` },
+                {
+                  done: website.visitors > 0,
+                  text: 'Website-Analytics aktivieren',
+                  sub: website.visitors > 0 ? 'Tracking aktiv' : 'Plausible Script auf onvero.de einfuegen',
+                },
+                {
+                  done: leads.contacted > 0,
+                  text: 'Ersten Lead kontaktieren',
+                  sub: leads.contacted > 0 ? `${leads.contacted} kontaktiert` : `${leads.hot} HOT Leads warten`,
+                },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    gap: 12,
+                    padding: '8px 0',
+                    borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.04)' : '',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      background: item.done ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.06)',
+                      border: `1px solid ${item.done ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 9,
+                      color: item.done ? '#22C55E' : 'rgba(255,255,255,0.2)',
+                      marginTop: 1,
+                    }}
+                  >
+                    {item.done ? '✓' : ''}
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: item.done ? 'rgba(255,255,255,0.5)' : '#fff',
+                        textDecoration: item.done ? 'line-through' : 'none',
+                        marginBottom: 1,
+                      }}
+                    >
+                      {item.text}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{item.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1109,6 +1242,48 @@ export default function AnalyticsClient() {
       {/* WEBSITE */}
       {tab === 'website' && (
         <div>
+          {hasPlausible && website.visitors === 0 && (
+            <div
+              style={{
+                ...S.card,
+                padding: 20,
+                marginBottom: 16,
+                border: '1px solid rgba(245,158,11,0.2)',
+                background: 'rgba(245,158,11,0.04)',
+              }}
+            >
+              <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <div style={{ fontSize: 20, color: '#F59E0B', flexShrink: 0 }}>◎</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 6 }}>
+                    Plausible ist verbunden — Tracking-Script fehlt noch
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 12 }}>
+                    Dein API-Key ist aktiv. Damit Besucher-Daten erscheinen, muss das Script auf onvero.de eingebunden
+                    werden.
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-dm-mono)',
+                      fontSize: 11,
+                      background: 'rgba(0,0,0,0.4)',
+                      borderRadius: 6,
+                      padding: '10px 14px',
+                      color: '#22C55E',
+                      border: '1px solid rgba(34,197,94,0.15)',
+                      lineHeight: 1.6,
+                      wordBreak: 'break-all' as const,
+                    }}
+                  >
+                    {'<script async src="https://plausible.io/js/pa-kKZb9OGJJyFPeOOINz23w.js"></script>'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>
+                    Nach der Installation erscheinen Daten innerhalb von Minuten.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           {!hasPlausible ? (
             <div style={{ ...S.card, padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
@@ -1162,6 +1337,42 @@ export default function AnalyticsClient() {
                   </div>
                 ))}
               </div>
+              {pageSpeed && (
+                <div style={{ ...S.card, padding: 20, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <div style={S.chartTitle}>Website Performance</div>
+                    <InfoIcon tooltip="Google PageSpeed Insights analysiert Ladezeit, SEO und Nutzerfreundlichkeit. Daten werden stuendlich aktualisiert." />
+                  </div>
+                  <div style={S.chartSub}>onvero.de · Mobile</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 12 }}>
+                    {[
+                      {
+                        label: 'Performance',
+                        val: `${pageSpeed.performance}`,
+                        color:
+                          pageSpeed.performance >= 90 ? '#22C55E' : pageSpeed.performance >= 50 ? '#F59E0B' : '#FF5C2E',
+                        suffix: '/100',
+                      },
+                      {
+                        label: 'SEO Score',
+                        val: `${pageSpeed.seo}`,
+                        color: pageSpeed.seo >= 90 ? '#22C55E' : '#F59E0B',
+                        suffix: '/100',
+                      },
+                      { label: 'LCP', val: pageSpeed.lcp, color: 'rgba(255,255,255,0.7)', suffix: '' },
+                      { label: 'FCP', val: pageSpeed.fcp, color: 'rgba(255,255,255,0.7)', suffix: '' },
+                    ].map((kpi) => (
+                      <div key={kpi.label} style={S.kpiCard}>
+                        <div style={S.label}>{kpi.label}</div>
+                        <div style={{ ...S.val, color: kpi.color, fontSize: 22 }}>
+                          {kpi.val}
+                          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{kpi.suffix}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div style={{ ...S.card, padding: 20 }}>
                 <div style={S.chartTitle}>Besucher-Verlauf</div>
                 <div style={S.chartSub}>onvero.de</div>
@@ -1546,66 +1757,115 @@ export default function AnalyticsClient() {
             ))}
           </div>
           <div style={{ ...S.card, padding: 20 }}>
-            <div style={S.chartTitle}>n8n Automations-Uebersicht</div>
-            <div style={S.chartSub}>Alle Workflows</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <div style={S.chartTitle}>KI-Automatisierungen</div>
+              <InfoIcon tooltip="Diese Prozesse laufen automatisch im Hintergrund. Du musst nichts manuell tun." />
+            </div>
+            <div style={S.chartSub}>Aktive KI-Prozesse</div>
+            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                { name: 'Lead Generator', id: 'QbbshYhF1X9B31wR', desc: 'Apollo → Supabase' },
-                { name: 'KI-Scoring', id: 'BAuiSrhV0hByqFiQ', desc: 'Claude + E-Mail Draft' },
-                { name: 'Follow-up', id: 'Ouefa7el4Rl4lrPe', desc: 'Lead Outreach' },
-                { name: 'Daily Analytics', id: 'Pmwt819gnFKYa3tJ', desc: 'Statistiken 07:00' },
-                { name: 'Meeting Summary', id: 'O5Z7PK1raE21QDMD', desc: 'KI-Transkription' },
-                { name: 'Blog Generator', id: 'GoqKJqwmIQXqowc-fz2mR', desc: 'CMS Content' },
-                { name: 'Rechnungen', id: 'NH9h-npETtgCVs3nhzZ0B', desc: 'PDF + Drive' },
-                { name: 'Kontaktformular', id: 'd2q9RgfkMGxxxQ0B', desc: 'Website → Supabase' },
-                { name: 'Error Handler', id: 'jBopjm1K3zCt3gbf', desc: 'Monitoring' },
-              ].map((wf) => (
-                <a
-                  key={wf.id}
-                  href={`https://n8n.srv1223027.hstgr.cloud/workflow/${wf.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    ...S.card,
-                    padding: '14px 16px',
-                    textDecoration: 'none',
-                    display: 'block',
-                    transition: 'border-color 0.15s, background 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
-                    e.currentTarget.style.background = '#181818';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)';
-                    e.currentTarget.style.background = '#111';
-                  }}
-                >
+                {
+                  name: 'Lead-Generierung',
+                  desc: 'Findet taeglich neue Kunden via Apollo-Datenbank.',
+                  status: 'active',
+                  metric: `${masterData?.leads?.total || 0} Leads`,
+                },
+                {
+                  name: 'KI-Bewertung und Scoring',
+                  desc: 'Bewertet jeden Lead mit Claude AI — analysiert Website, Branche, Technologien.',
+                  status: 'active',
+                  metric: `${activityData?.typeCounts?.ai_analysis || 0} Analysen`,
+                },
+                {
+                  name: 'E-Mail Draft Erstellung',
+                  desc: 'Schreibt personalisierte Erstkontakt-E-Mails basierend auf Website-Analyse.',
+                  status: 'active',
+                  metric: `${masterData?.leads?.withEmail || 0} Drafts`,
+                },
+                {
+                  name: 'Follow-up Erinnerungen',
+                  desc: 'Erstellt Aufgaben fuer HOT Leads die laenger als 2 Tage nicht kontaktiert wurden.',
+                  status: 'active',
+                  metric: `${activityData?.typeCounts?.task || 0} Aufgaben`,
+                },
+                {
+                  name: 'Website-Analytics',
+                  desc: 'Trackt Besucher auf onvero.de — DSGVO-konform, ohne Cookies.',
+                  status: masterData?.hasPlausible ? 'active' : 'pending',
+                  metric: masterData?.hasPlausible ? 'Aktiv' : 'Script einfuegen',
+                },
+                {
+                  name: 'E-Mail-Versand',
+                  desc: 'Automatischer Versand der KI-Drafts nach Freigabe.',
+                  status: 'planned',
+                  metric: 'In Planung',
+                },
+              ].map((item, i) => {
+                const color =
+                  item.status === 'active'
+                    ? '#22C55E'
+                    : item.status === 'pending'
+                      ? '#F59E0B'
+                      : 'rgba(255,255,255,0.2)';
+                const label = item.status === 'active' ? 'Aktiv' : item.status === 'pending' ? 'Einrichten' : 'Geplant';
+                return (
                   <div
+                    key={i}
                     style={{
                       display: 'flex',
-                      justifyContent: 'space-between',
                       alignItems: 'flex-start',
-                      marginBottom: 5,
+                      gap: 14,
+                      padding: '12px 14px',
+                      borderRadius: 8,
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.05)',
                     }}
                   >
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{wf.name}</div>
                     <div
                       style={{
-                        fontSize: 9,
-                        padding: '2px 6px',
-                        background: 'rgba(34,197,94,0.1)',
-                        color: '#22C55E',
-                        borderRadius: 4,
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: color,
                         flexShrink: 0,
+                        marginTop: 4,
                       }}
-                    >
-                      Aktiv
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          marginBottom: 3,
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{item.name}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
+                          <div
+                            style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-mono)' }}
+                          >
+                            {item.metric}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 9,
+                              padding: '2px 7px',
+                              borderRadius: 4,
+                              background: `${color}18`,
+                              color,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {label}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>{item.desc}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{wf.desc}</div>
-                </a>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
