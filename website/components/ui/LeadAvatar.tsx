@@ -37,11 +37,24 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
   const px = SIZES[size];
   const domain = website ? getDomain(website) : null;
 
-  const [imgState, setImgState] = useState<'iconhorse' | 'google' | 'initials'>(domain ? 'iconhorse' : 'initials');
+  const sources = domain
+    ? [
+        `https://cdn.brandfetch.io/${domain}/w/128/h/128?c=1idTb0Ld_5jkL_5OCVJ`,
+        `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+      ]
+    : [];
 
-  const initials = getInitials(companyName || '?');
+  const [imgIndex, setImgIndex] = useState(0);
 
-  if (imgState === 'initials' || !domain) {
+  const handleError = () => {
+    if (imgIndex < sources.length - 1) {
+      setImgIndex((prev) => prev + 1);
+    } else {
+      setImgIndex(sources.length);
+    }
+  };
+
+  if (!domain || imgIndex >= sources.length) {
     const s = getScoreStyle(score);
     return (
       <div
@@ -61,34 +74,29 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
           fontFamily: 'var(--font-dm-mono)',
         }}
       >
-        {initials}
+        {getInitials(companyName || '?')}
       </div>
     );
   }
 
-  const src =
-    imgState === 'iconhorse'
-      ? `https://icon.horse/icon/${domain}`
-      : `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-
   return (
     <img
-      src={src}
+      src={sources[imgIndex]}
       alt={companyName}
       width={px}
       height={px}
-      onError={() => {
-        if (imgState === 'iconhorse') setImgState('google');
-        else setImgState('initials');
-      }}
+      referrerPolicy="no-referrer"
+      crossOrigin="anonymous"
+      onError={handleError}
       style={{
         width: px,
         height: px,
         borderRadius: '50%',
-        objectFit: 'cover',
+        objectFit: 'contain',
         flexShrink: 0,
-        background: 'rgba(255,255,255,0.05)',
+        background: 'rgba(30,41,59,0.8)',
         border: '1px solid rgba(255,255,255,0.1)',
+        padding: 2,
       }}
     />
   );
