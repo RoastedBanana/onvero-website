@@ -1,89 +1,98 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-type AnalyticsData = {
-  leads: {
-    total: number;
-    hot: number;
-    warm: number;
-    cold: number;
-    contacted: number;
-    qualified: number;
-    withEmail: number;
-    avgScore: number;
-    pipelineMin: number;
-    pipelineMax: number;
-    conversionRate: number;
-    hotRate: number;
-  };
-  weeklyLeads: { week: string; total: number; hot: number; warm: number; cold: number }[];
-  industries: { name: string; count: number; avgScore: number }[];
-  topTech: { name: string; count: number }[];
-  topCities: { name: string; count: number }[];
-  website: {
-    visitors: number;
-    pageviews: number;
-    bounceRate: number;
-    visitDuration: number;
-    visits: number;
-    timeseries: { date: string; visitors: number }[];
-    sources: { source: string; visitors: number }[];
-    pages: { page: string; visitors: number; pageviews: number; bounce_rate: number }[];
-  };
-  hasPlausible: boolean;
-};
+type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki';
 
-const PERIODS = [
-  { label: '7 Tage', value: '7d' },
-  { label: '30 Tage', value: '30d' },
-  { label: '3 Monate', value: '3mo' },
-  { label: '12 Monate', value: '12mo' },
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'master', label: 'Master' },
+  { id: 'leads', label: 'Lead Intelligence' },
+  { id: 'website', label: 'Website & Traffic' },
+  { id: 'pipeline', label: 'Sales Pipeline' },
+  { id: 'ki', label: 'KI-Performance' },
 ];
 
+const S = {
+  card: { background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 } as React.CSSProperties,
+  kpiCard: {
+    background: '#111',
+    border: '1px solid rgba(255,255,255,0.07)',
+    borderRadius: 10,
+    padding: '14px 16px',
+  } as React.CSSProperties,
+  label: {
+    fontSize: 9,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.09em',
+    color: 'rgba(255,255,255,0.35)',
+    fontWeight: 600,
+    marginBottom: 6,
+  } as React.CSSProperties,
+  val: {
+    fontSize: 26,
+    fontWeight: 700,
+    fontFamily: 'var(--font-dm-mono)',
+    lineHeight: 1,
+    marginBottom: 3,
+  } as React.CSSProperties,
+  sub: { fontSize: 11, color: 'rgba(255,255,255,0.3)' } as React.CSSProperties,
+  chartTitle: { fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 2 } as React.CSSProperties,
+  chartSub: { fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 12 } as React.CSSProperties,
+};
+
 export default function AnalyticsClient() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [tab, setTab] = useState<Tab>('master');
+  const [masterData, setMasterData] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [period, setPeriod] = useState('30d');
   const [loading, setLoading] = useState(true);
 
+  const fmt = (n: number) => Math.round(n).toLocaleString('de-DE');
+  const fmtEur = (n: number) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+  const fmtDur = (s: number) => `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
+
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/analytics?period=${period}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setData(d);
+    Promise.all([
+      fetch('/api/analytics/master').then((r) => r.json()),
+      fetch(`/api/analytics?period=${period}`).then((r) => r.json()),
+    ])
+      .then(([master, analytics]) => {
+        setMasterData(master);
+        setAnalyticsData(analytics);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [period]);
 
-  const fmt = (n: number) => n.toLocaleString('de-DE');
-  const fmtEur = (n: number) =>
-    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
-  const fmtDuration = (s: number) => `${Math.floor(s / 60)}m ${s % 60}s`;
-  const scoreColor = (score: number) => (score >= 75 ? '#FF5C2E' : score >= 45 ? '#F59E0B' : '#6B7AFF');
-
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
       <div
-        style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px' }}
+        style={{
+          background: '#1a1a1a',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 8,
+          padding: '8px 12px',
+        }}
       >
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>{label}</div>
         {payload.map((p: any, i: number) => (
           <div
             key={i}
-            style={{ fontSize: 13, fontWeight: 600, color: p.color || '#fff', fontFamily: 'var(--font-dm-mono)' }}
+            style={{ fontSize: 13, fontWeight: 700, color: p.color || '#fff', fontFamily: 'var(--font-dm-mono)' }}
           >
-            {fmt(p.value)} {p.name}
+            {fmt(p.value)}{' '}
+            <span style={{ fontSize: 10, fontWeight: 400, color: 'rgba(255,255,255,0.4)' }}>{p.name}</span>
           </div>
         ))}
       </div>
     );
   };
 
-  if (loading)
+  if (loading || !masterData)
     return (
       <div
         style={{
@@ -91,537 +100,731 @@ export default function AnalyticsClient() {
           alignItems: 'center',
           justifyContent: 'center',
           height: 400,
-          color: 'rgba(255,255,255,0.3)',
+          color: 'rgba(255,255,255,0.2)',
           fontSize: 13,
+          fontFamily: 'var(--font-dm-mono)',
         }}
       >
-        Lade Analytics...
+        Lade Daten...
       </div>
     );
-  if (!data) return null;
+
+  const { leads, website, systemStatus, hasPlausible } = masterData;
+  const weekly = analyticsData?.weeklyLeads || [];
 
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 1400 }}>
+    <div style={{ padding: '24px 32px', maxWidth: 1440 }}>
       {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 600, color: '#fff', margin: 0 }}>Analytics</h1>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: '4px 0 0' }}>Performance & Wachstum</p>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>Analytics</h1>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: '4px 0 0' }}>Onvero BusinessOS</p>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 4,
-            background: '#111',
-            borderRadius: 8,
-            padding: 4,
-            border: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {(tab === 'leads' || tab === 'website' || tab === 'pipeline') && (
+            <div
               style={{
-                padding: '6px 14px',
-                borderRadius: 6,
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 12,
-                fontWeight: 500,
-                background: period === p.value ? '#fff' : 'transparent',
-                color: period === p.value ? '#000' : 'rgba(255,255,255,0.4)',
-                transition: 'all 0.15s',
+                display: 'flex',
+                gap: 2,
+                background: '#111',
+                borderRadius: 8,
+                padding: 3,
+                border: '1px solid rgba(255,255,255,0.08)',
               }}
             >
-              {p.label}
-            </button>
-          ))}
+              {['7d', '30d', '3mo', '12mo'].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: 6,
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: period === p ? '#fff' : 'transparent',
+                    color: period === p ? '#000' : 'rgba(255,255,255,0.35)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 11,
+              color: 'rgba(255,255,255,0.4)',
+              padding: '6px 12px',
+              background: '#111',
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E' }} />
+            Live
+          </div>
         </div>
       </div>
 
-      {/* KPI CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          {
-            label: 'Leads gesamt',
-            value: fmt(data.leads.total),
-            sub: `${data.leads.withEmail} mit E-Mail Draft`,
-            color: '#fff',
-          },
-          { label: 'HOT Leads', value: fmt(data.leads.hot), sub: `${data.leads.hotRate}% HOT-Rate`, color: '#FF5C2E' },
-          {
-            label: 'Ø KI-Score',
-            value: String(data.leads.avgScore),
-            sub: `${data.leads.warm} WARM · ${data.leads.cold} COLD`,
-            color: '#6B7AFF',
-          },
-          {
-            label: 'Pipeline-Wert',
-            value: fmtEur(data.leads.pipelineMin),
-            sub: `bis ${fmtEur(data.leads.pipelineMax)}`,
-            color: '#22C55E',
-          },
-          {
-            label: 'Kontaktiert',
-            value: fmt(data.leads.contacted),
-            sub: `${data.leads.qualified} qualifiziert · ${data.leads.conversionRate}% Conv.`,
-            color: '#F59E0B',
-          },
-        ].map((card) => (
-          <div
-            key={card.label}
+      {/* TABS */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 2,
+          marginBottom: 24,
+          background: '#111',
+          borderRadius: 10,
+          padding: 4,
+          border: '1px solid rgba(255,255,255,0.07)',
+          width: 'fit-content',
+        }}
+      >
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
             style={{
-              background: '#111',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 10,
-              padding: '14px 16px',
+              padding: '7px 18px',
+              borderRadius: 8,
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 600,
+              background: tab === t.id ? 'rgba(255,255,255,0.1)' : 'transparent',
+              color: tab === t.id ? '#fff' : 'rgba(255,255,255,0.35)',
+              transition: 'all 0.15s',
             }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'rgba(255,255,255,0.35)',
-                marginBottom: 8,
-                fontWeight: 500,
-              }}
-            >
-              {card.label}
-            </div>
-            <div
-              style={{
-                fontSize: 26,
-                fontWeight: 700,
-                color: card.color,
-                fontFamily: 'var(--font-dm-mono)',
-                lineHeight: 1,
-                marginBottom: 4,
-              }}
-            >
-              {card.value}
-            </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{card.sub}</div>
-          </div>
+            {t.label}
+          </button>
         ))}
       </div>
 
-      {/* WEBSITE KPIs */}
-      {data.hasPlausible && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
-          {[
-            {
-              label: 'Besucher',
-              value: fmt(data.website.visitors),
-              sub: `${fmt(data.website.visits)} Besuche`,
-              color: '#6B7AFF',
-            },
-            {
-              label: 'Seitenaufrufe',
-              value: fmt(data.website.pageviews),
-              sub: `Ø ${(data.website.visitors > 0 ? data.website.pageviews / data.website.visitors : 0).toFixed(1)} pro Besuch`,
-              color: '#6B7AFF',
-            },
-            {
-              label: 'Bounce Rate',
-              value: `${data.website.bounceRate}%`,
-              sub: data.website.bounceRate < 50 ? 'Gut' : data.website.bounceRate < 70 ? 'Mittel' : 'Hoch',
-              color: data.website.bounceRate < 50 ? '#22C55E' : data.website.bounceRate < 70 ? '#F59E0B' : '#FF5C2E',
-            },
-            {
-              label: 'Ø Besuchsdauer',
-              value: fmtDuration(data.website.visitDuration),
-              sub: 'pro Sitzung',
-              color: '#fff',
-            },
-            {
-              label: 'Quelle #1',
-              value: data.website.sources[0]?.source || '—',
-              sub: `${fmt(data.website.sources[0]?.visitors || 0)} Besucher`,
-              color: '#fff',
-            },
-          ].map((card) => (
+      {/* MASTER */}
+      {tab === 'master' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
             <div
-              key={card.label}
+              onClick={() => setTab('leads')}
               style={{
-                background: '#111',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 10,
-                padding: '14px 16px',
+                ...S.card,
+                padding: '18px 20px',
+                cursor: 'pointer',
+                borderColor: 'rgba(255,92,46,0.2)',
+                transition: 'border-color 0.15s',
               }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(255,92,46,0.4)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,92,46,0.2)')}
             >
-              <div
-                style={{
-                  fontSize: 10,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'rgba(255,255,255,0.35)',
-                  marginBottom: 8,
-                  fontWeight: 500,
-                }}
-              >
-                {card.label}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div>
+                  <div style={S.label}>Lead Intelligence</div>
+                  <div style={{ ...S.val, fontSize: 28, color: '#FF5C2E' }}>{leads.total}</div>
+                  <div style={S.sub}>Leads total · {leads.last7d} diese Woche</div>
+                </div>
+                <div style={{ fontSize: 20, opacity: 0.3 }}>→</div>
               </div>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: card.color,
-                  fontFamily: 'var(--font-dm-mono)',
-                  lineHeight: 1,
-                  marginBottom: 4,
-                }}
-              >
-                {card.value}
+              <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', gap: 2, marginBottom: 8 }}>
+                <div
+                  style={{
+                    width: `${leads.total > 0 ? Math.round((leads.hot / leads.total) * 100) : 0}%`,
+                    background: '#FF5C2E',
+                    borderRadius: 3,
+                  }}
+                />
+                <div
+                  style={{
+                    width: `${leads.total > 0 ? Math.round((leads.warm / leads.total) * 100) : 0}%`,
+                    background: '#F59E0B',
+                    borderRadius: 3,
+                  }}
+                />
+                <div style={{ flex: 1, background: '#6B7AFF', borderRadius: 3 }} />
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{card.sub}</div>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <span style={{ fontSize: 10, color: '#FF5C2E' }}>{leads.hot} HOT</span>
+                <span style={{ fontSize: 10, color: '#F59E0B' }}>{leads.warm} WARM</span>
+                <span style={{ fontSize: 10, color: '#6B7AFF' }}>{leads.cold} COLD</span>
+              </div>
             </div>
-          ))}
+            <div
+              onClick={() => setTab('website')}
+              style={{ ...S.card, padding: '18px 20px', cursor: 'pointer', transition: 'border-color 0.15s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+            >
+              <div style={S.label}>Website</div>
+              <div
+                style={{ ...S.val, fontSize: 24, color: website.visitors > 0 ? '#6B7AFF' : 'rgba(255,255,255,0.2)' }}
+              >
+                {website.visitors > 0 ? fmt(website.visitors) : '—'}
+              </div>
+              <div style={S.sub}>{website.visitors > 0 ? 'Unique Visitors' : 'Script ausstehend'}</div>
+              {!hasPlausible && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 9,
+                    padding: '3px 6px',
+                    background: 'rgba(245,158,11,0.1)',
+                    color: '#F59E0B',
+                    borderRadius: 4,
+                    display: 'inline-block',
+                  }}
+                >
+                  Setup
+                </div>
+              )}
+            </div>
+            <div
+              onClick={() => setTab('pipeline')}
+              style={{ ...S.card, padding: '18px 20px', cursor: 'pointer', transition: 'border-color 0.15s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(34,197,94,0.3)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+            >
+              <div style={S.label}>Pipeline</div>
+              <div style={{ ...S.val, fontSize: 22, color: '#22C55E' }}>{fmtEur(leads.pipelineMin)}</div>
+              <div style={S.sub}>bis {fmtEur(leads.pipelineMax)}</div>
+              <div style={{ marginTop: 8, fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>
+                {leads.contacted} kontaktiert
+              </div>
+            </div>
+            <div
+              onClick={() => setTab('ki')}
+              style={{ ...S.card, padding: '18px 20px', cursor: 'pointer', transition: 'border-color 0.15s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+            >
+              <div style={S.label}>KI-Scoring</div>
+              <div style={{ ...S.val, fontSize: 24, color: '#8B5CF6' }}>{leads.avgScore}</div>
+              <div style={S.sub}>Ø Score · {leads.aiScored} bewertet</div>
+            </div>
+            <div style={{ ...S.card, padding: '18px 20px', opacity: 0.4, position: 'relative' }}>
+              <div style={S.label}>Clients</div>
+              <div style={{ ...S.val, fontSize: 22, color: 'rgba(255,255,255,0.2)' }}>—</div>
+              <div style={S.sub}>Multi-Tenant</div>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  fontSize: 9,
+                  padding: '2px 6px',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: 'rgba(255,255,255,0.3)',
+                  borderRadius: 4,
+                }}
+              >
+                Bald
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px 280px', gap: 12, marginBottom: 12 }}>
+            <div style={{ ...S.card, padding: 20 }}>
+              <div style={S.chartTitle}>Lead-Entwicklung</div>
+              <div style={S.chartSub}>HOT / WARM / COLD pro Woche</div>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={weekly} barSize={18} barGap={1}>
+                  <XAxis
+                    dataKey="week"
+                    tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={24}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
+                  <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
+                  <Bar dataKey="cold" stackId="a" fill="#6B7AFF" radius={[3, 3, 0, 0]} name="COLD" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ ...S.card, padding: 20 }}>
+              <div style={S.chartTitle}>System-Status</div>
+              <div style={S.chartSub}>BusinessOS Komponenten</div>
+              {systemStatus.map((s: any, i: number) => {
+                const color =
+                  s.status === 'active'
+                    ? '#22C55E'
+                    : s.status === 'pending'
+                      ? '#F59E0B'
+                      : s.status === 'planned'
+                        ? 'rgba(255,255,255,0.2)'
+                        : '#FF5C2E';
+                const label =
+                  s.status === 'active'
+                    ? 'Aktiv'
+                    : s.status === 'pending'
+                      ? 'Pending'
+                      : s.status === 'planned'
+                        ? 'Geplant'
+                        : 'Setup';
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '7px 0',
+                      borderBottom: i < systemStatus.length - 1 ? '1px solid rgba(255,255,255,0.05)' : '',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginBottom: 1 }}>{s.name}</div>
+                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>{s.detail}</div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        padding: '2px 7px',
+                        borderRadius: 4,
+                        background: `${color}18`,
+                        color,
+                        fontWeight: 600,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ ...S.card, padding: 20 }}>
+              <div style={S.chartTitle}>Aktivitaet</div>
+              <div style={S.chartSub}>Letzte Ereignisse</div>
+              {[
+                { label: `${leads.aiScored} Leads KI-bewertet`, time: 'Heute', color: '#22C55E' },
+                { label: `${leads.withEmail} E-Mail Drafts`, time: 'Heute', color: '#8B5CF6' },
+                { label: `${leads.last7d} Leads generiert`, time: 'Diese Woche', color: '#F59E0B' },
+                { label: `${leads.total} Leads gesamt`, time: 'Gesamt', color: '#6B7AFF' },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '7px 0',
+                    borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.05)' : '',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: item.color,
+                      flexShrink: 0,
+                      marginTop: 4,
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{item.label}</div>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', marginTop: 1 }}>{item.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+            {[
+              { label: 'Leads gesamt', val: fmt(leads.total), sub: `+${leads.last24h} letzte 24h`, color: '#fff' },
+              {
+                label: 'HOT-Rate',
+                val: `${leads.total > 0 ? Math.round((leads.hot / leads.total) * 100) : 0}%`,
+                sub: `${leads.hot} HOT`,
+                color: '#FF5C2E',
+              },
+              { label: 'Ø KI-Score', val: String(leads.avgScore), sub: `${leads.aiScored} bewertet`, color: '#8B5CF6' },
+              {
+                label: 'Pipeline',
+                val: fmtEur(leads.pipelineMin),
+                sub: `bis ${fmtEur(leads.pipelineMax)}`,
+                color: '#22C55E',
+              },
+              {
+                label: 'Website',
+                val: website.visitors > 0 ? fmt(website.visitors) : '—',
+                sub: website.visitors > 0 ? 'Visitors' : 'Script fehlt',
+                color: '#6B7AFF',
+              },
+            ].map((kpi) => (
+              <div key={kpi.label} style={S.kpiCard}>
+                <div style={S.label}>{kpi.label}</div>
+                <div style={{ ...S.val, color: kpi.color, fontSize: 22 }}>{kpi.val}</div>
+                <div style={S.sub}>{kpi.sub}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* CHARTS ROW */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Lead-Entwicklung</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>
-            HOT / WARM / COLD pro Woche
+      {/* LEADS */}
+      {tab === 'leads' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            {[
+              { label: 'Leads gesamt', val: fmt(leads.total), sub: `${leads.aiScored} KI-bewertet`, color: '#fff' },
+              {
+                label: 'HOT Leads',
+                val: fmt(leads.hot),
+                sub: `${leads.total > 0 ? Math.round((leads.hot / leads.total) * 100) : 0}% HOT-Rate`,
+                color: '#FF5C2E',
+              },
+              { label: 'WARM Leads', val: fmt(leads.warm), sub: 'Score 45-74', color: '#F59E0B' },
+              { label: 'Ø Score', val: String(leads.avgScore), sub: `${leads.cold} COLD`, color: '#8B5CF6' },
+            ].map((kpi) => (
+              <div key={kpi.label} style={S.kpiCard}>
+                <div style={S.label}>{kpi.label}</div>
+                <div style={{ ...S.val, color: kpi.color }}>{kpi.val}</div>
+                <div style={S.sub}>{kpi.sub}</div>
+              </div>
+            ))}
           </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={data.weeklyLeads} barSize={16} barGap={2}>
-              <XAxis
-                dataKey="week"
-                tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
-              <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
-              <Bar dataKey="cold" stackId="a" fill="#6B7AFF" radius={[4, 4, 0, 0]} name="COLD" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ ...S.card, padding: 20 }}>
+            <div style={S.chartTitle}>Lead-Entwicklung</div>
+            <div style={S.chartSub}>HOT / WARM / COLD pro Woche</div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={weekly} barSize={22}>
+                <XAxis
+                  dataKey="week"
+                  tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={24}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
+                <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
+                <Bar dataKey="cold" stackId="a" fill="#6B7AFF" radius={[4, 4, 0, 0]} name="COLD" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
+      )}
 
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: 20 }}>
-          {data.hasPlausible && data.website.timeseries.length > 0 ? (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Website-Besucher</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>onvero.de</div>
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={data.website.timeseries}>
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 9 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(d) => d.slice(5)}
-                    interval={Math.floor(data.website.timeseries.length / 6)}
-                  />
-                  <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="visitors"
-                    stroke="#6B7AFF"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Besucher"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </>
+      {/* WEBSITE */}
+      {tab === 'website' && (
+        <div>
+          {!hasPlausible ? (
+            <div style={{ ...S.card, padding: 32, textAlign: 'center' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
+                Plausible Analytics einrichten
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.4)',
+                  maxWidth: 400,
+                  margin: '0 auto',
+                  lineHeight: 1.7,
+                }}
+              >
+                API Key ist konfiguriert. Script muss noch auf onvero.de installiert werden.
+              </div>
+            </div>
           ) : (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Score-Verteilung</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>Lead-Qualität</div>
-              <div style={{ display: 'flex', gap: 12, height: 180, alignItems: 'flex-end', padding: '0 12px' }}>
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
                 {[
                   {
-                    label: 'HOT',
-                    count: data.leads.hot,
-                    color: '#FF5C2E',
-                    pct: data.leads.total > 0 ? data.leads.hot / data.leads.total : 0,
-                  },
-                  {
-                    label: 'WARM',
-                    count: data.leads.warm,
-                    color: '#F59E0B',
-                    pct: data.leads.total > 0 ? data.leads.warm / data.leads.total : 0,
-                  },
-                  {
-                    label: 'COLD',
-                    count: data.leads.cold,
+                    label: 'Visitors',
+                    val: website.visitors > 0 ? fmt(website.visitors) : '—',
+                    sub: '30 Tage',
                     color: '#6B7AFF',
-                    pct: data.leads.total > 0 ? data.leads.cold / data.leads.total : 0,
                   },
-                ].map((b) => (
-                  <div
-                    key={b.label}
-                    style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
-                  >
-                    <span style={{ fontSize: 16, fontWeight: 700, color: b.color, fontFamily: 'var(--font-dm-mono)' }}>
-                      {b.count}
-                    </span>
-                    <div
-                      style={{
-                        width: '100%',
-                        background: 'rgba(255,255,255,0.05)',
-                        borderRadius: 6,
-                        height: 120,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'flex-end',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: '100%',
-                          height: `${Math.max(Math.round(b.pct * 100), 4)}%`,
-                          background: b.color,
-                          borderRadius: 6,
-                          transition: 'height 0.8s ease',
-                        }}
-                      />
-                    </div>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{b.label}</span>
+                  {
+                    label: 'Seitenaufrufe',
+                    val: website.pageviews > 0 ? fmt(website.pageviews) : '—',
+                    sub: '30 Tage',
+                    color: '#6B7AFF',
+                  },
+                  {
+                    label: 'Bounce Rate',
+                    val: website.bounceRate > 0 ? `${website.bounceRate}%` : '—',
+                    sub: website.bounceRate < 50 ? 'Gut' : 'Mittel',
+                    color: website.bounceRate > 0 && website.bounceRate < 50 ? '#22C55E' : '#F59E0B',
+                  },
+                  {
+                    label: 'Besuchsdauer',
+                    val: website.visitDuration > 0 ? fmtDur(website.visitDuration) : '—',
+                    sub: 'pro Sitzung',
+                    color: '#fff',
+                  },
+                ].map((kpi) => (
+                  <div key={kpi.label} style={S.kpiCard}>
+                    <div style={S.label}>{kpi.label}</div>
+                    <div style={{ ...S.val, color: kpi.color }}>{kpi.val}</div>
+                    <div style={S.sub}>{kpi.sub}</div>
                   </div>
                 ))}
               </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* DETAIL TABLES */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
-        {/* Branchen */}
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Top Branchen</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>nach Lead-Anzahl</div>
-          {data.industries.slice(0, 7).map((ind, i) => (
-            <div key={ind.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <span
-                style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-dm-mono)', width: 14 }}
-              >
-                {i + 1}
-              </span>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{ind.name}</span>
-                  <span style={{ fontSize: 11, color: scoreColor(ind.avgScore), fontFamily: 'var(--font-dm-mono)' }}>
-                    {ind.avgScore}
-                  </span>
-                </div>
-                <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+              <div style={{ ...S.card, padding: 20 }}>
+                <div style={S.chartTitle}>Besucher-Verlauf</div>
+                <div style={S.chartSub}>onvero.de</div>
+                {website.timeseries?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <LineChart data={website.timeseries}>
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 9 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(d: string) => d.slice(5)}
+                      />
+                      <YAxis
+                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={24}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line
+                        type="monotone"
+                        dataKey="visitors"
+                        stroke="#6B7AFF"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Besucher"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
                   <div
                     style={{
+                      height: 180,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'rgba(255,255,255,0.2)',
+                      fontSize: 12,
+                    }}
+                  >
+                    Warte auf Besucher-Daten
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PIPELINE */}
+      {tab === 'pipeline' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            {[
+              {
+                label: 'Pipeline min.',
+                val: fmtEur(leads.pipelineMin),
+                sub: `${leads.hot} HOT x 5.000`,
+                color: '#22C55E',
+              },
+              {
+                label: 'Pipeline max.',
+                val: fmtEur(leads.pipelineMax),
+                sub: `${leads.hot} HOT x 20.000`,
+                color: '#22C55E',
+              },
+              {
+                label: 'Kontaktiert',
+                val: fmt(leads.contacted),
+                sub: `${leads.total > 0 ? Math.round((leads.contacted / leads.total) * 100) : 0}%`,
+                color: '#F59E0B',
+              },
+              { label: 'Qualifiziert', val: fmt(leads.qualified), sub: 'Abschluss-bereit', color: '#FF5C2E' },
+            ].map((kpi) => (
+              <div key={kpi.label} style={S.kpiCard}>
+                <div style={S.label}>{kpi.label}</div>
+                <div style={{ ...S.val, color: kpi.color }}>{kpi.val}</div>
+                <div style={S.sub}>{kpi.sub}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ ...S.card, padding: 20 }}>
+            <div style={S.chartTitle}>Sales Funnel</div>
+            <div style={S.chartSub}>Lead → Qualifiziert</div>
+            {[
+              { label: 'Generiert', count: leads.total, pct: 100, color: '#6B7AFF' },
+              {
+                label: 'KI-bewertet',
+                count: leads.aiScored,
+                pct: leads.total > 0 ? Math.round((leads.aiScored / leads.total) * 100) : 0,
+                color: '#8B5CF6',
+              },
+              {
+                label: 'E-Mail bereit',
+                count: leads.withEmail,
+                pct: leads.total > 0 ? Math.round((leads.withEmail / leads.total) * 100) : 0,
+                color: '#F59E0B',
+              },
+              {
+                label: 'Kontaktiert',
+                count: leads.contacted,
+                pct: leads.total > 0 ? Math.round((leads.contacted / leads.total) * 100) : 0,
+                color: '#FF5C2E',
+              },
+              {
+                label: 'Qualifiziert',
+                count: leads.qualified,
+                pct: leads.total > 0 ? Math.round((leads.qualified / leads.total) * 100) : 0,
+                color: '#22C55E',
+              },
+            ].map((step, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '8px 0',
+                  borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.05)' : '',
+                }}
+              >
+                <div style={{ width: 90, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>{step.label}</div>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 6,
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: 3,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${step.pct}%`,
                       height: '100%',
-                      borderRadius: 2,
-                      background: '#6B7AFF',
-                      width: `${(ind.count / (data.industries[0]?.count || 1)) * 100}%`,
+                      background: step.color,
+                      borderRadius: 3,
+                      transition: 'width 0.8s ease',
                     }}
                   />
                 </div>
+                <div
+                  style={{
+                    width: 30,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-dm-mono)',
+                    color: step.color,
+                    textAlign: 'right',
+                  }}
+                >
+                  {step.count}
+                </div>
+                <div style={{ width: 36, fontSize: 10, color: 'rgba(255,255,255,0.25)', textAlign: 'right' }}>
+                  {step.pct}%
+                </div>
               </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  color: 'rgba(255,255,255,0.35)',
-                  fontFamily: 'var(--font-dm-mono)',
-                  width: 20,
-                  textAlign: 'right',
-                }}
-              >
-                {ind.count}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+      )}
 
-        {/* Sources or Tech */}
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: 20 }}>
-          {data.hasPlausible && data.website.sources.length > 0 ? (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Traffic-Quellen</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>
-                Woher kommen Besucher
+      {/* KI */}
+      {tab === 'ki' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+            {[
+              {
+                label: 'Scoring Coverage',
+                val: `${leads.total > 0 ? Math.round((leads.aiScored / leads.total) * 100) : 0}%`,
+                sub: `${leads.aiScored} von ${leads.total}`,
+                color: '#22C55E',
+              },
+              { label: 'Ø Score', val: String(leads.avgScore), sub: 'Ziel: >= 60', color: '#8B5CF6' },
+              {
+                label: 'Draft Coverage',
+                val: `${leads.total > 0 ? Math.round((leads.withEmail / leads.total) * 100) : 0}%`,
+                sub: `${leads.withEmail} Drafts`,
+                color: '#F59E0B',
+              },
+              {
+                label: 'HOT-Rate',
+                val: `${leads.total > 0 ? Math.round((leads.hot / leads.total) * 100) : 0}%`,
+                sub: `${leads.hot} HOT`,
+                color: '#FF5C2E',
+              },
+            ].map((kpi) => (
+              <div key={kpi.label} style={S.kpiCard}>
+                <div style={S.label}>{kpi.label}</div>
+                <div style={{ ...S.val, color: kpi.color }}>{kpi.val}</div>
+                <div style={S.sub}>{kpi.sub}</div>
               </div>
-              {data.website.sources.slice(0, 7).map((src: any, i: number) => (
-                <div key={src.source} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: 'rgba(255,255,255,0.2)',
-                      fontFamily: 'var(--font-dm-mono)',
-                      width: 14,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{src.source || 'Direct'}</span>
-                      <span style={{ fontSize: 11, color: '#6B7AFF', fontFamily: 'var(--font-dm-mono)' }}>
-                        {fmt(src.visitors)}
-                      </span>
-                    </div>
-                    <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          borderRadius: 2,
-                          background: '#6B7AFF',
-                          width: `${(src.visitors / (data.website.sources[0]?.visitors || 1)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Top Technologien</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>in Lead-Firmen</div>
-              {data.topTech.slice(0, 7).map((tech, i) => (
-                <div key={tech.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: 'rgba(255,255,255,0.2)',
-                      fontFamily: 'var(--font-dm-mono)',
-                      width: 14,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{tech.name}</span>
-                      <span style={{ fontSize: 11, color: '#22C55E', fontFamily: 'var(--font-dm-mono)' }}>
-                        {tech.count}
-                      </span>
-                    </div>
-                    <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          borderRadius: 2,
-                          background: '#22C55E',
-                          width: `${(tech.count / (data.topTech[0]?.count || 1)) * 100}%`,
-                        }}
-                      />
+            ))}
+          </div>
+          <div style={{ ...S.card, padding: 20 }}>
+            <div style={S.chartTitle}>KI-Workflow Status</div>
+            <div style={S.chartSub}>n8n Automations-Pipeline</div>
+            {systemStatus.map((s: any, i: number) => {
+              const color =
+                s.status === 'active'
+                  ? '#22C55E'
+                  : s.status === 'pending'
+                    ? '#F59E0B'
+                    : s.status === 'planned'
+                      ? 'rgba(255,255,255,0.2)'
+                      : '#FF5C2E';
+              const label =
+                s.status === 'active'
+                  ? 'Aktiv'
+                  : s.status === 'pending'
+                    ? 'Pending'
+                    : s.status === 'planned'
+                      ? 'Geplant'
+                      : 'Setup';
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '10px 0',
+                    borderBottom: i < systemStatus.length - 1 ? '1px solid rgba(255,255,255,0.05)' : '',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 1 }}>{s.name}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{s.detail}</div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-
-        {/* Pages or Cities */}
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: 20 }}>
-          {data.hasPlausible && data.website.pages.length > 0 ? (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Top-Seiten</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>onvero.de</div>
-              {data.website.pages.slice(0, 7).map((pg: any, i: number) => (
-                <div key={pg.page} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <span
+                  <div
                     style={{
                       fontSize: 10,
-                      color: 'rgba(255,255,255,0.2)',
-                      fontFamily: 'var(--font-dm-mono)',
-                      width: 14,
+                      padding: '3px 8px',
+                      borderRadius: 4,
+                      background: `${color}18`,
+                      color,
+                      fontWeight: 600,
                     }}
                   >
-                    {i + 1}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-dm-mono)' }}>
-                        {pg.page.length > 22 ? pg.page.slice(0, 22) + '...' : pg.page}
-                      </span>
-                      <span style={{ fontSize: 11, color: '#6B7AFF', fontFamily: 'var(--font-dm-mono)' }}>
-                        {fmt(pg.visitors)}
-                      </span>
-                    </div>
-                    <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          borderRadius: 2,
-                          background: '#6B7AFF',
-                          width: `${(pg.visitors / (data.website.pages[0]?.visitors || 1)) * 100}%`,
-                        }}
-                      />
-                    </div>
+                    {label}
                   </div>
                 </div>
-              ))}
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Top Städte</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 16 }}>Lead-Herkunft</div>
-              {data.topCities.map((city, i) => (
-                <div key={city.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      color: 'rgba(255,255,255,0.2)',
-                      fontFamily: 'var(--font-dm-mono)',
-                      width: 14,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{city.name}</span>
-                      <span style={{ fontSize: 11, color: '#F59E0B', fontFamily: 'var(--font-dm-mono)' }}>
-                        {city.count}
-                      </span>
-                    </div>
-                    <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
-                      <div
-                        style={{
-                          height: '100%',
-                          borderRadius: 2,
-                          background: '#F59E0B',
-                          width: `${(city.count / (data.topCities[0]?.count || 1)) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Plausible hint */}
-      {!data.hasPlausible && (
-        <div
-          style={{
-            background: 'rgba(107,122,255,0.06)',
-            border: '1px solid rgba(107,122,255,0.15)',
-            borderRadius: 10,
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#fff' }}>Website-Analytics einrichten</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-              Plausible API Key als PLAUSIBLE_API_KEY Umgebungsvariable setzen.
-            </div>
+              );
+            })}
           </div>
         </div>
       )}
