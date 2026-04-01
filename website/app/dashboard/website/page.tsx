@@ -19,6 +19,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Confetti } from '@/components/ui/confetti';
 import { GlassBlogCard } from '@/components/ui/glass-blog-card';
 import UniqueLoading from '@/components/ui/grid-loading';
+import PageHeader from '@/components/ui/PageHeader';
 
 function createClient() {
   return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
@@ -1548,8 +1549,7 @@ export default function WebsitePage() {
         <Confetti active={updateConfetti} />
 
         <div style={{ marginBottom: '2rem' }}>
-          <h1 style={{ fontWeight: 600, fontSize: '1.35rem', color: '#fff', marginBottom: '0.2rem' }}>Website</h1>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>Blogposts und Website-Texte verwalten</p>
+          <PageHeader title="Website" subtitle="Blogposts und Website-Texte verwalten" />
         </div>
 
         {/* Mode tabs */}
@@ -1610,7 +1610,9 @@ export default function WebsitePage() {
               maxWidth: 720,
             }}
           >
-            <h2 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '1.5rem', color: 'rgba(255,255,255,0.85)' }}>
+            <h2
+              style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '1.5rem', color: 'rgba(255,255,255,0.85)' }}
+            >
               Neuen Blogpost erstellen
             </h2>
             <BlogForm initial={emptyForm} onSubmit={handleCreate} submitLabel="Erstellen" submitState={createState} />

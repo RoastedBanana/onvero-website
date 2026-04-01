@@ -12,6 +12,7 @@ import LeadsTable from '@/components/leads/LeadsTable';
 import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
 import LeadGeneratorModal from '@/components/leads/LeadGeneratorModal';
 import { GeneratorStatusBanner } from '@/components/leads/GeneratorStatusBanner';
+import PageHeader from '@/components/ui/PageHeader';
 
 type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost';
 
@@ -108,10 +109,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           className="sticky top-0 z-20 -mx-6 flex items-center justify-between border-b border-white/5 px-6 py-4"
           style={{ background: '#0a0a0a' }}
         >
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.03em', color: '#fff' }}>Leads</h1>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>Lead Intelligence Dashboard</p>
-          </div>
+          <PageHeader title="Leads" badge={{ label: 'Live', variant: 'live' }} subtitle="Lead Intelligence Dashboard" />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div
               style={{

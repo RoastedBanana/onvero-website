@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Mic, Upload, X, FileAudio, Loader2, ChevronRight, ChevronDown,
-  Sparkles, ListChecks,
-} from 'lucide-react';
+import { Mic, Upload, X, FileAudio, Loader2, ChevronRight, ChevronDown, Sparkles, ListChecks } from 'lucide-react';
 import { tokens } from '@/lib/design-tokens';
+import PageHeader from '@/components/ui/PageHeader';
 import { useTenant } from '@/hooks/useTenant';
 import Markdown from 'react-markdown';
 
@@ -26,15 +24,27 @@ type RecordingState = 'idle' | 'recording' | 'processing' | 'done';
 
 const ACCEPTED_TYPES = '.mp3,.mp4,.m4a,.webm,.wav,.ogg';
 const ACCEPTED_MIME = [
-  'audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/webm',
-  'audio/wav', 'audio/ogg', 'video/mp4', 'video/webm',
+  'audio/mpeg',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/webm',
+  'audio/wav',
+  'audio/ogg',
+  'video/mp4',
+  'video/webm',
 ];
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('de-DE', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  }) + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return (
+    d.toLocaleDateString('de-DE', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }) +
+    ', ' +
+    d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  );
 }
 
 function truncate(text: string, max: number): string {
@@ -45,15 +55,17 @@ function truncate(text: string, max: number): string {
 
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{
-      background: tokens.bg.surface,
-      border: `1px solid ${tokens.bg.border}`,
-      borderRadius: tokens.radius.lg,
-      padding: '2rem',
-      flex: 1,
-      minWidth: 0,
-      ...style,
-    }}>
+    <div
+      style={{
+        background: tokens.bg.surface,
+        border: `1px solid ${tokens.bg.border}`,
+        borderRadius: tokens.radius.lg,
+        padding: '2rem',
+        flex: 1,
+        minWidth: 0,
+        ...style,
+      }}
+    >
       {children}
     </div>
   );
@@ -76,9 +88,15 @@ function CollapsibleSection({
       <button
         onClick={() => setOpen(!open)}
         style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          width: '100%', padding: '0.85rem 0', background: 'none', border: 'none',
-          cursor: 'pointer', color: tokens.text.primary,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '0.85rem 0',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: tokens.text.primary,
         }}
       >
         <span style={{ fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -100,13 +118,7 @@ function CollapsibleSection({
 
 // ── Participant Tag Input ────────────────────────────────────────────────────
 
-function ParticipantInput({
-  participants,
-  onChange,
-}: {
-  participants: string[];
-  onChange: (p: string[]) => void;
-}) {
+function ParticipantInput({ participants, onChange }: { participants: string[]; onChange: (p: string[]) => void }) {
   const [input, setInput] = useState('');
 
   const add = () => {
@@ -117,10 +129,17 @@ function ParticipantInput({
 
   return (
     <div>
-      <label style={{
-        display: 'block', fontSize: '0.72rem', fontWeight: 500, color: tokens.text.muted,
-        textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem',
-      }}>
+      <label
+        style={{
+          display: 'block',
+          fontSize: '0.72rem',
+          fontWeight: 500,
+          color: tokens.text.muted,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          marginBottom: '0.4rem',
+        }}
+      >
         Teilnehmer
       </label>
       {participants.length > 0 && (
@@ -129,9 +148,14 @@ function ParticipantInput({
             <span
               key={p}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                background: 'rgba(255,255,255,0.08)', borderRadius: 6,
-                padding: '0.25rem 0.6rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                background: 'rgba(255,255,255,0.08)',
+                borderRadius: 6,
+                padding: '0.25rem 0.6rem',
+                fontSize: '0.78rem',
+                color: 'rgba(255,255,255,0.8)',
               }}
             >
               {p}
@@ -139,8 +163,13 @@ function ParticipantInput({
                 type="button"
                 onClick={() => onChange(participants.filter((x) => x !== p))}
                 style={{
-                  background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
-                  cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1, padding: 0,
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  lineHeight: 1,
+                  padding: 0,
                 }}
               >
                 ×
@@ -154,21 +183,34 @@ function ParticipantInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') { e.preventDefault(); add(); }
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              add();
+            }
           }}
           placeholder="E-Mail oder Name hinzufügen…"
           style={{
-            flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 8, color: '#fff', fontSize: '0.85rem', padding: '0.55rem 0.75rem', outline: 'none',
+            flex: 1,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 8,
+            color: '#fff',
+            fontSize: '0.85rem',
+            padding: '0.55rem 0.75rem',
+            outline: 'none',
           }}
         />
         <button
           type="button"
           onClick={add}
           style={{
-            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
-            color: 'rgba(255,255,255,0.7)', borderRadius: 8, padding: '0 0.9rem',
-            cursor: 'pointer', fontSize: '0.85rem',
+            background: 'rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'rgba(255,255,255,0.7)',
+            borderRadius: 8,
+            padding: '0 0.9rem',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
           }}
         >
           +
@@ -239,15 +281,15 @@ function MeetingResultPopup({
 
       const text = await res.text();
       let json: Record<string, unknown> = {};
-      try { json = JSON.parse(text); } catch { /* plain text */ }
+      try {
+        json = JSON.parse(text);
+      } catch {
+        /* plain text */
+      }
 
       if (json.success && json.id) {
         // Webhook saved to Supabase — fetch the row
-        const { data } = await supabase
-          .from('meeting_summaries')
-          .select('*')
-          .eq('id', json.id)
-          .single();
+        const { data } = await supabase.from('meeting_summaries').select('*').eq('id', json.id).single();
 
         if (data) {
           if (data.summary) setSummary(data.summary);
@@ -293,26 +335,42 @@ function MeetingResultPopup({
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 1000, backdropFilter: 'blur(6px)',
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        backdropFilter: 'blur(6px)',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: tokens.bg.raised, border: `1px solid ${tokens.bg.borderStrong}`,
-          borderRadius: tokens.radius.xl, width: '100%', maxWidth: 520,
-          maxHeight: '90vh', overflow: 'auto', padding: 0,
+          background: tokens.bg.raised,
+          border: `1px solid ${tokens.bg.borderStrong}`,
+          borderRadius: tokens.radius.xl,
+          width: '100%',
+          maxWidth: 520,
+          maxHeight: '90vh',
+          overflow: 'auto',
+          padding: 0,
           animation: 'fadeSlideIn .25s ease',
-          display: 'flex', flexDirection: 'column',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {/* ── Header ── */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '1.25rem 1.5rem', borderBottom: `1px solid ${tokens.bg.border}`,
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '1.25rem 1.5rem',
+            borderBottom: `1px solid ${tokens.bg.border}`,
+          }}
+        >
           <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: tokens.text.primary, margin: 0 }}>
             Meeting bearbeiten
           </h3>
@@ -326,17 +384,17 @@ function MeetingResultPopup({
 
         {/* ── Content ── */}
         <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', flex: 1 }}>
-
           {/* ── Action Buttons ── */}
-          <div style={{
-            display: 'flex', flexDirection: 'column',
-            gap: '0.6rem', marginBottom: '1.5rem',
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.6rem',
+              marginBottom: '1.5rem',
+            }}
+          >
             {/* Zusammenfassen with hover submenu */}
-            <div
-              ref={summaryBtnRef}
-              style={{ position: 'relative' }}
-            >
+            <div ref={summaryBtnRef} style={{ position: 'relative' }}>
               <button
                 onClick={(e) => {
                   if (!loadingAction) {
@@ -345,19 +403,27 @@ function MeetingResultPopup({
                 }}
                 disabled={!!loadingAction}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-                  padding: '0.85rem 1rem', borderRadius: 10, width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.6rem',
+                  padding: '0.85rem 1rem',
+                  borderRadius: 10,
+                  width: '100%',
                   border: `1px solid ${summary ? 'rgba(255,255,255,0.2)' : tokens.bg.border}`,
                   background: summary ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
                   color: summary ? tokens.text.primary : tokens.text.secondary,
-                  fontSize: '0.9rem', fontWeight: 600, cursor: loadingAction ? 'wait' : 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: loadingAction ? 'wait' : 'pointer',
                   transition: 'all 0.15s',
                 }}
               >
-                {loadingAction === 'summarize'
-                  ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-                  : <Sparkles size={16} style={{ flexShrink: 0 }} />
-                }
+                {loadingAction === 'summarize' ? (
+                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+                ) : (
+                  <Sparkles size={16} style={{ flexShrink: 0 }} />
+                )}
                 Zusammenfassen
               </button>
 
@@ -373,18 +439,26 @@ function MeetingResultPopup({
                     position: 'fixed',
                     left: summaryMenuPos.x + 8,
                     top: summaryMenuPos.y - 10,
-                    width: 170, background: '#1a1a1a',
+                    width: 170,
+                    background: '#1a1a1a',
                     border: `1px solid ${tokens.bg.borderStrong}`,
-                    borderRadius: 10, padding: '0.35rem',
+                    borderRadius: 10,
+                    padding: '0.35rem',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                     zIndex: 9999,
                   }}
                 >
-                  <p style={{
-                    fontSize: '0.65rem', fontWeight: 600, color: tokens.text.muted,
-                    textTransform: 'uppercase', letterSpacing: '0.06em',
-                    padding: '0.4rem 0.6rem 0.25rem', margin: 0,
-                  }}>
+                  <p
+                    style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 600,
+                      color: tokens.text.muted,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      padding: '0.4rem 0.6rem 0.25rem',
+                      margin: 0,
+                    }}
+                  >
                     Meeting-Typ
                   </p>
                   {SUMMARY_TYPES.filter((t) => t.id !== 'custom').map((t) => (
@@ -392,11 +466,17 @@ function MeetingResultPopup({
                       key={t.id}
                       onClick={() => callWebhook('summarize', t.id)}
                       style={{
-                        display: 'block', width: '100%', textAlign: 'left',
-                        padding: '0.45rem 0.6rem', borderRadius: 6,
-                        background: 'none', border: 'none',
-                        color: tokens.text.secondary, fontSize: '0.82rem',
-                        cursor: 'pointer', transition: 'all 0.1s',
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '0.45rem 0.6rem',
+                        borderRadius: 6,
+                        background: 'none',
+                        border: 'none',
+                        color: tokens.text.secondary,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.1s',
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
@@ -411,27 +491,36 @@ function MeetingResultPopup({
                     </button>
                   ))}
                   {/* Custom input */}
-                  <div style={{
-                    borderTop: `1px solid ${tokens.bg.border}`,
-                    marginTop: '0.25rem', paddingTop: '0.35rem',
-                  }}>
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      const input = e.currentTarget.querySelector('input') as HTMLInputElement;
-                      const val = input?.value.trim();
-                      if (val) callWebhook('summarize', val);
-                    }}>
+                  <div
+                    style={{
+                      borderTop: `1px solid ${tokens.bg.border}`,
+                      marginTop: '0.25rem',
+                      paddingTop: '0.35rem',
+                    }}
+                  >
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const input = e.currentTarget.querySelector('input') as HTMLInputElement;
+                        const val = input?.value.trim();
+                        if (val) callWebhook('summarize', val);
+                      }}
+                    >
                       <input
                         placeholder="Custom Prompt…"
                         onMouseLeave={(e) => e.stopPropagation()}
                         style={{
-                          width: '100%', background: 'rgba(255,255,255,0.04)',
-                          border: `1px solid ${tokens.bg.border}`, borderRadius: 6,
-                          color: '#fff', fontSize: '0.78rem', padding: '0.4rem 0.5rem',
+                          width: '100%',
+                          background: 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${tokens.bg.border}`,
+                          borderRadius: 6,
+                          color: '#fff',
+                          fontSize: '0.78rem',
+                          padding: '0.4rem 0.5rem',
                           outline: 'none',
                         }}
-                        onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
-                        onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)')}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
                         onKeyDown={(e) => e.stopPropagation()}
                       />
                     </form>
@@ -445,29 +534,43 @@ function MeetingResultPopup({
               onClick={() => callWebhook('todos')}
               disabled={!!loadingAction}
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-                padding: '0.85rem 1rem', borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.6rem',
+                padding: '0.85rem 1rem',
+                borderRadius: 10,
                 border: `1px solid ${todos ? 'rgba(255,255,255,0.2)' : tokens.bg.border}`,
                 background: todos ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
                 color: todos ? tokens.text.primary : tokens.text.secondary,
-                fontSize: '0.9rem', fontWeight: 600, cursor: loadingAction ? 'wait' : 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: loadingAction ? 'wait' : 'pointer',
                 transition: 'all 0.15s',
               }}
             >
-              {loadingAction === 'todos'
-                ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-                : <ListChecks size={16} style={{ flexShrink: 0 }} />
-              }
+              {loadingAction === 'todos' ? (
+                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+              ) : (
+                <ListChecks size={16} style={{ flexShrink: 0 }} />
+              )}
               To-Dos erstellen
             </button>
           </div>
 
           {/* ── Title ── */}
           <div style={{ marginBottom: '1.25rem' }}>
-            <label style={{
-              display: 'block', fontSize: '0.72rem', fontWeight: 500, color: tokens.text.muted,
-              textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem',
-            }}>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '0.72rem',
+                fontWeight: 500,
+                color: tokens.text.muted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                marginBottom: '0.4rem',
+              }}
+            >
               Titel
             </label>
             <input
@@ -475,10 +578,15 @@ function MeetingResultPopup({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="z.B. Sprint Planning Q2"
               style={{
-                width: '100%', background: 'rgba(255,255,255,0.04)',
-                border: `1px solid ${tokens.bg.border}`, borderRadius: 8,
-                color: '#fff', fontSize: '0.9rem', fontWeight: 500,
-                padding: '0.65rem 0.75rem', outline: 'none',
+                width: '100%',
+                background: 'rgba(255,255,255,0.04)',
+                border: `1px solid ${tokens.bg.border}`,
+                borderRadius: 8,
+                color: '#fff',
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                padding: '0.65rem 0.75rem',
+                outline: 'none',
               }}
             />
           </div>
@@ -486,12 +594,18 @@ function MeetingResultPopup({
           {/* ── AI Summary (collapsible) ── */}
           {summary && (
             <CollapsibleSection title="KI-Zusammenfassung" defaultOpen={true}>
-              <div className="meeting-md" style={{
-                fontSize: '0.88rem', color: tokens.text.primary,
-                lineHeight: 1.65,
-                background: 'rgba(255,255,255,0.03)', borderRadius: 8,
-                padding: '0.85rem', border: `1px solid ${tokens.bg.border}`,
-              }}>
+              <div
+                className="meeting-md"
+                style={{
+                  fontSize: '0.88rem',
+                  color: tokens.text.primary,
+                  lineHeight: 1.65,
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: 8,
+                  padding: '0.85rem',
+                  border: `1px solid ${tokens.bg.border}`,
+                }}
+              >
                 <Markdown>{summary}</Markdown>
               </div>
             </CollapsibleSection>
@@ -500,12 +614,18 @@ function MeetingResultPopup({
           {/* ── Todos (collapsible) ── */}
           {todos && (
             <CollapsibleSection title="To-Dos" defaultOpen={true}>
-              <div className="meeting-md" style={{
-                fontSize: '0.88rem', color: tokens.text.primary,
-                lineHeight: 1.65,
-                background: 'rgba(255,255,255,0.03)', borderRadius: 8,
-                padding: '0.85rem', border: `1px solid ${tokens.bg.border}`,
-              }}>
+              <div
+                className="meeting-md"
+                style={{
+                  fontSize: '0.88rem',
+                  color: tokens.text.primary,
+                  lineHeight: 1.65,
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: 8,
+                  padding: '0.85rem',
+                  border: `1px solid ${tokens.bg.border}`,
+                }}
+              >
                 <Markdown>{todos}</Markdown>
               </div>
             </CollapsibleSection>
@@ -513,13 +633,20 @@ function MeetingResultPopup({
 
           {/* ── Transcript (collapsible) ── */}
           <CollapsibleSection title="Transkript" defaultOpen={true}>
-            <div style={{
-              fontSize: '0.85rem', color: tokens.text.secondary,
-              lineHeight: 1.65, whiteSpace: 'pre-wrap',
-              background: 'rgba(255,255,255,0.02)', borderRadius: 8,
-              padding: '0.85rem', border: `1px solid ${tokens.bg.border}`,
-              maxHeight: 300, overflowY: 'auto',
-            }}>
+            <div
+              style={{
+                fontSize: '0.85rem',
+                color: tokens.text.secondary,
+                lineHeight: 1.65,
+                whiteSpace: 'pre-wrap',
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: 8,
+                padding: '0.85rem',
+                border: `1px solid ${tokens.bg.border}`,
+                maxHeight: 300,
+                overflowY: 'auto',
+              }}
+            >
               {transcript}
             </div>
           </CollapsibleSection>
@@ -531,19 +658,29 @@ function MeetingResultPopup({
         </div>
 
         {/* ── Save Button ── */}
-        <div style={{
-          padding: '1rem 1.5rem', borderTop: `1px solid ${tokens.bg.border}`,
-        }}>
+        <div
+          style={{
+            padding: '1rem 1.5rem',
+            borderTop: `1px solid ${tokens.bg.border}`,
+          }}
+        >
           <button
             onClick={handleSave}
             disabled={saving}
             style={{
-              width: '100%', padding: '0.7rem',
+              width: '100%',
+              padding: '0.7rem',
               background: saving ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.92)',
-              color: '#0a0a0a', border: 'none', borderRadius: 8,
-              fontWeight: 600, fontSize: '0.88rem',
+              color: '#0a0a0a',
+              border: 'none',
+              borderRadius: 8,
+              fontWeight: 600,
+              fontSize: '0.88rem',
               cursor: saving ? 'wait' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
               transition: 'opacity 0.15s',
             }}
           >
@@ -629,7 +766,9 @@ export function MeetingsPage() {
     setPendingTranscript(null);
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setRecordError(`Mikrofon-API nicht verfügbar. Secure context: ${window.isSecureContext}, Protocol: ${location.protocol}`);
+      setRecordError(
+        `Mikrofon-API nicht verfügbar. Secure context: ${window.isSecureContext}, Protocol: ${location.protocol}`
+      );
       return;
     }
 
@@ -650,7 +789,10 @@ export function MeetingsPage() {
 
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
         setRecordState('processing');
         try {
@@ -724,16 +866,12 @@ export function MeetingsPage() {
 
   return (
     <div style={{ animation: 'fadeSlideIn .35s ease' }}>
-      <h1 style={{ fontSize: '1.55rem', fontWeight: 600, marginBottom: '0.25rem', color: tokens.text.primary }}>
-        Meetings
-      </h1>
-      <p style={{ color: tokens.text.secondary, fontSize: '0.9rem', marginBottom: '2rem' }}>
-        Nimm Meetings auf oder lade Audiodateien hoch – KI erstellt Zusammenfassungen automatisch.
-      </p>
+      <div style={{ marginBottom: '2rem' }}>
+        <PageHeader title="Meetings" subtitle="Meetings aufnehmen & KI-Zusammenfassungen" />
+      </div>
 
       {/* ── Action Cards ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '1.25rem', marginBottom: '2.5rem' }}>
-
         {/* Card 1 – Record */}
         <Card>
           <h2 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '1.25rem', color: tokens.text.primary }}>
@@ -743,43 +881,67 @@ export function MeetingsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {recordState === 'recording' && (
-                <div style={{
-                  position: 'absolute', width: 110, height: 110, borderRadius: '50%',
-                  border: '2px solid rgba(239,68,68,0.4)',
-                  animation: 'glowRing 2s ease-in-out infinite',
-                }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: 110,
+                    height: 110,
+                    borderRadius: '50%',
+                    border: '2px solid rgba(239,68,68,0.4)',
+                    animation: 'glowRing 2s ease-in-out infinite',
+                  }}
+                />
               )}
               {recordState === 'recording' && (
-                <div style={{
-                  position: 'absolute', width: 96, height: 96, borderRadius: '50%',
-                  background: 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)',
-                  animation: 'glowPulse 2s ease-in-out infinite',
-                }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: 96,
+                    height: 96,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)',
+                    animation: 'glowPulse 2s ease-in-out infinite',
+                  }}
+                />
               )}
               <button
                 onClick={recordState === 'idle' || recordState === 'done' ? startRecording : undefined}
                 disabled={recordState === 'processing' || recordState === 'recording'}
                 style={{
-                  position: 'relative', zIndex: 1,
-                  width: 80, height: 80, borderRadius: '50%',
-                  border: 'none', cursor: recordState === 'processing' ? 'not-allowed' : recordState === 'recording' ? 'default' : 'pointer',
+                  position: 'relative',
+                  zIndex: 1,
+                  width: 80,
+                  height: 80,
+                  borderRadius: '50%',
+                  border: 'none',
+                  cursor:
+                    recordState === 'processing' ? 'not-allowed' : recordState === 'recording' ? 'default' : 'pointer',
                   background: recordState === 'recording' ? '#ef4444' : 'rgba(255,255,255,0.08)',
                   color: recordState === 'recording' ? '#fff' : tokens.text.secondary,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   transition: 'all .2s',
                 }}
               >
-                {recordState === 'processing'
-                  ? <Loader2 size={32} style={{ animation: 'spin 1s linear infinite' }} />
-                  : <Mic size={32} />}
+                {recordState === 'processing' ? (
+                  <Loader2 size={32} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <Mic size={32} />
+                )}
               </button>
             </div>
 
             {recordState === 'recording' && (
-              <span style={{
-                fontSize: '1.6rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums',
-                color: tokens.text.primary, letterSpacing: '0.05em',
-              }}>
+              <span
+                style={{
+                  fontSize: '1.6rem',
+                  fontWeight: 600,
+                  fontVariantNumeric: 'tabular-nums',
+                  color: tokens.text.primary,
+                  letterSpacing: '0.05em',
+                }}
+              >
                 {formatTimer(elapsed)}
               </span>
             )}
@@ -795,19 +957,22 @@ export function MeetingsPage() {
               <button
                 onClick={stopRecording}
                 style={{
-                  marginTop: '0.25rem', padding: '0.55rem 2rem',
-                  background: 'rgba(255,255,255,0.9)', color: '#0a0a0a',
-                  border: 'none', borderRadius: tokens.radius.sm,
-                  fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer',
+                  marginTop: '0.25rem',
+                  padding: '0.55rem 2rem',
+                  background: 'rgba(255,255,255,0.9)',
+                  color: '#0a0a0a',
+                  border: 'none',
+                  borderRadius: tokens.radius.sm,
+                  fontWeight: 600,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
                 }}
               >
                 Fertig
               </button>
             )}
 
-            {recordError && (
-              <span style={{ fontSize: '0.82rem', color: '#f87171' }}>{recordError}</span>
-            )}
+            {recordError && <span style={{ fontSize: '0.82rem', color: '#f87171' }}>{recordError}</span>}
           </div>
         </Card>
 
@@ -818,23 +983,34 @@ export function MeetingsPage() {
           </h2>
 
           {uploading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', padding: '1.5rem 0' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '1.5rem 0',
+              }}
+            >
               <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: tokens.text.secondary }} />
-              <span style={{ fontSize: '0.85rem', color: tokens.text.secondary }}>
-                Wird transkribiert...
-              </span>
+              <span style={{ fontSize: '0.85rem', color: tokens.text.secondary }}>Wird transkribiert...</span>
             </div>
           ) : (
             <>
               <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={onDrop}
                 onClick={() => fileInputRef.current?.click()}
                 style={{
                   border: `2px dashed ${dragOver ? 'rgba(255,255,255,0.3)' : tokens.bg.border}`,
                   borderRadius: tokens.radius.md,
-                  padding: '1.5rem', textAlign: 'center', cursor: 'pointer',
+                  padding: '1.5rem',
+                  textAlign: 'center',
+                  cursor: 'pointer',
                   transition: 'border-color .2s',
                   background: dragOver ? 'rgba(255,255,255,0.03)' : 'transparent',
                 }}
@@ -858,8 +1034,17 @@ export function MeetingsPage() {
                       ({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
                     </span>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: tokens.text.muted, padding: 2 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFile(null);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: tokens.text.muted,
+                        padding: 2,
+                      }}
                     >
                       <X size={16} />
                     </button>
@@ -881,10 +1066,16 @@ export function MeetingsPage() {
                 <button
                   onClick={handleUpload}
                   style={{
-                    marginTop: '1rem', width: '100%', padding: '0.6rem',
-                    background: 'rgba(255,255,255,0.9)', color: '#0a0a0a',
-                    border: 'none', borderRadius: tokens.radius.sm,
-                    fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer',
+                    marginTop: '1rem',
+                    width: '100%',
+                    padding: '0.6rem',
+                    background: 'rgba(255,255,255,0.9)',
+                    color: '#0a0a0a',
+                    border: 'none',
+                    borderRadius: tokens.radius.sm,
+                    fontWeight: 600,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
                   }}
                 >
                   Hochladen & Transkribieren
@@ -902,12 +1093,14 @@ export function MeetingsPage() {
       </div>
 
       {/* ── Meetings Table ──────────────────────────────────────────────── */}
-      <div style={{
-        background: tokens.bg.surface,
-        border: `1px solid ${tokens.bg.border}`,
-        borderRadius: tokens.radius.lg,
-        overflow: 'hidden',
-      }}>
+      <div
+        style={{
+          background: tokens.bg.surface,
+          border: `1px solid ${tokens.bg.border}`,
+          borderRadius: tokens.radius.lg,
+          overflow: 'hidden',
+        }}
+      >
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: `1px solid ${tokens.bg.border}` }}>
           <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: tokens.text.primary, margin: 0 }}>
             Vergangene Meetings
@@ -927,11 +1120,18 @@ export function MeetingsPage() {
             <thead>
               <tr style={{ borderBottom: `1px solid ${tokens.bg.border}` }}>
                 {['Datum', 'Titel', 'Zusammenfassung', ''].map((h) => (
-                  <th key={h} style={{
-                    padding: '0.75rem 1.5rem', textAlign: 'left',
-                    fontSize: '0.78rem', fontWeight: 500,
-                    color: tokens.text.muted, textTransform: 'uppercase', letterSpacing: '0.04em',
-                  }}>
+                  <th
+                    key={h}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      textAlign: 'left',
+                      fontSize: '0.78rem',
+                      fontWeight: 500,
+                      color: tokens.text.muted,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
                     {h}
                   </th>
                 ))}
@@ -945,10 +1145,24 @@ export function MeetingsPage() {
                   onMouseEnter={(e) => (e.currentTarget.style.background = tokens.bg.hover)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <td style={{ padding: '0.85rem 1.5rem', fontSize: '0.88rem', color: tokens.text.secondary, whiteSpace: 'nowrap' }}>
+                  <td
+                    style={{
+                      padding: '0.85rem 1.5rem',
+                      fontSize: '0.88rem',
+                      color: tokens.text.secondary,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {formatDate(m.created_at)}
                   </td>
-                  <td style={{ padding: '0.85rem 1.5rem', fontSize: '0.88rem', color: tokens.text.primary, fontWeight: 500 }}>
+                  <td
+                    style={{
+                      padding: '0.85rem 1.5rem',
+                      fontSize: '0.88rem',
+                      color: tokens.text.primary,
+                      fontWeight: 500,
+                    }}
+                  >
                     {m.title || '–'}
                   </td>
                   <td style={{ padding: '0.85rem 1.5rem', fontSize: '0.88rem', color: tokens.text.secondary }}>
@@ -958,10 +1172,16 @@ export function MeetingsPage() {
                     <button
                       onClick={() => setDetailMeeting(m)}
                       style={{
-                        background: 'rgba(255,255,255,0.06)', border: `1px solid ${tokens.bg.border}`,
-                        borderRadius: tokens.radius.sm, padding: '0.35rem 0.85rem',
-                        color: tokens.text.secondary, fontSize: '0.82rem',
-                        cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: `1px solid ${tokens.bg.border}`,
+                        borderRadius: tokens.radius.sm,
+                        padding: '0.35rem 0.85rem',
+                        color: tokens.text.secondary,
+                        fontSize: '0.82rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
                       }}
                     >
                       Details <ChevronRight size={14} />
@@ -978,7 +1198,10 @@ export function MeetingsPage() {
       {pendingTranscript && tenantId && (
         <MeetingResultPopup
           transcript={pendingTranscript}
-          onClose={() => { setPendingTranscript(null); setRecordState('idle'); }}
+          onClose={() => {
+            setPendingTranscript(null);
+            setRecordState('idle');
+          }}
           onSaved={fetchMeetings}
           tenantId={tenantId}
           supabase={supabase}
@@ -990,20 +1213,32 @@ export function MeetingsPage() {
         <div
           onClick={() => setDetailMeeting(null)}
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000, backdropFilter: 'blur(4px)',
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(4px)',
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: tokens.bg.raised, border: `1px solid ${tokens.bg.borderStrong}`,
-              borderRadius: tokens.radius.xl, width: '100%', maxWidth: 720,
-              maxHeight: '80vh', overflow: 'auto', padding: '2rem',
+              background: tokens.bg.raised,
+              border: `1px solid ${tokens.bg.borderStrong}`,
+              borderRadius: tokens.radius.xl,
+              width: '100%',
+              maxWidth: 720,
+              maxHeight: '80vh',
+              overflow: 'auto',
+              padding: '2rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}
+            >
               <div>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: tokens.text.primary, margin: 0 }}>
                   {detailMeeting.title || 'Meeting'}
@@ -1023,10 +1258,16 @@ export function MeetingsPage() {
             {detailMeeting.participants?.length > 0 && (
               <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
                 {detailMeeting.participants.map((p) => (
-                  <span key={p} style={{
-                    background: 'rgba(255,255,255,0.08)', borderRadius: 6,
-                    padding: '0.2rem 0.6rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)',
-                  }}>
+                  <span
+                    key={p}
+                    style={{
+                      background: 'rgba(255,255,255,0.08)',
+                      borderRadius: 6,
+                      padding: '0.2rem 0.6rem',
+                      fontSize: '0.78rem',
+                      color: 'rgba(255,255,255,0.7)',
+                    }}
+                  >
                     {p}
                   </span>
                 ))}
@@ -1050,7 +1291,9 @@ export function MeetingsPage() {
             )}
 
             <CollapsibleSection title="Transkript" defaultOpen={true}>
-              <div style={{ fontSize: '0.85rem', color: tokens.text.secondary, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+              <div
+                style={{ fontSize: '0.85rem', color: tokens.text.secondary, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}
+              >
                 {detailMeeting.transcript}
               </div>
             </CollapsibleSection>
