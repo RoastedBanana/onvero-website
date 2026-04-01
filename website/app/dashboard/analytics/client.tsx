@@ -792,30 +792,7 @@ export default function AnalyticsClient() {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px 280px', gap: 12, marginBottom: 12 }}>
-            <div style={{ ...S.card, padding: 20 }}>
-              <div style={S.chartTitle}>Lead-Entwicklung</div>
-              <div style={S.chartSub}>HOT / WARM / COLD pro Woche</div>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={weekly} barSize={18} barGap={1}>
-                  <XAxis
-                    dataKey="week"
-                    tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={24}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
-                  <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
-                  <Bar dataKey="cold" stackId="a" fill="#6B7AFF" radius={[3, 3, 0, 0]} name="COLD" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <LeadDevelopmentChart weeklyData={weekly} trendData={trendData?.trend || []} />
             <div style={{ ...S.card, padding: 20 }}>
               <div style={S.chartTitle}>System-Status</div>
               <div style={S.chartSub}>BusinessOS Komponenten</div>
