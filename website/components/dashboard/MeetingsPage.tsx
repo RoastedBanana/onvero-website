@@ -208,14 +208,14 @@ function MeetingResultPopup({
   const [participants, setParticipants] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
-  const [showSummaryMenu, setShowSummaryMenu] = useState(false);
+  const [summaryMenuPos, setSummaryMenuPos] = useState<{ x: number; y: number } | null>(null);
   const summaryBtnRef = useRef<HTMLDivElement>(null);
 
   // Close submenu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (summaryBtnRef.current && !summaryBtnRef.current.contains(e.target as Node)) {
-        setShowSummaryMenu(false);
+        setSummaryMenuPos(null);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -224,7 +224,7 @@ function MeetingResultPopup({
 
   const callWebhook = async (action: 'summarize' | 'todos', summaryType?: string) => {
     setLoadingAction(action);
-    setShowSummaryMenu(false);
+    setSummaryMenuPos(null);
     try {
       const res = await fetch('/api/meetings/analyze', {
         method: 'POST',
@@ -237,18 +237,28 @@ function MeetingResultPopup({
       });
 
       const text = await res.text();
-      let result = '';
-      try {
-        const json = JSON.parse(text);
-        result = json.summary ?? json.result ?? json.text ?? text;
-      } catch {
-        result = text;
-      }
+      let json: Record<string, unknown> = {};
+      try { json = JSON.parse(text); } catch { /* plain text */ }
 
-      if (action === 'summarize') {
-        setSummary(result);
-      } else if (action === 'todos') {
-        setTodos(result);
+      if (json.success && json.id) {
+        // Webhook saved to Supabase — fetch the row
+        const { data } = await supabase
+          .from('meeting_summaries')
+          .select('*')
+          .eq('id', json.id)
+          .single();
+
+        if (data) {
+          if (data.summary) setSummary(data.summary);
+          if (data.todos) setTodos(data.todos);
+          if (data.title) setTitle(data.title);
+          if (data.participants?.length) setParticipants(data.participants);
+        }
+      } else {
+        // Fallback: use response text directly
+        const result = (json.summary ?? json.result ?? json.text ?? text) as string;
+        if (action === 'summarize') setSummary(result);
+        else if (action === 'todos') setTodos(result);
       }
     } catch (err) {
       console.error('Webhook error:', err);
@@ -322,9 +332,16 @@ function MeetingResultPopup({
             gap: '0.6rem', marginBottom: '1.5rem',
           }}>
             {/* Zusammenfassen with hover submenu */}
-            <div ref={summaryBtnRef} style={{ position: 'relative' }}>
+            <div
+              ref={summaryBtnRef}
+              style={{ position: 'relative' }}
+            >
               <button
-                onMouseEnter={() => { if (!loadingAction) setShowSummaryMenu(true); }}
+                onClick={(e) => {
+                  if (!loadingAction) {
+                    setSummaryMenuPos(summaryMenuPos ? null : { x: e.clientX, y: e.clientY });
+                  }
+                }}
                 disabled={!!loadingAction}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
@@ -341,20 +358,25 @@ function MeetingResultPopup({
                   : <Sparkles size={16} style={{ flexShrink: 0 }} />
                 }
                 Zusammenfassen
-                <ChevronRight size={14} style={{ marginLeft: 'auto', opacity: 0.4 }} />
               </button>
 
-              {/* Submenu */}
-              {showSummaryMenu && (
+              {/* Submenu — fixed position next to cursor */}
+              {summaryMenuPos && (
                 <div
-                  onMouseLeave={() => setShowSummaryMenu(false)}
+                  onMouseLeave={(e) => {
+                    // Don't close if focus is inside (typing in custom input)
+                    if (e.currentTarget.contains(document.activeElement)) return;
+                    setSummaryMenuPos(null);
+                  }}
                   style={{
-                    position: 'absolute', right: -180, top: 0,
+                    position: 'fixed',
+                    left: summaryMenuPos.x + 8,
+                    top: summaryMenuPos.y - 10,
                     width: 170, background: '#1a1a1a',
                     border: `1px solid ${tokens.bg.borderStrong}`,
                     borderRadius: 10, padding: '0.35rem',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                    zIndex: 10,
+                    zIndex: 9999,
                   }}
                 >
                   <p style={{
@@ -364,7 +386,7 @@ function MeetingResultPopup({
                   }}>
                     Meeting-Typ
                   </p>
-                  {SUMMARY_TYPES.map((t) => (
+                  {SUMMARY_TYPES.filter((t) => t.id !== 'custom').map((t) => (
                     <button
                       key={t.id}
                       onClick={() => callWebhook('summarize', t.id)}
@@ -387,6 +409,32 @@ function MeetingResultPopup({
                       {t.label}
                     </button>
                   ))}
+                  {/* Custom input */}
+                  <div style={{
+                    borderTop: `1px solid ${tokens.bg.border}`,
+                    marginTop: '0.25rem', paddingTop: '0.35rem',
+                  }}>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const input = e.currentTarget.querySelector('input') as HTMLInputElement;
+                      const val = input?.value.trim();
+                      if (val) callWebhook('summarize', val);
+                    }}>
+                      <input
+                        placeholder="Custom Prompt…"
+                        onMouseLeave={(e) => e.stopPropagation()}
+                        style={{
+                          width: '100%', background: 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${tokens.bg.border}`, borderRadius: 6,
+                          color: '#fff', fontSize: '0.78rem', padding: '0.4rem 0.5rem',
+                          outline: 'none',
+                        }}
+                        onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
+                        onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      />
+                    </form>
+                  </div>
                 </div>
               )}
             </div>
