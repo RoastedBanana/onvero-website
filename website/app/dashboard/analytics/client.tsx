@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   Cell,
   ReferenceLine,
+  CartesianGrid,
 } from 'recharts';
 
 type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki';
@@ -327,6 +328,7 @@ function LeadDevelopmentChart({ weeklyData, trendData }: { weeklyData: any[]; tr
             tickLine={false}
             allowDecimals={false}
           />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
           <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
           <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
           <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
@@ -917,6 +919,7 @@ export default function AnalyticsClient() {
                     width={20}
                     allowDecimals={false}
                   />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                   <Tooltip content={<CustomTooltip />} />
                   <Line
                     type="monotone"
@@ -1124,6 +1127,7 @@ export default function AnalyticsClient() {
                       tickLine={false}
                       width={24}
                     />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                     <Tooltip content={<CustomTooltip />} />
                     <Bar dataKey="count" name="Leads" radius={[3, 3, 0, 0]}>
                       {(leadsData.scoreHistogram || []).map((_: any, i: number) => (
@@ -1732,6 +1736,7 @@ export default function AnalyticsClient() {
                         tickLine={false}
                         width={24}
                       />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                       <Tooltip content={<CustomTooltip />} />
                       <Line
                         type="monotone"
