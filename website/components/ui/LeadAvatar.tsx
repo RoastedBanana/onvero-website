@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface LeadAvatarProps {
   website?: string;
@@ -9,13 +9,21 @@ interface LeadAvatarProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-function getDomain(url: string): string | null {
+const getDomain = (url: string | null | undefined): string | null => {
+  if (!url) return null;
   try {
-    return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
+    const withProtocol = url.startsWith('http') ? url : `https://${url}`;
+    const parsed = new URL(withProtocol);
+    return parsed.hostname.replace(/^www\./, '');
   } catch {
-    return null;
+    return (
+      url
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .split('/')[0] || null
+    );
   }
-}
+};
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/);
@@ -35,7 +43,7 @@ const SIZES = { sm: 24, md: 32, lg: 48 };
 
 export default function LeadAvatar({ website, companyName, score, size = 'md' }: LeadAvatarProps) {
   const px = SIZES[size];
-  const domain = website ? getDomain(website) : null;
+  const domain = getDomain(website);
 
   const sources = domain
     ? [
@@ -46,15 +54,13 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
 
   const [imgIndex, setImgIndex] = useState(0);
 
-  const handleError = () => {
-    if (imgIndex < sources.length - 1) {
-      setImgIndex((prev) => prev + 1);
-    } else {
-      setImgIndex(sources.length);
-    }
-  };
+  useEffect(() => {
+    setImgIndex(0);
+  }, [website]);
 
-  if (!domain || imgIndex >= sources.length) {
+  const showInitials = !domain || imgIndex >= sources.length;
+
+  if (showInitials) {
     const s = getScoreStyle(score);
     return (
       <div
@@ -81,13 +87,13 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
 
   return (
     <img
+      key={sources[imgIndex]}
       src={sources[imgIndex]}
       alt={companyName}
       width={px}
       height={px}
       referrerPolicy="no-referrer"
-      crossOrigin="anonymous"
-      onError={handleError}
+      onError={() => setImgIndex((prev) => prev + 1)}
       style={{
         width: px,
         height: px,
