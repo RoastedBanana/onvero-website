@@ -44,35 +44,11 @@ const SIZES = { sm: 24, md: 32, lg: 48 };
 export default function LeadAvatar({ website, companyName, score, size = 'md' }: LeadAvatarProps) {
   const px = SIZES[size];
   const domain = getDomain(website);
-
-  const sources = domain
-    ? [`https://icons.duckduckgo.com/ip3/${domain}.ico`, `https://www.google.com/s2/favicons?domain=${domain}&sz=64`]
-    : [];
-
-  const [srcIndex, setSrcIndex] = useState(0);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'initials'>(domain ? 'loading' : 'initials');
 
   useEffect(() => {
-    setSrcIndex(0);
     setStatus(getDomain(website) ? 'loading' : 'initials');
   }, [website]);
-
-  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
-      handleError();
-      return;
-    }
-    setStatus('loaded');
-  };
-
-  const handleError = () => {
-    if (srcIndex < sources.length - 1) {
-      setSrcIndex((prev) => prev + 1);
-    } else {
-      setStatus('initials');
-    }
-  };
 
   const s = getScoreStyle(score);
   const initialsEl = (
@@ -103,25 +79,24 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
     <div style={{ position: 'relative', width: px, height: px, flexShrink: 0 }}>
       {status === 'loading' && initialsEl}
       <img
-        key={sources[srcIndex]}
-        src={sources[srcIndex]}
+        key={domain}
+        src={`/api/favicon?domain=${domain}`}
         alt={companyName}
         width={px}
         height={px}
-        referrerPolicy="no-referrer"
-        onLoad={handleLoad}
-        onError={handleError}
+        onLoad={() => setStatus('loaded')}
+        onError={() => setStatus('initials')}
         style={{
           width: px,
           height: px,
           borderRadius: '50%',
-          objectFit: 'contain',
+          objectFit: 'cover',
           background: 'rgba(30,41,59,0.8)',
-          border: '1px solid rgba(255,255,255,0.1)',
           padding: 2,
-          ...(status === 'loaded'
-            ? { position: 'absolute', top: 0, left: 0 }
-            : { position: 'absolute', top: 0, left: 0, opacity: 0, pointerEvents: 'none' as const }),
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          opacity: status === 'loaded' ? 1 : 0,
         }}
       />
     </div>
