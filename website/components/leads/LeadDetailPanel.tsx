@@ -4,42 +4,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Lead } from '@/lib/leads-client';
 import { updateLeadStatus } from '@/lib/leads-client';
+import LeadAvatar from '@/components/ui/LeadAvatar';
 
 const TENANT_ID = 'df763f85-c687-42d6-be66-a2b353b89c90';
 
 interface LeadDetailPanelProps {
   lead: Lead | null;
   onClose: () => void;
-}
-
-function Avatar({ name, size = 40 }: { name: string; size?: number }) {
-  const initials = name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        background: 'rgba(107,122,255,0.15)',
-        border: '1px solid rgba(107,122,255,0.25)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: size * 0.3,
-        fontWeight: 600,
-        color: '#6B7AFF',
-        flexShrink: 0,
-        fontFamily: 'var(--font-dm-mono)',
-      }}
-    >
-      {initials || '?'}
-    </div>
-  );
 }
 
 function SectionHeader({ title }: { title: string }) {
@@ -391,7 +362,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 flexShrink: 0,
               }}
             >
-              <Avatar name={lead.name || lead.company} />
+              <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="lg" />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{

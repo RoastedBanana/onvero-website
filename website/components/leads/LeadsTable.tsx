@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Lead } from '@/lib/leads-client';
 import { updateLeadStatus } from '@/lib/leads-client';
 import { createClient } from '@/lib/supabase';
+import LeadAvatar from '@/components/ui/LeadAvatar';
 
 function ScoreBadge({ score }: { score: number }) {
   const isHot = score >= 75;
@@ -135,36 +136,6 @@ function InlineStatusDropdown({
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-  return (
-    <div
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: '50%',
-        background: 'rgba(107,122,255,0.15)',
-        border: '1px solid rgba(107,122,255,0.25)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 11,
-        fontWeight: 600,
-        color: '#6B7AFF',
-        flexShrink: 0,
-        fontFamily: 'var(--font-dm-mono)',
-      }}
-    >
-      {initials}
     </div>
   );
 }
@@ -714,7 +685,7 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
             {selectMode && <Checkbox checked={isSelected} onChange={() => toggleSelect(lead.id)} />}
             <ScoreBadge score={lead.score} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Avatar name={lead.name} />
+              <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} />
               <div>
                 <div style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>{lead.name}</div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{lead.company}</div>
