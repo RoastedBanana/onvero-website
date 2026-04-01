@@ -16,9 +16,9 @@ export async function GET() {
       .select('id, score, status, email_draft, created_at, ai_summary, website_summary')
       .eq('tenant_id', TENANT),
     plausibleKey
-      ? plausibleStats(['visitors', 'pageviews', 'bounce_rate', 'visit_duration'], '30d', plausibleKey)
+      ? plausibleStats(['visitors', 'pageviews', 'bounce_rate', 'visit_duration'], 'month', plausibleKey)
       : null,
-    plausibleKey ? plausibleTimeseries('visitors', '7d', plausibleKey) : [],
+    plausibleKey ? plausibleTimeseries('visitors', 'month', plausibleKey) : [],
   ]);
 
   const leads = (leadsData.data || []) as Record<string, any>[];
@@ -40,7 +40,7 @@ export async function GET() {
     { name: 'E-Mail Drafts', status: withEmail > 0 ? 'active' : 'idle', detail: `${withEmail} erstellt` },
     {
       name: 'Plausible Analytics',
-      status: plausibleKey ? (plausibleAgg?.visitors?.value > 0 ? 'active' : 'pending') : 'missing',
+      status: plausibleKey ? ((plausibleAgg?.visitors?.value ?? 0) > 0 ? 'active' : 'pending') : 'missing',
       detail: plausibleKey ? 'Konfiguriert' : 'Nicht konfiguriert',
     },
     { name: 'E-Mail Versand', status: 'planned', detail: 'In Planung' },
