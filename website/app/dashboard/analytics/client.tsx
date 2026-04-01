@@ -869,20 +869,97 @@ export default function AnalyticsClient() {
                             >
                               {l.score}
                             </td>
-                            <td style={{ padding: '8px 10px' }}>
-                              <span
+                            <td style={{ padding: '8px 10px', position: 'relative' }}>
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setStatusDropdown((prev) => (prev === l.id ? null : l.id));
+                                }}
                                 style={{
-                                  fontSize: 9,
-                                  padding: '2px 6px',
+                                  fontSize: 10,
+                                  padding: '3px 8px',
                                   borderRadius: 4,
+                                  cursor: 'pointer',
+                                  display: 'inline-block',
                                   background:
-                                    l.status === 'contacted' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
-                                  color: l.status === 'contacted' ? '#22C55E' : 'rgba(255,255,255,0.4)',
-                                  fontWeight: 600,
+                                    l.status === 'contacted'
+                                      ? 'rgba(245,158,11,0.15)'
+                                      : l.status === 'qualified'
+                                        ? 'rgba(34,197,94,0.15)'
+                                        : l.status === 'lost'
+                                          ? 'rgba(255,92,46,0.1)'
+                                          : 'rgba(255,255,255,0.07)',
+                                  color:
+                                    l.status === 'contacted'
+                                      ? '#F59E0B'
+                                      : l.status === 'qualified'
+                                        ? '#22C55E'
+                                        : l.status === 'lost'
+                                          ? 'rgba(255,92,46,0.6)'
+                                          : 'rgba(255,255,255,0.4)',
+                                  border: `1px solid ${l.status === 'contacted' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.08)'}`,
+                                  userSelect: 'none',
                                 }}
                               >
-                                {l.status || 'new'}
-                              </span>
+                                {l.status === 'new'
+                                  ? 'Neu'
+                                  : l.status === 'contacted'
+                                    ? 'Kontaktiert'
+                                    : l.status === 'qualified'
+                                      ? 'Qualifiziert'
+                                      : 'Verloren'}{' '}
+                                ▾
+                              </div>
+                              {statusDropdown === l.id && (
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: 0,
+                                    marginTop: 4,
+                                    zIndex: 200,
+                                    background: '#1a1a1a',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 8,
+                                    overflow: 'hidden',
+                                    minWidth: 130,
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                                  }}
+                                >
+                                  {[
+                                    { value: 'new', label: 'Neu', color: 'rgba(255,255,255,0.5)' },
+                                    { value: 'contacted', label: 'Kontaktiert', color: '#F59E0B' },
+                                    { value: 'qualified', label: 'Qualifiziert', color: '#22C55E' },
+                                    { value: 'lost', label: 'Verloren', color: 'rgba(255,92,46,0.6)' },
+                                  ].map((opt) => (
+                                    <div
+                                      key={opt.value}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        updateLeadStatus(l.id, opt.value);
+                                      }}
+                                      style={{
+                                        padding: '8px 14px',
+                                        fontSize: 11,
+                                        color: opt.color,
+                                        cursor: 'pointer',
+                                        borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                        background: l.status === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                        transition: 'background 0.1s',
+                                      }}
+                                      onMouseEnter={(e) =>
+                                        (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')
+                                      }
+                                      onMouseLeave={(e) =>
+                                        (e.currentTarget.style.background =
+                                          l.status === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent')
+                                      }
+                                    >
+                                      {opt.label}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </td>
                             <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                               {l.hasEmail ? (
