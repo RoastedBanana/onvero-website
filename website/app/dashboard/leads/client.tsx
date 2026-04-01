@@ -431,6 +431,12 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
             setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
             setStats(computeStats(leads.map((l) => (l.id === id ? { ...l, status } : l))));
           }}
+          onLeadsDeleted={(ids) => {
+            const remaining = leads.filter((l) => !ids.includes(l.id));
+            setLeads(remaining);
+            setStats(computeStats(remaining));
+            setSelectedLeadId(null);
+          }}
         />
       </div>
 
