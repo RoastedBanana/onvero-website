@@ -424,7 +424,15 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           <ConversionFunnel leads={leads} activeTab={statusFilter} />
         </div>
 
-        <LeadsTable leads={filtered} selectedId={selectedLeadId} onSelect={setSelectedLeadId} />
+        <LeadsTable
+          leads={filtered}
+          selectedId={selectedLeadId}
+          onSelect={setSelectedLeadId}
+          onStatusChange={(id, status) => {
+            setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
+            setStats(computeStats(leads.map((l) => (l.id === id ? { ...l, status } : l))));
+          }}
+        />
       </div>
 
       <LeadDetailPanel

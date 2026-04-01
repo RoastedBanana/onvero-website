@@ -330,9 +330,35 @@ export function GeneratorStatusBanner({ currentLeadCount }: { currentLeadCount: 
             ))}
           </div>
 
+          {/* Detail Button */}
+          <button
+            onClick={() => {
+              setToast(null);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{
+              width: '100%',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 8,
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: 12,
+              fontWeight: 500,
+              padding: '8px 0',
+              cursor: 'pointer',
+              marginTop: 10,
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+          >
+            Leads ansehen →
+          </button>
+
+          {/* Progress bar */}
           <div
             style={{
-              marginTop: 10,
+              marginTop: 8,
               height: 2,
               background: 'rgba(255,255,255,0.06)',
               borderRadius: 1,

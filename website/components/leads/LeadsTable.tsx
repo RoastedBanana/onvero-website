@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import type { Lead } from '@/lib/leads-client';
 import { updateLeadStatus } from '@/lib/leads-client';
-import { useRouter } from 'next/navigation';
 
 function ScoreBadge({ score }: { score: number }) {
   const isHot = score >= 75;
@@ -42,8 +41,13 @@ const STATUS_OPTIONS = [
   { value: 'lost', label: 'Verloren' },
 ];
 
-function InlineStatusDropdown({ lead }: { lead: Lead }) {
-  const router = useRouter();
+function InlineStatusDropdown({
+  lead,
+  onStatusChange,
+}: {
+  lead: Lead;
+  onStatusChange?: (id: string, status: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const s = STATUS_MAP[lead.status] ?? STATUS_MAP.new;
@@ -53,7 +57,7 @@ function InlineStatusDropdown({ lead }: { lead: Lead }) {
     try {
       await updateLeadStatus(lead.id, newStatus);
       setOpen(false);
-      router.refresh();
+      onStatusChange?.(lead.id, newStatus);
     } catch (e) {
       console.error('Status update failed:', e);
     } finally {
@@ -168,9 +172,10 @@ interface LeadsTableProps {
   leads: Lead[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  onStatusChange?: (id: string, status: string) => void;
 }
 
-export default function LeadsTable({ leads, selectedId, onSelect }: LeadsTableProps) {
+export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange }: LeadsTableProps) {
   const [sortBy, setSortBy] = useState<'score' | 'date'>('score');
 
   const sorted = [...leads].sort((a, b) =>
@@ -278,7 +283,7 @@ export default function LeadsTable({ leads, selectedId, onSelect }: LeadsTablePr
             {lead.email}
           </div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{lead.industry?.split('/')[0] ?? '—'}</div>
-          <InlineStatusDropdown lead={lead} />
+          <InlineStatusDropdown lead={lead} onStatusChange={onStatusChange} />
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
             {new Date(lead.createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
           </div>
