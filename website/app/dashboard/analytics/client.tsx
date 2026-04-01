@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki';
 
@@ -47,6 +47,8 @@ export default function AnalyticsClient() {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [period, setPeriod] = useState('30d');
   const [loading, setLoading] = useState(true);
+  const [leadsData, setLeadsData] = useState<any>(null);
+  const [leadsLoading, setLeadsLoading] = useState(false);
 
   const fmt = (n: number) => Math.round(n).toLocaleString('de-DE');
   const fmtEur = (n: number) =>
@@ -65,6 +67,22 @@ export default function AnalyticsClient() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  }, [period]);
+
+  useEffect(() => {
+    if (tab !== 'leads' || leadsData) return;
+    setLeadsLoading(true);
+    fetch(`/api/analytics/leads?period=${period}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setLeadsData(d);
+        setLeadsLoading(false);
+      })
+      .catch(() => setLeadsLoading(false));
+  }, [tab, period, leadsData]);
+
+  useEffect(() => {
+    if (tab === 'leads') setLeadsData(null);
   }, [period]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -475,49 +493,315 @@ export default function AnalyticsClient() {
       {/* LEADS */}
       {tab === 'leads' && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-            {[
-              { label: 'Leads gesamt', val: fmt(leads.total), sub: `${leads.aiScored} KI-bewertet`, color: '#fff' },
-              {
-                label: 'HOT Leads',
-                val: fmt(leads.hot),
-                sub: `${leads.total > 0 ? Math.round((leads.hot / leads.total) * 100) : 0}% HOT-Rate`,
-                color: '#FF5C2E',
-              },
-              { label: 'WARM Leads', val: fmt(leads.warm), sub: 'Score 45-74', color: '#F59E0B' },
-              { label: 'Ø Score', val: String(leads.avgScore), sub: `${leads.cold} COLD`, color: '#8B5CF6' },
-            ].map((kpi) => (
-              <div key={kpi.label} style={S.kpiCard}>
-                <div style={S.label}>{kpi.label}</div>
-                <div style={{ ...S.val, color: kpi.color }}>{kpi.val}</div>
-                <div style={S.sub}>{kpi.sub}</div>
+          {leadsLoading || !leadsData ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 300,
+                color: 'rgba(255,255,255,0.2)',
+                fontSize: 13,
+                fontFamily: 'var(--font-dm-mono)',
+              }}
+            >
+              Lade Lead-Daten...
+            </div>
+          ) : (
+            <>
+              {/* KPI Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
+                {[
+                  {
+                    label: 'Leads gesamt',
+                    val: fmt(leadsData.total),
+                    sub: `${leadsData.scored} KI-bewertet`,
+                    color: '#fff',
+                  },
+                  {
+                    label: 'HOT Leads',
+                    val: fmt(leadsData.hot),
+                    sub: `${leadsData.total > 0 ? Math.round((leadsData.hot / leadsData.total) * 100) : 0}% HOT-Rate`,
+                    color: '#FF5C2E',
+                  },
+                  { label: 'WARM Leads', val: fmt(leadsData.warm), sub: 'Score 45-74', color: '#F59E0B' },
+                  { label: 'COLD Leads', val: fmt(leadsData.cold), sub: 'Score < 45', color: '#6B7AFF' },
+                  {
+                    label: 'Ø Score',
+                    val: String(leadsData.avgScore),
+                    sub: `${leadsData.withEmail} mit E-Mail`,
+                    color: '#8B5CF6',
+                  },
+                ].map((kpi) => (
+                  <div key={kpi.label} style={S.kpiCard}>
+                    <div style={S.label}>{kpi.label}</div>
+                    <div style={{ ...S.val, color: kpi.color }}>{kpi.val}</div>
+                    <div style={S.sub}>{kpi.sub}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div style={{ ...S.card, padding: 20 }}>
-            <div style={S.chartTitle}>Lead-Entwicklung</div>
-            <div style={S.chartSub}>HOT / WARM / COLD pro Woche</div>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={weekly} barSize={22}>
-                <XAxis
-                  dataKey="week"
-                  tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={24}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
-                <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
-                <Bar dataKey="cold" stackId="a" fill="#6B7AFF" radius={[4, 4, 0, 0]} name="COLD" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+
+              {/* Charts Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div style={{ ...S.card, padding: 20 }}>
+                  <div style={S.chartTitle}>Lead-Entwicklung</div>
+                  <div style={S.chartSub}>HOT / WARM / COLD pro Woche</div>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={leadsData.weeklyLeads} barSize={22}>
+                      <XAxis
+                        dataKey="week"
+                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={24}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="hot" stackId="a" fill="#FF5C2E" name="HOT" />
+                      <Bar dataKey="warm" stackId="a" fill="#F59E0B" name="WARM" />
+                      <Bar dataKey="cold" stackId="a" fill="#6B7AFF" radius={[4, 4, 0, 0]} name="COLD" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ ...S.card, padding: 20 }}>
+                  <div style={S.chartTitle}>Score-Histogramm</div>
+                  <div style={S.chartSub}>Verteilung aller Lead-Scores</div>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={leadsData.scoreHistogram} barSize={28}>
+                      <XAxis
+                        dataKey="range"
+                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 9 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={24}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="count" name="Leads" radius={[3, 3, 0, 0]}>
+                        {(leadsData.scoreHistogram || []).map((_: any, i: number) => (
+                          <Cell key={i} fill={i >= 8 ? '#FF5C2E' : i >= 5 ? '#F59E0B' : '#6B7AFF'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Detail Cards Row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                {/* Branchen */}
+                <div style={{ ...S.card, padding: 20 }}>
+                  <div style={S.chartTitle}>Top Branchen</div>
+                  <div style={S.chartSub}>nach Ø Score</div>
+                  {(leadsData.industries || []).map((ind: any, i: number) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '6px 0',
+                        borderBottom:
+                          i < (leadsData.industries || []).length - 1 ? '1px solid rgba(255,255,255,0.05)' : '',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{ind.name}</div>
+                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>
+                          {ind.count} Leads · {ind.hot} HOT
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 700,
+                          fontFamily: 'var(--font-dm-mono)',
+                          color: ind.avgScore >= 75 ? '#FF5C2E' : ind.avgScore >= 45 ? '#F59E0B' : '#6B7AFF',
+                        }}
+                      >
+                        {ind.avgScore}
+                      </div>
+                    </div>
+                  ))}
+                  {(leadsData.industries || []).length === 0 && (
+                    <div
+                      style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '20px 0', textAlign: 'center' }}
+                    >
+                      Keine Branchendaten
+                    </div>
+                  )}
+                </div>
+                {/* Tech */}
+                <div style={{ ...S.card, padding: 20 }}>
+                  <div style={S.chartTitle}>Top Technologien</div>
+                  <div style={S.chartSub}>erkannte Technologien</div>
+                  {(leadsData.topTech || []).map((t: any, i: number) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '6px 0',
+                        borderBottom:
+                          i < (leadsData.topTech || []).length - 1 ? '1px solid rgba(255,255,255,0.05)' : '',
+                      }}
+                    >
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{t.name}</div>
+                      <div
+                        style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: '#8B5CF6' }}
+                      >
+                        {t.count}
+                      </div>
+                    </div>
+                  ))}
+                  {(leadsData.topTech || []).length === 0 && (
+                    <div
+                      style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '20px 0', textAlign: 'center' }}
+                    >
+                      Keine Tech-Daten
+                    </div>
+                  )}
+                </div>
+                {/* Cities */}
+                <div style={{ ...S.card, padding: 20 }}>
+                  <div style={S.chartTitle}>Top Staedte</div>
+                  <div style={S.chartSub}>Lead-Standorte</div>
+                  {(leadsData.topCities || []).map((c: any, i: number) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '6px 0',
+                        borderBottom:
+                          i < (leadsData.topCities || []).length - 1 ? '1px solid rgba(255,255,255,0.05)' : '',
+                      }}
+                    >
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>{c.name}</div>
+                      <div
+                        style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: '#22C55E' }}
+                      >
+                        {c.count}
+                      </div>
+                    </div>
+                  ))}
+                  {(leadsData.topCities || []).length === 0 && (
+                    <div
+                      style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '20px 0', textAlign: 'center' }}
+                    >
+                      Keine Standortdaten
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* HOT Leads Table */}
+              <div style={{ ...S.card, padding: 20 }}>
+                <div style={S.chartTitle}>HOT Leads</div>
+                <div style={S.chartSub}>{'Score \u2265 75 \u00B7 Top 10'}</div>
+                {(leadsData.hotLeads || []).length > 0 ? (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                          {['Name', 'Firma', 'Branche', 'Stadt', 'Score', 'Status', 'E-Mail', 'Tags'].map((h) => (
+                            <th
+                              key={h}
+                              style={{
+                                padding: '8px 10px',
+                                textAlign: 'left',
+                                color: 'rgba(255,255,255,0.35)',
+                                fontWeight: 600,
+                                fontSize: 9,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.08em',
+                              }}
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(leadsData.hotLeads || []).map((l: any) => (
+                          <tr key={l.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td style={{ padding: '8px 10px', color: '#fff', fontWeight: 600 }}>{l.name || '—'}</td>
+                            <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.6)' }}>{l.company || '—'}</td>
+                            <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.5)' }}>{l.industry}</td>
+                            <td style={{ padding: '8px 10px', color: 'rgba(255,255,255,0.5)' }}>{l.city || '—'}</td>
+                            <td
+                              style={{
+                                padding: '8px 10px',
+                                fontWeight: 700,
+                                fontFamily: 'var(--font-dm-mono)',
+                                color: '#FF5C2E',
+                              }}
+                            >
+                              {l.score}
+                            </td>
+                            <td style={{ padding: '8px 10px' }}>
+                              <span
+                                style={{
+                                  fontSize: 9,
+                                  padding: '2px 6px',
+                                  borderRadius: 4,
+                                  background:
+                                    l.status === 'contacted' ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
+                                  color: l.status === 'contacted' ? '#22C55E' : 'rgba(255,255,255,0.4)',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {l.status || 'new'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                              {l.hasEmail ? (
+                                <span style={{ color: '#22C55E' }}>&#10003;</span>
+                              ) : (
+                                <span style={{ color: 'rgba(255,255,255,0.15)' }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '8px 10px' }}>
+                              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                {(l.tags || []).slice(0, 3).map((tag: string, ti: number) => (
+                                  <span
+                                    key={ti}
+                                    style={{
+                                      fontSize: 9,
+                                      padding: '1px 5px',
+                                      borderRadius: 3,
+                                      background: 'rgba(139,92,246,0.12)',
+                                      color: '#8B5CF6',
+                                    }}
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '20px 0', textAlign: 'center' }}>
+                    Keine HOT Leads im Zeitraum
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 

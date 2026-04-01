@@ -40,7 +40,8 @@ export async function GET(req: Request) {
   const industryMap: Record<string, { count: number; totalScore: number }> = {};
   leads.forEach((l) => {
     const cf = l.custom_fields || {};
-    const ind = cf.industry_de || cf.industry || 'Unbekannt';
+    const ind = cf.industry_de || (cf.industry && cf.industry !== '' ? cf.industry : null);
+    if (!ind) return;
     if (!industryMap[ind]) industryMap[ind] = { count: 0, totalScore: 0 };
     industryMap[ind].count++;
     industryMap[ind].totalScore += l.score || 0;

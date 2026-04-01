@@ -31,7 +31,7 @@ export async function GET() {
   const contacted = leads.filter((l) => l.status === 'contacted').length;
   const qualified = leads.filter((l) => l.status === 'qualified').length;
   const withEmail = leads.filter((l) => l.email_draft).length;
-  const aiScored = leads.filter((l) => l.ai_summary).length;
+  const aiScored = leads.filter((l) => l.score !== null && l.score !== undefined).length;
   const avgScore = leads.length > 0 ? Math.round(leads.reduce((s, l) => s + (l.score || 0), 0) / leads.length) : 0;
 
   const systemStatus = [
