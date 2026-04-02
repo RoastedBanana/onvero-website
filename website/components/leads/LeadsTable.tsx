@@ -686,8 +686,66 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
             <ScoreBadge score={lead.score} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#fff' }}>{lead.name}</div>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {lead.name}
+                  </span>
+                  {lead.source === 'google_maps_apify' && (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        color: '#1D9E75',
+                        background: 'rgba(29,158,117,0.1)',
+                        padding: '1px 5px',
+                        borderRadius: 6,
+                        flexShrink: 0,
+                        fontWeight: 500,
+                      }}
+                    >
+                      📍 Maps
+                    </span>
+                  )}
+                  {lead.source === 'apollo_outbound' && (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        color: '#8B5CF6',
+                        background: 'rgba(139,92,246,0.1)',
+                        padding: '1px 5px',
+                        borderRadius: 6,
+                        flexShrink: 0,
+                        fontWeight: 500,
+                      }}
+                    >
+                      ⚡ Apollo
+                    </span>
+                  )}
+                  {(lead.source === 'Website-Formular' || lead.source === 'website') && (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        color: 'rgba(255,255,255,0.4)',
+                        background: 'rgba(255,255,255,0.06)',
+                        padding: '1px 5px',
+                        borderRadius: 6,
+                        flexShrink: 0,
+                        fontWeight: 500,
+                      }}
+                    >
+                      🌐 Website
+                    </span>
+                  )}
+                </div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>{lead.company}</div>
               </div>
             </div>

@@ -56,12 +56,20 @@ interface Profile {
 }
 
 type Phase = 'config' | 'running' | 'done' | 'error';
+type GeneratorMode = 'select' | 'apollo' | 'google_maps';
 
 export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
   const router = useRouter();
+  const [mode, setMode] = useState<GeneratorMode>('select');
   const [phase, setPhase] = useState<Phase>('config');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
+
+  // Google Maps state
+  const [mapsSearchTerms, setMapsSearchTerms] = useState('');
+  const [mapsMaxResults, setMapsMaxResults] = useState(50);
+  const [mapsLoading, setMapsLoading] = useState(false);
+  const [mapsSuccess, setMapsSuccess] = useState(false);
 
   // Config fields
   const [industries, setIndustries] = useState<string[]>([]);
@@ -183,6 +191,9 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
   function handleClose() {
     const wasActive = phase === 'done' || phase === 'running';
     setPhase('config');
+    setMode('select');
+    setMapsSuccess(false);
+    setMapsSearchTerms('');
     setErrorDetails(null);
     setNewLeadsFound(0);
     setRunningSeconds(0);
@@ -352,8 +363,237 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
             overflow: 'hidden',
           }}
         >
-          {/* ═══════════ CONFIG ═══════════ */}
-          {phase === 'config' && (
+          {/* ═══════════ MODE SELECT ═══════════ */}
+          {phase === 'config' && mode === 'select' && (
+            <div style={{ padding: 24 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Lead Generator</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>
+                Wähle eine Quelle für neue Leads
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button
+                  onClick={() => setMode('apollo')}
+                  style={{
+                    background: 'rgba(139,92,246,0.06)',
+                    border: '1px solid rgba(139,92,246,0.15)',
+                    borderRadius: 10,
+                    padding: '16px 18px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(139,92,246,0.12)';
+                    e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(139,92,246,0.06)';
+                    e.currentTarget.style.borderColor = 'rgba(139,92,246,0.15)';
+                  }}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#8B5CF6', marginBottom: 4 }}>
+                    ⚡ Apollo Outbound
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+                    B2B Entscheider über Apollo — CEO, GF, Inhaber
+                  </div>
+                </button>
+                <button
+                  onClick={() => setMode('google_maps')}
+                  style={{
+                    background: 'rgba(29,158,117,0.06)',
+                    border: '1px solid rgba(29,158,117,0.15)',
+                    borderRadius: 10,
+                    padding: '16px 18px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(29,158,117,0.12)';
+                    e.currentTarget.style.borderColor = 'rgba(29,158,117,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(29,158,117,0.06)';
+                    e.currentTarget.style.borderColor = 'rgba(29,158,117,0.15)';
+                  }}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1D9E75', marginBottom: 4 }}>📍 Google Maps</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+                    Lokale Betriebe für Website-Verkauf — Handwerk, Gastronomie, Einzelhandel
+                  </div>
+                </button>
+              </div>
+              <button
+                onClick={handleClose}
+                style={{
+                  marginTop: 16,
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 8,
+                  padding: '8px',
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer',
+                }}
+              >
+                Abbrechen
+              </button>
+            </div>
+          )}
+
+          {/* ═══════════ GOOGLE MAPS MODE ═══════════ */}
+          {phase === 'config' && mode === 'google_maps' && (
+            <div style={{ padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <button
+                  onClick={() => {
+                    setMode('select');
+                    setMapsSuccess(false);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.4)',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    padding: '2px 6px',
+                  }}
+                >
+                  ←
+                </button>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#1D9E75' }}>📍 Google Maps Scraper</div>
+              </div>
+              {mapsSuccess ? (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1D9E75', marginBottom: 4 }}>
+                    Scraper gestartet
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Leads erscheinen in ~2 Minuten</div>
+                  <button
+                    onClick={handleClose}
+                    style={{
+                      marginTop: 16,
+                      background: 'rgba(29,158,117,0.15)',
+                      border: '1px solid rgba(29,158,117,0.2)',
+                      borderRadius: 8,
+                      padding: '8px 20px',
+                      fontSize: 12,
+                      color: '#1D9E75',
+                      cursor: 'pointer',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Schließen
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>
+                      Suchbegriffe (kommagetrennt)
+                    </label>
+                    <textarea
+                      value={mapsSearchTerms}
+                      onChange={(e) => setMapsSearchTerms(e.target.value)}
+                      placeholder="z.B. Maler Hamburg, Friseur München, Elektriker Berlin"
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        background: '#0a0a0a',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        fontSize: 12,
+                        color: '#fff',
+                        resize: 'vertical',
+                        outline: 'none',
+                        fontFamily: 'var(--font-dm-sans)',
+                      }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>
+                      Max. Ergebnisse pro Suchbegriff
+                    </label>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {[10, 25, 50, 100].map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => setMapsMaxResults(n)}
+                          style={{
+                            flex: 1,
+                            padding: '6px',
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            border:
+                              mapsMaxResults === n
+                                ? '1px solid rgba(29,158,117,0.4)'
+                                : '1px solid rgba(255,255,255,0.08)',
+                            background: mapsMaxResults === n ? 'rgba(29,158,117,0.15)' : 'rgba(255,255,255,0.04)',
+                            color: mapsMaxResults === n ? '#1D9E75' : 'rgba(255,255,255,0.5)',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const terms = mapsSearchTerms
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      if (terms.length === 0) return;
+                      setMapsLoading(true);
+                      try {
+                        await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/apify-maps-import', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            tenant_id: TENANT_ID,
+                            search_terms: terms,
+                            max_results: mapsMaxResults,
+                          }),
+                        });
+                        setMapsSuccess(true);
+                      } catch {
+                        /* ignore — webhook may not return JSON */
+                        setMapsSuccess(true);
+                      } finally {
+                        setMapsLoading(false);
+                      }
+                    }}
+                    disabled={mapsLoading || !mapsSearchTerms.trim()}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: 8,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: mapsLoading || !mapsSearchTerms.trim() ? 'default' : 'pointer',
+                      background: '#1D9E75',
+                      color: '#fff',
+                      border: 'none',
+                      opacity: mapsLoading || !mapsSearchTerms.trim() ? 0.5 : 1,
+                      transition: 'opacity 0.15s',
+                    }}
+                  >
+                    {mapsLoading ? '⟳ Starte Scraper...' : '📍 Google Maps Scraper starten'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════ APOLLO CONFIG ═══════════ */}
+          {phase === 'config' && mode === 'apollo' && (
             <>
               <div
                 style={{

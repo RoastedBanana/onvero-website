@@ -14,7 +14,7 @@ import LeadGeneratorModal from '@/components/leads/LeadGeneratorModal';
 import { GeneratorStatusBanner } from '@/components/leads/GeneratorStatusBanner';
 import PageHeader from '@/components/ui/PageHeader';
 
-type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost';
+type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost' | 'google_maps';
 
 interface Props {
   leads: Lead[];
@@ -81,7 +81,9 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
-      if (statusFilter !== 'all' && l.status !== statusFilter) return false;
+      if (statusFilter === 'google_maps') {
+        if (l.source !== 'google_maps_apify') return false;
+      } else if (statusFilter !== 'all' && l.status !== statusFilter) return false;
       if (industryFilter && l.industry !== industryFilter) return false;
       if (tierFilter === 'hot' && l.score < 70) return false;
       if (tierFilter === 'warm' && (l.score < 45 || l.score >= 70)) return false;
@@ -102,6 +104,11 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
     { key: 'contacted', label: 'Kontaktiert', count: stats.byStatus.contacted },
     { key: 'qualified', label: 'Qualifiziert', count: stats.byStatus.qualified },
     { key: 'lost', label: 'Verloren', count: stats.byStatus.lost },
+    {
+      key: 'google_maps',
+      label: '📍 Google Maps',
+      count: leads.filter((l) => l.source === 'google_maps_apify').length,
+    },
   ];
 
   return (
