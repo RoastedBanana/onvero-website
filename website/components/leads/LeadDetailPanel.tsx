@@ -167,8 +167,18 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
     return () => document.removeEventListener('keydown', handler);
   }, [onCloseStable]);
 
-  const scoreColor = lead ? (lead.score >= 75 ? '#FF5C2E' : lead.score >= 45 ? '#F59E0B' : '#6B7AFF') : '#6B7AFF';
-  const scoreLabel = lead ? (lead.score >= 75 ? 'HOT' : lead.score >= 45 ? 'WARM' : 'COLD') : 'COLD';
+  const tierFromData = lead?.tier?.toUpperCase();
+  const scoreLabel =
+    tierFromData === 'HOT' || tierFromData === 'WARM' || tierFromData === 'COLD'
+      ? tierFromData
+      : lead
+        ? lead.score >= 75
+          ? 'HOT'
+          : lead.score >= 45
+            ? 'WARM'
+            : 'COLD'
+        : 'COLD';
+  const scoreColor = scoreLabel === 'HOT' ? '#FF5C2E' : scoreLabel === 'WARM' ? '#F59E0B' : '#6B7AFF';
   const scoreBg = lead
     ? lead.score >= 75
       ? 'rgba(255,92,46,0.1)'
@@ -507,6 +517,59 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 </div>
               )}
 
+              {lead.buyingSignals && lead.buyingSignals.length > 0 && (
+                <>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '12px 0 10px' }} />
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 500,
+                      color: 'rgba(255,255,255,0.3)',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase' as const,
+                      marginBottom: 6,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    ⚡ Kaufsignale
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {lead.buyingSignals.slice(0, 4).map((signal, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: 10,
+                          color: '#92400e',
+                          background: 'rgba(245,158,11,0.15)',
+                          border: '1px solid rgba(245,158,11,0.2)',
+                          padding: '2px 8px',
+                          borderRadius: 10,
+                          fontWeight: 500,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {signal}
+                      </span>
+                    ))}
+                    {lead.buyingSignals.length > 4 && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: 'rgba(255,255,255,0.35)',
+                          background: 'rgba(255,255,255,0.06)',
+                          padding: '2px 8px',
+                          borderRadius: 10,
+                        }}
+                      >
+                        +{lead.buyingSignals.length - 4} weitere
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+
               {lead.nextAction && (
                 <>
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '12px 0 10px' }} />
@@ -546,13 +609,47 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
               <div>
                 <SectionHeader title="Kontakt" />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <ContactRow
-                    icon="✉"
-                    label="E-Mail"
-                    value={lead.email}
-                    action="copy"
-                    onCopy={() => lead.email && navigator.clipboard?.writeText(lead.email)}
-                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <ContactRow
+                        icon="✉"
+                        label="E-Mail"
+                        value={lead.email}
+                        action="copy"
+                        onCopy={() => lead.email && navigator.clipboard?.writeText(lead.email)}
+                      />
+                    </div>
+                    {lead.emailStatus === 'verified' && (
+                      <span
+                        style={{
+                          fontSize: 9,
+                          color: '#22C55E',
+                          background: 'rgba(34,197,94,0.1)',
+                          padding: '1px 6px',
+                          borderRadius: 8,
+                          fontWeight: 500,
+                          flexShrink: 0,
+                        }}
+                      >
+                        ✓ Verifiziert
+                      </span>
+                    )}
+                    {(lead.emailStatus === 'guessed' || lead.emailStatus === 'estimated') && (
+                      <span
+                        style={{
+                          fontSize: 9,
+                          color: '#F59E0B',
+                          background: 'rgba(245,158,11,0.1)',
+                          padding: '1px 6px',
+                          borderRadius: 8,
+                          fontWeight: 500,
+                          flexShrink: 0,
+                        }}
+                      >
+                        ~ Geschätzt
+                      </span>
+                    )}
+                  </div>
                   <ContactRow icon="📱" label="Telefon" value={lead.phone} action="tel" />
                   <ContactRow
                     icon="🌐"

@@ -53,6 +53,9 @@ export type Lead = {
   newsSignals?: string[];
   newsArticles?: { title: string; source: string; days_ago: number }[];
   hasNewsSignal?: boolean;
+  emailStatus?: string | null;
+  buyingSignals?: string[];
+  tier?: string | null;
 };
 
 export type LeadStats = {
@@ -116,6 +119,9 @@ export function mapLead(raw: any): Lead {
     newsSignals: cf.news_signals ?? [],
     newsArticles: cf.news_articles ?? [],
     hasNewsSignal: cf.has_news_signal ?? false,
+    emailStatus: cf.email_status ?? null,
+    buyingSignals: cf.buying_signals ?? [],
+    tier: cf.tier ?? null,
   };
 }
 
