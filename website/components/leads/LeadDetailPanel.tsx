@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { History, ChevronDown } from 'lucide-react';
 import type { Lead } from '@/lib/leads-client';
 import { updateLeadStatus } from '@/lib/leads-client';
 import LeadAvatar from '@/components/ui/LeadAvatar';
@@ -144,6 +145,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
   const [emailSaving, setEmailSaving] = useState(false);
   const [scrapingStarted, setScrapingStarted] = useState(false);
   const [scrapingLoading, setScrapingLoading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Scroll to top + reset state when lead changes
   useEffect(() => {
@@ -996,96 +998,137 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 </div>
               )}
 
-              {/* Aktivität */}
-              <div>
-                <SectionHeader title={`Aktivität${realActivities.length > 0 ? ` (${realActivities.length})` : ''}`} />
-                {activitiesLoading ? (
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', padding: '8px 0' }}>
-                    Lade Aktivitäten…
+              {/* Aktivitäten & Historie — faltbar */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: 4 }}>
+                <button
+                  onClick={() => setHistoryOpen((h) => !h)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 0',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'opacity 0.15s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <History size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 500,
+                        color: 'rgba(255,255,255,0.4)',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Aktivitäten & Historie
+                    </span>
+                    {realActivities.length > 0 && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          background: 'rgba(255,255,255,0.1)',
+                          color: 'rgba(255,255,255,0.4)',
+                          padding: '1px 6px',
+                          borderRadius: 10,
+                          fontFamily: 'var(--font-dm-mono)',
+                        }}
+                      >
+                        {realActivities.length}
+                      </span>
+                    )}
                   </div>
-                ) : activities.length === 0 ? (
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '8px 0' }}>
-                    Keine Aktivitäten vorhanden
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                    {activities.map((act, i, arr) => (
-                      <div key={i} style={{ display: 'flex', gap: 10, position: 'relative' }}>
-                        {i < arr.length - 1 && (
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      color: 'rgba(255,255,255,0.3)',
+                      transition: 'transform 0.2s',
+                      transform: historyOpen ? 'rotate(180deg)' : 'rotate(0)',
+                    }}
+                  />
+                </button>
+
+                {historyOpen && (
+                  <div style={{ paddingBottom: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {activitiesLoading ? (
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', padding: '8px 0' }}>
+                        Lade Aktivitäten…
+                      </div>
+                    ) : realActivities.length === 0 ? (
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '8px 0' }}>
+                        Keine Aktivitäten vorhanden.
+                      </div>
+                    ) : (
+                      realActivities.map((activity) => {
+                        const typeIcon: Record<string, { icon: string; color: string }> = {
+                          task: { icon: '🔥', color: '#f97316' },
+                          status_change: { icon: '↔', color: '#60a5fa' },
+                          note: { icon: '📝', color: 'rgba(255,255,255,0.4)' },
+                          email: { icon: '✉', color: '#22C55E' },
+                          email_generated: { icon: '✉', color: '#8B5CF6' },
+                          call: { icon: '📞', color: '#a78bfa' },
+                          scored: { icon: '⚡', color: '#6B7AFF' },
+                          lead_created: { icon: '＋', color: '#22C55E' },
+                          website_analysis: { icon: '🌐', color: '#3B82F6' },
+                          enrichment: { icon: '★', color: '#22C55E' },
+                        };
+                        const ti = typeIcon[activity.type] ?? { icon: '•', color: 'rgba(255,255,255,0.3)' };
+                        return (
                           <div
+                            key={activity.id}
                             style={{
-                              position: 'absolute',
-                              left: 9,
-                              top: 22,
-                              bottom: -2,
-                              width: 1,
-                              borderLeft: '1px dashed rgba(255,255,255,0.08)',
+                              display: 'flex',
+                              gap: 10,
+                              padding: '8px 0',
+                              borderBottom: '1px solid rgba(255,255,255,0.04)',
                             }}
-                          />
-                        )}
-                        <div
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: '50%',
-                            background: `${act.color}18`,
-                            border: `1px solid ${act.color}30`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 10,
-                            flexShrink: 0,
-                            position: 'relative',
-                            zIndex: 1,
-                            color: act.color,
-                          }}
-                        >
-                          {act.icon}
-                        </div>
-                        <div style={{ paddingBottom: 14, flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}
                           >
-                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 500 }}>
-                              {act.text}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 9,
-                                color: 'rgba(255,255,255,0.2)',
-                                fontFamily: 'var(--font-dm-mono)',
-                                whiteSpace: 'nowrap',
-                                flexShrink: 0,
-                              }}
-                            >
-                              {act.date
-                                ? new Date(act.date).toLocaleDateString('de-DE', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })
-                                : '—'}
+                            <span style={{ color: ti.color, fontSize: 12, flexShrink: 0, marginTop: 1 }}>
+                              {ti.icon}
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>
+                                {activity.title}
+                              </div>
+                              {activity.content && (
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: 'rgba(255,255,255,0.35)',
+                                    marginTop: 2,
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  {activity.content}
+                                </div>
+                              )}
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  color: 'rgba(255,255,255,0.2)',
+                                  marginTop: 3,
+                                  fontFamily: 'var(--font-dm-mono)',
+                                }}
+                              >
+                                {new Date(activity.created_at).toLocaleDateString('de-DE', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </div>
                             </div>
                           </div>
-                          {act.content && (
-                            <div
-                              style={{
-                                fontSize: 10,
-                                color: 'rgba(255,255,255,0.3)',
-                                marginTop: 2,
-                                lineHeight: 1.4,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {act.content}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })
+                    )}
                   </div>
                 )}
               </div>
