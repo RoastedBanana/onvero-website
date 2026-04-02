@@ -16,7 +16,7 @@ export async function fetchLeads(): Promise<Lead[]> {
       id, company_name, first_name, last_name, email, phone,
       website, street, city, zip, country,
       status, score, source, notes, estimated_value,
-      ai_summary, ai_tags, ai_next_action, ai_scored_at,
+      ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
       email_draft, website_summary, website_title, website_description,
       custom_fields, last_contacted_at, follow_up_at, created_at, apollo_id
     `

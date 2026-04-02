@@ -702,10 +702,6 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                   </div>
                 )}
 
-                {/* DEBUG */}
-                <div style={{ fontSize: 10, color: '#facc15', padding: '4px 0' }}>
-                  Sources: {JSON.stringify(lead.aiSources?.length ?? 'null')}
-                </div>
                 {lead.aiSources && lead.aiSources.length > 0 && (
                   <div>
                     <div
