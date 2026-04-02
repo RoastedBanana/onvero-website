@@ -84,7 +84,14 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
         alt={companyName}
         width={px}
         height={px}
-        onLoad={() => setStatus('loaded')}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+            setStatus('initials');
+          } else {
+            setStatus('loaded');
+          }
+        }}
         onError={() => setStatus('initials')}
         style={{
           width: px,
