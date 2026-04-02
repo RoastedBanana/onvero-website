@@ -542,28 +542,6 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
             >
               <style>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none}`}</style>
 
-              {/* DEBUG — remove after confirming */}
-              <div
-                style={{
-                  fontSize: 9,
-                  color: '#facc15',
-                  wordBreak: 'break-all' as const,
-                  background: 'rgba(250,204,21,0.08)',
-                  borderRadius: 4,
-                  padding: 8,
-                  marginBottom: 8,
-                  maxHeight: 120,
-                  overflow: 'auto',
-                }}
-              >
-                <div>ALL KEYS: {Object.keys(lead).join(', ')}</div>
-                <div style={{ marginTop: 4 }}>
-                  googleBusinessStatus:{' '}
-                  {JSON.stringify((lead as Record<string, unknown>).googleBusinessStatus ?? 'MISSING')}
-                </div>
-                <div>company: {lead.company}</div>
-              </div>
-
               {/* Kontakt */}
               <div>
                 <SectionHeader title="Kontakt" />

@@ -34,8 +34,11 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 50);
+    // Refresh from client API to ensure all fields (google, news) are present
+    // Server-side RSC serialization may strip newly added fields
+    refreshLeads();
     return () => clearTimeout(t);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refresh leads from API
   const refreshLeads = useCallback(async () => {
