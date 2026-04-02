@@ -94,6 +94,8 @@ interface MeetingEntry {
   objectives: Objective[];
   couldBeEmail: boolean;
   duration: string;
+  scheduledAt: Date;
+  durationMinutes: number;
 }
 
 // ── Helper: DB row → MeetingEntry ───────────────────────────────────────────
@@ -144,6 +146,8 @@ function dbToMeetingEntry(row: Record<string, unknown>): MeetingEntry {
     objectives,
     couldBeEmail: (row.could_be_email as boolean) ?? false,
     duration: `${(row.duration_minutes as number) ?? 30} min`,
+    scheduledAt,
+    durationMinutes: (row.duration_minutes as number) ?? 30,
   };
 }
 
@@ -251,8 +255,13 @@ function UtilizationRing({ pct }: { pct: number }) {
 
 // ── Timeline Meeting Card ────────────────────────────────────────────────────
 
-function TimelineMeeting({ meeting }: { meeting: MeetingEntry }) {
+function TimelineMeeting({ meeting, onEdit, onCancel }: {
+  meeting: MeetingEntry;
+  onEdit?: (meeting: MeetingEntry) => void;
+  onCancel?: (meeting: MeetingEntry) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   return (
     <div style={{ display: 'flex', gap: 16, position: 'relative' }}>
@@ -416,7 +425,7 @@ function TimelineMeeting({ meeting }: { meeting: MeetingEntry }) {
               </div>
             </div>
 
-            {/* Details */}
+            {/* Details + Actions */}
             <div>
               <div style={{ ...S.label, marginBottom: 8 }}>Details</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -456,6 +465,32 @@ function TimelineMeeting({ meeting }: { meeting: MeetingEntry }) {
                   <CalendarIcon size={13} style={{ color: 'rgba(255,255,255,0.35)' }} />
                   {meeting.date}, {meeting.time}
                 </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit?.(meeting); }}
+                  style={{
+                    flex: 1, padding: '7px 12px', fontSize: 11, fontWeight: 600,
+                    background: 'rgba(107,122,255,0.1)', border: '1px solid rgba(107,122,255,0.25)',
+                    borderRadius: 6, color: '#6B7AFF', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                  }}
+                >
+                  Bearbeiten
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onCancel?.(meeting); }}
+                  disabled={cancelling}
+                  style={{
+                    flex: 1, padding: '7px 12px', fontSize: 11, fontWeight: 600,
+                    background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                    borderRadius: 6, color: '#ef4444', cursor: cancelling ? 'wait' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                  }}
+                >
+                  {cancelling ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={12} />}
+                  Absagen
+                </button>
               </div>
             </div>
           </div>
@@ -515,21 +550,37 @@ const fieldLabel: React.CSSProperties = {
   display: 'block',
 };
 
-function NewMeetingDialog({ onClose, onCreated }: { onClose: () => void; onCreated?: () => void }) {
+function NewMeetingDialog({ onClose, onCreated, editMeeting }: {
+  onClose: () => void;
+  onCreated?: () => void;
+  editMeeting?: MeetingEntry | null;
+}) {
   const { tenantId, supabase } = useTenant();
-  const [meetingId, setMeetingId] = useState<string | null>(null);
+  const [meetingId, setMeetingId] = useState<string | null>(editMeeting?.id ?? null);
   const [saving, setSaving] = useState(false);
-  const [title, setTitle] = useState('');
-  const [objectives, setObjectives] = useState<string[]>([]);
+  const [title, setTitle] = useState(editMeeting?.title ?? '');
+  const [objectives, setObjectives] = useState<string[]>(
+    editMeeting?.objectives.map((o) => o.text) ?? []
+  );
   const [objInput, setObjInput] = useState('');
   const [meetingDescription, setMeetingDescription] = useState('');
-  const [meetingType, setMeetingType] = useState('');
+  const [meetingType, setMeetingType] = useState(editMeeting?.meetingType ?? '');
   const [customType, setCustomType] = useState('');
-  const [selectedDate, setSelectedDate] = useState<CalendarDate | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<CalendarDate | undefined>(
+    editMeeting ? new CalendarDate(editMeeting.scheduledAt.getFullYear(), editMeeting.scheduledAt.getMonth() + 1, editMeeting.scheduledAt.getDate()) : undefined
+  );
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [timeFrom, setTimeFrom] = useState('10:00');
-  const [timeTo, setTimeTo] = useState('11:00');
-  const [selectedParticipants, setSelectedParticipants] = useState<Participant[]>([]);
+  const [timeFrom, setTimeFrom] = useState(editMeeting?.time ?? '10:00');
+  const [timeTo, setTimeTo] = useState(() => {
+    if (editMeeting) {
+      const end = new Date(editMeeting.scheduledAt.getTime() + editMeeting.durationMinutes * 60_000);
+      return end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    }
+    return '11:00';
+  });
+  const [selectedParticipants, setSelectedParticipants] = useState<Participant[]>(
+    editMeeting?.participants ?? []
+  );
   const [participantSearch, setParticipantSearch] = useState('');
   const [showParticipantDropdown, setShowParticipantDropdown] = useState(false);
   const [showNewParticipantForm, setShowNewParticipantForm] = useState(false);
@@ -541,9 +592,9 @@ function NewMeetingDialog({ onClose, onCreated }: { onClose: () => void; onCreat
   const [newPDescription, setNewPDescription] = useState('');
   const participantRef = useRef<HTMLDivElement>(null);
 
-  // Create draft row in Supabase on mount
+  // Create draft row in Supabase on mount (skip when editing)
   React.useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId || editMeeting) return;
     (async () => {
       console.log('[NewMeeting] Creating draft for tenant:', tenantId);
       const { data, error } = await supabase
@@ -565,7 +616,7 @@ function NewMeetingDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         setMeetingId(data.id);
       }
     })();
-  }, [tenantId, supabase]);
+  }, [tenantId, supabase, editMeeting]);
 
   // Close dropdown on outside click
   React.useEffect(() => {
@@ -664,6 +715,16 @@ function NewMeetingDialog({ onClose, onCreated }: { onClose: () => void; onCreat
           reason: json.reason,
           email_draft: json.email_draft,
         });
+        // Save to Supabase
+        if (meetingId) {
+          await supabase
+            .from('planned_meetings')
+            .update({
+              could_be_email: json.could_be_email,
+              could_be_email_reason: json.reason || null,
+            })
+            .eq('id', meetingId);
+        }
       }
     } catch (err) {
       console.error('Email check error:', err);
@@ -725,6 +786,16 @@ function NewMeetingDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         result = text;
       }
       setBriefing(result);
+      // Save to Supabase
+      if (meetingId && result) {
+        await supabase
+          .from('planned_meetings')
+          .update({
+            briefing_markdown: result,
+            briefing_generated_at: new Date().toISOString(),
+          })
+          .eq('id', meetingId);
+      }
     } catch (err) {
       console.error('Briefing error:', err);
       setBriefing('Fehler beim Erstellen des Briefings.');
@@ -799,26 +870,12 @@ function NewMeetingDialog({ onClose, onCreated }: { onClose: () => void; onCreat
         }}
       >
         {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '18px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.07)',
-          }}
-        >
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fff', margin: 0 }}>Neues Meeting erstellen</h3>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'rgba(255,255,255,0.4)',
-              padding: 4,
-            }}
-          >
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)',
+        }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fff', margin: 0 }}>{editMeeting ? 'Meeting bearbeiten' : 'Neues Meeting erstellen'}</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 4 }}>
             <X size={18} />
           </button>
         </div>
@@ -1701,7 +1758,7 @@ function NewMeetingDialog({ onClose, onCreated }: { onClose: () => void; onCreat
             }}
           >
             {saving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
-            {saving ? 'Wird gespeichert…' : 'Meeting erstellen'}
+            {saving ? 'Wird gespeichert…' : editMeeting ? 'Änderungen speichern' : 'Meeting erstellen'}
           </button>
         </div>
       </div>
@@ -1725,7 +1782,14 @@ function NewMeetingDialog({ onClose, onCreated }: { onClose: () => void; onCreat
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-export function MeetingsPrepare() {
+function isMeetingLive(meeting: MeetingEntry): boolean {
+  const now = new Date();
+  const start = meeting.scheduledAt;
+  const end = new Date(start.getTime() + meeting.durationMinutes * 60_000);
+  return now >= start && now <= end;
+}
+
+export function MeetingsPrepare({ onGoToRecord }: { onGoToRecord?: () => void } = {}) {
   const { tenantId, supabase } = useTenant();
   const today = new Date();
   const dateStr = today.toLocaleDateString('de-DE', {
@@ -1735,21 +1799,30 @@ export function MeetingsPrepare() {
     year: 'numeric',
   });
   const [showNewMeeting, setShowNewMeeting] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<MeetingEntry | null>(null);
   const [meetings, setMeetings] = useState<MeetingEntry[]>([]);
   const [loadingMeetings, setLoadingMeetings] = useState(true);
 
   const fetchMeetings = useCallback(async () => {
     if (!tenantId) return;
     setLoadingMeetings(true);
+    // Fetch meetings starting up to 4 hours ago (to catch currently running ones)
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60_000).toISOString();
     const { data, error } = await supabase
       .from('planned_meetings')
       .select('*')
       .eq('tenant_id', tenantId)
       .neq('status', 'draft')
-      .gte('scheduled_at', new Date().toISOString())
+      .gte('scheduled_at', fourHoursAgo)
       .order('scheduled_at', { ascending: true });
     if (!error && data) {
-      setMeetings(data.map(dbToMeetingEntry));
+      const all = data.map(dbToMeetingEntry);
+      // Keep meetings that are live or in the future
+      const now = new Date();
+      setMeetings(all.filter((m) => {
+        const end = new Date(m.scheduledAt.getTime() + m.durationMinutes * 60_000);
+        return end > now;
+      }));
     }
     setLoadingMeetings(false);
   }, [tenantId, supabase]);
@@ -1758,7 +1831,15 @@ export function MeetingsPrepare() {
     fetchMeetings();
   }, [fetchMeetings]);
 
+  // Re-check live status every 30 seconds
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(iv);
+  }, []);
+
   const nextMeeting = meetings[0] ?? null;
+  const nextIsLive = nextMeeting ? isMeetingLive(nextMeeting) : false;
   const upcomingMeetings = meetings.slice(1);
   const meetingsToday = meetings.filter((m) => m.date === 'Heute').length;
   const totalHours = meetings.filter((m) => m.date === 'Heute').reduce((sum, m) => sum + parseInt(m.duration) / 60, 0);
@@ -1777,6 +1858,37 @@ export function MeetingsPrepare() {
       warnings.push({ icon: Clock, text: `${m.title} hat keine Agenda — Objectives hinzufügen`, severity: 'warn' })
     );
   }
+
+  const handleEdit = (meeting: MeetingEntry) => {
+    setEditingMeeting(meeting);
+    setShowNewMeeting(true);
+  };
+
+  const handleCancel = async (meeting: MeetingEntry) => {
+    if (!confirm(`Meeting "${meeting.title}" wirklich absagen?`)) return;
+    // Update status in Supabase
+    await supabase
+      .from('planned_meetings')
+      .update({ status: 'cancelled' })
+      .eq('id', meeting.id);
+    // Notify webhook
+    try {
+      await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/49975b04-acbe-4ba2-9153-dfe6fc2a4ddb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planned_meeting_id: meeting.id,
+          tenant_id: tenantId,
+          title: meeting.title,
+          scheduled_at: meeting.scheduledAt.toISOString(),
+          action: 'cancelled',
+        }),
+      });
+    } catch (err) {
+      console.error('Cancel webhook error:', err);
+    }
+    fetchMeetings();
+  };
 
   return (
     <div>
@@ -1804,7 +1916,10 @@ export function MeetingsPrepare() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12, marginBottom: 28 }}>
         {/* ── Left: Nächstes Meeting ── */}
-        <div style={{ ...S.card, display: 'flex', flexDirection: 'column' }}>
+        <div className={nextIsLive ? 'meeting-card-live' : ''} style={{
+          ...S.card, display: 'flex', flexDirection: 'column',
+          ...(nextIsLive ? { borderColor: 'rgba(107,122,255,0.4)' } : {}),
+        }}>
           {loadingMeetings ? (
             <div
               style={{
@@ -1835,7 +1950,18 @@ export function MeetingsPrepare() {
             <>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div>
-                  <div style={S.label}>Nächstes Meeting</div>
+                  <div style={{ ...S.label, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {nextIsLive ? (
+                      <>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#6B7AFF' }}>
+                          <span className="live-dot" style={{
+                            width: 7, height: 7, borderRadius: '50%', background: '#6B7AFF',
+                          }} />
+                          Jetzt Live
+                        </span>
+                      </>
+                    ) : 'Nächstes Meeting'}
+                  </div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>{nextMeeting.title}</div>
                 </div>
                 <span
@@ -1885,6 +2011,46 @@ export function MeetingsPrepare() {
                     ))}
                   </div>
                 </>
+              )}
+
+              {nextIsLive ? (
+                <button
+                  onClick={onGoToRecord}
+                  style={{
+                    marginTop: 14, width: '100%', padding: '10px 14px',
+                    background: 'rgba(107,122,255,0.12)', border: '1px solid rgba(107,122,255,0.3)',
+                    borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', gap: 8, color: '#6B7AFF', fontSize: 13, fontWeight: 600,
+                  }}
+                >
+                  <Video size={15} />
+                  Meeting jetzt aufnehmen
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                  <button
+                    onClick={() => handleEdit(nextMeeting)}
+                    style={{
+                      flex: 1, padding: '7px 12px', fontSize: 11, fontWeight: 600,
+                      background: 'rgba(107,122,255,0.1)', border: '1px solid rgba(107,122,255,0.25)',
+                      borderRadius: 6, color: '#6B7AFF', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    }}
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    onClick={() => handleCancel(nextMeeting)}
+                    style={{
+                      flex: 1, padding: '7px 12px', fontSize: 11, fontWeight: 600,
+                      background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                      borderRadius: 6, color: '#ef4444', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    }}
+                  >
+                    <X size={12} /> Absagen
+                  </button>
+                </div>
               )}
             </>
           )}
@@ -1986,7 +2152,7 @@ export function MeetingsPrepare() {
                   {date}
                 </div>
                 {dateMeetings.map((m) => (
-                  <TimelineMeeting key={m.id} meeting={m} />
+                  <TimelineMeeting key={m.id} meeting={m} onEdit={handleEdit} onCancel={handleCancel} />
                 ))}
               </div>
             ));
@@ -1994,7 +2160,31 @@ export function MeetingsPrepare() {
         )}
       </div>
 
-      {showNewMeeting && <NewMeetingDialog onClose={() => setShowNewMeeting(false)} onCreated={fetchMeetings} />}
+      {showNewMeeting && (
+        <NewMeetingDialog
+          onClose={() => { setShowNewMeeting(false); setEditingMeeting(null); }}
+          onCreated={fetchMeetings}
+          editMeeting={editingMeeting}
+        />
+      )}
+
+      <style>{`
+        @keyframes livePulse {
+          0% { box-shadow: 0 0 0 0 rgba(107,122,255,0.4); }
+          70% { box-shadow: 0 0 0 8px rgba(107,122,255,0); }
+          100% { box-shadow: 0 0 0 0 rgba(107,122,255,0); }
+        }
+        @keyframes liveDot {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        .meeting-card-live {
+          animation: livePulse 2s ease-in-out infinite;
+        }
+        .live-dot {
+          animation: liveDot 1.5s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

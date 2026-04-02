@@ -86,7 +86,7 @@ export default function MeetingsRoute() {
         {tab === 'Record' && <MeetingsPage />}
         {tab === 'Storage' && <MeetingsStorage />}
         {tab === 'Analyse' && <MeetingsAnalyse />}
-        {tab === 'Prepare' && <MeetingsPrepare />}
+        {tab === 'Prepare' && <MeetingsPrepare onGoToRecord={() => setTab('Record')} />}
       </div>
 
       <style>{`

@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, Upload, X, FileAudio, Loader2, ChevronRight, ChevronDown, Sparkles, ListChecks } from 'lucide-react';
+import {
+  Mic, Upload, X, FileAudio, Loader2, ChevronRight, ChevronDown,
+  Sparkles, ListChecks,
+} from 'lucide-react';
 import { tokens } from '@/lib/design-tokens';
-import PageHeader from '@/components/ui/PageHeader';
 import { useTenant } from '@/hooks/useTenant';
 import Markdown from 'react-markdown';
+import { Download } from 'lucide-react';
+import { MeetingSummaryCard, type MeetingSummaryResult } from '@/components/dashboard/MeetingSummaryCard';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,27 +28,15 @@ type RecordingState = 'idle' | 'recording' | 'processing' | 'done';
 
 const ACCEPTED_TYPES = '.mp3,.mp4,.m4a,.webm,.wav,.ogg';
 const ACCEPTED_MIME = [
-  'audio/mpeg',
-  'audio/mp4',
-  'audio/x-m4a',
-  'audio/webm',
-  'audio/wav',
-  'audio/ogg',
-  'video/mp4',
-  'video/webm',
+  'audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/webm',
+  'audio/wav', 'audio/ogg', 'video/mp4', 'video/webm',
 ];
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return (
-    d.toLocaleDateString('de-DE', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }) +
-    ', ' +
-    d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-  );
+  return d.toLocaleDateString('de-DE', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  }) + ', ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 
 function truncate(text: string, max: number): string {
@@ -55,17 +47,15 @@ function truncate(text: string, max: number): string {
 
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div
-      style={{
-        background: tokens.bg.surface,
-        border: `1px solid ${tokens.bg.border}`,
-        borderRadius: tokens.radius.lg,
-        padding: '2rem',
-        flex: 1,
-        minWidth: 0,
-        ...style,
-      }}
-    >
+    <div style={{
+      background: '#111',
+      border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: 10,
+      padding: 20,
+      flex: 1,
+      minWidth: 0,
+      ...style,
+    }}>
       {children}
     </div>
   );
@@ -88,15 +78,9 @@ function CollapsibleSection({
       <button
         onClick={() => setOpen(!open)}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          padding: '0.85rem 0',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: tokens.text.primary,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', padding: '0.85rem 0', background: 'none', border: 'none',
+          cursor: 'pointer', color: tokens.text.primary,
         }}
       >
         <span style={{ fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -118,7 +102,13 @@ function CollapsibleSection({
 
 // ── Participant Tag Input ────────────────────────────────────────────────────
 
-function ParticipantInput({ participants, onChange }: { participants: string[]; onChange: (p: string[]) => void }) {
+function ParticipantInput({
+  participants,
+  onChange,
+}: {
+  participants: string[];
+  onChange: (p: string[]) => void;
+}) {
   const [input, setInput] = useState('');
 
   const add = () => {
@@ -129,17 +119,10 @@ function ParticipantInput({ participants, onChange }: { participants: string[]; 
 
   return (
     <div>
-      <label
-        style={{
-          display: 'block',
-          fontSize: '0.72rem',
-          fontWeight: 500,
-          color: tokens.text.muted,
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-          marginBottom: '0.4rem',
-        }}
-      >
+      <label style={{
+        display: 'block', fontSize: '0.72rem', fontWeight: 500, color: tokens.text.muted,
+        textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem',
+      }}>
         Teilnehmer
       </label>
       {participants.length > 0 && (
@@ -148,14 +131,9 @@ function ParticipantInput({ participants, onChange }: { participants: string[]; 
             <span
               key={p}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                background: 'rgba(255,255,255,0.08)',
-                borderRadius: 6,
-                padding: '0.25rem 0.6rem',
-                fontSize: '0.78rem',
-                color: 'rgba(255,255,255,0.8)',
+                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                background: 'rgba(255,255,255,0.08)', borderRadius: 6,
+                padding: '0.25rem 0.6rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)',
               }}
             >
               {p}
@@ -163,13 +141,8 @@ function ParticipantInput({ participants, onChange }: { participants: string[]; 
                 type="button"
                 onClick={() => onChange(participants.filter((x) => x !== p))}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.4)',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  lineHeight: 1,
-                  padding: 0,
+                  background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1, padding: 0,
                 }}
               >
                 ×
@@ -183,34 +156,21 @@ function ParticipantInput({ participants, onChange }: { participants: string[]; 
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              add();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); add(); }
           }}
           placeholder="E-Mail oder Name hinzufügen…"
           style={{
-            flex: 1,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 8,
-            color: '#fff',
-            fontSize: '0.85rem',
-            padding: '0.55rem 0.75rem',
-            outline: 'none',
+            flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 8, color: '#fff', fontSize: '0.85rem', padding: '0.55rem 0.75rem', outline: 'none',
           }}
         />
         <button
           type="button"
           onClick={add}
           style={{
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'rgba(255,255,255,0.7)',
-            borderRadius: 8,
-            padding: '0 0.9rem',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
+            background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
+            color: 'rgba(255,255,255,0.7)', borderRadius: 8, padding: '0 0.9rem',
+            cursor: 'pointer', fontSize: '0.85rem',
           }}
         >
           +
@@ -231,6 +191,13 @@ const SUMMARY_TYPES = [
   { id: 'workshop', label: 'Workshop' },
   { id: 'custom', label: 'Custom' },
 ] as const;
+
+interface PlannedMeetingOption {
+  id: string;
+  title: string;
+  scheduled_at: string;
+  label: string;
+}
 
 function MeetingResultPopup({
   transcript,
@@ -253,6 +220,49 @@ function MeetingResultPopup({
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [summaryMenuPos, setSummaryMenuPos] = useState<{ x: number; y: number } | null>(null);
   const summaryBtnRef = useRef<HTMLDivElement>(null);
+
+  // Planned meetings dropdown
+  const [plannedOptions, setPlannedOptions] = useState<PlannedMeetingOption[]>([]);
+  const [selectedPlannedId, setSelectedPlannedId] = useState<string>('');
+
+  useEffect(() => {
+    (async () => {
+      // Fetch recent and upcoming planned meetings (last 24h to next 7 days)
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+      const { data } = await supabase
+        .from('planned_meetings')
+        .select('id, title, scheduled_at')
+        .eq('tenant_id', tenantId)
+        .in('status', ['confirmed', 'planned'])
+        .gte('scheduled_at', dayAgo)
+        .order('scheduled_at', { ascending: true });
+      if (data && data.length > 0) {
+        const now = new Date();
+        const options: PlannedMeetingOption[] = data.map((r: Record<string, unknown>) => {
+          const sa = new Date(r.scheduled_at as string);
+          const isToday = sa.toDateString() === now.toDateString();
+          const time = sa.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+          const dateLabel = isToday ? 'Heute' : sa.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+          return {
+            id: r.id as string,
+            title: (r.title as string) || 'Meeting',
+            scheduled_at: r.scheduled_at as string,
+            label: `${r.title || 'Meeting'} — ${dateLabel}, ${time}`,
+          };
+        });
+        setPlannedOptions(options);
+        // Default: closest meeting to now
+        let closest = options[0];
+        let minDiff = Infinity;
+        for (const o of options) {
+          const diff = Math.abs(new Date(o.scheduled_at).getTime() - now.getTime());
+          if (diff < minDiff) { minDiff = diff; closest = o; }
+        }
+        setSelectedPlannedId(closest.id);
+        setTitle(closest.title);
+      }
+    })();
+  }, [tenantId, supabase]);
 
   // Close submenu on outside click
   useEffect(() => {
@@ -281,15 +291,15 @@ function MeetingResultPopup({
 
       const text = await res.text();
       let json: Record<string, unknown> = {};
-      try {
-        json = JSON.parse(text);
-      } catch {
-        /* plain text */
-      }
+      try { json = JSON.parse(text); } catch { /* plain text */ }
 
       if (json.success && json.id) {
         // Webhook saved to Supabase — fetch the row
-        const { data } = await supabase.from('meeting_summaries').select('*').eq('id', json.id).single();
+        const { data } = await supabase
+          .from('meeting_summaries')
+          .select('*')
+          .eq('id', json.id)
+          .single();
 
         if (data) {
           if (data.summary) setSummary(data.summary);
@@ -310,69 +320,156 @@ function MeetingResultPopup({
     }
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    const { error } = await supabase.from('meeting_summaries').insert({
-      tenant_id: tenantId,
-      title: title.trim() || 'Meeting ' + new Date().toLocaleDateString('de-DE'),
-      transcript,
-      summary,
-      todos,
-      participants,
-    });
+  const [processing, setProcessing] = useState(false);
+  const [summaryResult, setSummaryResult] = useState<MeetingSummaryResult | null>(null);
 
-    if (error) {
-      console.error('Save failed:', error);
-      alert('Fehler beim Speichern: ' + error.message);
-    } else {
-      await onSaved();
-      onClose();
+  const handleWeiter = async () => {
+    setProcessing(true);
+    try {
+      // Get planned meeting details if assigned
+      let meetingDetails: Record<string, unknown> = {};
+      if (selectedPlannedId) {
+        const { data } = await supabase
+          .from('planned_meetings')
+          .select('*')
+          .eq('id', selectedPlannedId)
+          .single();
+        if (data) meetingDetails = data as Record<string, unknown>;
+      }
+
+      // Send to webhook
+      const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/meeting-summarizer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript,
+          tenant_id: tenantId,
+          planned_meeting_id: selectedPlannedId || null,
+          title: title || meetingDetails.title || 'Meeting',
+          meeting_type: meetingDetails.meeting_type || null,
+          scheduled_at: meetingDetails.scheduled_at || null,
+          duration_minutes: meetingDetails.duration_minutes || null,
+          objectives: meetingDetails.objectives || [],
+          internal_participants: meetingDetails.internal_participants || [],
+          external_participants: meetingDetails.external_participants || [],
+        }),
+      });
+
+      const text = await res.text();
+      let webhookResult: Record<string, unknown> = {};
+      try { webhookResult = JSON.parse(text); } catch { /* plain text */ }
+
+      // Handle array response from n8n
+      const data = (Array.isArray(webhookResult) ? webhookResult[0] : webhookResult) as Record<string, unknown>;
+
+      // Save to meeting_summaries
+      const summaryRow = {
+        tenant_id: tenantId,
+        title: title.trim() || (data?.title as string) || 'Meeting ' + new Date().toLocaleDateString('de-DE'),
+        transcript,
+        summary: (data?.summary ?? data?.text ?? '') as string,
+        todos: data?.todos ?? null,
+        participants: Array.isArray(data?.participants) ? (data.participants as { name: string }[]).map(p => typeof p === 'string' ? p : p.name) : [],
+        score: typeof data?.score === 'number' ? data.score : null,
+        score_breakdown: data?.score_breakdown ?? null,
+        improvements: data?.improvements ?? null,
+        objectives_evaluation: data?.objectives_evaluation ?? null,
+        participant_scores: data?.participants ?? null,
+        duration_minutes: (data?.duration_minutes as number) ?? (meetingDetails.duration_minutes as number) ?? null,
+        summary_type: (data?.summary_type as string) ?? null,
+        planned_meeting_id: selectedPlannedId || null,
+      };
+
+      const { data: inserted, error } = await supabase
+        .from('meeting_summaries')
+        .insert(summaryRow)
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Save failed:', error);
+        alert('Fehler beim Speichern: ' + error.message);
+      } else {
+        if (selectedPlannedId && inserted?.id) {
+          await supabase
+            .from('planned_meetings')
+            .update({ meeting_summary_id: inserted.id })
+            .eq('id', selectedPlannedId);
+        }
+        await onSaved();
+
+        // Build summary result for card
+        setSummaryResult({
+          id: inserted?.id ?? '',
+          summary: summaryRow.summary,
+          score: (summaryRow.score as number) ?? 0,
+          score_breakdown: (data?.score_breakdown as MeetingSummaryResult['score_breakdown']) ?? { struktur: 0, effizienz: 0, klarheit: 0, beschluesse: 0, beteiligung: 0 },
+          improvements: (data?.improvements as MeetingSummaryResult['improvements']) ?? { kritisch: [], wichtig: [], positiv: [] },
+          objectives_evaluation: (data?.objectives_evaluation as MeetingSummaryResult['objectives_evaluation']) ?? [],
+          todos: (data?.todos as MeetingSummaryResult['todos']) ?? [],
+          participants: (data?.participants as MeetingSummaryResult['participants']) ?? [],
+          could_have_been_email: (data?.could_have_been_email as boolean) ?? false,
+          duration_minutes: summaryRow.duration_minutes ?? undefined,
+          title: summaryRow.title,
+          summary_type: summaryRow.summary_type ?? undefined,
+        });
+      }
+    } catch (err) {
+      console.error('Webhook error:', err);
+      alert('Fehler bei der Verarbeitung');
+    } finally {
+      setProcessing(false);
     }
-    setSaving(false);
   };
+
+  // Show summary card after webhook response
+  if (summaryResult) {
+    return (
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(6px)',
+        }}
+      >
+        <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: '90vw', maxHeight: '90vh', overflowY: 'auto' }}>
+          <MeetingSummaryCard
+            result={summaryResult}
+            onClose={onClose}
+            onTodosUpdated={onSaved}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       onClick={onClose}
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(6px)',
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1000, backdropFilter: 'blur(6px)',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: tokens.bg.raised,
-          border: `1px solid ${tokens.bg.borderStrong}`,
-          borderRadius: tokens.radius.xl,
-          width: '100%',
-          maxWidth: 520,
-          maxHeight: '90vh',
-          overflow: 'auto',
-          padding: 0,
+          background: tokens.bg.raised, border: `1px solid ${tokens.bg.borderStrong}`,
+          borderRadius: tokens.radius.xl, width: '100%', maxWidth: 420,
+          maxHeight: '60vh', overflow: 'auto', padding: 0,
           animation: 'fadeSlideIn .25s ease',
-          display: 'flex',
-          flexDirection: 'column',
+          display: 'flex', flexDirection: 'column',
         }}
       >
         {/* ── Header ── */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '1.25rem 1.5rem',
-            borderBottom: `1px solid ${tokens.bg.border}`,
-          }}
-        >
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: tokens.text.primary, margin: 0 }}>
-            Meeting bearbeiten
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '0.85rem 1.25rem', borderBottom: `1px solid ${tokens.bg.border}`,
+        }}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: tokens.text.primary, margin: 0 }}>
+            Aufnahme zuordnen
           </h3>
           <button
             onClick={onClose}
@@ -383,309 +480,84 @@ function MeetingResultPopup({
         </div>
 
         {/* ── Content ── */}
-        <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', flex: 1 }}>
-          {/* ── Action Buttons ── */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.6rem',
-              marginBottom: '1.5rem',
-            }}
-          >
-            {/* Zusammenfassen with hover submenu */}
-            <div ref={summaryBtnRef} style={{ position: 'relative' }}>
-              <button
-                onClick={(e) => {
-                  if (!loadingAction) {
-                    setSummaryMenuPos(summaryMenuPos ? null : { x: e.clientX, y: e.clientY });
-                  }
-                }}
-                disabled={!!loadingAction}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.6rem',
-                  padding: '0.85rem 1rem',
-                  borderRadius: 10,
-                  width: '100%',
-                  border: `1px solid ${summary ? 'rgba(255,255,255,0.2)' : tokens.bg.border}`,
-                  background: summary ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                  color: summary ? tokens.text.primary : tokens.text.secondary,
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  cursor: loadingAction ? 'wait' : 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {loadingAction === 'summarize' ? (
-                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-                ) : (
-                  <Sparkles size={16} style={{ flexShrink: 0 }} />
-                )}
-                Zusammenfassen
-              </button>
+        <div style={{ padding: '1rem 1.25rem', overflowY: 'auto', flex: 1 }}>
 
-              {/* Submenu — fixed position next to cursor */}
-              {summaryMenuPos && (
-                <div
-                  onMouseLeave={(e) => {
-                    // Don't close if focus is inside (typing in custom input)
-                    if (e.currentTarget.contains(document.activeElement)) return;
-                    setSummaryMenuPos(null);
-                  }}
-                  style={{
-                    position: 'fixed',
-                    left: summaryMenuPos.x + 8,
-                    top: summaryMenuPos.y - 10,
-                    width: 170,
-                    background: '#1a1a1a',
-                    border: `1px solid ${tokens.bg.borderStrong}`,
-                    borderRadius: 10,
-                    padding: '0.35rem',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                    zIndex: 9999,
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: '0.65rem',
-                      fontWeight: 600,
-                      color: tokens.text.muted,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      padding: '0.4rem 0.6rem 0.25rem',
-                      margin: 0,
-                    }}
-                  >
-                    Meeting-Typ
-                  </p>
-                  {SUMMARY_TYPES.filter((t) => t.id !== 'custom').map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => callWebhook('summarize', t.id)}
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '0.45rem 0.6rem',
-                        borderRadius: 6,
-                        background: 'none',
-                        border: 'none',
-                        color: tokens.text.secondary,
-                        fontSize: '0.82rem',
-                        cursor: 'pointer',
-                        transition: 'all 0.1s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                        e.currentTarget.style.color = tokens.text.primary;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'none';
-                        e.currentTarget.style.color = tokens.text.secondary;
-                      }}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                  {/* Custom input */}
-                  <div
-                    style={{
-                      borderTop: `1px solid ${tokens.bg.border}`,
-                      marginTop: '0.25rem',
-                      paddingTop: '0.35rem',
-                    }}
-                  >
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const input = e.currentTarget.querySelector('input') as HTMLInputElement;
-                        const val = input?.value.trim();
-                        if (val) callWebhook('summarize', val);
-                      }}
-                    >
-                      <input
-                        placeholder="Custom Prompt…"
-                        onMouseLeave={(e) => e.stopPropagation()}
-                        style={{
-                          width: '100%',
-                          background: 'rgba(255,255,255,0.04)',
-                          border: `1px solid ${tokens.bg.border}`,
-                          borderRadius: 6,
-                          color: '#fff',
-                          fontSize: '0.78rem',
-                          padding: '0.4rem 0.5rem',
-                          outline: 'none',
-                        }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)')}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
-                        onKeyDown={(e) => e.stopPropagation()}
-                      />
-                    </form>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* To-Dos */}
-            <button
-              onClick={() => callWebhook('todos')}
-              disabled={!!loadingAction}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.6rem',
-                padding: '0.85rem 1rem',
-                borderRadius: 10,
-                border: `1px solid ${todos ? 'rgba(255,255,255,0.2)' : tokens.bg.border}`,
-                background: todos ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                color: todos ? tokens.text.primary : tokens.text.secondary,
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                cursor: loadingAction ? 'wait' : 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              {loadingAction === 'todos' ? (
-                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
-              ) : (
-                <ListChecks size={16} style={{ flexShrink: 0 }} />
-              )}
-              To-Dos erstellen
-            </button>
-          </div>
-
-          {/* ── Title ── */}
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.72rem',
-                fontWeight: 500,
-                color: tokens.text.muted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                marginBottom: '0.4rem',
-              }}
-            >
-              Titel
+          {/* ── Meeting zuordnen ── */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{
+              display: 'block', fontSize: '0.72rem', fontWeight: 500, color: tokens.text.muted,
+              textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem',
+            }}>
+              Meeting zuordnen
             </label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="z.B. Sprint Planning Q2"
-              style={{
-                width: '100%',
-                background: 'rgba(255,255,255,0.04)',
-                border: `1px solid ${tokens.bg.border}`,
-                borderRadius: 8,
-                color: '#fff',
-                fontSize: '0.9rem',
-                fontWeight: 500,
-                padding: '0.65rem 0.75rem',
-                outline: 'none',
+            <select
+              value={selectedPlannedId}
+              onChange={(e) => {
+                setSelectedPlannedId(e.target.value);
+                const opt = plannedOptions.find((o) => o.id === e.target.value);
+                if (opt) setTitle(opt.title);
               }}
-            />
-          </div>
-
-          {/* ── AI Summary (collapsible) ── */}
-          {summary && (
-            <CollapsibleSection title="KI-Zusammenfassung" defaultOpen={true}>
-              <div
-                className="meeting-md"
-                style={{
-                  fontSize: '0.88rem',
-                  color: tokens.text.primary,
-                  lineHeight: 1.65,
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: 8,
-                  padding: '0.85rem',
-                  border: `1px solid ${tokens.bg.border}`,
-                }}
-              >
-                <Markdown>{summary}</Markdown>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* ── Todos (collapsible) ── */}
-          {todos && (
-            <CollapsibleSection title="To-Dos" defaultOpen={true}>
-              <div
-                className="meeting-md"
-                style={{
-                  fontSize: '0.88rem',
-                  color: tokens.text.primary,
-                  lineHeight: 1.65,
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: 8,
-                  padding: '0.85rem',
-                  border: `1px solid ${tokens.bg.border}`,
-                }}
-              >
-                <Markdown>{todos}</Markdown>
-              </div>
-            </CollapsibleSection>
-          )}
-
-          {/* ── Transcript (collapsible) ── */}
-          <CollapsibleSection title="Transkript" defaultOpen={true}>
-            <div
               style={{
-                fontSize: '0.85rem',
-                color: tokens.text.secondary,
-                lineHeight: 1.65,
-                whiteSpace: 'pre-wrap',
-                background: 'rgba(255,255,255,0.02)',
-                borderRadius: 8,
-                padding: '0.85rem',
-                border: `1px solid ${tokens.bg.border}`,
-                maxHeight: 300,
-                overflowY: 'auto',
+                width: '100%', background: 'rgba(255,255,255,0.04)',
+                border: `1px solid ${tokens.bg.border}`, borderRadius: 8,
+                color: '#fff', fontSize: '0.9rem', fontWeight: 500,
+                padding: '0.65rem 0.75rem', outline: 'none',
+                appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
               }}
             >
+              <option value="" style={{ background: '#1a1a1a' }}>— Kein Meeting zuordnen —</option>
+              {plannedOptions.map((o) => (
+                <option key={o.id} value={o.id} style={{ background: '#1a1a1a' }}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* ── Transcript ── */}
+          <div>
+            <label style={{
+              display: 'block', fontSize: '0.72rem', fontWeight: 500, color: tokens.text.muted,
+              textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem',
+            }}>
+              Transkript
+            </label>
+            <div style={{
+              fontSize: '0.8rem', color: tokens.text.secondary,
+              lineHeight: 1.55, whiteSpace: 'pre-wrap',
+              background: 'rgba(255,255,255,0.02)', borderRadius: 8,
+              padding: '0.75rem', border: `1px solid ${tokens.bg.border}`,
+              maxHeight: 150, overflowY: 'auto',
+            }}>
               {transcript}
             </div>
-          </CollapsibleSection>
-
-          {/* ── Participants ── */}
-          <div style={{ marginTop: '1rem' }}>
-            <ParticipantInput participants={participants} onChange={setParticipants} />
           </div>
         </div>
 
         {/* ── Save Button ── */}
-        <div
-          style={{
-            padding: '1rem 1.5rem',
-            borderTop: `1px solid ${tokens.bg.border}`,
-          }}
-        >
+        <div style={{
+          padding: '0.85rem 1.25rem', borderTop: `1px solid ${tokens.bg.border}`,
+        }}>
           <button
-            onClick={handleSave}
-            disabled={saving}
+            onClick={handleWeiter}
+            disabled={processing}
             style={{
-              width: '100%',
-              padding: '0.7rem',
-              background: saving ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.92)',
-              color: '#0a0a0a',
-              border: 'none',
+              width: '100%', padding: '0.6rem',
+              background: processing ? 'rgba(107,122,255,0.15)' : 'rgba(255,255,255,0.92)',
+              color: processing ? '#6B7AFF' : '#0a0a0a',
+              border: processing ? '1px solid rgba(107,122,255,0.3)' : 'none',
               borderRadius: 8,
-              fontWeight: 600,
-              fontSize: '0.88rem',
-              cursor: saving ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              transition: 'opacity 0.15s',
+              fontWeight: 600, fontSize: '0.88rem',
+              cursor: processing ? 'wait' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              transition: 'all 0.2s',
             }}
           >
-            {saving && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
-            {saving ? 'Wird gespeichert…' : 'Meeting speichern'}
+            {processing && <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />}
+            {processing ? 'Wird verarbeitet…' : 'Weiter'}
           </button>
         </div>
       </div>
@@ -718,8 +590,10 @@ export function MeetingsPage() {
   const [meetings, setMeetings] = useState<MeetingSummary[]>([]);
   const [tableLoading, setTableLoading] = useState(true);
 
-  // Detail modal
-  const [detailMeeting, setDetailMeeting] = useState<MeetingSummary | null>(null);
+  // Next planned meeting
+  const [nextPlanned, setNextPlanned] = useState<{
+    title: string; time: string; date: string; duration: number; participantCount: number; isLive: boolean;
+  } | null>(null);
 
   // ── Fetch meetings ───────────────────────────────────────────────────────
 
@@ -736,9 +610,60 @@ export function MeetingsPage() {
     setTableLoading(false);
   }, [tenantId, supabase]);
 
+  const fetchNextPlanned = useCallback(async () => {
+    if (!tenantId) return;
+    const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60_000).toISOString();
+    const { data } = await supabase
+      .from('planned_meetings')
+      .select('title, scheduled_at, duration_minutes, internal_participants, external_participants')
+      .eq('tenant_id', tenantId)
+      .neq('status', 'draft')
+      .gte('scheduled_at', fourHoursAgo)
+      .order('scheduled_at', { ascending: true })
+      .limit(5);
+    if (data && data.length > 0) {
+      const now = new Date();
+      const row = data.find((r: Record<string, unknown>) => {
+        const start = new Date(r.scheduled_at as string);
+        const end = new Date(start.getTime() + ((r.duration_minutes as number) ?? 30) * 60_000);
+        return end > now;
+      });
+      if (row) {
+        const scheduledAt = new Date(row.scheduled_at as string);
+        const dur = (row.duration_minutes as number) ?? 30;
+        const end = new Date(scheduledAt.getTime() + dur * 60_000);
+        const isToday = scheduledAt.toDateString() === now.toDateString();
+        const isTomorrow = scheduledAt.toDateString() === new Date(now.getTime() + 86400_000).toDateString();
+        const dateLabel = isToday ? 'Heute' : isTomorrow ? 'Morgen' : scheduledAt.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+        const pCount = ((row.internal_participants as unknown[]) ?? []).length + ((row.external_participants as unknown[]) ?? []).length;
+        setNextPlanned({
+          title: (row.title as string) || 'Meeting',
+          time: scheduledAt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+          date: dateLabel,
+          duration: dur,
+          participantCount: pCount,
+          isLive: now >= scheduledAt && now <= end,
+        });
+      } else {
+        setNextPlanned(null);
+      }
+    } else {
+      setNextPlanned(null);
+    }
+  }, [tenantId, supabase]);
+
   useEffect(() => {
-    if (!tenantLoading && tenantId) fetchMeetings();
-  }, [tenantLoading, tenantId, fetchMeetings]);
+    if (!tenantLoading && tenantId) {
+      fetchMeetings();
+      fetchNextPlanned();
+    }
+  }, [tenantLoading, tenantId, fetchMeetings, fetchNextPlanned]);
+
+  // Re-check live status every 30s
+  useEffect(() => {
+    const iv = setInterval(fetchNextPlanned, 30_000);
+    return () => clearInterval(iv);
+  }, [fetchNextPlanned]);
 
   // ── Send audio to API ──────────────────────────────────────────────────
 
@@ -766,9 +691,7 @@ export function MeetingsPage() {
     setPendingTranscript(null);
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setRecordError(
-        `Mikrofon-API nicht verfügbar. Secure context: ${window.isSecureContext}, Protocol: ${location.protocol}`
-      );
+      setRecordError(`Mikrofon-API nicht verfügbar. Secure context: ${window.isSecureContext}, Protocol: ${location.protocol}`);
       return;
     }
 
@@ -789,10 +712,7 @@ export function MeetingsPage() {
 
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
         setRecordState('processing');
         try {
@@ -865,153 +785,185 @@ export function MeetingsPage() {
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ animation: 'fadeSlideIn .35s ease' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <PageHeader title="Meetings" subtitle="Meetings aufnehmen & KI-Zusammenfassungen" />
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+      {/* ── Next Meeting Card ─────────────────────────────────────────── */}
+      <div className={nextPlanned?.isLive && recordState !== 'recording' ? 'record-card-live' : ''} style={{
+        background: '#111',
+        border: `1px solid ${nextPlanned?.isLive && recordState !== 'recording' ? 'rgba(107,122,255,0.4)' : 'rgba(255,255,255,0.07)'}`,
+        borderRadius: 10, padding: 20, marginBottom: 20,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 12,
+            background: recordState === 'recording' ? 'rgba(239,68,68,0.15)' : 'rgba(107,122,255,0.12)',
+            border: `1px solid ${recordState === 'recording' ? 'rgba(239,68,68,0.3)' : 'rgba(107,122,255,0.25)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {recordState === 'recording'
+              ? <Mic size={22} style={{ color: '#ef4444', animation: 'glowPulse 2s ease-in-out infinite' }} />
+              : <ChevronRight size={22} style={{ color: '#6B7AFF' }} />
+            }
+          </div>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.09em', color: recordState === 'recording' ? 'rgba(255,255,255,0.35)' : nextPlanned?.isLive ? '#6B7AFF' : 'rgba(255,255,255,0.35)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              {recordState === 'recording' ? 'Aufnahme läuft' : nextPlanned?.isLive ? (
+                <>
+                  <span className="record-live-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: '#6B7AFF', display: 'inline-block' }} />
+                  Jetzt Live
+                </>
+              ) : 'Nächstes Meeting'}
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>
+              {recordState === 'recording'
+                ? 'Aufnahme läuft...'
+                : nextPlanned ? nextPlanned.title : 'Kein Meeting geplant'
+              }
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+              {recordState === 'recording'
+                ? `${formatTimer(elapsed)} aufgenommen`
+                : nextPlanned
+                  ? `${nextPlanned.date}, ${nextPlanned.time} · ${nextPlanned.duration} min${nextPlanned.participantCount > 0 ? ` · ${nextPlanned.participantCount} Teilnehmer` : ''}`
+                  : 'Erstelle ein Meeting im Prepare-Tab'
+              }
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {recordState === 'recording' ? (
+            <>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', animation: 'glowPulse 2s ease-in-out infinite' }} />
+              <span style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: '#fff' }}>
+                {formatTimer(elapsed)}
+              </span>
+            </>
+          ) : nextPlanned ? (
+            <span style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', color: '#6B7AFF' }}>
+              {nextPlanned.time}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* ── Action Cards ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '1.25rem', marginBottom: '2.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, flex: 1 }}>
+
         {/* Card 1 – Record */}
-        <Card>
-          <h2 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '1.25rem', color: tokens.text.primary }}>
+        <Card style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          ...(nextPlanned?.isLive && recordState !== 'recording' ? { borderColor: 'rgba(107,122,255,0.35)', boxShadow: '0 0 20px rgba(107,122,255,0.08)' } : {}),
+        }}>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '1.5rem', color: tokens.text.primary }}>
             Meeting aufnehmen
           </h2>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {recordState === 'recording' && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    width: 110,
-                    height: 110,
-                    borderRadius: '50%',
-                    border: '2px solid rgba(239,68,68,0.4)',
-                    animation: 'glowRing 2s ease-in-out infinite',
-                  }}
-                />
+                <div style={{
+                  position: 'absolute', width: 140, height: 140, borderRadius: '50%',
+                  border: '2px solid rgba(239,68,68,0.4)',
+                  animation: 'glowRing 2s ease-in-out infinite',
+                }} />
               )}
               {recordState === 'recording' && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    width: 96,
-                    height: 96,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)',
-                    animation: 'glowPulse 2s ease-in-out infinite',
-                  }}
-                />
+                <div style={{
+                  position: 'absolute', width: 120, height: 120, borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)',
+                  animation: 'glowPulse 2s ease-in-out infinite',
+                }} />
               )}
               <button
                 onClick={recordState === 'idle' || recordState === 'done' ? startRecording : undefined}
                 disabled={recordState === 'processing' || recordState === 'recording'}
                 style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  width: 80,
-                  height: 80,
-                  borderRadius: '50%',
-                  border: 'none',
-                  cursor:
-                    recordState === 'processing' ? 'not-allowed' : recordState === 'recording' ? 'default' : 'pointer',
+                  position: 'relative', zIndex: 1,
+                  width: 100, height: 100, borderRadius: '50%',
+                  border: 'none', cursor: recordState === 'processing' ? 'not-allowed' : recordState === 'recording' ? 'default' : 'pointer',
                   background: recordState === 'recording' ? '#ef4444' : 'rgba(255,255,255,0.08)',
                   color: recordState === 'recording' ? '#fff' : tokens.text.secondary,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all .2s',
                 }}
               >
-                {recordState === 'processing' ? (
-                  <Loader2 size={32} style={{ animation: 'spin 1s linear infinite' }} />
-                ) : (
-                  <Mic size={32} />
-                )}
+                {recordState === 'processing'
+                  ? <Loader2 size={40} style={{ animation: 'spin 1s linear infinite' }} />
+                  : <Mic size={40} />}
               </button>
             </div>
 
             {recordState === 'recording' && (
-              <span
-                style={{
-                  fontSize: '1.6rem',
-                  fontWeight: 600,
-                  fontVariantNumeric: 'tabular-nums',
-                  color: tokens.text.primary,
-                  letterSpacing: '0.05em',
-                }}
-              >
+              <span style={{
+                fontSize: '2rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums',
+                color: tokens.text.primary, letterSpacing: '0.05em',
+              }}>
                 {formatTimer(elapsed)}
               </span>
             )}
 
-            <span style={{ fontSize: '0.85rem', color: tokens.text.secondary }}>
+            <span style={{ fontSize: '0.95rem', color: tokens.text.secondary }}>
               {recordState === 'idle' && 'Klicke zum Starten'}
               {recordState === 'recording' && 'Aufnahme läuft...'}
               {recordState === 'processing' && 'Wird transkribiert...'}
               {recordState === 'done' && 'Fertig!'}
             </span>
 
+            {nextPlanned?.isLive && recordState === 'idle' && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: '0.75rem',
+                fontSize: 12, fontWeight: 600, color: '#6B7AFF',
+              }}>
+                <span className="record-live-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: '#6B7AFF', display: 'inline-block' }} />
+                „{nextPlanned.title}" kann jetzt aufgenommen werden
+              </div>
+            )}
+
             {recordState === 'recording' && (
               <button
                 onClick={stopRecording}
                 style={{
-                  marginTop: '0.25rem',
-                  padding: '0.55rem 2rem',
-                  background: 'rgba(255,255,255,0.9)',
-                  color: '#0a0a0a',
-                  border: 'none',
-                  borderRadius: tokens.radius.sm,
-                  fontWeight: 600,
-                  fontSize: '0.88rem',
-                  cursor: 'pointer',
+                  marginTop: '0.5rem', padding: '0.65rem 2.5rem',
+                  background: 'rgba(255,255,255,0.9)', color: '#0a0a0a',
+                  border: 'none', borderRadius: tokens.radius.sm,
+                  fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer',
                 }}
               >
                 Fertig
               </button>
             )}
 
-            {recordError && <span style={{ fontSize: '0.82rem', color: '#f87171' }}>{recordError}</span>}
+            {recordError && (
+              <span style={{ fontSize: '0.85rem', color: '#f87171' }}>{recordError}</span>
+            )}
           </div>
         </Card>
 
         {/* Card 2 – Upload */}
-        <Card>
-          <h2 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '1.25rem', color: tokens.text.primary }}>
-            MP3 hochladen
-          </h2>
-
+        <Card style={{
+          display: 'flex', flexDirection: 'column', padding: 12,
+          ...(nextPlanned?.isLive && recordState !== 'recording' ? { borderColor: 'rgba(107,122,255,0.35)', boxShadow: '0 0 20px rgba(107,122,255,0.08)' } : {}),
+        }}>
           {uploading ? (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '1.5rem 0',
-              }}
-            >
-              <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: tokens.text.secondary }} />
-              <span style={{ fontSize: '0.85rem', color: tokens.text.secondary }}>Wird transkribiert...</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', flex: 1 }}>
+              <Loader2 size={40} style={{ animation: 'spin 1s linear infinite', color: tokens.text.secondary }} />
+              <span style={{ fontSize: '0.95rem', color: tokens.text.secondary }}>
+                Wird transkribiert...
+              </span>
             </div>
           ) : (
             <>
               <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={onDrop}
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  border: `2px dashed ${dragOver ? 'rgba(255,255,255,0.3)' : tokens.bg.border}`,
-                  borderRadius: tokens.radius.md,
-                  padding: '1.5rem',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'border-color .2s',
+                  border: `2px dashed ${dragOver ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 10,
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  textAlign: 'center', cursor: 'pointer',
+                  transition: 'border-color .2s, background .2s',
                   background: dragOver ? 'rgba(255,255,255,0.03)' : 'transparent',
                 }}
               >
@@ -1034,30 +986,30 @@ export function MeetingsPage() {
                       ({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
                     </span>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedFile(null);
-                      }}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: tokens.text.muted,
-                        padding: 2,
-                      }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: tokens.text.muted, padding: 2 }}
                     >
                       <X size={16} />
                     </button>
                   </div>
                 ) : (
                   <>
-                    <Upload size={24} style={{ color: tokens.text.muted, marginBottom: '0.5rem' }} />
-                    <p style={{ fontSize: '0.85rem', color: tokens.text.secondary, margin: 0 }}>
+                    <Upload size={36} style={{ color: 'rgba(255,255,255,0.25)', marginBottom: '0.75rem' }} />
+                    <p style={{ fontSize: '1.05rem', fontWeight: 600, color: tokens.text.secondary, margin: 0 }}>
                       Datei hierher ziehen oder klicken
                     </p>
-                    <p style={{ fontSize: '0.75rem', color: tokens.text.muted, margin: '0.25rem 0 0' }}>
+                    <p style={{ fontSize: '0.82rem', color: tokens.text.muted, margin: '0.4rem 0 0' }}>
                       MP3, MP4, M4A, WebM, WAV, OGG
                     </p>
+                    {nextPlanned?.isLive && recordState !== 'recording' && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: '0.75rem',
+                        fontSize: 12, fontWeight: 600, color: '#6B7AFF',
+                      }}>
+                        <span className="record-live-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: '#6B7AFF', display: 'inline-block' }} />
+                        „{nextPlanned.title}" kann jetzt hochgeladen werden
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1066,16 +1018,10 @@ export function MeetingsPage() {
                 <button
                   onClick={handleUpload}
                   style={{
-                    marginTop: '1rem',
-                    width: '100%',
-                    padding: '0.6rem',
-                    background: 'rgba(255,255,255,0.9)',
-                    color: '#0a0a0a',
-                    border: 'none',
-                    borderRadius: tokens.radius.sm,
-                    fontWeight: 600,
-                    fontSize: '0.88rem',
-                    cursor: 'pointer',
+                    marginTop: 12, width: '100%', padding: '0.7rem',
+                    background: 'rgba(255,255,255,0.9)', color: '#0a0a0a',
+                    border: 'none', borderRadius: 8,
+                    fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer',
                   }}
                 >
                   Hochladen & Transkribieren
@@ -1092,214 +1038,17 @@ export function MeetingsPage() {
         </Card>
       </div>
 
-      {/* ── Meetings Table ──────────────────────────────────────────────── */}
-      <div
-        style={{
-          background: tokens.bg.surface,
-          border: `1px solid ${tokens.bg.border}`,
-          borderRadius: tokens.radius.lg,
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: `1px solid ${tokens.bg.border}` }}>
-          <h2 style={{ fontSize: '1.05rem', fontWeight: 600, color: tokens.text.primary, margin: 0 }}>
-            Vergangene Meetings
-          </h2>
-        </div>
-
-        {tableLoading ? (
-          <div style={{ padding: '3rem', textAlign: 'center' }}>
-            <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', color: tokens.text.muted }} />
-          </div>
-        ) : meetings.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: tokens.text.muted, fontSize: '0.88rem' }}>
-            Noch keine Meetings vorhanden.
-          </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${tokens.bg.border}` }}>
-                {['Datum', 'Titel', 'Zusammenfassung', ''].map((h) => (
-                  <th
-                    key={h}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      textAlign: 'left',
-                      fontSize: '0.78rem',
-                      fontWeight: 500,
-                      color: tokens.text.muted,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {meetings.map((m) => (
-                <tr
-                  key={m.id}
-                  style={{ borderBottom: `1px solid ${tokens.bg.border}`, transition: 'background .15s' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = tokens.bg.hover)}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <td
-                    style={{
-                      padding: '0.85rem 1.5rem',
-                      fontSize: '0.88rem',
-                      color: tokens.text.secondary,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {formatDate(m.created_at)}
-                  </td>
-                  <td
-                    style={{
-                      padding: '0.85rem 1.5rem',
-                      fontSize: '0.88rem',
-                      color: tokens.text.primary,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {m.title || '–'}
-                  </td>
-                  <td style={{ padding: '0.85rem 1.5rem', fontSize: '0.88rem', color: tokens.text.secondary }}>
-                    {truncate(m.summary || '–', 80)}
-                  </td>
-                  <td style={{ padding: '0.85rem 1.5rem', textAlign: 'right' }}>
-                    <button
-                      onClick={() => setDetailMeeting(m)}
-                      style={{
-                        background: 'rgba(255,255,255,0.06)',
-                        border: `1px solid ${tokens.bg.border}`,
-                        borderRadius: tokens.radius.sm,
-                        padding: '0.35rem 0.85rem',
-                        color: tokens.text.secondary,
-                        fontSize: '0.82rem',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.3rem',
-                      }}
-                    >
-                      Details <ChevronRight size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
       {/* ── Meeting Result Popup ──────────────────────────────────────── */}
       {pendingTranscript && tenantId && (
         <MeetingResultPopup
           transcript={pendingTranscript}
-          onClose={() => {
-            setPendingTranscript(null);
-            setRecordState('idle');
-          }}
+          onClose={() => { setPendingTranscript(null); setRecordState('idle'); }}
           onSaved={fetchMeetings}
           tenantId={tenantId}
           supabase={supabase}
         />
       )}
 
-      {/* ── Detail Modal ────────────────────────────────────────────────── */}
-      {detailMeeting && (
-        <div
-          onClick={() => setDetailMeeting(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            backdropFilter: 'blur(4px)',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: tokens.bg.raised,
-              border: `1px solid ${tokens.bg.borderStrong}`,
-              borderRadius: tokens.radius.xl,
-              width: '100%',
-              maxWidth: 720,
-              maxHeight: '80vh',
-              overflow: 'auto',
-              padding: '2rem',
-            }}
-          >
-            <div
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}
-            >
-              <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: tokens.text.primary, margin: 0 }}>
-                  {detailMeeting.title || 'Meeting'}
-                </h3>
-                <p style={{ fontSize: '0.8rem', color: tokens.text.muted, margin: '0.25rem 0 0' }}>
-                  {formatDate(detailMeeting.created_at)}
-                </p>
-              </div>
-              <button
-                onClick={() => setDetailMeeting(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: tokens.text.muted }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {detailMeeting.participants?.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-                {detailMeeting.participants.map((p) => (
-                  <span
-                    key={p}
-                    style={{
-                      background: 'rgba(255,255,255,0.08)',
-                      borderRadius: 6,
-                      padding: '0.2rem 0.6rem',
-                      fontSize: '0.78rem',
-                      color: 'rgba(255,255,255,0.7)',
-                    }}
-                  >
-                    {p}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {detailMeeting.summary && (
-              <CollapsibleSection title="Zusammenfassung" defaultOpen={true}>
-                <div className="meeting-md" style={{ fontSize: '0.9rem', color: tokens.text.primary, lineHeight: 1.6 }}>
-                  <Markdown>{detailMeeting.summary}</Markdown>
-                </div>
-              </CollapsibleSection>
-            )}
-
-            {detailMeeting.todos && (
-              <CollapsibleSection title="To-Dos" defaultOpen={true}>
-                <div className="meeting-md" style={{ fontSize: '0.9rem', color: tokens.text.primary, lineHeight: 1.6 }}>
-                  <Markdown>{detailMeeting.todos}</Markdown>
-                </div>
-              </CollapsibleSection>
-            )}
-
-            <CollapsibleSection title="Transkript" defaultOpen={true}>
-              <div
-                style={{ fontSize: '0.85rem', color: tokens.text.secondary, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}
-              >
-                {detailMeeting.transcript}
-              </div>
-            </CollapsibleSection>
-          </div>
-        </div>
-      )}
 
       {/* ── Keyframes ───────────────────────────────────────────────────── */}
       <style>{`
@@ -1329,18 +1078,188 @@ export function MeetingsPage() {
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
+        @keyframes recordCardPulse {
+          0% { box-shadow: 0 0 0 0 rgba(107,122,255,0.4); }
+          70% { box-shadow: 0 0 0 8px rgba(107,122,255,0); }
+          100% { box-shadow: 0 0 0 0 rgba(107,122,255,0); }
+        }
+        @keyframes recordLiveDot {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+        .record-card-live {
+          animation: recordCardPulse 2s ease-in-out infinite;
+        }
+        .record-live-dot {
+          animation: recordLiveDot 1.5s ease-in-out infinite;
+        }
       `}</style>
     </div>
   );
 }
 
+// ── Storage Component (meetings table + detail modal) ────────────────────────
 
 export function MeetingsStorage() {
+  const { tenantId, supabase, loading: tenantLoading } = useTenant();
+  const [meetings, setMeetings] = useState<MeetingSummary[]>([]);
+  const [tableLoading, setTableLoading] = useState(true);
+  const [detailMeeting, setDetailMeeting] = useState<MeetingSummary | null>(null);
+
+  const fetchMeetings = useCallback(async () => {
+    if (!tenantId) return;
+    setTableLoading(true);
+    const { data, error } = await supabase
+      .from('meeting_summaries')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+    if (!error && data) setMeetings(data as MeetingSummary[]);
+    setTableLoading(false);
+  }, [tenantId, supabase]);
+
+  useEffect(() => {
+    if (!tenantLoading && tenantId) fetchMeetings();
+  }, [tenantLoading, tenantId, fetchMeetings]);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "40vh", textAlign: "center", gap: "0.75rem" }}>
-      <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>📁</div>
-      <h2 style={{ fontWeight: 600, fontSize: "1.05rem", color: "#fff" }}>Meeting Storage</h2>
-      <p style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.85rem", maxWidth: 320 }}>Deine Meeting-Aufnahmen und Transkripte — kommt bald.</p>
+    <div>
+      <div style={{
+        background: '#111', border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 10, overflow: 'hidden',
+      }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <h2 style={{ fontSize: 12, fontWeight: 600, color: '#fff', margin: 0 }}>Alle Meetings</h2>
+        </div>
+
+        {tableLoading ? (
+          <div style={{ padding: '3rem', textAlign: 'center' }}>
+            <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', color: tokens.text.muted }} />
+          </div>
+        ) : meetings.length === 0 ? (
+          <div style={{ padding: '3rem', textAlign: 'center', color: tokens.text.muted, fontSize: '0.88rem' }}>
+            Noch keine Meetings vorhanden.
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${tokens.bg.border}` }}>
+                {['Datum', 'Titel', 'Zusammenfassung', ''].map((h) => (
+                  <th key={h} style={{
+                    padding: '0.75rem 1.5rem', textAlign: 'left',
+                    fontSize: '0.78rem', fontWeight: 500,
+                    color: tokens.text.muted, textTransform: 'uppercase', letterSpacing: '0.04em',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {meetings.map((m) => (
+                <tr
+                  key={m.id}
+                  style={{ borderBottom: `1px solid ${tokens.bg.border}`, transition: 'background .15s' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = tokens.bg.hover)}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <td style={{ padding: '0.85rem 1.5rem', fontSize: '0.88rem', color: tokens.text.secondary, whiteSpace: 'nowrap' }}>
+                    {formatDate(m.created_at)}
+                  </td>
+                  <td style={{ padding: '0.85rem 1.5rem', fontSize: '0.88rem', color: tokens.text.primary, fontWeight: 500 }}>
+                    {m.title || '–'}
+                  </td>
+                  <td style={{ padding: '0.85rem 1.5rem', fontSize: '0.88rem', color: tokens.text.secondary }}>
+                    {truncate(m.summary || '–', 80)}
+                  </td>
+                  <td style={{ padding: '0.85rem 1.5rem', textAlign: 'right' }}>
+                    <button
+                      onClick={() => setDetailMeeting(m)}
+                      style={{
+                        background: 'rgba(255,255,255,0.06)', border: `1px solid ${tokens.bg.border}`,
+                        borderRadius: tokens.radius.sm, padding: '0.35rem 0.85rem',
+                        color: tokens.text.secondary, fontSize: '0.82rem',
+                        cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                      }}
+                    >
+                      Details <ChevronRight size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Detail Modal */}
+      {detailMeeting && (
+        <div
+          onClick={() => setDetailMeeting(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: tokens.bg.raised, border: `1px solid ${tokens.bg.borderStrong}`,
+              borderRadius: tokens.radius.xl, width: '100%', maxWidth: 720,
+              maxHeight: '80vh', overflow: 'auto', padding: '2rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: tokens.text.primary, margin: 0 }}>
+                  {detailMeeting.title || 'Meeting'}
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: tokens.text.muted, margin: '0.25rem 0 0' }}>
+                  {formatDate(detailMeeting.created_at)}
+                </p>
+              </div>
+              <button onClick={() => setDetailMeeting(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: tokens.text.muted }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {detailMeeting.participants?.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                {detailMeeting.participants.map((p) => (
+                  <span key={p} style={{
+                    background: 'rgba(255,255,255,0.08)', borderRadius: 6,
+                    padding: '0.2rem 0.6rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)',
+                  }}>{p}</span>
+                ))}
+              </div>
+            )}
+
+            {detailMeeting.summary && (
+              <CollapsibleSection title="Zusammenfassung" defaultOpen={true}>
+                <div className="meeting-md" style={{ fontSize: '0.9rem', color: tokens.text.primary, lineHeight: 1.6 }}>
+                  <Markdown>{detailMeeting.summary}</Markdown>
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {detailMeeting.todos && (
+              <CollapsibleSection title="To-Dos" defaultOpen={true}>
+                <div className="meeting-md" style={{ fontSize: '0.9rem', color: tokens.text.primary, lineHeight: 1.6 }}>
+                  <Markdown>{detailMeeting.todos}</Markdown>
+                </div>
+              </CollapsibleSection>
+            )}
+
+            <CollapsibleSection title="Transkript" defaultOpen={true}>
+              <div style={{ fontSize: '0.85rem', color: tokens.text.secondary, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                {detailMeeting.transcript}
+              </div>
+            </CollapsibleSection>
+          </div>
+        </div>
+      )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

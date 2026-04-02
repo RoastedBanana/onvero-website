@@ -152,6 +152,8 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
   const [emailEditing, setEmailEditing] = useState(false);
   const [emailText, setEmailText] = useState('');
   const [emailSaving, setEmailSaving] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [scrapingStarted, setScrapingStarted] = useState(false);
   const [scrapingLoading, setScrapingLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -244,6 +246,42 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
       navigator.clipboard?.writeText(emailText);
       setDraftCopied(true);
       setTimeout(() => setDraftCopied(false), 2000);
+    }
+  }
+
+  async function sendEmail() {
+    if (!lead?.email || !emailText) return;
+    setEmailSending(true);
+    try {
+      // Parse subject from first line or use default
+      const lines = emailText.split('\n').filter(l => l.trim());
+      const subjectLine = lines.find(l => l.toLowerCase().startsWith('betreff:'));
+      const subject = subjectLine ? subjectLine.replace(/^betreff:\s*/i, '').trim() : `Kontaktanfrage von ${lead.company ?? 'uns'}`;
+      const body = subjectLine ? lines.filter(l => l !== subjectLine).join('\n').trim() : emailText;
+
+      const res = await fetch('/api/leads/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: lead.id,
+          tenant_id: TENANT_ID,
+          to: lead.email,
+          subject,
+          text: body,
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setEmailSent(true);
+        setTimeout(() => setEmailSent(false), 3000);
+      } else {
+        alert('E-Mail senden fehlgeschlagen: ' + (result.error ?? 'Unbekannter Fehler'));
+      }
+    } catch (err) {
+      console.error('Send email error:', err);
+      alert('E-Mail senden fehlgeschlagen');
+    } finally {
+      setEmailSending(false);
     }
   }
 
@@ -1538,23 +1576,44 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
               }}
             >
               <button
-                onClick={copyDraft}
-                disabled={!lead.emailDraft}
+                onClick={sendEmail}
+                disabled={!lead.emailDraft || !lead.email || emailSending}
                 style={{
                   flex: 1,
-                  background: 'rgba(107,122,255,0.15)',
-                  color: draftCopied ? '#22C55E' : '#6B7AFF',
-                  border: '1px solid rgba(107,122,255,0.25)',
+                  background: emailSent ? 'rgba(34,197,94,0.15)' : 'rgba(107,122,255,0.15)',
+                  color: emailSent ? '#22C55E' : emailSending ? 'rgba(107,122,255,0.6)' : '#6B7AFF',
+                  border: `1px solid ${emailSent ? 'rgba(34,197,94,0.25)' : 'rgba(107,122,255,0.25)'}`,
                   borderRadius: 8,
                   padding: '8px 12px',
                   fontSize: 11,
                   fontWeight: 500,
+                  cursor: lead.emailDraft && lead.email && !emailSending ? 'pointer' : 'default',
+                  opacity: lead.emailDraft && lead.email ? 1 : 0.4,
+                  transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                }}
+              >
+                {emailSending ? '⏳ Senden…' : emailSent ? '✓ Gesendet' : '📧 E-Mail senden'}
+              </button>
+              <button
+                onClick={copyDraft}
+                disabled={!lead.emailDraft}
+                title="E-Mail kopieren"
+                style={{
+                  width: 36,
+                  background: 'rgba(255,255,255,0.06)',
+                  color: draftCopied ? '#22C55E' : 'rgba(255,255,255,0.5)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8,
+                  padding: '8px',
+                  fontSize: 13,
                   cursor: lead.emailDraft ? 'pointer' : 'default',
                   opacity: lead.emailDraft ? 1 : 0.4,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'color 0.2s',
                 }}
               >
-                {draftCopied ? '✓ Kopiert' : '📧 E-Mail kopieren'}
+                {draftCopied ? '✓' : '📋'}
               </button>
 
               <div style={{ position: 'relative', flex: 1 }}>
