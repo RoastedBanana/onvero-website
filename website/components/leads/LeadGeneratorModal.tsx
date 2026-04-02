@@ -70,6 +70,11 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
   const [mapsMaxResults, setMapsMaxResults] = useState(50);
   const [mapsLoading, setMapsLoading] = useState(false);
   const [mapsSuccess, setMapsSuccess] = useState(false);
+  const [mapsMinRating, setMapsMinRating] = useState<number | null>(null);
+  const [mapsMinReviews, setMapsMinReviews] = useState<number | null>(null);
+  const [mapsWebsiteFilter, setMapsWebsiteFilter] = useState<string | null>(null);
+  const [mapsBusinessStatus, setMapsBusinessStatus] = useState<string | null>('operational');
+  const [mapsCountry, setMapsCountry] = useState<string | null>('de');
 
   // Config fields
   const [industries, setIndustries] = useState<string[]>([]);
@@ -194,6 +199,12 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
     setMode('select');
     setMapsSuccess(false);
     setMapsSearchTerms('');
+    setMapsMaxResults(50);
+    setMapsMinRating(null);
+    setMapsMinReviews(null);
+    setMapsWebsiteFilter(null);
+    setMapsBusinessStatus('operational');
+    setMapsCountry('de');
     setErrorDetails(null);
     setNewLeadsFound(0);
     setRunningSeconds(0);
@@ -351,8 +362,8 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
-            width: 520,
-            maxHeight: '80vh',
+            width: mode === 'google_maps' ? 640 : 520,
+            maxHeight: '85vh',
             background: '#111',
             border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 14,
@@ -445,8 +456,20 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
 
           {/* ═══════════ GOOGLE MAPS MODE ═══════════ */}
           {phase === 'config' && mode === 'google_maps' && (
-            <div style={{ padding: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', maxHeight: 'calc(85vh - 2px)', overflow: 'hidden' }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  padding: '16px 24px',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
                 <button
                   onClick={() => {
                     setMode('select');
@@ -465,8 +488,9 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                 </button>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#1D9E75' }}>📍 Google Maps Scraper</div>
               </div>
+
               {mapsSuccess ? (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ textAlign: 'center', padding: '40px 24px' }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#1D9E75', marginBottom: 4 }}>
                     Scraper gestartet
@@ -490,15 +514,24 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                   </button>
                 </div>
               ) : (
-                <>
-                  <div style={{ marginBottom: 14 }}>
+                <div
+                  style={{
+                    overflowY: 'auto',
+                    padding: '16px 24px 24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 16,
+                  }}
+                >
+                  {/* ── Suchbegriffe ── */}
+                  <div>
                     <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>
-                      Suchbegriffe (kommagetrennt)
+                      Suchbegriffe
                     </label>
                     <textarea
                       value={mapsSearchTerms}
                       onChange={(e) => setMapsSearchTerms(e.target.value)}
-                      placeholder="z.B. Maler Hamburg, Friseur München, Elektriker Berlin"
+                      placeholder={'Maler Hamburg\nFriseur München\nBäcker Berlin'}
                       rows={3}
                       style={{
                         width: '100%',
@@ -513,13 +546,68 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                         fontFamily: 'var(--font-dm-sans)',
                       }}
                     />
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 3 }}>
+                      Jede Zeile oder kommagetrennt = ein Suchauftrag
+                    </div>
                   </div>
-                  <div style={{ marginBottom: 18 }}>
+
+                  {/* ── Branchen-Shortcuts ── */}
+                  <div>
+                    <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 6 }}>
+                      Branchen-Shortcuts
+                    </label>
+                    {[
+                      ['🔨 Maler', '⚡ Elektriker', '🔧 Klempner', '🪟 Schreiner', '🏠 Dachdecker'],
+                      ['✂️ Friseur', '💆 Massage', '💅 Kosmetik', '🦷 Zahnarzt', '🏥 Arzt'],
+                      ['🍕 Restaurant', '☕ Café', '🥐 Bäckerei', '🛍️ Einzelhandel', '🚗 Autowerkstatt'],
+                    ].map((row, ri) => (
+                      <div key={ri} style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}>
+                        {row.map((chip) => {
+                          const term = chip.replace(/^[^\s]+\s/, '');
+                          return (
+                            <button
+                              key={chip}
+                              onClick={() => {
+                                const current = mapsSearchTerms.trim();
+                                setMapsSearchTerms(current ? `${current}\n${term} ` : `${term} `);
+                              }}
+                              style={{
+                                fontSize: 10,
+                                padding: '3px 8px',
+                                borderRadius: 12,
+                                background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                color: 'rgba(255,255,255,0.5)',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                whiteSpace: 'nowrap',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(29,158,117,0.1)';
+                                e.currentTarget.style.borderColor = 'rgba(29,158,117,0.25)';
+                                e.currentTarget.style.color = '#1D9E75';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                                e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+                              }}
+                            >
+                              {chip}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ── Ergebnis-Menge ── */}
+                  <div>
                     <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 4 }}>
                       Max. Ergebnisse pro Suchbegriff
                     </label>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {[10, 25, 50, 100].map((n) => (
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {[10, 25, 50, 100, 200].map((n) => (
                         <button
                           key={n}
                           onClick={() => setMapsMaxResults(n)}
@@ -544,50 +632,251 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                       ))}
                     </div>
                   </div>
-                  <button
-                    onClick={async () => {
-                      const terms = mapsSearchTerms
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter(Boolean);
-                      if (terms.length === 0) return;
-                      setMapsLoading(true);
-                      try {
-                        await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/apify-maps-import', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            tenant_id: TENANT_ID,
-                            search_terms: terms,
-                            max_results: mapsMaxResults,
-                          }),
-                        });
-                        setMapsSuccess(true);
-                      } catch {
-                        /* ignore — webhook may not return JSON */
-                        setMapsSuccess(true);
-                      } finally {
-                        setMapsLoading(false);
-                      }
-                    }}
-                    disabled={mapsLoading || !mapsSearchTerms.trim()}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: 8,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: mapsLoading || !mapsSearchTerms.trim() ? 'default' : 'pointer',
-                      background: '#1D9E75',
-                      color: '#fff',
-                      border: 'none',
-                      opacity: mapsLoading || !mapsSearchTerms.trim() ? 0.5 : 1,
-                      transition: 'opacity 0.15s',
-                    }}
-                  >
-                    {mapsLoading ? '⟳ Starte Scraper...' : '📍 Google Maps Scraper starten'}
-                  </button>
-                </>
+
+                  {/* ── Filter & Qualität ── */}
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                      <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Filter & Qualität</label>
+                      <span
+                        style={{
+                          fontSize: 9,
+                          color: 'rgba(255,255,255,0.25)',
+                          background: 'rgba(255,255,255,0.06)',
+                          padding: '1px 5px',
+                          borderRadius: 4,
+                        }}
+                      >
+                        Optional
+                      </span>
+                    </div>
+
+                    {/* Min Rating */}
+                    <div style={{ marginBottom: 10 }}>
+                      <label
+                        style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 3 }}
+                      >
+                        Mindest-Bewertung ★
+                      </label>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {([null, 3.0, 3.5, 4.0, 4.5] as (number | null)[]).map((v) => (
+                          <button
+                            key={String(v)}
+                            onClick={() => setMapsMinRating(v)}
+                            style={{
+                              flex: 1,
+                              padding: '5px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              cursor: 'pointer',
+                              border:
+                                mapsMinRating === v
+                                  ? '1px solid rgba(29,158,117,0.4)'
+                                  : '1px solid rgba(255,255,255,0.06)',
+                              background: mapsMinRating === v ? 'rgba(29,158,117,0.12)' : 'transparent',
+                              color: mapsMinRating === v ? '#1D9E75' : 'rgba(255,255,255,0.4)',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            {v === null ? 'Alle' : `≥${v}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Min Reviews */}
+                    <div style={{ marginBottom: 10 }}>
+                      <label
+                        style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 3 }}
+                      >
+                        Mindest-Rezensionen
+                      </label>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {([null, 5, 10, 25, 50] as (number | null)[]).map((v) => (
+                          <button
+                            key={String(v)}
+                            onClick={() => setMapsMinReviews(v)}
+                            style={{
+                              flex: 1,
+                              padding: '5px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              cursor: 'pointer',
+                              border:
+                                mapsMinReviews === v
+                                  ? '1px solid rgba(29,158,117,0.4)'
+                                  : '1px solid rgba(255,255,255,0.06)',
+                              background: mapsMinReviews === v ? 'rgba(29,158,117,0.12)' : 'transparent',
+                              color: mapsMinReviews === v ? '#1D9E75' : 'rgba(255,255,255,0.4)',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            {v === null ? 'Alle' : `≥${v}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Website Filter + Business Status */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                      <div>
+                        <label
+                          style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 3 }}
+                        >
+                          Website
+                        </label>
+                        <div style={{ display: 'flex', gap: 3 }}>
+                          {([null, 'without', 'with'] as (string | null)[]).map((v) => (
+                            <button
+                              key={String(v)}
+                              onClick={() => setMapsWebsiteFilter(v)}
+                              style={{
+                                flex: 1,
+                                padding: '5px',
+                                borderRadius: 6,
+                                fontSize: 10,
+                                cursor: 'pointer',
+                                border:
+                                  mapsWebsiteFilter === v
+                                    ? '1px solid rgba(29,158,117,0.4)'
+                                    : '1px solid rgba(255,255,255,0.06)',
+                                background: mapsWebsiteFilter === v ? 'rgba(29,158,117,0.12)' : 'transparent',
+                                color: mapsWebsiteFilter === v ? '#1D9E75' : 'rgba(255,255,255,0.4)',
+                                transition: 'all 0.15s',
+                              }}
+                            >
+                              {v === null ? 'Alle' : v === 'without' ? 'Ohne' : 'Mit'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label
+                          style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 3 }}
+                        >
+                          Status
+                        </label>
+                        <div style={{ display: 'flex', gap: 3 }}>
+                          {([null, 'operational'] as (string | null)[]).map((v) => (
+                            <button
+                              key={String(v)}
+                              onClick={() => setMapsBusinessStatus(v)}
+                              style={{
+                                flex: 1,
+                                padding: '5px',
+                                borderRadius: 6,
+                                fontSize: 10,
+                                cursor: 'pointer',
+                                border:
+                                  mapsBusinessStatus === v
+                                    ? '1px solid rgba(29,158,117,0.4)'
+                                    : '1px solid rgba(255,255,255,0.06)',
+                                background: mapsBusinessStatus === v ? 'rgba(29,158,117,0.12)' : 'transparent',
+                                color: mapsBusinessStatus === v ? '#1D9E75' : 'rgba(255,255,255,0.4)',
+                                transition: 'all 0.15s',
+                              }}
+                            >
+                              {v === null ? 'Alle' : 'Nur Aktive'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Region */}
+                    <div>
+                      <label
+                        style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 3 }}
+                      >
+                        Region
+                      </label>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {(
+                          [
+                            { v: 'de', l: '🇩🇪 Deutschland' },
+                            { v: 'at', l: '🇦🇹 Österreich' },
+                            { v: 'ch', l: '🇨🇭 Schweiz' },
+                            { v: null, l: 'DACH' },
+                          ] as { v: string | null; l: string }[]
+                        ).map(({ v, l }) => (
+                          <button
+                            key={String(v)}
+                            onClick={() => setMapsCountry(v)}
+                            style={{
+                              flex: 1,
+                              padding: '5px',
+                              borderRadius: 6,
+                              fontSize: 10,
+                              cursor: 'pointer',
+                              border:
+                                mapsCountry === v
+                                  ? '1px solid rgba(29,158,117,0.4)'
+                                  : '1px solid rgba(255,255,255,0.06)',
+                              background: mapsCountry === v ? 'rgba(29,158,117,0.12)' : 'transparent',
+                              color: mapsCountry === v ? '#1D9E75' : 'rgba(255,255,255,0.4)',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            {l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Start Button ── */}
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14 }}>
+                    <button
+                      onClick={async () => {
+                        const terms = mapsSearchTerms
+                          .split(/[,\n]/)
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+                        if (terms.length === 0) return;
+                        setMapsLoading(true);
+                        try {
+                          await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/apify-maps-import', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              tenant_id: TENANT_ID,
+                              search_terms: terms,
+                              max_results: mapsMaxResults,
+                              min_rating: mapsMinRating,
+                              min_reviews: mapsMinReviews,
+                              website_filter: mapsWebsiteFilter,
+                              business_status: mapsBusinessStatus,
+                              country_code: mapsCountry,
+                            }),
+                          });
+                          setMapsSuccess(true);
+                        } catch {
+                          setMapsSuccess(true);
+                        } finally {
+                          setMapsLoading(false);
+                        }
+                      }}
+                      disabled={mapsLoading || !mapsSearchTerms.trim()}
+                      style={{
+                        width: '100%',
+                        padding: '11px',
+                        borderRadius: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: mapsLoading || !mapsSearchTerms.trim() ? 'default' : 'pointer',
+                        background: '#1D9E75',
+                        color: '#fff',
+                        border: 'none',
+                        opacity: mapsLoading || !mapsSearchTerms.trim() ? 0.5 : 1,
+                        transition: 'opacity 0.15s',
+                      }}
+                    >
+                      {mapsLoading ? '⟳ Starte Scraper...' : '📍 Google Maps Scraper starten'}
+                    </button>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 6 }}>
+                      ~2 Min. Laufzeit · ca. 0,004€ pro Lead
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
