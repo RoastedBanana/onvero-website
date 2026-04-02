@@ -763,9 +763,25 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                               Wenige Bewertungen
                             </span>
                           )}
+                          {lead.googleMapsMatchScore != null && lead.googleMapsMatchScore < 70 && (
+                            <span
+                              title={`Match-Score: ${lead.googleMapsMatchScore} — Bitte manuell verifizieren`}
+                              style={{
+                                fontSize: 10,
+                                color: '#F59E0B',
+                                background: 'rgba(245,158,11,0.1)',
+                                padding: '2px 8px',
+                                borderRadius: 10,
+                                fontWeight: 500,
+                                cursor: 'help',
+                              }}
+                            >
+                              ⚠ Treffer prüfen
+                            </span>
+                          )}
                         </div>
-                        {lead.googleMapsMatchedName && (
-                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 6 }}>
+                        {lead.googleMapsMatchedName && lead.googleMapsMatchedName !== lead.company && (
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 6 }}>
                             Gefunden als: {lead.googleMapsMatchedName}
                           </div>
                         )}

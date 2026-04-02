@@ -56,6 +56,7 @@ export type Lead = {
   emailStatus?: string | null;
   buyingSignals?: string[];
   tier?: string | null;
+  googleMapsMatchScore?: number | null;
 };
 
 export type LeadStats = {
@@ -122,6 +123,7 @@ export function mapLead(raw: any): Lead {
     emailStatus: cf.email_status ?? null,
     buyingSignals: cf.buying_signals ?? [],
     tier: cf.tier ?? null,
+    googleMapsMatchScore: cf.google_maps?.match_score ?? null,
   };
 }
 
