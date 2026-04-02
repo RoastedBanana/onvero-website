@@ -545,27 +545,23 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
               {/* DEBUG — remove after confirming */}
               <div
                 style={{
-                  fontSize: 10,
+                  fontSize: 9,
                   color: '#facc15',
                   wordBreak: 'break-all' as const,
                   background: 'rgba(250,204,21,0.08)',
                   borderRadius: 4,
                   padding: 8,
                   marginBottom: 8,
+                  maxHeight: 120,
+                  overflow: 'auto',
                 }}
               >
-                <div>
-                  GMaps Status: <strong>{JSON.stringify(lead.googleBusinessStatus)}</strong>
+                <div>ALL KEYS: {Object.keys(lead).join(', ')}</div>
+                <div style={{ marginTop: 4 }}>
+                  googleBusinessStatus:{' '}
+                  {JSON.stringify((lead as Record<string, unknown>).googleBusinessStatus ?? 'MISSING')}
                 </div>
-                <div>GMaps Rating: {JSON.stringify(lead.googleRating)}</div>
-                <div>GMaps URL: {JSON.stringify(lead.googleMapsUrl)}</div>
-                <div>News Signal: {JSON.stringify(lead.hasNewsSignal)}</div>
-                <div>
-                  All lead keys:{' '}
-                  {Object.keys(lead)
-                    .filter((k) => k.startsWith('google') || k.startsWith('news'))
-                    .join(', ') || 'NONE'}
-                </div>
+                <div>company: {lead.company}</div>
               </div>
 
               {/* Kontakt */}
