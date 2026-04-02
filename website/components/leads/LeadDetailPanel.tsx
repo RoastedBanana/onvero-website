@@ -31,20 +31,28 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
-  const pct = Math.min((value / 35) * 100, 100);
+function ScoreBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const pct = Math.min((value / max) * 100, 100);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', width: 90, flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: color, opacity: 0.5, borderRadius: 2 }} />
+      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', width: 100, flexShrink: 0 }}>{label}</span>
+      <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+        <div
+          style={{
+            height: '100%',
+            width: `${pct}%`,
+            background: color,
+            borderRadius: 3,
+            transition: 'width 0.6s ease',
+          }}
+        />
       </div>
       <span
         style={{
-          fontSize: 9,
-          color: 'rgba(255,255,255,0.4)',
+          fontSize: 11,
+          color: 'rgba(255,255,255,0.7)',
           fontFamily: 'var(--font-dm-mono)',
-          width: 30,
+          width: 38,
           textAlign: 'right',
         }}
       >
@@ -408,67 +416,89 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
             {/* ── Score Banner ── */}
             <div
               style={{
-                padding: '14px 20px',
+                padding: '16px 20px',
                 background: scoreBg,
                 borderBottom: `1px solid ${scoreBorder}`,
                 flexShrink: 0,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                 <span
                   style={{
-                    fontSize: 40,
-                    fontWeight: 700,
+                    fontSize: 48,
+                    fontWeight: 900,
                     color: scoreColor,
                     lineHeight: 1,
                     fontFamily: 'var(--font-dm-mono)',
+                    letterSpacing: '-0.03em',
                   }}
                 >
                   {lead.score}
                 </span>
                 <span
-                  style={{ fontSize: 11, fontWeight: 600, color: scoreColor, letterSpacing: '0.1em', opacity: 0.85 }}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: scoreColor,
+                    letterSpacing: '0.12em',
+                    background: `${scoreColor}15`,
+                    border: `1px solid ${scoreColor}30`,
+                    borderRadius: 20,
+                    padding: '3px 10px',
+                  }}
                 >
                   {scoreLabel}
                 </span>
               </div>
 
               {breakdown ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-                  {breakdown.unternehmensfit != null && (
-                    <ScoreBar label="Unternehmensfit" value={breakdown.unternehmensfit} color={scoreColor} />
-                  )}
-                  {breakdown.kontaktqualitaet != null && (
-                    <ScoreBar label="Kontaktqualität" value={breakdown.kontaktqualitaet} color={scoreColor} />
-                  )}
-                  {breakdown.entscheidungsposition != null && (
-                    <ScoreBar label="Entscheiderpos." value={breakdown.entscheidungsposition} color={scoreColor} />
-                  )}
-                  {breakdown.kaufsignale != null && (
-                    <ScoreBar label="Kaufsignale" value={breakdown.kaufsignale} color={scoreColor} />
-                  )}
-                  {breakdown.abzuege != null && breakdown.abzuege !== 0 && (
-                    <div style={{ fontSize: 9, color: 'rgba(255,92,46,0.7)', marginTop: 2 }}>
-                      Abzüge: −{Math.abs(breakdown.abzuege)} Pkt
-                    </div>
-                  )}
-                </div>
+                <>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '0 0 10px' }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {breakdown.unternehmensfit != null && (
+                      <ScoreBar label="Unternehmensfit" value={breakdown.unternehmensfit} max={35} color={scoreColor} />
+                    )}
+                    {breakdown.kontaktqualitaet != null && (
+                      <ScoreBar
+                        label="Kontaktqualität"
+                        value={breakdown.kontaktqualitaet}
+                        max={25}
+                        color={scoreColor}
+                      />
+                    )}
+                    {breakdown.entscheidungsposition != null && (
+                      <ScoreBar
+                        label="Entscheiderpos."
+                        value={breakdown.entscheidungsposition}
+                        max={25}
+                        color={scoreColor}
+                      />
+                    )}
+                    {breakdown.kaufsignale != null && (
+                      <ScoreBar label="Kaufsignale" value={breakdown.kaufsignale} max={15} color={scoreColor} />
+                    )}
+                    {breakdown.abzuege != null && breakdown.abzuege !== 0 && (
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: 'rgba(255,255,255,0.35)',
+                          marginTop: 2,
+                          fontFamily: 'var(--font-dm-mono)',
+                        }}
+                      >
+                        Abzüge: −{Math.abs(breakdown.abzuege)} Pkt
+                      </div>
+                    )}
+                  </div>
+                </>
               ) : (
-                <div
-                  style={{
-                    height: 4,
-                    background: 'rgba(255,255,255,0.06)',
-                    borderRadius: 2,
-                    marginBottom: 8,
-                    overflow: 'hidden',
-                  }}
-                >
+                <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
                   <div
                     style={{
                       height: '100%',
                       width: `${lead.score}%`,
                       background: scoreColor,
-                      borderRadius: 2,
+                      borderRadius: 3,
                       transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)',
                     }}
                   />
@@ -476,7 +506,22 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
               )}
 
               {lead.nextAction && (
-                <div style={{ fontSize: 11, color: scoreColor, opacity: 0.7 }}>{lead.nextAction}</div>
+                <>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '12px 0 10px' }} />
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 500,
+                      color: 'rgba(255,255,255,0.3)',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase' as const,
+                      marginBottom: 4,
+                    }}
+                  >
+                    ⚡ Nächste Aktion
+                  </div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{lead.nextAction}</div>
+                </>
               )}
             </div>
 
@@ -498,7 +543,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
               {/* Kontakt */}
               <div>
                 <SectionHeader title="Kontakt" />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <ContactRow
                     icon="✉"
                     label="E-Mail"
@@ -506,14 +551,14 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                     action="copy"
                     onCopy={() => lead.email && navigator.clipboard?.writeText(lead.email)}
                   />
+                  <ContactRow icon="📱" label="Telefon" value={lead.phone} action="tel" />
                   <ContactRow
                     icon="🌐"
                     label="Website"
-                    value={lead.website?.replace(/^https?:\/\//, '')}
+                    value={lead.website?.replace(/^https?:\/\/(www\.)?/, '')}
                     action="link"
                     href={lead.website}
                   />
-                  <ContactRow icon="📱" label="Telefon" value={lead.phone} action="tel" />
                   <ContactRow
                     icon="💼"
                     label="LinkedIn"
@@ -532,11 +577,9 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 </div>
 
                 {lead.technologies.length > 0 && (
-                  <div style={{ marginTop: 10, overflowX: 'auto' }}>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginRight: 6 }}>
-                      💻 Technologien:
-                    </span>
-                    <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                  <div style={{ marginTop: 10 }}>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>💻 Technologien:</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                       {lead.technologies.map((t) => (
                         <span
                           key={t}
@@ -546,7 +589,6 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                             fontSize: 9,
                             padding: '2px 7px',
                             borderRadius: 4,
-                            whiteSpace: 'nowrap',
                           }}
                         >
                           {t}
@@ -559,116 +601,170 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
 
               {/* KI-Analyse */}
               <div>
-                <SectionHeader title="KI-Analyse" />
                 <div
-                  style={{
-                    background: '#181818',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}
                 >
-                  <p
-                    style={{
-                      fontSize: 12,
-                      color: 'rgba(255,255,255,0.6)',
-                      lineHeight: 1.7,
-                      margin: 0,
-                      whiteSpace: 'pre-line',
-                    }}
-                  >
-                    {lead.aiSummary ?? `${lead.company} — weitere KI-Analyse wird durchgeführt.`}
-                  </p>
+                  <SectionHeader title="KI-Analyse" />
+                  {lead.aiScoredAt && (
+                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-dm-mono)' }}>
+                      {new Date(lead.aiScoredAt).toLocaleDateString('de-DE', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  )}
                 </div>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, margin: '0 0 12px' }}>
+                  {lead.aiSummary ?? `${lead.company} — weitere KI-Analyse wird durchgeführt.`}
+                </p>
 
-                {lead.aiSources && lead.aiSources.length > 0 && (
-                  <div style={{ marginTop: 10 }}>
+                {lead.strengths.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
                     <div
                       style={{
-                        fontSize: 9,
-                        fontWeight: 600,
-                        color: 'rgba(255,255,255,0.2)',
+                        fontSize: 10,
+                        fontWeight: 500,
+                        color: 'rgba(255,255,255,0.3)',
                         letterSpacing: '0.1em',
-                        textTransform: 'uppercase',
+                        textTransform: 'uppercase' as const,
                         marginBottom: 6,
                       }}
                     >
-                      Quellen
+                      Stärken
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {lead.aiSources.map((src, i) => (
-                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          <a
-                            href={src.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              fontSize: 11,
-                              color: '#60a5fa',
-                              textDecoration: 'none',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 5,
-                              transition: 'color 0.15s',
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = '#93c5fd')}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = '#60a5fa')}
-                          >
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              style={{ flexShrink: 0 }}
-                            >
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                              <polyline points="15 3 21 3 21 9" />
-                              <line x1="10" y1="14" x2="21" y2="3" />
-                            </svg>
-                            {src.label}
-                          </a>
-                          {src.info && (
-                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', paddingLeft: 15 }}>
-                              {src.info}
-                            </div>
-                          )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {lead.strengths.map((s, i) => (
+                        <div
+                          key={`s-${i}`}
+                          style={{
+                            fontSize: 12,
+                            color: 'rgba(255,255,255,0.7)',
+                            display: 'flex',
+                            gap: 6,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          <span style={{ color: '#22C55E', flexShrink: 0 }}>✓</span>
+                          <span>{s}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {(lead.strengths.length > 0 || lead.redFlags.length > 0 || lead.concerns.length > 0) && (
-                  <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {lead.strengths.map((s, i) => (
-                      <div
-                        key={`s-${i}`}
-                        style={{ fontSize: 10, color: 'rgba(34,197,94,0.8)', display: 'flex', gap: 6 }}
-                      >
-                        <span>✓</span>
-                        <span>{s}</span>
-                      </div>
-                    ))}
-                    {lead.concerns.map((c, i) => (
-                      <div
-                        key={`c-${i}`}
-                        style={{ fontSize: 10, color: 'rgba(245,158,11,0.7)', display: 'flex', gap: 6 }}
-                      >
-                        <span>⚠</span>
-                        <span>{c}</span>
-                      </div>
-                    ))}
-                    {lead.redFlags.map((r, i) => (
-                      <div
-                        key={`r-${i}`}
-                        style={{ fontSize: 10, color: 'rgba(245,158,11,0.7)', display: 'flex', gap: 6 }}
-                      >
-                        <span>⚠</span>
-                        <span>{r}</span>
-                      </div>
-                    ))}
+                {(lead.concerns.length > 0 || lead.redFlags.length > 0) && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 500,
+                        color: 'rgba(255,255,255,0.3)',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase' as const,
+                        marginBottom: 6,
+                      }}
+                    >
+                      Bedenken
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {lead.concerns.map((c, i) => (
+                        <div
+                          key={`c-${i}`}
+                          style={{
+                            fontSize: 12,
+                            color: 'rgba(255,255,255,0.6)',
+                            display: 'flex',
+                            gap: 6,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          <span style={{ color: '#F59E0B', flexShrink: 0 }}>△</span>
+                          <span>{c}</span>
+                        </div>
+                      ))}
+                      {lead.redFlags.map((r, i) => (
+                        <div
+                          key={`r-${i}`}
+                          style={{
+                            fontSize: 12,
+                            color: 'rgba(255,255,255,0.6)',
+                            display: 'flex',
+                            gap: 6,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          <span style={{ color: '#F59E0B', flexShrink: 0 }}>△</span>
+                          <span>{r}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {lead.aiSources && lead.aiSources.length > 0 && (
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 500,
+                        color: 'rgba(255,255,255,0.3)',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase' as const,
+                        marginBottom: 6,
+                      }}
+                    >
+                      Quellen
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {lead.aiSources.map((src, i) => (
+                        <div key={i}>
+                          <a
+                            href={src.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: 12,
+                              color: 'rgba(255,255,255,0.7)',
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '4px 8px',
+                              margin: '0 -8px',
+                              borderRadius: 6,
+                              transition: 'all 0.15s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                              e.currentTarget.style.color = 'rgba(255,255,255,0.9)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                            }}
+                          >
+                            <span style={{ color: '#60a5fa', flexShrink: 0 }}>↗</span>
+                            <span style={{ fontWeight: 500 }}>{src.label}</span>
+                            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 10, marginLeft: 'auto' }}>
+                              {src.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                            </span>
+                          </a>
+                          {src.info && (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: 'rgba(255,255,255,0.35)',
+                                paddingLeft: 22,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {src.info}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   const domain = request.nextUrl.searchParams.get('domain');
 
-  if (!domain) {
+  if (!domain || domain.length < 3) {
     return new NextResponse(null, { status: 400 });
   }
 
