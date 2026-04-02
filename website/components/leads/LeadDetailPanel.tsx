@@ -579,7 +579,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 </div>
 
                 {/* Lokale Präsenz (Google Maps) */}
-                {lead.googleBusinessStatus && (
+                {lead.googleBusinessStatus && !['API_ERROR', 'FETCH_ERROR'].includes(lead.googleBusinessStatus) && (
                   <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
                     <div
                       style={{
@@ -667,6 +667,11 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                             </span>
                           )}
                         </div>
+                        {lead.googleMapsMatchedName && (
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 6 }}>
+                            Gefunden als: {lead.googleMapsMatchedName}
+                          </div>
+                        )}
                         {lead.googleMapsUrl && (
                           <a
                             href={lead.googleMapsUrl}
@@ -676,7 +681,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: 4,
-                              marginTop: 8,
+                              marginTop: 6,
                               fontSize: 11,
                               color: 'rgba(255,255,255,0.5)',
                               textDecoration: 'none',
@@ -766,6 +771,76 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                           >
                             <span style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>•</span>
                             <span>{signal}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Aktuelle Signale (News) */}
+                {(lead.hasNewsSignal || (lead.newsArticles && lead.newsArticles.length > 0)) && (
+                  <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: 'rgba(255,255,255,0.25)',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase' as const,
+                        marginBottom: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                    >
+                      <span style={{ fontSize: 11 }}>⚡</span> Aktuelle Signale
+                    </div>
+
+                    {lead.newsSignals && lead.newsSignals.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+                        {lead.newsSignals.map((signal, i) => {
+                          const isWarning =
+                            signal.toLowerCase().includes('achtung') || signal.toLowerCase().includes('insolvenz');
+                          return (
+                            <span
+                              key={i}
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 500,
+                                color: isWarning ? '#ef4444' : '#1D9E75',
+                                background: isWarning ? 'rgba(239,68,68,0.1)' : 'rgba(29,158,117,0.1)',
+                                border: `1px solid ${isWarning ? 'rgba(239,68,68,0.15)' : 'rgba(29,158,117,0.15)'}`,
+                                padding: '2px 8px',
+                                borderRadius: 10,
+                              }}
+                            >
+                              {signal}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {lead.newsArticles && lead.newsArticles.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        {lead.newsArticles.slice(0, 3).map((article, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              padding: '6px 0',
+                              borderBottom:
+                                i < Math.min(lead.newsArticles!.length, 3) - 1
+                                  ? '1px solid rgba(255,255,255,0.04)'
+                                  : 'none',
+                            }}
+                          >
+                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.4 }}>
+                              {article.title.length > 80 ? article.title.slice(0, 80) + '...' : article.title}
+                            </div>
+                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
+                              {article.source} · vor {article.days_ago} {article.days_ago === 1 ? 'Tag' : 'Tagen'}
+                            </div>
                           </div>
                         ))}
                       </div>

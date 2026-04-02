@@ -48,7 +48,11 @@ export type Lead = {
   googleReviews?: number | null;
   googleBusinessStatus?: string | null;
   googleMapsUrl?: string | null;
+  googleMapsMatchedName?: string | null;
   googleMapsSignals?: string[];
+  newsSignals?: string[];
+  newsArticles?: { title: string; source: string; days_ago: number }[];
+  hasNewsSignal?: boolean;
 };
 
 export type LeadStats = {
@@ -107,7 +111,11 @@ export function mapLead(raw: any): Lead {
     googleReviews: cf.google_reviews ?? null,
     googleBusinessStatus: cf.google_business_status ?? null,
     googleMapsUrl: cf.google_maps_url ?? null,
+    googleMapsMatchedName: cf.google_maps_matched_name ?? null,
     googleMapsSignals: cf.google_maps_signals ?? [],
+    newsSignals: cf.news_signals ?? [],
+    newsArticles: cf.news_articles ?? [],
+    hasNewsSignal: cf.has_news_signal ?? false,
   };
 }
 
