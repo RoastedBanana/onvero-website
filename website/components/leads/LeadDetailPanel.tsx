@@ -578,6 +578,201 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                   <ContactRow icon="🏷️" label="Budget" value={lead.budgetEstimate} />
                 </div>
 
+                {/* Lokale Präsenz (Google Maps) */}
+                {lead.googleBusinessStatus && (
+                  <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: 'rgba(255,255,255,0.25)',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase' as const,
+                        marginBottom: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                    >
+                      <span style={{ fontSize: 11 }}>📍</span> Lokale Präsenz
+                    </div>
+
+                    {lead.googleBusinessStatus === 'OPERATIONAL' && lead.googleRating != null ? (
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <span
+                            style={{
+                              fontSize: 22,
+                              fontWeight: 700,
+                              color:
+                                lead.googleRating >= 4.0 ? '#1D9E75' : lead.googleRating >= 3.0 ? '#F59E0B' : '#ef4444',
+                              fontFamily: 'var(--font-dm-mono)',
+                              lineHeight: 1,
+                            }}
+                          >
+                            {lead.googleRating.toFixed(1)}
+                          </span>
+                          <div style={{ display: 'flex', gap: 1 }}>
+                            {Array.from({ length: 5 }, (_, i) => {
+                              const filled = lead.googleRating! - i;
+                              const starColor =
+                                lead.googleRating! >= 4.0
+                                  ? '#1D9E75'
+                                  : lead.googleRating! >= 3.0
+                                    ? '#F59E0B'
+                                    : '#ef4444';
+                              return (
+                                <span
+                                  key={i}
+                                  style={{
+                                    fontSize: 12,
+                                    color:
+                                      filled >= 1 ? starColor : filled >= 0.5 ? starColor : 'rgba(255,255,255,0.1)',
+                                  }}
+                                >
+                                  {filled >= 0.75 ? '★' : filled >= 0.25 ? '★' : '☆'}
+                                </span>
+                              );
+                            })}
+                          </div>
+                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
+                            ({lead.googleReviews ?? 0} Bewertungen)
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: '#1D9E75',
+                              background: 'rgba(29,158,117,0.12)',
+                              padding: '2px 8px',
+                              borderRadius: 10,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Aktiv
+                          </span>
+                          {(lead.googleReviews ?? 0) < 10 && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: '#F59E0B',
+                                background: 'rgba(245,158,11,0.1)',
+                                padding: '2px 8px',
+                                borderRadius: 10,
+                                fontWeight: 500,
+                              }}
+                            >
+                              Wenige Bewertungen
+                            </span>
+                          )}
+                        </div>
+                        {lead.googleMapsUrl && (
+                          <a
+                            href={lead.googleMapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              marginTop: 8,
+                              fontSize: 11,
+                              color: 'rgba(255,255,255,0.5)',
+                              textDecoration: 'none',
+                              transition: 'color 0.15s',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.8)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
+                          >
+                            Maps öffnen <span style={{ fontSize: 9 }}>↗</span>
+                          </a>
+                        )}
+                      </div>
+                    ) : lead.googleBusinessStatus === 'CLOSED_PERMANENTLY' ? (
+                      <div>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: '#ef4444',
+                            background: 'rgba(239,68,68,0.12)',
+                            padding: '3px 10px',
+                            borderRadius: 10,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Dauerhaft geschlossen
+                        </span>
+                        {lead.googleMapsUrl && (
+                          <a
+                            href={lead.googleMapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'block',
+                              marginTop: 6,
+                              fontSize: 11,
+                              color: 'rgba(255,255,255,0.4)',
+                              textDecoration: 'none',
+                            }}
+                          >
+                            Maps öffnen <span style={{ fontSize: 9 }}>↗</span>
+                          </a>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: 11, color: '#F59E0B', marginBottom: 2 }}>
+                          Kein Google Maps Eintrag gefunden
+                        </div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>
+                          Schwache lokale Sichtbarkeit — Kaufsignal
+                        </div>
+                        {lead.googleMapsUrl && (
+                          <a
+                            href={lead.googleMapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              marginTop: 6,
+                              fontSize: 11,
+                              color: 'rgba(255,255,255,0.4)',
+                              textDecoration: 'none',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+                          >
+                            Maps suchen <span style={{ fontSize: 9 }}>↗</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {lead.googleMapsSignals && lead.googleMapsSignals.length > 0 && (
+                      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {lead.googleMapsSignals.map((signal, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              fontSize: 11,
+                              color: 'rgba(255,255,255,0.35)',
+                              display: 'flex',
+                              gap: 5,
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            <span style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>•</span>
+                            <span>{signal}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {lead.technologies.length > 0 && (
                   <div style={{ marginTop: 10 }}>
                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>💻 Technologien:</span>

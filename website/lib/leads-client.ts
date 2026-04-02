@@ -44,6 +44,11 @@ export type Lead = {
   scoreBreakdown?: ScoreBreakdown;
   nextAction?: string;
   aiSources?: { label: string; url: string; info: string }[];
+  googleRating?: number | null;
+  googleReviews?: number | null;
+  googleBusinessStatus?: string | null;
+  googleMapsUrl?: string | null;
+  googleMapsSignals?: string[];
 };
 
 export type LeadStats = {
@@ -98,6 +103,11 @@ export function mapLead(raw: any): Lead {
     scoreBreakdown: cf.score_breakdown,
     nextAction: raw.ai_next_action ?? cf.next_action,
     aiSources: raw.ai_sources ?? [],
+    googleRating: cf.google_rating ?? null,
+    googleReviews: cf.google_reviews ?? null,
+    googleBusinessStatus: cf.google_business_status ?? null,
+    googleMapsUrl: cf.google_maps_url ?? null,
+    googleMapsSignals: cf.google_maps_signals ?? [],
   };
 }
 
