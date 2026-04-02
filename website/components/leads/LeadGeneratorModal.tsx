@@ -75,6 +75,10 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
   const [mapsWebsiteFilter, setMapsWebsiteFilter] = useState<string | null>(null);
   const [mapsBusinessStatus, setMapsBusinessStatus] = useState<string | null>('operational');
   const [mapsCountry, setMapsCountry] = useState<string | null>('de');
+  const [mapsRunId, setMapsRunId] = useState<string | null>(null);
+  const [mapsPhase, setMapsPhase] = useState<'config' | 'running' | 'done'>('config');
+  const [mapsElapsed, setMapsElapsed] = useState(0);
+  const [mapsLeadsFound, setMapsLeadsFound] = useState(0);
 
   // Config fields
   const [industries, setIndustries] = useState<string[]>([]);
@@ -101,6 +105,43 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
   const [errorDetails, setErrorDetails] = useState<{ code: string; message: string } | null>(null);
 
   const timeHint = leadsPerRun <= 10 ? '~2 Minuten' : leadsPerRun <= 25 ? '~5 Minuten' : '~10 Minuten';
+
+  // ── Maps run timer ──
+  useEffect(() => {
+    if (mapsPhase !== 'running') return;
+    const t = setInterval(() => setMapsElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [mapsPhase]);
+
+  // ── Maps run polling ──
+  useEffect(() => {
+    if (mapsPhase !== 'running' || !mapsRunId) return;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/lead-generator-runs?limit=1`);
+        const { runs } = await res.json();
+        const run = runs?.[0];
+        if (run?.id === mapsRunId && run.status === 'completed') {
+          setMapsLeadsFound(run.leads_new ?? run.leads_found ?? 0);
+          setMapsPhase('done');
+          window.dispatchEvent(new Event('vero:new-leads'));
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 5000);
+    // Timeout after 120s
+    const timeout = setTimeout(() => {
+      if (mapsPhase === 'running') {
+        setMapsPhase('done');
+        window.dispatchEvent(new Event('vero:new-leads'));
+      }
+    }, 120000);
+    return () => {
+      clearInterval(poll);
+      clearTimeout(timeout);
+    };
+  }, [mapsPhase, mapsRunId]);
 
   // ── Load profile ──
   const loadProfile = useCallback(async () => {
@@ -205,6 +246,10 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
     setMapsWebsiteFilter(null);
     setMapsBusinessStatus('operational');
     setMapsCountry('de');
+    setMapsPhase('config');
+    setMapsRunId(null);
+    setMapsElapsed(0);
+    setMapsLeadsFound(0);
     setErrorDetails(null);
     setNewLeadsFound(0);
     setRunningSeconds(0);
@@ -489,28 +534,95 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#1D9E75' }}>📍 Google Maps Scraper</div>
               </div>
 
-              {mapsSuccess ? (
-                <div style={{ textAlign: 'center', padding: '40px 24px' }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1D9E75', marginBottom: 4 }}>
-                    Scraper gestartet
+              {mapsPhase === 'running' ? (
+                <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+                  <style>{`@keyframes mapsSpin{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}`}</style>
+                  <div style={{ fontSize: 40, marginBottom: 12, animation: 'mapsSpin 2s ease-in-out infinite' }}>
+                    📍
                   </div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Leads erscheinen in ~2 Minuten</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+                    Google Maps Scraper läuft...
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>
+                    {mapsSearchTerms.split(/[,\n]/).filter(Boolean).slice(0, 3).join(', ')} · {mapsMaxResults} Leads
+                  </div>
+                  {/* Progress bar */}
+                  <div
+                    style={{
+                      height: 6,
+                      background: 'rgba(255,255,255,0.06)',
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                      marginBottom: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        borderRadius: 3,
+                        transition: 'width 1s linear',
+                        background: 'linear-gradient(90deg, #1D9E75, #22C55E)',
+                        width: `${Math.min(90, (mapsElapsed / 90) * 90)}%`,
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: 11,
+                      color: 'rgba(255,255,255,0.3)',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <span>
+                      ⏱ {Math.floor(mapsElapsed / 60)}:{String(mapsElapsed % 60).padStart(2, '0')}
+                    </span>
+                    <span>Geschätzt ~2 Min.</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginBottom: 16 }}>
+                    Leads erscheinen automatisch sobald sie verarbeitet wurden
+                  </div>
                   <button
                     onClick={handleClose}
                     style={{
-                      marginTop: 16,
-                      background: 'rgba(29,158,117,0.15)',
-                      border: '1px solid rgba(29,158,117,0.2)',
-                      borderRadius: 8,
-                      padding: '8px 20px',
-                      fontSize: 12,
-                      color: '#1D9E75',
+                      background: 'none',
+                      border: 'none',
+                      color: 'rgba(255,255,255,0.3)',
                       cursor: 'pointer',
-                      fontWeight: 500,
+                      fontSize: 11,
+                      textDecoration: 'underline',
                     }}
                   >
-                    Schließen
+                    Im Hintergrund weiterlaufen lassen
+                  </button>
+                </div>
+              ) : mapsPhase === 'done' ? (
+                <div style={{ textAlign: 'center', padding: '40px 24px' }}>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#1D9E75', marginBottom: 4 }}>
+                    Import abgeschlossen
+                  </div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
+                    {mapsLeadsFound > 0 ? `${mapsLeadsFound} neue Leads gefunden` : 'Leads wurden importiert'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 20 }}>
+                    Dauer: {Math.floor(mapsElapsed / 60)}:{String(mapsElapsed % 60).padStart(2, '0')} Min.
+                  </div>
+                  <button
+                    onClick={handleClose}
+                    style={{
+                      background: '#1D9E75',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '10px 24px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Leads ansehen
                   </button>
                 </div>
               ) : (
@@ -833,7 +945,28 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                           .filter(Boolean);
                         if (terms.length === 0) return;
                         setMapsLoading(true);
+                        const filters = {
+                          min_rating: mapsMinRating,
+                          min_reviews: mapsMinReviews,
+                          website_filter: mapsWebsiteFilter,
+                          business_status: mapsBusinessStatus,
+                          country_code: mapsCountry,
+                        };
                         try {
+                          // Create run record
+                          const runRes = await fetch('/api/lead-generator-runs', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              source: 'google_maps_apify',
+                              search_terms: terms,
+                              max_results: mapsMaxResults,
+                              filters,
+                            }),
+                          });
+                          const { run } = await runRes.json();
+                          if (run?.id) setMapsRunId(run.id);
+                          // Start webhook
                           await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/apify-maps-import', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -841,19 +974,16 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                               tenant_id: TENANT_ID,
                               search_terms: terms,
                               max_results: mapsMaxResults,
-                              min_rating: mapsMinRating,
-                              min_reviews: mapsMinReviews,
-                              website_filter: mapsWebsiteFilter,
-                              business_status: mapsBusinessStatus,
-                              country_code: mapsCountry,
+                              run_id: run?.id,
+                              ...filters,
                             }),
                           });
-                          setMapsSuccess(true);
                         } catch {
-                          setMapsSuccess(true);
-                        } finally {
-                          setMapsLoading(false);
+                          /* webhook may not return JSON */
                         }
+                        setMapsLoading(false);
+                        setMapsElapsed(0);
+                        setMapsPhase('running');
                       }}
                       disabled={mapsLoading || !mapsSearchTerms.trim()}
                       style={{

@@ -12,6 +12,7 @@ import LeadsTable from '@/components/leads/LeadsTable';
 import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
 import LeadGeneratorModal from '@/components/leads/LeadGeneratorModal';
 import { GeneratorStatusBanner } from '@/components/leads/GeneratorStatusBanner';
+import GenerationBanner from '@/components/leads/GenerationBanner';
 import PageHeader from '@/components/ui/PageHeader';
 
 type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost' | 'google_maps';
@@ -234,6 +235,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
 
         {/* ── GENERATOR STATUS BANNER ── */}
         <GeneratorStatusBanner currentLeadCount={leads.length} />
+        <GenerationBanner onStartNew={() => setModalOpen(true)} />
 
         {/* ── HEUTE ZU TUN ── */}
         {(() => {
