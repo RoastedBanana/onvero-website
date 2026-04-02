@@ -14,6 +14,15 @@ interface LeadDetailPanelProps {
   onClose: () => void;
 }
 
+function formatDaysAgo(d: number): string {
+  if (d === 0) return 'heute';
+  if (d === 1) return 'gestern';
+  if (d <= 7) return 'diese Woche';
+  if (d <= 30) return `vor ${d} Tagen`;
+  if (d <= 60) return 'letzten Monat';
+  return `vor ${Math.floor(d / 30)} Monaten`;
+}
+
 function SectionHeader({ title }: { title: string }) {
   return (
     <div
@@ -952,7 +961,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                               {article.title.length > 80 ? article.title.slice(0, 80) + '...' : article.title}
                             </div>
                             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginTop: 2 }}>
-                              {article.source} · vor {article.days_ago} {article.days_ago === 1 ? 'Tag' : 'Tagen'}
+                              {article.source} · {formatDaysAgo(article.days_ago)}
                             </div>
                           </div>
                         ))}
