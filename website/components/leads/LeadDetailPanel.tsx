@@ -543,10 +543,29 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
               <style>{`.hide-scrollbar::-webkit-scrollbar{display:none}.hide-scrollbar{scrollbar-width:none}`}</style>
 
               {/* DEBUG — remove after confirming */}
-              <div style={{ fontSize: 10, color: '#facc15', padding: '4px 0', wordBreak: 'break-all' }}>
-                GMaps: {JSON.stringify(lead.googleBusinessStatus ?? 'null')} | News:{' '}
-                {JSON.stringify(lead.hasNewsSignal ?? 'null')} | Signals:{' '}
-                {JSON.stringify(lead.newsSignals?.length ?? 0)}
+              <div
+                style={{
+                  fontSize: 10,
+                  color: '#facc15',
+                  wordBreak: 'break-all' as const,
+                  background: 'rgba(250,204,21,0.08)',
+                  borderRadius: 4,
+                  padding: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <div>
+                  GMaps Status: <strong>{JSON.stringify(lead.googleBusinessStatus)}</strong>
+                </div>
+                <div>GMaps Rating: {JSON.stringify(lead.googleRating)}</div>
+                <div>GMaps URL: {JSON.stringify(lead.googleMapsUrl)}</div>
+                <div>News Signal: {JSON.stringify(lead.hasNewsSignal)}</div>
+                <div>
+                  All lead keys:{' '}
+                  {Object.keys(lead)
+                    .filter((k) => k.startsWith('google') || k.startsWith('news'))
+                    .join(', ') || 'NONE'}
+                </div>
               </div>
 
               {/* Kontakt */}
