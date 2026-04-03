@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const { error: tenantError } = await supabase.from('tenant_users').insert({
       tenant_id: invite.tenant_id,
       user_id: authData.user.id,
-      role: 'User',
+      role: 'member',
       joined_at: new Date().toISOString(),
     });
 
