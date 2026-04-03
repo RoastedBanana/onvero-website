@@ -491,10 +491,10 @@ function BlogForm({
     if (!form.title.trim() && !form.content.trim()) return;
     setAiPolishing(true);
     try {
-      const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/5cf0cb30-3642-4560-a693-661cf8862eec', {
+      const res = await fetch('/api/proxy/n8n', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: form.title, content: form.content }),
+        body: JSON.stringify({ action: 'blog-ai-polish', title: form.title, content: form.content }),
       });
       const result = await res.json();
       if (result.title) set('title', result.title);

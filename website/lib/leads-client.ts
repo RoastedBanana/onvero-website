@@ -31,6 +31,7 @@ export type Lead = {
   websiteSummary?: string;
   websiteTitle?: string;
   lastContactedAt?: string;
+  statusUpdatedAt?: string;
   createdAt: string;
   apolloId?: string;
   jobTitle?: string;
@@ -99,6 +100,7 @@ export function mapLead(raw: any): Lead {
     websiteSummary: raw.website_summary,
     websiteTitle: raw.website_title,
     lastContactedAt: raw.last_contacted_at,
+    statusUpdatedAt: raw.status_updated_at,
     createdAt: raw.created_at,
     apolloId: raw.apollo_id,
     jobTitle: cf.job_title,

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req.headers);
+    const { success } = await rateLimit(`send-email:${ip}`, { maxRequests: 10, windowMs: 60_000 });
+    if (!success) return NextResponse.json({ error: 'Zu viele Anfragen' }, { status: 429 });
     const { lead_id, tenant_id, to, subject, html, text } = await req.json();
 
     if (!to || !subject || (!html && !text)) {
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
     const fromField = `${fromName} <${integration.email_resend.trim()}>`;
 
     // Send via n8n webhook
-    const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/c2e0c1c2-7787-467f-bd23-fefbaf45b66c', {
+    const res = await fetch(process.env.N8N_WEBHOOK_SEND_EMAIL!, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -67,7 +71,7 @@ export async function POST(req: NextRequest) {
     if (lead_id) {
       await supabase
         .from('leads')
-        .update({ status: 'contacted', last_contacted_at: new Date().toISOString() })
+        .update({ status: 'contacted', last_contacted_at: new Date().toISOString(), status_updated_at: new Date().toISOString() })
         .eq('id', lead_id);
 
       await supabase.from('lead_activities').insert({

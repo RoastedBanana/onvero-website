@@ -4,7 +4,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/meeting-email-check', {
+    const res = await fetch(process.env.N8N_WEBHOOK_MEETING_EMAIL_CHECK!, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

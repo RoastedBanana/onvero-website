@@ -338,10 +338,11 @@ function MeetingResultPopup({
       }
 
       // Send to webhook
-      const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/meeting-summarizer', {
+      const res = await fetch('/api/proxy/n8n', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'meeting-summarizer',
           transcript,
           tenant_id: tenantId,
           planned_meeting_id: selectedPlannedId || null,

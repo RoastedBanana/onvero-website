@@ -24,8 +24,8 @@ import ReactMarkdown from 'react-markdown';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { createBrowserClient } from '@supabase/ssr';
 
-const WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat';
-const IMAGE_WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/session-add-image';
+const WEBHOOK = '/api/proxy/chat';
+const IMAGE_WEBHOOK = '/api/proxy/chat';
 
 const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 

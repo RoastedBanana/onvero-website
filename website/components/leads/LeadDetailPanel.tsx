@@ -154,11 +154,27 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const [followUpDeadline, setFollowUpDeadline] = useState<number | null>(null);
   const [followUpDisplay, setFollowUpDisplay] = useState('');
+  const [followUpTimestamp, setFollowUpTimestamp] = useState<string | null>(null);
+  const [followUpExpired, setFollowUpExpired] = useState(false);
+  const [autoFollowUp, setAutoFollowUp] = useState(true);
   const [scrapingStarted, setScrapingStarted] = useState(false);
   const [scrapingLoading, setScrapingLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Load auto follow-up preference
+  useEffect(() => {
+    (async () => {
+      const { createClient } = await import('@/lib/supabase');
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('tenant_preferences')
+        .select('automatic_followup_emails')
+        .eq('tenant_id', TENANT_ID)
+        .single();
+      if (data) setAutoFollowUp(data.automatic_followup_emails ?? true);
+    })();
+  }, []);
 
   // Scroll to top + reset state when lead changes
   useEffect(() => {
@@ -168,25 +184,24 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
     setEmailText(lead?.emailDraft ?? '');
     setStatusDropdown(false);
     setDraftCopied(false);
-    // Restore follow-up timer if email was sent within last 3 days
-    if (lead?.lastContactedAt) {
-      const deadline = new Date(lead.lastContactedAt).getTime() + 3 * 24 * 60 * 60 * 1000;
-      if (deadline > Date.now()) {
-        setFollowUpDeadline(deadline);
-      } else {
-        setFollowUpDeadline(null);
-      }
+    // Determine follow-up timestamp: only for "contacted" leads
+    if (lead?.status === 'contacted') {
+      const ts = lead.statusUpdatedAt ?? lead.lastContactedAt;
+      setFollowUpTimestamp(ts ?? null);
     } else {
-      setFollowUpDeadline(null);
+      setFollowUpTimestamp(null);
     }
-  }, [lead?.id]);
+  }, [lead?.id, lead?.status, lead?.statusUpdatedAt, lead?.lastContactedAt]);
 
-  // Follow-up countdown timer
+  // Per-lead follow-up countdown: 3 days from status change
   useEffect(() => {
-    if (!followUpDeadline) { setFollowUpDisplay(''); return; }
+    if (!followUpTimestamp) { setFollowUpDisplay(''); setFollowUpExpired(false); return; }
+    const deadline = new Date(followUpTimestamp).getTime() + 3 * 24 * 60 * 60 * 1000;
+    if (deadline <= Date.now()) { setFollowUpDisplay(''); setFollowUpExpired(true); return; }
+    setFollowUpExpired(false);
     function tick() {
-      const diff = followUpDeadline! - Date.now();
-      if (diff <= 0) { setFollowUpDeadline(null); setFollowUpDisplay(''); return; }
+      const diff = deadline - Date.now();
+      if (diff <= 0) { setFollowUpDisplay(''); setFollowUpExpired(true); return; }
       const d = Math.floor(diff / 86400000);
       const h = Math.floor((diff % 86400000) / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
@@ -196,7 +211,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
     tick();
     const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
-  }, [followUpDeadline]);
+  }, [followUpTimestamp]);
 
   // Escape to close
   const onCloseStable = useCallback(() => onClose(), [onClose]);
@@ -254,13 +269,10 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
     if (!lead?.website) return;
     setScrapingLoading(true);
     try {
-      await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/website-analysis', {
+      await fetch('/api/proxy/n8n', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-webhook-secret': '59317c4c-217d-4046-93d8-15ea3e94dbb6',
-        },
-        body: JSON.stringify({ lead_id: lead.id, website: lead.website, tenant_id: TENANT_ID }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'website-analysis', lead_id: lead.id, website: lead.website, tenant_id: TENANT_ID }),
       });
       setScrapingStarted(true);
       setTimeout(() => setScrapingStarted(false), 5000);
@@ -303,7 +315,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
       if (result.success) {
         setEmailSent(true);
         setTimeout(() => setEmailSent(false), 3000);
-        setFollowUpDeadline(Date.now() + 3 * 24 * 60 * 60 * 1000);
+        setFollowUpTimestamp(new Date().toISOString());
       } else {
         alert('E-Mail senden fehlgeschlagen: ' + (result.error ?? 'Unbekannter Fehler'));
       }
@@ -1605,10 +1617,10 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 flexShrink: 0,
               }}
             >
-              {followUpDisplay && (
+              {followUpDisplay ? (
                 <div
                   style={{
-                    width: '100%',
+                    flex: 1,
                     background: 'rgba(251, 191, 36, 0.1)',
                     border: '1px solid rgba(251, 191, 36, 0.25)',
                     borderRadius: 8,
@@ -1618,33 +1630,35 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                     fontWeight: 500,
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: 6,
                   }}
                 >
                   <span>⏱</span>
                   <span>Follow-up E-Mail in: <strong>{followUpDisplay}</strong></span>
                 </div>
+              ) : (
+                <button
+                  onClick={sendEmail}
+                  disabled={!lead.emailDraft || !lead.email || emailSending}
+                  style={{
+                    flex: 1,
+                    background: emailSent ? 'rgba(34,197,94,0.15)' : 'rgba(107,122,255,0.15)',
+                    color: emailSent ? '#22C55E' : emailSending ? 'rgba(107,122,255,0.6)' : '#6B7AFF',
+                    border: `1px solid ${emailSent ? 'rgba(34,197,94,0.25)' : 'rgba(107,122,255,0.25)'}`,
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    cursor: lead.emailDraft && lead.email && !emailSending ? 'pointer' : 'default',
+                    opacity: lead.emailDraft && lead.email ? 1 : 0.4,
+                    transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                  }}
+                >
+                  {emailSending ? '⏳ Senden…' : emailSent ? '✓ Gesendet' : followUpExpired && !autoFollowUp ? '📧 Follow Up' : '📧 E-Mail senden'}
+                </button>
               )}
-              <button
-                onClick={sendEmail}
-                disabled={!lead.emailDraft || !lead.email || emailSending}
-                style={{
-                  flex: 1,
-                  background: emailSent ? 'rgba(34,197,94,0.15)' : 'rgba(107,122,255,0.15)',
-                  color: emailSent ? '#22C55E' : emailSending ? 'rgba(107,122,255,0.6)' : '#6B7AFF',
-                  border: `1px solid ${emailSent ? 'rgba(34,197,94,0.25)' : 'rgba(107,122,255,0.25)'}`,
-                  borderRadius: 8,
-                  padding: '8px 12px',
-                  fontSize: 11,
-                  fontWeight: 500,
-                  cursor: lead.emailDraft && lead.email && !emailSending ? 'pointer' : 'default',
-                  opacity: lead.emailDraft && lead.email ? 1 : 0.4,
-                  transition: 'all 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                }}
-              >
-                {emailSending ? '⏳ Senden…' : emailSent ? '✓ Gesendet' : '📧 E-Mail senden'}
-              </button>
               <button
                 onClick={copyDraft}
                 disabled={!lead.emailDraft}

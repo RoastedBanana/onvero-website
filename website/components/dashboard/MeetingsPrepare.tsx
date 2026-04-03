@@ -1873,15 +1873,16 @@ export function MeetingsPrepare({ onGoToRecord }: { onGoToRecord?: () => void } 
       .eq('id', meeting.id);
     // Notify webhook
     try {
-      await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/49975b04-acbe-4ba2-9153-dfe6fc2a4ddb', {
+      await fetch('/api/proxy/n8n', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'meeting-calendar',
           planned_meeting_id: meeting.id,
           tenant_id: tenantId,
           title: meeting.title,
           scheduled_at: meeting.scheduledAt.toISOString(),
-          action: 'cancelled',
+          meeting_action: 'cancelled',
         }),
       });
     } catch (err) {

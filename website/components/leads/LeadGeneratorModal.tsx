@@ -325,13 +325,10 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
 
       let response: Response;
       try {
-        response = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/lead-generator-run', {
+        response = await fetch('/api/proxy/n8n', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-webhook-secret': '59317c4c-217d-4046-93d8-15ea3e94dbb6',
-          },
-          body: JSON.stringify({ tenant_id: TENANT_ID, profile_id: profile.id }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'lead-generator', tenant_id: TENANT_ID, profile_id: profile.id }),
           signal: controller.signal,
         });
       } finally {
@@ -967,10 +964,11 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                           const { run } = await runRes.json();
                           if (run?.id) setMapsRunId(run.id);
                           // Start webhook
-                          await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/apify-maps-import', {
+                          await fetch('/api/proxy/n8n', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
+                              action: 'maps-import',
                               tenant_id: TENANT_ID,
                               search_terms: terms,
                               max_results: mapsMaxResults,

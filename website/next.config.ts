@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://jnaqmsvozkpqawqwslrl.supabase.co",
               "font-src 'self' data:",
-              "connect-src 'self' https://jnaqmsvozkpqawqwslrl.supabase.co wss://jnaqmsvozkpqawqwslrl.supabase.co https://n8n.srv1223027.hstgr.cloud https://plausible.io",
+              "connect-src 'self' https://jnaqmsvozkpqawqwslrl.supabase.co wss://jnaqmsvozkpqawqwslrl.supabase.co https://plausible.io",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
