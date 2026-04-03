@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (inviteError || !invite) {
+      console.error('accept-invite: invite lookup failed', inviteError);
       return NextResponse.json({ error: 'Einladung nicht gefunden.' }, { status: 404 });
     }
 
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (authError || !authData.user) {
+      console.error('accept-invite: auth.admin.createUser failed', authError);
       return NextResponse.json(
         { error: authError?.message || 'Benutzer konnte nicht erstellt werden.' },
         { status: 500 },
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (tenantError) {
+      console.error('accept-invite: tenant_users insert failed', tenantError);
       // Rollback: delete the auth user if tenant_users insert fails
       await supabase.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json(
@@ -81,7 +84,8 @@ export async function POST(req: NextRequest) {
       email: invite.email,
       tenant_id: invite.tenant_id,
     });
-  } catch {
+  } catch (err) {
+    console.error('accept-invite error:', err);
     return NextResponse.json({ error: 'Interner Fehler.' }, { status: 500 });
   }
 }
