@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { token, password } = await req.json();
+    const { token, password, displayName } = await req.json();
 
     if (!token || !password || password.length < 8) {
       return NextResponse.json(
@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
       email: invite.email,
       password,
       email_confirm: true,
+      user_metadata: {
+        display_name: displayName || invite.email.split('@')[0],
+      },
     });
 
     if (authError || !authData.user) {

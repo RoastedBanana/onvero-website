@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { createBrowserClient } from '@supabase/ssr';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Clock, Lock, Eye, EyeOff, Pencil, Zap, Camera, Check, X, Loader2 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
-/*  Supabase client (browser)                                         */
+/*  Supabase client                                                    */
 /* ------------------------------------------------------------------ */
 function getSupabase() {
   return createBrowserClient(
@@ -15,88 +20,43 @@ function getSupabase() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Inline Onvero logo (white, matches OnveroLogo component)          */
-/* ------------------------------------------------------------------ */
-function Logo({ className = '' }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 542.48 138.5"
-      className={className}
-      aria-label="Onvero"
-      fill="white"
-    >
-      <circle cx="45.26" cy="112.99" r="9.05" />
-      <circle cx="9.2" cy="76.63" r="9.2" />
-      <line x1="38.88" y1="106.37" x2="15.56" y2="83.27" fill="none" stroke="white" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="8" />
-      <line x1="56.82" y1="28.62" x2="15.43" y2="69.87" fill="none" stroke="white" strokeLinecap="round" strokeMiterlimit="10" strokeWidth="8" />
-      <path d="M84.75,12.19c-5.44-1.79-9.74-6.09-11.54-11.53-.13-.39-.5-.66-.91-.66h0c-.41,0-.78.26-.91.66-1.79,5.43-6.07,9.72-11.49,11.52-.27.09-.5.27-.61.53-.23.54.05,1.14.56,1.31,5.44,1.79,9.74,6.09,11.54,11.53.13.39.5.66.91.66h0c.41,0-.78-.26.91-.66,1.79-5.43,6.07-9.72,11.49-11.52.27-.09.5-.27.61-.53.23-.54-.05-1.14-.56-1.31Z" />
-      <circle cx="532.31" cy="91.53" r="10.17" />
-      <text
-        style={{ fontFamily: "TimesNewRomanPSMT, 'Times New Roman', Times, serif", fontSize: '120px', letterSpacing: '0.04em', isolation: 'isolate' }}
-        transform="translate(121.88 101.7)"
-      >
-        Onvero
-      </text>
-    </svg>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  CSS keyframes (injected once via <style>)                         */
-/* ------------------------------------------------------------------ */
-const animationCSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
-
-@keyframes joinFadeUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes joinScale {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes joinSparkle {
-  0%, 100% { opacity: 0.3; transform: scale(0.8) rotate(0deg); }
-  50%      { opacity: 1;   transform: scale(1.1) rotate(8deg); }
-}
-@keyframes joinGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(240,239,234,0); }
-  50%      { box-shadow: 0 0 40px 4px rgba(240,239,234,0.06); }
-}
-@keyframes joinSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-@keyframes joinCheckmark {
-  from { stroke-dashoffset: 24; }
-  to   { stroke-dashoffset: 0; }
-}
-`;
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                             */
+/*  Types                                                              */
 /* ------------------------------------------------------------------ */
 type PageState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'form'; email: string; tenant_id: string }
-  | { kind: 'submitting'; email: string; tenant_id: string }
+  | { kind: 'form'; email: string; tenant_id: string; tenant_name: string; tenant_logo: string | null }
+  | { kind: 'submitting'; email: string; tenant_id: string; tenant_name: string; tenant_logo: string | null }
   | { kind: 'success' };
 
 /* ------------------------------------------------------------------ */
-/*  Main form component                                               */
+/*  Main component                                                     */
 /* ------------------------------------------------------------------ */
 function JoinForm() {
   const params = useSearchParams();
-  const router = useRouter();
   const token = params.get('token') || '';
 
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [formError, setFormError] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+
+  const timeText = useMemo(() => {
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes().toString().padStart(2, '0');
+    const hour12 = ((h + 11) % 12) + 1;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${m} ${ampm}`;
+  }, []);
 
   // Validate token on mount
   useEffect(() => {
@@ -113,7 +73,15 @@ function JoinForm() {
       .then(r => r.json())
       .then(data => {
         if (data.valid) {
-          setState({ kind: 'form', email: data.email, tenant_id: data.tenant_id });
+          setState({
+            kind: 'form',
+            email: data.email,
+            tenant_id: data.tenant_id,
+            tenant_name: data.tenant_name || 'Unternehmen',
+            tenant_logo: data.tenant_logo || null,
+          });
+          setDisplayName(data.email.split('@')[0]);
+          if (data.tenant_logo) setLogoPreview(data.tenant_logo);
         } else {
           const messages: Record<string, string> = {
             already_used: 'Dieser Link wurde bereits verwendet.',
@@ -128,7 +96,35 @@ function JoinForm() {
       });
   }, [token]);
 
-  // Submit handler
+  // Focus name input when editing
+  useEffect(() => {
+    if (editingName) nameRef.current?.focus();
+  }, [editingName]);
+
+  // Handle logo file pick
+  function handleLogoPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  }
+
+  // Upload logo to Supabase storage and update tenant
+  async function uploadLogo(tenantId: string) {
+    if (!logoFile) return;
+    const supabase = getSupabase();
+    const ext = logoFile.name.split('.').pop();
+    const path = `tenant-logos/${tenantId}.${ext}`;
+
+    await supabase.storage.from('tenant-logos').upload(path, logoFile, { upsert: true });
+    const { data } = supabase.storage.from('tenant-logos').getPublicUrl(path);
+
+    if (data?.publicUrl) {
+      await supabase.from('tenants').update({ logo_url: data.publicUrl }).eq('id', tenantId);
+    }
+  }
+
+  // Submit
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError('');
@@ -141,23 +137,23 @@ function JoinForm() {
       setFormError('Passwörter stimmen nicht überein.');
       return;
     }
-
     if (state.kind !== 'form') return;
-    const { email, tenant_id } = state;
-    setState({ kind: 'submitting', email, tenant_id });
+
+    const { email, tenant_id, tenant_name, tenant_logo } = state;
+    setState({ kind: 'submitting', email, tenant_id, tenant_name, tenant_logo });
 
     try {
       const res = await fetch('/api/accept-invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token, password, displayName }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         setFormError(data.error || 'Fehler beim Erstellen des Kontos.');
-        setState({ kind: 'form', email, tenant_id });
+        setState({ kind: 'form', email, tenant_id, tenant_name, tenant_logo });
         return;
       }
 
@@ -167,257 +163,199 @@ function JoinForm() {
 
       if (loginError) {
         setFormError('Konto erstellt, aber Anmeldung fehlgeschlagen. Bitte manuell einloggen.');
-        setState({ kind: 'form', email, tenant_id });
+        setState({ kind: 'form', email, tenant_id, tenant_name, tenant_logo });
         return;
+      }
+
+      // Upload logo if changed
+      if (logoFile) {
+        await uploadLogo(tenant_id);
       }
 
       setState({ kind: 'success' });
       setTimeout(() => {
         window.location.href = '/dashboard';
-      }, 1500);
+      }, 1800);
     } catch {
       setFormError('Netzwerkfehler. Bitte erneut versuchen.');
-      setState({ kind: 'form', email, tenant_id });
+      setState({ kind: 'form', email, tenant_id, tenant_name: state.kind === 'submitting' ? state.tenant_name : 'Unternehmen', tenant_logo: state.kind === 'submitting' ? state.tenant_logo : null });
     }
   }
 
-  /* ---- Shared styles ---- */
-  const colors = {
-    bg: '#080810',
-    card: '#111119',
-    border: '#1f1f2e',
-    text: '#f0efea',
-    muted: '#9898a8',
-    error: '#ff6b6b',
-  };
+  const tenantName = (state.kind === 'form' || state.kind === 'submitting') ? state.tenant_name : '';
+  const initial = tenantName.charAt(0).toUpperCase() || 'O';
+  const isSubmitting = state.kind === 'submitting';
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    background: 'rgba(255,255,255,0.04)',
-    border: `1px solid ${colors.border}`,
-    borderRadius: 10,
-    color: colors.text,
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: '0.9rem',
-    padding: '0.75rem 1rem',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-  };
-
-  /* ---- Render ---- */
-  return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: animationCSS }} />
-
-      <main
-        style={{
-          minHeight: '100vh',
-          background: colors.bg,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2rem',
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
-        {/* Card */}
-        <div
-          style={{
-            width: '100%',
-            maxWidth: 440,
-            background: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: 20,
-            padding: '2.5rem',
-            animation: 'joinScale 0.6s ease-out both',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+  /* ---- LOADING ---- */
+  if (state.kind === 'loading') {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080810] p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
         >
-          {/* Subtle glow pulse */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: 20,
-              animation: 'joinGlow 4s ease-in-out infinite',
-              pointerEvents: 'none',
-            }}
-          />
+          <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />
+          <p className="text-sm text-neutral-500">Einladung wird geprüft...</p>
+        </motion.div>
+      </main>
+    );
+  }
 
-          {/* Logo */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              marginBottom: '1.75rem',
-              animation: 'joinFadeUp 0.6s ease-out 0.1s both',
-            }}
-          >
-            <Logo className="h-8 w-auto" />
+  /* ---- ERROR ---- */
+  if (state.kind === 'error') {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080810] p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-4 text-center"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10">
+            <X className="h-6 w-6 text-red-400" />
           </div>
+          <p className="text-lg font-semibold text-white">Link ungültig</p>
+          <p className="text-sm text-neutral-400">{state.message}</p>
+        </motion.div>
+      </main>
+    );
+  }
 
-          {/* ---- LOADING STATE ---- */}
-          {state.kind === 'loading' && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '1rem',
-                padding: '2rem 0',
-                animation: 'joinFadeUp 0.4s ease-out both',
-              }}
-            >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  border: `2px solid ${colors.border}`,
-                  borderTopColor: colors.text,
-                  borderRadius: '50%',
-                  animation: 'joinSpin 0.8s linear infinite',
-                }}
-              />
-              <p style={{ color: colors.muted, fontSize: '0.85rem' }}>Einladung wird geprüft...</p>
-            </div>
-          )}
+  /* ---- SUCCESS ---- */
+  if (state.kind === 'success') {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#080810] p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          className="flex flex-col items-center gap-4 text-center"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
+            <Check className="h-7 w-7 text-emerald-400" />
+          </div>
+          <p className="text-xl font-semibold text-white">Willkommen an Bord!</p>
+          <p className="text-sm text-neutral-400">Du wirst zum Dashboard weitergeleitet...</p>
+        </motion.div>
+      </main>
+    );
+  }
 
-          {/* ---- ERROR STATE ---- */}
-          {state.kind === 'error' && (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '1.5rem 0',
-                animation: 'joinFadeUp 0.5s ease-out both',
-              }}
-            >
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  background: 'rgba(255,107,107,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1rem',
-                }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.error} strokeWidth="2" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+  /* ---- FORM (profile-card style) ---- */
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#080810] p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative w-full max-w-xl"
+      >
+        {/* Blue-purple glow underneath */}
+        <div className="pointer-events-none absolute inset-x-0 -bottom-10 top-[72%] z-0 rounded-[28px] bg-indigo-500/80 blur-0 shadow-[0_40px_80px_-16px_rgba(99,102,241,0.75)]" />
+
+        {/* Glow text below card */}
+        <div className="absolute inset-x-0 -bottom-10 z-0 mx-auto w-full">
+          <div className="flex items-center justify-center gap-2 bg-transparent py-3 text-center text-sm font-medium text-black">
+            <Zap className="h-4 w-4" /> enjoy your ai - Business Journey
+          </div>
+        </div>
+
+        <Card className="relative z-10 mx-auto w-full overflow-visible rounded-[28px] border-0 bg-[radial-gradient(120%_120%_at_30%_10%,#1a1a1a_0%,#0f0f10_60%,#0b0b0c_100%)] text-white shadow-2xl">
+          <CardContent className="p-6 sm:p-8">
+            {/* Status bar */}
+            <div className="mb-6 flex items-center justify-between text-sm text-neutral-300">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-indigo-400" />
+                <span className="select-none">Einladung aktiv</span>
               </div>
-              <p style={{ color: colors.text, fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                Link ungültig
-              </p>
-              <p style={{ color: colors.muted, fontSize: '0.85rem' }}>{state.message}</p>
-            </div>
-          )}
-
-          {/* ---- SUCCESS STATE ---- */}
-          {state.kind === 'success' && (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '1.5rem 0',
-                animation: 'joinFadeUp 0.5s ease-out both',
-              }}
-            >
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '50%',
-                  background: 'rgba(74,222,128,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1rem',
-                }}
-              >
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline
-                    points="20 6 9 17 4 12"
-                    style={{ strokeDasharray: 24, animation: 'joinCheckmark 0.4s ease-out 0.2s both' }}
-                  />
-                </svg>
+              <div className="flex items-center gap-2 opacity-80">
+                <Clock className="h-4 w-4" />
+                <span className="tabular-nums">{timeText}</span>
               </div>
-              <p
-                style={{
-                  color: colors.text,
-                  fontFamily: "'DM Serif Display', serif",
-                  fontSize: '1.25rem',
-                  marginBottom: '0.5rem',
-                }}
-              >
-                Willkommen an Bord!
-              </p>
-              <p style={{ color: colors.muted, fontSize: '0.85rem' }}>Du wirst weitergeleitet...</p>
             </div>
-          )}
 
-          {/* ---- FORM STATE ---- */}
-          {(state.kind === 'form' || state.kind === 'submitting') && (
-            <div style={{ animation: 'joinFadeUp 0.6s ease-out 0.2s both' }}>
-              {/* Headline */}
-              <h1
-                style={{
-                  color: colors.text,
-                  fontFamily: "'DM Serif Display', serif",
-                  fontWeight: 400,
-                  fontSize: '1.5rem',
-                  textAlign: 'center',
-                  marginBottom: '0.35rem',
-                  lineHeight: 1.3,
-                }}
-              >
-                Willkommen bei{' '}
-                <em style={{ fontStyle: 'italic' }}>BusinessOS.</em>
-              </h1>
-              <p
-                style={{
-                  color: colors.muted,
-                  fontSize: '0.85rem',
-                  textAlign: 'center',
-                  marginBottom: '2rem',
-                  lineHeight: 1.5,
-                }}
-              >
-                Lege jetzt dein Passwort fest, um deinen Zugang zu aktivieren.
-              </p>
-
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-                {/* Email (read-only) */}
-                <div>
-                  <label style={{ display: 'block', color: colors.muted, fontSize: '0.75rem', marginBottom: '0.35rem' }}>
-                    E-Mail
-                  </label>
+            {/* Avatar + Company name */}
+            <div className="flex flex-wrap items-center gap-5">
+              {/* Company avatar — initial letter or uploaded logo */}
+              <div className="group relative">
+                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-white/10">
+                  {logoPreview ? (
+                    <img
+                      src={logoPreview}
+                      alt={`${tenantName} logo`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-600 to-violet-600 text-xl font-bold text-white">
+                      {initial}
+                    </div>
+                  )}
+                  {/* Upload overlay */}
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-label="Logo hochladen"
+                  >
+                    <Camera className="h-5 w-5 text-white" />
+                  </button>
                   <input
-                    type="email"
-                    value={state.email}
-                    readOnly
-                    style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
-                    tabIndex={-1}
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoPick}
                   />
                 </div>
+              </div>
 
+              <div className="min-w-0">
+                <h3 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
+                  {tenantName}
+                </h3>
+                {/* Editable display name */}
+                <div className="mt-0.5 flex items-center gap-1.5">
+                  {editingName ? (
+                    <input
+                      ref={nameRef}
+                      type="text"
+                      value={displayName}
+                      onChange={e => setDisplayName(e.target.value)}
+                      onBlur={() => setEditingName(false)}
+                      onKeyDown={e => { if (e.key === 'Enter') setEditingName(false); }}
+                      className="w-full bg-transparent text-sm text-neutral-400 outline-none ring-0 border-b border-neutral-600 focus:border-indigo-400 transition-colors"
+                      placeholder="Dein Name"
+                    />
+                  ) : (
+                    <>
+                      <p className="text-sm text-neutral-400">{displayName || 'Dein Name'}</p>
+                      <button
+                        type="button"
+                        onClick={() => setEditingName(true)}
+                        className="text-neutral-500 hover:text-neutral-300 transition-colors"
+                        aria-label="Namen bearbeiten"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Password fields as the two action buttons */}
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {/* Password */}
-                <div>
-                  <label style={{ display: 'block', color: colors.muted, fontSize: '0.75rem', marginBottom: '0.35rem' }}>
-                    Passwort
-                  </label>
-                  <div style={{ position: 'relative' }}>
+                <div className="relative">
+                  <div className="flex h-12 items-center gap-3 rounded-2xl bg-white/10 px-4">
+                    <Lock className="h-4 w-4 shrink-0 text-neutral-400" />
                     <input
                       type={showPw ? 'text' : 'password'}
-                      placeholder="Mindestens 8 Zeichen"
+                      placeholder="Passwort"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      style={{ ...inputStyle, paddingRight: '2.75rem' }}
-                      onFocus={e => (e.currentTarget.style.borderColor = 'rgba(240,239,234,0.25)')}
-                      onBlur={e => (e.currentTarget.style.borderColor = colors.border)}
+                      className="w-full bg-transparent text-sm text-white placeholder-neutral-500 outline-none"
                       autoComplete="new-password"
                       minLength={8}
                       required
@@ -425,126 +363,76 @@ function JoinForm() {
                     <button
                       type="button"
                       onClick={() => setShowPw(v => !v)}
-                      style={{
-                        position: 'absolute',
-                        right: 10,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: colors.muted,
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        padding: '0.25rem',
-                      }}
+                      className="shrink-0 text-neutral-500 hover:text-neutral-300 transition-colors"
                       tabIndex={-1}
-                      aria-label={showPw ? 'Passwort verbergen' : 'Passwort anzeigen'}
                     >
-                      {showPw ? (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                          <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                          <line x1="1" y1="1" x2="23" y2="23" />
-                        </svg>
-                      ) : (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      )}
+                      {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
-                {/* Confirm password */}
-                <div>
-                  <label style={{ display: 'block', color: colors.muted, fontSize: '0.75rem', marginBottom: '0.35rem' }}>
-                    Passwort bestätigen
-                  </label>
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="Passwort wiederholen"
-                    value={confirm}
-                    onChange={e => setConfirm(e.target.value)}
-                    style={inputStyle}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'rgba(240,239,234,0.25)')}
-                    onBlur={e => (e.currentTarget.style.borderColor = colors.border)}
-                    autoComplete="new-password"
-                    required
-                  />
+                {/* Confirm */}
+                <div className="relative">
+                  <div className="flex h-12 items-center gap-3 rounded-2xl bg-white/10 px-4">
+                    <Lock className="h-4 w-4 shrink-0 text-neutral-400" />
+                    <input
+                      type={showConfirm ? 'text' : 'password'}
+                      placeholder="Bestätigen"
+                      value={confirm}
+                      onChange={e => setConfirm(e.target.value)}
+                      className="w-full bg-transparent text-sm text-white placeholder-neutral-500 outline-none"
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(v => !v)}
+                      className="shrink-0 text-neutral-500 hover:text-neutral-300 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
+              </div>
 
-                {/* Error */}
-                {formError && (
-                  <p style={{ color: colors.error, fontSize: '0.8rem', textAlign: 'center' }}>{formError}</p>
+              {/* Error */}
+              {formError && (
+                <p className="text-center text-sm text-red-400">{formError}</p>
+              )}
+
+              {/* Submit */}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className={cn(
+                  'h-12 w-full rounded-2xl bg-white text-black font-semibold hover:bg-white/90 transition-all text-sm',
+                  isSubmitting && 'opacity-70 cursor-not-allowed',
                 )}
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={state.kind === 'submitting'}
-                  style={{
-                    marginTop: '0.5rem',
-                    width: '100%',
-                    background: colors.text,
-                    color: '#0a0a0f',
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontWeight: 700,
-                    fontSize: '0.9rem',
-                    border: 'none',
-                    borderRadius: 10,
-                    padding: '0.8rem',
-                    cursor: state.kind === 'submitting' ? 'not-allowed' : 'pointer',
-                    opacity: state.kind === 'submitting' ? 0.7 : 1,
-                    transition: 'opacity 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                  }}
-                >
-                  {state.kind === 'submitting' ? (
-                    <>
-                      <div
-                        style={{
-                          width: 16,
-                          height: 16,
-                          border: '2px solid rgba(10,10,15,0.3)',
-                          borderTopColor: '#0a0a0f',
-                          borderRadius: '50%',
-                          animation: 'joinSpin 0.8s linear infinite',
-                        }}
-                      />
-                      Konto wird erstellt...
-                    </>
-                  ) : (
-                    'Konto aktivieren \u2192'
-                  )}
-                </button>
-              </form>
-
-              {/* Footer note */}
-              <p
-                style={{
-                  color: colors.muted,
-                  fontSize: '0.72rem',
-                  textAlign: 'center',
-                  marginTop: '1.25rem',
-                  opacity: 0.7,
-                }}
               >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Konto wird erstellt...
+                  </>
+                ) : (
+                  'Konto aktivieren \u2192'
+                )}
+              </Button>
+
+              <p className="text-center text-xs text-neutral-600">
                 Dieser Link ist 24 Stunden gültig.
               </p>
-            </div>
-          )}
-        </div>
-      </main>
-    </>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </main>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Page export (Suspense boundary for useSearchParams)               */
+/*  Export                                                              */
 /* ------------------------------------------------------------------ */
 export default function JoinPage() {
   return (

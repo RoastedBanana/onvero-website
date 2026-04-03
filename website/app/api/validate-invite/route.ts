@@ -32,10 +32,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: false, reason: 'expired' });
     }
 
+    // Fetch tenant info for the card display
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('name, logo_url')
+      .eq('id', data.tenant_id)
+      .single();
+
     return NextResponse.json({
       valid: true,
       email: data.email,
       tenant_id: data.tenant_id,
+      tenant_name: tenant?.name || '',
+      tenant_logo: tenant?.logo_url || null,
     });
   } catch {
     return NextResponse.json({ valid: false, reason: 'not_found' }, { status: 500 });
