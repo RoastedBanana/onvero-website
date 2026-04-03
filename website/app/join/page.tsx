@@ -178,7 +178,7 @@ function JoinForm() {
       }, 1800);
     } catch {
       setFormError('Netzwerkfehler. Bitte erneut versuchen.');
-      setState({ kind: 'form', email, tenant_id, tenant_name: state.kind === 'submitting' ? state.tenant_name : 'Unternehmen', tenant_logo: state.kind === 'submitting' ? state.tenant_logo : null });
+      setState({ kind: 'form', email, tenant_id, tenant_name, tenant_logo });
     }
   }
 
