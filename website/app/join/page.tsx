@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { createBrowserClient } from '@supabase/ssr';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Clock, Lock, Eye, EyeOff, Pencil, Zap, Camera, Check, X, Loader2 } from 'lucide-react';
@@ -261,7 +261,7 @@ function JoinForm() {
         </div>
 
         <Card className="relative z-10 mx-auto w-full overflow-visible rounded-[28px] border-0 bg-[radial-gradient(120%_120%_at_30%_10%,#1a1a1a_0%,#0f0f10_60%,#0b0b0c_100%)] text-white shadow-2xl">
-          <CardContent className="p-6 sm:p-8">
+          <div className="p-6 sm:p-8">
             {/* Status bar */}
             <div className="mb-6 flex items-center justify-between text-sm text-neutral-300">
               <div className="flex items-center gap-2">
@@ -424,7 +424,7 @@ function JoinForm() {
                 Dieser Link ist 24 Stunden gültig.
               </p>
             </form>
-          </CardContent>
+          </div>
         </Card>
       </motion.div>
     </main>
