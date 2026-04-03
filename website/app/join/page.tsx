@@ -255,7 +255,7 @@ function JoinForm() {
 
         {/* Glow text below card */}
         <div className="absolute inset-x-0 -bottom-10 z-0 mx-auto w-full">
-          <div className="flex items-center justify-center gap-2 bg-transparent py-3 text-center text-sm font-medium text-black">
+          <div className="flex items-center justify-center gap-2 bg-transparent py-3 text-center text-sm font-medium text-white">
             <Zap className="h-4 w-4" /> enjoy your ai - Business Journey
           </div>
         </div>
@@ -343,8 +343,14 @@ function JoinForm() {
               </div>
             </div>
 
-            {/* Password fields as the two action buttons */}
+            {/* Password fields */}
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {/* Email (read-only) */}
+              <div className="flex h-12 items-center gap-3 rounded-2xl bg-white/5 px-4">
+                <span className="text-sm text-neutral-500 select-none">E-Mail</span>
+                <span className="text-sm text-neutral-300">{state.email}</span>
+              </div>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {/* Password */}
                 <div className="relative">
