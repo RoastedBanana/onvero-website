@@ -14,6 +14,12 @@ const WEBHOOK_MAP: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  // Temporär zum Debuggen:
+  console.log("ENV CHECK:", {
+    webhook: process.env.N8N_WEBHOOK_BLOG_AI_POLISH,
+    supabase: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  });
+
   try {
     const ip = getClientIp(req.headers);
     const { success } = await rateLimit(`n8n-proxy:${ip}`, { maxRequests: 20, windowMs: 60_000 });
