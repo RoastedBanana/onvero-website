@@ -1,0 +1,74 @@
+Datenschutzerklärung
+Stand: März 2026
+1. Datenschutz auf einen Blick
+Allgemeine Hinweise
+Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie unsere Website besuchen. Personenbezogene Daten sind alle Daten, mit denen Sie persönlich identifiziert werden können. Ausführliche Informationen zum Thema Datenschutz entnehmen Sie unserer weiter unten aufgeführten Datenschutzerklärung.
+Datenerfassung auf unserer Website
+Wer ist verantwortlich für die Datenerfassung auf dieser Website? Die Datenverarbeitung auf dieser Website erfolgt durch den Webseitenbetreiber. Dessen Kontaktdaten können Sie dem Impressum dieser Website entnehmen.
+
+Wie erfassen wir Ihre Daten? Ihre Daten werden zum einen dadurch erhoben, dass Sie uns diese mitteilen. Hierbei kann es sich z. B. um Daten handeln, die Sie in ein Kontaktformular eingeben oder im Chat mit unserem KI-Assistenten teilen.  Andere Daten werden beim Besuch der Website automatisch durch unsere IT-Systeme erfasst. Das sind vor allem technische Daten (z. B. Internetbrowser, Betriebssystem oder Uhrzeit des Seitenaufrufs).
+
+Wofür nutzen wir Ihre Daten? Ein Teil der Daten wird erhoben, um eine fehlerfreie Bereitstellung der Website zu gewährleisten. Andere Daten können zur Bearbeitung Ihrer Anfragen, zur Terminvereinbarung oder zur Kontaktaufnahme genutzt werden.
+
+Welche Rechte haben Sie bezüglich Ihrer Daten? Sie haben jederzeit das Recht, unentgeltlich Auskunft über Herkunft, Empfänger und Zweck Ihrer gespeicherten personenbezogenen Daten zu erhalten. Sie haben außerdem ein Recht auf Berichtigung, Sperrung oder Löschung dieser Daten. Hierzu sowie zu weiteren Fragen zum Thema Datenschutz können Sie sich jederzeit an uns wenden.
+2. Allgemeine Hinweise und Pflichtinformationen
+Datenschutz
+Die Betreiber dieser Website nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend der gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.
+Wenn Sie diese Website benutzen, werden verschiedene personenbezogene Daten erhoben. Diese Datenschutzerklärung erläutert, welche Daten wir erheben und wofür wir sie nutzen. Sie erläutert auch, wie und zu welchem Zweck das geschieht.
+Hinweis zur verantwortlichen Stelle
+Die verantwortliche Stelle für die Datenverarbeitung auf dieser Website ist:
+Onvero UG (haftungsbeschränkt) Lüdmoor 35 A 22175 Hamburg  Telefon: +49 163 8981544 E-Mail: info@onvero.de
+
+Verantwortliche Stelle ist die natürliche oder juristische Person, die allein oder gemeinsam mit anderen über die Zwecke und Mittel der Verarbeitung von personenbezogenen Daten entscheidet.
+Widerruf Ihrer Einwilligung zur Datenverarbeitung
+Viele Datenverarbeitungsvorgänge sind nur mit Ihrer ausdrücklichen Einwilligung möglich. Sie können eine bereits erteilte Einwilligung jederzeit widerrufen. Die Rechtmäßigkeit der bis zum Widerruf erfolgten Datenverarbeitung bleibt vom Widerruf unberührt.
+Beschwerderecht bei der zuständigen Aufsichtsbehörde
+Im Falle von Verstößen gegen die DSGVO steht den Betroffenen ein Beschwerderecht bei einer Aufsichtsbehörde zu. Zuständige Aufsichtsbehörde in Datenschutzfragen für Onvero UG ist der Hamburgische Beauftragte für Datenschutz und Informationsfreiheit (HmbBfDI).
+Recht auf Datenübertragbarkeit
+Sie haben das Recht, Daten, die wir auf Grundlage Ihrer Einwilligung oder in Erfüllung eines Vertrags automatisiert verarbeiten, an sich oder an einen Dritten in einem gängigen, maschinenlesbaren Format aushändigen zu lassen.
+SSL- bzw. TLS-Verschlüsselung
+Diese Website nutzt aus Sicherheitsgründen und zum Schutz der Übertragung vertraulicher Inhalte eine SSL- bzw. TLS-Verschlüsselung. Eine verschlüsselte Verbindung erkennen Sie daran, dass die Adresszeile des Browsers von "http://" auf "https://" wechselt und an dem Schloss-Symbol in Ihrer Browserzeile.
+Auskunft, Sperrung, Löschung
+Sie haben im Rahmen der geltenden gesetzlichen Bestimmungen jederzeit das Recht auf unentgeltliche Auskunft über Ihre gespeicherten personenbezogenen Daten, deren Herkunft und Empfänger und den Zweck der Datenverarbeitung und ggf. ein Recht auf Berichtigung, Sperrung oder Löschung dieser Daten. Hierzu sowie zu weiteren Fragen zum Thema personenbezogene Daten können Sie sich jederzeit an uns wenden.
+3. Datenerfassung auf unserer Website
+Server-Logfiles
+a. Datenverarbeitung Wenn Sie unsere Website nur zu Informationszwecken besuchen, d. h. wenn Sie sich nicht registrieren oder uns anderweitig Informationen übermitteln, erhebt und verarbeitet unser Hosting-Anbieter (Vercel Inc. / Netlify Inc.) automatisch folgende Daten:
+
+- IP-Adresse Ihres Endgeräts - Informationen über Ihren Browser - Name der aufgerufenen Seite (URL) - Datum und Uhrzeit des Besuchs - Statusmeldungen (z. B. Fehlermeldungen) - Übertragene Datenmengen
+
+b. Zweck und Rechtsgrundlage Die Verarbeitung erfolgt zur Bereitstellung der Website, zur Sicherstellung der Stabilität und Sicherheit sowie zur Nachverfolgung unbefugter Zugriffe. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse).
+
+c. Speicherdauer Die Daten werden nach spätestens 30 Tagen gelöscht. IP-Adressen werden pseudonymisiert gespeichert.
+Hosting
+Wir hosten unsere Website bei Vercel Inc. (oder Netlify Inc.) mit Sitz in den USA. Beim Besuch unserer Website werden personenbezogene Daten auf den Servern des Hosting-Anbieters verarbeitet. Die Datenübertragung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO). Mit dem Hosting-Anbieter besteht ein Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO.
+Cookies
+Unsere Website verwendet Cookies. Cookies sind kleine Textdateien, die auf Ihrem Endgerät gespeichert werden und die Ihr Browser speichert. Technisch notwendige Cookies werden auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO gespeichert. Für alle weiteren Cookies holen wir Ihre Einwilligung über unseren Consent Manager ein.
+Sie können Ihren Browser so einstellen, dass Sie über das Setzen von Cookies informiert werden und Cookies nur im Einzelfall erlauben, die Annahme von Cookies für bestimmte Fälle oder generell ausschließen sowie das automatische Löschen der Cookies beim Schließen des Browser aktivieren.
+Kontaktformular
+Wenn Sie uns per Kontaktformular Anfragen zukommen lassen, werden Ihre Angaben aus dem Anfrageformular inklusive der von Ihnen dort angegebenen Kontaktdaten zwecks Bearbeitung der Anfrage und für den Fall von Anschlussfragen bei uns gespeichert. Diese Daten geben wir nicht ohne Ihre Einwilligung weiter. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Vertragsanbahnung) bzw. Art. 6 Abs. 1 lit. a DSGVO (Einwilligung).
+4. KI-gestützter Chatbot und AI-Rezeptionist
+Auf unserer Website setzen wir einen KI-basierten Chatbot sowie einen AI-Rezeptionisten ein. Diese Systeme können folgende Aktionen ausführen: Fragen beantworten, Termine buchen, Anfragen in unser CRM-System eintragen sowie E-Mails in Ihrem Auftrag versenden.
+Verarbeitete Daten
+Die von Ihnen im Chat eingegebenen Nachrichten (z. B. Name, Kontaktdaten, Ihr Anliegen) werden zur Bearbeitung Ihrer Anfrage verarbeitet. Chatverläufe werden nicht dauerhaft gespeichert und nach Ende der Sitzung gelöscht. Sofern Sie einen Termin buchen oder Ihre Daten ins CRM übertragen werden, erfolgt dies nur auf Ihre Initiative hin.
+Rechtsgrundlage
+Rechtsgrundlage für die Datenverarbeitung über den Chatbot ist Art. 6 Abs. 1 lit. b DSGVO (Vertragsanbahnung und -erfüllung) sowie Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effizienter Kundenkommunikation).
+Eingesetzte Drittdienste
+Zur Bereitstellung der KI-Funktionen nutzen wir folgende Dienstleister als Auftragsverarbeiter gemäß Art. 28 DSGVO:
+OpenAI, L.L.C. (USA) – Verarbeitung von Spracheingaben durch ein KI-Sprachmodell. Datentransfer in die USA auf Grundlage der EU-Standardvertragsklauseln sowie des EU-US Data Privacy Frameworks.
+
+Google LLC (USA) – Google-Dienste (insbesondere Google Calendar für Terminbuchungen und Google-basierte E-Mail-Funktionen). Datentransfer in die USA auf Grundlage der EU-Standardvertragsklauseln und des EU-US Data Privacy Frameworks.
+
+HubSpot Inc. (USA) – CRM-System zur Erfassung und Verwaltung von Kontakt- und Anfragedaten. Datentransfer in die USA auf Grundlage der EU-Standardvertragsklauseln. HubSpot ist nach dem EU-US Data Privacy Framework zertifiziert. Weitere Informationen: https://legal.hubspot.com/de/privacy-policy
+
+Buchungssystem – Terminvereinbarung auf Ihre Initiative hin. Dabei werden Name, Kontaktdaten und gewünschter Termin verarbeitet.
+5. Ihre Rechte
+Sie haben gegenüber uns folgende Rechte hinsichtlich Ihrer personenbezogenen Daten:
+- Recht auf Auskunft (Art. 15 DSGVO) - Recht auf Berichtigung (Art. 16 DSGVO) - Recht auf Löschung (Art. 17 DSGVO) - Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO) - Recht auf Datenübertragbarkeit (Art. 20 DSGVO) - Recht auf Widerspruch gegen die Verarbeitung (Art. 21 DSGVO) - Recht auf Widerruf einer Einwilligung (Art. 7 Abs. 3 DSGVO)
+Zur Ausübung Ihrer Rechte wenden Sie sich bitte an: info@onvero.de
+6. Keine automatisierte Entscheidungsfindung
+Es findet keine automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO statt, die Ihnen gegenüber rechtliche Wirkung entfaltet oder Sie in ähnlicher Weise erheblich beeinträchtigt.
+7. Änderungen dieser Datenschutzerklärung
+Wir behalten uns vor, diese Datenschutzerklärung anzupassen, damit sie stets den aktuellen rechtlichen Anforderungen entspricht oder um Änderungen unserer Leistungen in der Datenschutzerklärung umzusetzen. Für Ihren erneuten Besuch gilt dann die neue Datenschutzerklärung.
+
+Stand: März 2026 | Onvero UG (haftungsbeschränkt)
+

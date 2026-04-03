@@ -1,0 +1,407 @@
+You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+calendar-date-and-time-range.tsx
+import { cn } from "@/lib/utils";
+import { useState } from "react";
+
+export const Component = () => {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div className={cn("flex flex-col items-center gap-4 p-4 rounded-lg")}>
+      <h1 className="text-2xl font-bold mb-2">Component Example</h1>
+      <h2 className="text-xl font-semibold">{count}</h2>
+      <div className="flex gap-2">
+        <button onClick={() => setCount((prev) => prev - 1)}>-</button>
+        <button onClick={() => setCount((prev) => prev + 1)}>+</button>
+      </div>
+    </div>
+  );
+};
+
+
+demo.tsx
+"use client"
+
+import * as React from "react"
+import { ChevronDownIcon } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar-rac"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+
+export function Calendar25() {
+  const [open, setOpen] = React.useState(false)
+  const [date, setDate] = React.useState<Date | undefined>(undefined)
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <Label htmlFor="date" className="px-1">
+          Date
+        </Label>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              id="date"
+              className="w-full justify-between font-normal"
+            >
+              {date ? date.toLocaleDateString() : "Select date"}
+              <ChevronDownIcon />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={date}
+              captionLayout="dropdown"
+              onSelect={(date) => {
+                setDate(date)
+                setOpen(false)
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div className="flex gap-4">
+        <div className="flex flex-col gap-3">
+          <Label htmlFor="time-from" className="px-1">
+            From
+          </Label>
+          <Input
+            type="time"
+            id="time-from"
+            step="1"
+            defaultValue="10:30:00"
+            className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+          />
+        </div>
+        <div className="flex flex-col gap-3">
+          <Label htmlFor="time-to" className="px-1">
+            To
+          </Label>
+          <Input
+            type="time"
+            id="time-to"
+            step="1"
+            defaultValue="12:30:00"
+            className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+```
+
+Copy-paste these files for dependencies:
+```tsx
+originui/calendar-rac
+"use client"
+
+import { cn } from "@/lib/utils"
+import { getLocalTimeZone, today } from "@internationalized/date"
+import { ComponentProps } from "react"
+import {
+  Button,
+  CalendarCell as CalendarCellRac,
+  CalendarGridBody as CalendarGridBodyRac,
+  CalendarGridHeader as CalendarGridHeaderRac,
+  CalendarGrid as CalendarGridRac,
+  CalendarHeaderCell as CalendarHeaderCellRac,
+  Calendar as CalendarRac,
+  Heading as HeadingRac,
+  RangeCalendar as RangeCalendarRac,
+  composeRenderProps,
+} from "react-aria-components"
+import { ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons"
+
+interface BaseCalendarProps {
+  className?: string
+}
+
+type CalendarProps = ComponentProps<typeof CalendarRac> & BaseCalendarProps
+type RangeCalendarProps = ComponentProps<typeof RangeCalendarRac> &
+  BaseCalendarProps
+
+const CalendarHeader = () => (
+  <header className="flex w-full items-center gap-1 pb-1">
+    <Button
+      slot="previous"
+      className="flex size-9 items-center justify-center rounded-lg text-muted-foreground/80 outline-offset-2 transition-colors hover:bg-accent hover:text-foreground focus:outline-none data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-ring/70"
+    >
+      <ChevronLeftIcon size={16} strokeWidth={2} />
+    </Button>
+    <HeadingRac className="grow text-center text-sm font-medium" />
+    <Button
+      slot="next"
+      className="flex size-9 items-center justify-center rounded-lg text-muted-foreground/80 outline-offset-2 transition-colors hover:bg-accent hover:text-foreground focus:outline-none data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-ring/70"
+    >
+      <ChevronRightIcon size={16} strokeWidth={2} />
+    </Button>
+  </header>
+)
+
+const CalendarGridComponent = ({ isRange = false }: { isRange?: boolean }) => {
+  const now = today(getLocalTimeZone())
+
+  return (
+    <CalendarGridRac>
+      <CalendarGridHeaderRac>
+        {(day) => (
+          <CalendarHeaderCellRac className="size-9 rounded-lg p-0 text-xs font-medium text-muted-foreground/80">
+            {day}
+          </CalendarHeaderCellRac>
+        )}
+      </CalendarGridHeaderRac>
+      <CalendarGridBodyRac className="[&_td]:px-0">
+        {(date) => (
+          <CalendarCellRac
+            date={date}
+            className={cn(
+              "relative flex size-9 items-center justify-center whitespace-nowrap rounded-lg border border-transparent p-0 text-sm font-normal text-foreground outline-offset-2 duration-150 [transition-property:color,background-color,border-radius,box-shadow] focus:outline-none data-[disabled]:pointer-events-none data-[unavailable]:pointer-events-none data-[focus-visible]:z-10 data-[hovered]:bg-accent data-[selected]:bg-primary data-[hovered]:text-foreground data-[selected]:text-primary-foreground data-[unavailable]:line-through data-[disabled]:opacity-30 data-[unavailable]:opacity-30 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-ring/70",
+              // Range-specific styles
+              isRange &&
+                "data-[selected]:rounded-none data-[selection-end]:rounded-e-lg data-[selection-start]:rounded-s-lg data-[invalid]:bg-red-100 data-[selected]:bg-accent data-[selected]:text-foreground data-[invalid]:data-[selection-end]:[&:not([data-hover])]:bg-destructive data-[invalid]:data-[selection-start]:[&:not([data-hover])]:bg-destructive data-[selection-end]:[&:not([data-hover])]:bg-primary data-[selection-start]:[&:not([data-hover])]:bg-primary data-[invalid]:data-[selection-end]:[&:not([data-hover])]:text-destructive-foreground data-[invalid]:data-[selection-start]:[&:not([data-hover])]:text-destructive-foreground data-[selection-end]:[&:not([data-hover])]:text-primary-foreground data-[selection-start]:[&:not([data-hover])]:text-primary-foreground",
+              // Today indicator styles
+              date.compare(now) === 0 &&
+                cn(
+                  "after:pointer-events-none after:absolute after:bottom-1 after:start-1/2 after:z-10 after:size-[3px] after:-translate-x-1/2 after:rounded-full after:bg-primary",
+                  isRange
+                    ? "data-[selection-end]:[&:not([data-hover])]:after:bg-background data-[selection-start]:[&:not([data-hover])]:after:bg-background"
+                    : "data-[selected]:after:bg-background",
+                ),
+            )}
+          />
+        )}
+      </CalendarGridBodyRac>
+    </CalendarGridRac>
+  )
+}
+
+const Calendar = ({ className, ...props }: CalendarProps) => {
+  return (
+    <CalendarRac
+      {...props}
+      className={composeRenderProps(className, (className) =>
+        cn("w-fit", className),
+      )}
+    >
+      <CalendarHeader />
+      <CalendarGridComponent />
+    </CalendarRac>
+  )
+}
+
+const RangeCalendar = ({ className, ...props }: RangeCalendarProps) => {
+  return (
+    <RangeCalendarRac
+      {...props}
+      className={composeRenderProps(className, (className) =>
+        cn("w-fit", className),
+      )}
+    >
+      <CalendarHeader />
+      <CalendarGridComponent isRange />
+    </RangeCalendarRac>
+  )
+}
+
+export { Calendar, RangeCalendar }
+
+```
+```tsx
+shadcn/button
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        icon: "h-10 w-10",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  },
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  },
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+
+```
+```tsx
+shadcn/input
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Input.displayName = "Input"
+
+export { Input }
+
+```
+```tsx
+shadcn/label
+"use client"
+
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const labelVariants = cva(
+  "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+)
+
+const Label = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
+    VariantProps<typeof labelVariants>
+>(({ className, ...props }, ref) => (
+  <LabelPrimitive.Root
+    ref={ref}
+    className={cn(labelVariants(), className)}
+    {...props}
+  />
+))
+Label.displayName = LabelPrimitive.Root.displayName
+
+export { Label }
+
+```
+```tsx
+shadcn/popover
+"use client"
+
+import * as React from "react"
+import * as PopoverPrimitive from "@radix-ui/react-popover"
+
+import { cn } from "@/lib/utils"
+
+const Popover = PopoverPrimitive.Root
+
+const PopoverTrigger = PopoverPrimitive.Trigger
+
+const PopoverContent = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
+>(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+  <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Content
+      ref={ref}
+      align={align}
+      sideOffset={sideOffset}
+      className={cn(
+        "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        className
+      )}
+      {...props}
+    />
+  </PopoverPrimitive.Portal>
+))
+PopoverContent.displayName = PopoverPrimitive.Content.displayName
+
+export { Popover, PopoverTrigger, PopoverContent }
+
+```
+
+Install NPM dependencies:
+```bash
+@radix-ui/react-icons, react-aria-components, @internationalized/date, @radix-ui/react-slot, class-variance-authority, @radix-ui/react-label, @radix-ui/react-popover
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them

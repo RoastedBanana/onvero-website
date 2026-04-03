@@ -1,0 +1,4 @@
+
+Jan Felix Fahlbusch, 19, aus Hamburg, baut KI-Automatisierungen, die echte Geschäftsprozesse schneller, schlanker und skalierbarer machen.
+Als Vizeweltmeister bei den F1 in Schools World Finals 2024 bewies er früh, dass er unter Druck liefert: mit über 50.000 € in Sponsorships, vier globalen Nominierungen und einem Team, das er von Anfang an mitaufgebaut hat. Parallel gründete er Onvero UG — ein E-Commerce-Unternehmen, das er von null mit KI-gestützter Automatisierung betrieb.
+Heute arbeitet Jan Felix mit n8n, Claude Code und modernen LLM-Workflows — und hilft Unternehmen dabei, manuelle Arbeit in automatisierte Systeme zu verwandeln.

@@ -44,9 +44,26 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Protect API routes (except public ones)
+  if (pathname.startsWith('/api/')) {
+    const PUBLIC_API = ['/api/auth/', '/api/contact', '/api/chat', '/api/favicon', '/api/webhooks/resend'];
+    const isPublic = PUBLIC_API.some((r) => pathname.startsWith(r));
+    if (!isPublic) {
+      const sessionCookie = request.cookies.get('onvero_user');
+      if (!sessionCookie?.value) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      try {
+        JSON.parse(decodeURIComponent(sessionCookie.value));
+      } catch {
+        return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+      }
+    }
+  }
+
   return ensureCsrfCookie(request, supabaseResponse);
 }
 
 export const config = {
-  matcher: ['/login', '/dashboard/:path*'],
+  matcher: ['/login', '/dashboard/:path*', '/api/:path*'],
 };
