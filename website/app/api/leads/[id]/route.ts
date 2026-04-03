@@ -8,15 +8,32 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const supabase = await createServerSupabaseClient();
   const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
 
-  const { data: activities } = await supabase
-    .from('lead_activities')
-    .select('id, type, title, content, created_at, metadata')
-    .eq('lead_id', id)
-    .eq('tenant_id', TENANT)
-    .order('created_at', { ascending: false })
-    .limit(20);
+  const [leadRes, activitiesRes] = await Promise.all([
+    supabase
+      .from('leads')
+      .select(
+        `id, company_name, first_name, last_name, email, phone,
+         website, city, country, status, score, source,
+         ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
+         email_draft, website_summary, website_title,
+         custom_fields, last_contacted_at, created_at, apollo_id`
+      )
+      .eq('id', id)
+      .eq('tenant_id', TENANT)
+      .single(),
+    supabase
+      .from('lead_activities')
+      .select('id, type, title, content, created_at, metadata')
+      .eq('lead_id', id)
+      .eq('tenant_id', TENANT)
+      .order('created_at', { ascending: false })
+      .limit(20),
+  ]);
 
-  return NextResponse.json({ activities: activities || [] });
+  return NextResponse.json({
+    lead: leadRes.data ?? null,
+    activities: activitiesRes.data ?? [],
+  });
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

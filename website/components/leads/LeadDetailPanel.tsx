@@ -491,6 +491,29 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 </div>
               </div>
               <button
+                onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
+                title="Vollansicht"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.3)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              >
+                ↗
+              </button>
+              <button
                 onClick={onClose}
                 style={{
                   width: 28,
