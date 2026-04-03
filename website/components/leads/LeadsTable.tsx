@@ -201,6 +201,8 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [rowDeleteId, setRowDeleteId] = useState<string | null>(null);
+  const [rowDeleting, setRowDeleting] = useState(false);
 
   const exitSelectMode = useCallback(() => {
     setSelectMode(false);
@@ -309,6 +311,7 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
         position: 'relative',
       }}
     >
+      <style>{`div:hover > .row-delete-btn { opacity: 1 !important; }`}</style>
       {/* ── Bulk Action Bar ── */}
       {selectMode && selected.size > 0 && (
         <div
@@ -765,7 +768,82 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
               {new Date(lead.createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
             </div>
-            {!selectMode && <div />}
+            {!selectMode && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                {rowDeleteId === lead.id ? (
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setRowDeleting(true);
+                        try {
+                          await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' });
+                          onLeadsDeleted?.([lead.id]);
+                        } catch {
+                          /* ignore */
+                        }
+                        setRowDeleting(false);
+                        setRowDeleteId(null);
+                      }}
+                      disabled={rowDeleting}
+                      style={{
+                        background: '#ef4444',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '2px 8px',
+                        fontSize: 10,
+                        color: '#fff',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        opacity: rowDeleting ? 0.5 : 1,
+                      }}
+                    >
+                      {rowDeleting ? '...' : 'Ja'}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRowDeleteId(null);
+                      }}
+                      style={{
+                        background: 'rgba(255,255,255,0.06)',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '2px 8px',
+                        fontSize: 10,
+                        color: 'rgba(255,255,255,0.4)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Nein
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRowDeleteId(lead.id);
+                    }}
+                    className="row-delete-btn"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: 12,
+                      color: 'rgba(255,255,255,0.15)',
+                      cursor: 'pointer',
+                      padding: '2px 4px',
+                      opacity: 0,
+                      transition: 'opacity 0.15s, color 0.15s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}
+                    title="Lead löschen"
+                  >
+                    🗑
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

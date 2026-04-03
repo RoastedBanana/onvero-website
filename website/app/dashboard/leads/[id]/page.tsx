@@ -149,6 +149,8 @@ export default function LeadDetailPage() {
   const [statusDropdown, setStatusDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -351,6 +353,71 @@ export default function LeadDetailPage() {
               >
                 {copied ? '✓ Kopiert' : '📧 E-Mail kopieren'}
               </button>
+              {/* Delete */}
+              {!deleteConfirm ? (
+                <button
+                  onClick={() => setDeleteConfirm(true)}
+                  style={{
+                    background: 'none',
+                    border: '1px solid rgba(239,68,68,0.15)',
+                    borderRadius: 8,
+                    padding: '6px 10px',
+                    fontSize: 12,
+                    color: '#ef4444',
+                    cursor: 'pointer',
+                    opacity: 0.6,
+                    transition: 'opacity 0.15s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                  title="Lead löschen"
+                >
+                  🗑
+                </button>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, color: '#ef4444' }}>Löschen?</span>
+                  <button
+                    onClick={async () => {
+                      setDeleting(true);
+                      try {
+                        await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' });
+                        router.push('/dashboard/leads');
+                      } catch {
+                        setDeleting(false);
+                      }
+                    }}
+                    disabled={deleting}
+                    style={{
+                      background: '#ef4444',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#fff',
+                      cursor: 'pointer',
+                      opacity: deleting ? 0.5 : 1,
+                    }}
+                  >
+                    {deleting ? '...' : 'Ja'}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(false)}
+                    style={{
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 6,
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      color: 'rgba(255,255,255,0.4)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Nein
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

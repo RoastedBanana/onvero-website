@@ -63,3 +63,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   return NextResponse.json({ lead: data });
 }
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createServerSupabaseClient();
+  const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
+
+  await supabase.from('lead_activities').delete().eq('lead_id', id).eq('tenant_id', TENANT);
+  const { error } = await supabase.from('leads').delete().eq('id', id).eq('tenant_id', TENANT);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
