@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Clock, Lock, Eye, EyeOff, Pencil, Zap, Camera, Check, X, Loader2 } from 'lucide-react';
+import { OnveroLogo } from '@/components/ui/onvero-logo';
 
 /* ------------------------------------------------------------------ */
 /*  Supabase client                                                    */
@@ -243,11 +244,21 @@ function JoinForm() {
 
   /* ---- FORM (profile-card style) ---- */
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#080810] p-6">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-[#080810] p-6">
+      {/* Onvero Logo */}
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="mb-8"
+      >
+        <OnveroLogo className="h-10 w-auto" />
+      </motion.div>
+
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
         className="relative w-full max-w-xl"
       >
         {/* Blue-purple glow underneath */}
