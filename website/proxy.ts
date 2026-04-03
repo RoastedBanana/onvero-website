@@ -46,7 +46,7 @@ export async function proxy(request: NextRequest) {
 
   // Protect API routes (except public ones)
   if (pathname.startsWith('/api/')) {
-    const PUBLIC_API = ['/api/auth/', '/api/contact', '/api/chat', '/api/favicon', '/api/webhooks/resend'];
+    const PUBLIC_API = ['/api/auth/', '/api/contact', '/api/chat', '/api/favicon', '/api/webhooks/resend', '/api/validate-invite', '/api/accept-invite'];
     const isPublic = PUBLIC_API.some((r) => pathname.startsWith(r));
     if (!isPublic) {
       const sessionCookie = request.cookies.get('onvero_user');
