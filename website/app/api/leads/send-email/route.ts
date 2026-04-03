@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-const RESEND_API_KEY = 're_5Y44imva_8TeEqVGLXuUCuEDFqFE5qv1i';
-
 export async function POST(req: NextRequest) {
   try {
     const { lead_id, tenant_id, to, subject, html, text } = await req.json();
@@ -20,36 +18,48 @@ export async function POST(req: NextRequest) {
       { cookies: { getAll: () => cookieStore.getAll() } }
     );
 
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('name, website')
-      .eq('id', tenant_id)
+    // Get email domain from tenant_integrations
+    const { data: integration } = await supabase
+      .from('tenant_integrations')
+      .select('email_resend')
+      .eq('tenant_id', tenant_id)
       .single();
 
-    const domain = tenant?.website ?? 'onvero.de';
-    const fromName = tenant?.name ?? 'Onvero';
-    const fromEmail = `noreply@${domain}`;
+    if (!integration?.email_resend) {
+      return NextResponse.json({ error: 'E-Mail-Domain nicht konfiguriert' }, { status: 400 });
+    }
 
-    // Send via Resend API
-    const res = await fetch('https://api.resend.com/emails', {
+    // Get logged-in user's first name from session cookie
+    let fromName = 'Onvero';
+    const rawCookie = cookieStore.get('onvero_user')?.value;
+    if (rawCookie) {
+      try {
+        const sessionUser = JSON.parse(decodeURIComponent(rawCookie));
+        if (sessionUser.firstName) fromName = sessionUser.firstName;
+      } catch { /* keep default */ }
+    }
+
+    const fromField = `${fromName} <${integration.email_resend.trim()}>`;
+
+    // Send via n8n webhook
+    const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/c2e0c1c2-7787-467f-bd23-fefbaf45b66c', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: `${fromName} <${fromEmail}>`,
-        to: [to],
+        from: fromField,
+        to,
         subject,
         html: html || undefined,
         text: text || undefined,
+        tenant_id,
+        lead_id,
       }),
     });
 
-    const result = await res.json();
+    const result = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      console.error('Resend error:', result);
+      console.error('n8n webhook error:', result);
       return NextResponse.json({ error: result.message ?? 'E-Mail senden fehlgeschlagen' }, { status: res.status });
     }
 

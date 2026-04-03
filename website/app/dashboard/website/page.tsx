@@ -101,7 +101,7 @@ const lbl: React.CSSProperties = {
 
 // ── TagInput ──────────────────────────────────────────────────────────────────
 
-function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) => void }) {
+function TagInput({ tags, onChange, shimmer }: { tags: string[]; onChange: (t: string[]) => void; shimmer?: boolean }) {
   const [input, setInput] = useState('');
   const add = () => {
     const v = input.trim();
@@ -111,71 +111,78 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (t: string[]) 
   return (
     <div>
       <label style={lbl}>Tags</label>
-      {tags.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
-          {tags.map((t) => (
-            <span
-              key={t}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                background: 'rgba(255,255,255,0.08)',
-                borderRadius: 6,
-                padding: '0.2rem 0.6rem',
-                fontSize: '0.78rem',
-                color: 'rgba(255,255,255,0.8)',
-              }}
-            >
-              {t}
-              <button
-                type="button"
-                onClick={() => onChange(tags.filter((x) => x !== t))}
+      <div style={{ position: 'relative' }}>
+        {tags.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.5rem' }}>
+            {tags.map((t) => (
+              <span
+                key={t}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.4)',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  lineHeight: 1,
-                  padding: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: 6,
+                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.78rem',
+                  color: 'rgba(255,255,255,0.8)',
                 }}
               >
-                ×
-              </button>
-            </span>
-          ))}
+                {t}
+                <button
+                  type="button"
+                  onClick={() => onChange(tags.filter((x) => x !== t))}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.4)',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    lineHeight: 1,
+                    padding: 0,
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                add();
+              }
+            }}
+            placeholder="Tag hinzufügen…"
+            style={field}
+          />
+          <button
+            type="button"
+            onClick={add}
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'rgba(255,255,255,0.7)',
+              borderRadius: 8,
+              padding: '0 0.9rem',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            +
+          </button>
         </div>
-      )}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              add();
-            }
-          }}
-          placeholder="Tag hinzufügen…"
-          style={field}
-        />
-        <button
-          type="button"
-          onClick={add}
-          style={{
-            background: 'rgba(255,255,255,0.07)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'rgba(255,255,255,0.7)',
-            borderRadius: 8,
-            padding: '0 0.9rem',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          +
-        </button>
+        {shimmer && (
+          <div style={{ position: 'absolute', inset: 0, borderRadius: 8, overflow: 'hidden', pointerEvents: 'none', zIndex: 2 }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)', animation: 'aiShimmer 1.5s ease-in-out infinite' }} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -474,10 +481,31 @@ function BlogForm({
   submitState: SubmitState;
 }) {
   const [form, setForm] = useState<BlogFormValues>(initial);
+  const [aiPolishing, setAiPolishing] = useState(false);
   useEffect(() => {
     setForm(initial);
   }, [initial]);
   const set = <K extends keyof BlogFormValues>(k: K, v: BlogFormValues[K]) => setForm((f) => ({ ...f, [k]: v }));
+
+  async function polishWithAI() {
+    if (!form.title.trim() && !form.content.trim()) return;
+    setAiPolishing(true);
+    try {
+      const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/5cf0cb30-3642-4560-a693-661cf8862eec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: form.title, content: form.content }),
+      });
+      const result = await res.json();
+      if (result.title) set('title', result.title);
+      if (result.content) set('content', result.content);
+      if (result.tags) set('tags', result.tags.split(',').map((t: string) => t.trim()).filter(Boolean));
+    } catch (err) {
+      console.error('AI polish error:', err);
+    } finally {
+      setAiPolishing(false);
+    }
+  }
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim() || !form.content.trim() || !form.author.trim()) return;
@@ -487,31 +515,124 @@ function BlogForm({
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
       <div>
         <label style={lbl}>Titel</label>
-        <input
-          type="text"
-          value={form.title}
-          onChange={(e) => set('title', e.target.value)}
-          placeholder="Titel des Blogposts"
-          required
-          style={field}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            type="text"
+            value={form.title}
+            onChange={(e) => set('title', e.target.value)}
+            placeholder="Titel des Blogposts"
+            required
+            style={field}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+          />
+          {aiPolishing && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 8,
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                zIndex: 2,
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)',
+                  animation: 'aiShimmer 1.5s ease-in-out infinite',
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
       <div>
         <label style={lbl}>Inhalt</label>
-        <textarea
-          value={form.content}
-          onChange={(e) => set('content', e.target.value)}
-          placeholder="Inhalt des Blogposts…"
-          required
-          rows={9}
-          style={field}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
-        />
+        <div style={{ position: 'relative' }}>
+          <textarea
+            value={form.content}
+            onChange={(e) => set('content', e.target.value)}
+            placeholder="Inhalt des Blogposts…"
+            required
+            rows={9}
+            style={{ ...field, paddingBottom: 36 }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+          />
+          {/* AI shimmer overlay */}
+          {aiPolishing && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 8,
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                zIndex: 2,
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)',
+                  animation: 'aiShimmer 1.5s ease-in-out infinite',
+                }}
+              />
+              <style>{`
+                @keyframes aiShimmer {
+                  0% { transform: translateX(-100%); }
+                  100% { transform: translateX(100%); }
+                }
+              `}</style>
+            </div>
+          )}
+          {/* AI button */}
+          <button
+            type="button"
+            onClick={polishWithAI}
+            disabled={aiPolishing || (!form.title.trim() && !form.content.trim())}
+            title="Mit AI ueberarbeiten"
+            style={{
+              position: 'absolute',
+              bottom: 8,
+              right: 8,
+              width: 28,
+              height: 28,
+              borderRadius: 7,
+              border: '1px solid rgba(107,122,255,0.3)',
+              background: aiPolishing ? 'rgba(107,122,255,0.2)' : 'rgba(107,122,255,0.1)',
+              color: '#6B7AFF',
+              cursor: aiPolishing ? 'wait' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 14,
+              transition: 'background 0.2s, border-color 0.2s',
+              zIndex: 3,
+              padding: 0,
+            }}
+            onMouseEnter={(e) => { if (!aiPolishing) { e.currentTarget.style.background = 'rgba(107,122,255,0.25)'; e.currentTarget.style.borderColor = 'rgba(107,122,255,0.5)'; }}}
+            onMouseLeave={(e) => { if (!aiPolishing) { e.currentTarget.style.background = 'rgba(107,122,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)'; }}}
+          >
+            {aiPolishing ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z" />
+                <path d="M20 16l1.04 3.13L24 20l-2.96.87L20 24l-1.04-3.13L16 20l2.96-.87L20 16z" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
-      <TagInput tags={form.tags} onChange={(v) => set('tags', v)} />
+      <TagInput tags={form.tags} onChange={(v) => set('tags', v)} shimmer={aiPolishing} />
       <div>
         <label style={lbl}>Autor</label>
         <input
@@ -1350,6 +1471,7 @@ export default function WebsitePage() {
   const [gridOpen, setGridOpen] = useState(true);
   const [updateState, setUpdateState] = useState<SubmitState>('idle');
   const [updateConfetti, setUpdateConfetti] = useState(false);
+  const [pageSpeed, setPageSpeed] = useState<any>(null);
 
   const defaultAuthor = user ? `${user.firstName} ${user.lastName}`.trim() : '';
   const emptyForm: BlogFormValues = {
@@ -1379,6 +1501,14 @@ export default function WebsitePage() {
     }),
     [defaultAuthor]
   );
+
+  // Fetch PageSpeed data
+  useEffect(() => {
+    fetch('/api/analytics/pagespeed')
+      .then((r) => r.json())
+      .then((d) => { if (!d.error) setPageSpeed(d); })
+      .catch(() => {});
+  }, []);
 
   // Prevent browser file-drop navigation
   useEffect(() => {
@@ -1542,36 +1672,112 @@ export default function WebsitePage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a', color: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a', color: '#f5f5f5', padding: '28px 32px' }}>
       <style>{`* { box-sizing: border-box; }`}</style>
-      <div style={{ padding: '2.5rem 2.75rem' }}>
-        <Confetti active={createConfetti} />
-        <Confetti active={updateConfetti} />
+      <Confetti active={createConfetti} />
+      <Confetti active={updateConfetti} />
 
-        <div style={{ marginBottom: '2rem' }}>
-          <PageHeader title="Website" subtitle="Blogposts und Website-Texte verwalten" />
+      <PageHeader title="Website" subtitle="Blogposts und Website-Texte verwalten" />
+
+      {/* KPIs + Tips */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+        {/* KPI Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {pageSpeed ? [
+            {
+              label: 'Status',
+              val: pageSpeed.ok ? 'Online' : 'Offline',
+              color: pageSpeed.ok ? '#22C55E' : '#FF5C2E',
+              sub: `HTTP ${pageSpeed.status || '—'}`,
+            },
+            {
+              label: 'Ladezeit',
+              val: pageSpeed.loadTimeFormatted || '—',
+              color: pageSpeed.speedScore >= 70 ? '#22C55E' : pageSpeed.speedScore >= 50 ? '#F59E0B' : '#FF5C2E',
+              sub: pageSpeed.speed || '—',
+            },
+            {
+              label: 'SEO Score',
+              val: `${pageSpeed.seoScore}%`,
+              color: pageSpeed.seoScore >= 80 ? '#22C55E' : '#F59E0B',
+              sub: `${Object.values(pageSpeed.checks || {}).filter(Boolean).length}/6 Checks`,
+            },
+            {
+              label: 'Blogposts',
+              val: String(posts.length),
+              color: '#6B7AFF',
+              sub: posts.length > 0 ? `${new Set(posts.map(p => p.author)).size} Autoren` : 'Keine Posts',
+            },
+          ].map((kpi) => (
+            <div key={kpi.label} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '14px 16px' }}>
+              <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>{kpi.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1, marginBottom: 3, color: kpi.color }}>{kpi.val}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{kpi.sub}</div>
+            </div>
+          )) : (
+            [1,2,3,4].map((i) => (
+              <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '14px 16px', height: 80 }}>
+                <div style={{ width: 50, height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 4, marginBottom: 10 }} />
+                <div style={{ width: 40, height: 18, background: 'rgba(255,255,255,0.04)', borderRadius: 4 }} />
+              </div>
+            ))
+          )}
         </div>
 
-        {/* Mode tabs */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '0.2rem',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 9,
-            padding: '0.25rem',
-            width: 'fit-content',
-            marginBottom: '2rem',
-          }}
-        >
-          {(
-            [
-              ['create', 'Erstellen', PenLine],
-              ['update', 'Verwalten', FileText],
-              ['texts', 'Texte', Type],
-            ] as const
-          ).map(([m, label, Icon]) => (
+        {/* Tips Card */}
+        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '16px 18px' }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 4 }}>Empfehlungen</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Website-Tipps</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {pageSpeed ? (() => {
+              const tips: { text: string; ok: boolean }[] = [];
+              if (pageSpeed.checks) {
+                if (!pageSpeed.checks.title) tips.push({ text: 'Seitentitel fehlt — wichtig fuer Google-Ergebnisse', ok: false });
+                if (!pageSpeed.checks.description) tips.push({ text: 'Meta-Beschreibung fehlt — verbessert Click-Through-Rate', ok: false });
+                if (!pageSpeed.checks.ogImage) tips.push({ text: 'Social-Media-Bild fehlt — Vorschau bei geteilten Links', ok: false });
+                if (!pageSpeed.checks.viewport) tips.push({ text: 'Viewport-Tag fehlt — Mobile-Optimierung noetig', ok: false });
+                if (pageSpeed.checks.title) tips.push({ text: 'Seitentitel vorhanden', ok: true });
+                if (pageSpeed.checks.description) tips.push({ text: 'Meta-Beschreibung gesetzt', ok: true });
+                if (pageSpeed.checks.https) tips.push({ text: 'HTTPS aktiv — Verbindung verschluesselt', ok: true });
+              }
+              if (pageSpeed.speedScore < 70) tips.push({ text: `Ladezeit optimieren (${pageSpeed.loadTimeFormatted}) — Bilder komprimieren, CSS minimieren`, ok: false });
+              if (pageSpeed.speedScore >= 70) tips.push({ text: `Gute Ladezeit (${pageSpeed.loadTimeFormatted})`, ok: true });
+              if (posts.length === 0) tips.push({ text: 'Ersten Blogpost erstellen — verbessert SEO und Sichtbarkeit', ok: false });
+              if (posts.length > 0) tips.push({ text: `${posts.length} Blogposts veroeffentlicht`, ok: true });
+              // Show max 5, problems first
+              return tips.sort((a, b) => Number(a.ok) - Number(b.ok)).slice(0, 5).map((tip, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 8px', borderRadius: 6, background: tip.ok ? 'rgba(34,197,94,0.05)' : 'rgba(255,92,46,0.05)', border: `1px solid ${tip.ok ? 'rgba(34,197,94,0.1)' : 'rgba(255,92,46,0.1)'}` }}>
+                  <span style={{ fontSize: 10, color: tip.ok ? '#22C55E' : '#FF5C2E', flexShrink: 0, marginTop: 1 }}>{tip.ok ? '✓' : '!'}</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{tip.text}</span>
+                </div>
+              ));
+            })() : (
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Daten werden geladen...</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mode tabs */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 0,
+          marginTop: 20,
+          marginBottom: 24,
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          paddingBottom: 0,
+        }}
+      >
+        {(
+          [
+            ['create', 'Create Blogpost'],
+            ['update', 'Update Blogpost'],
+            ['texts', 'Content'],
+          ] as const
+        ).map(([m, label]) => {
+          const isActive = mode === m;
+          return (
             <button
               key={m}
               onClick={() => {
@@ -1580,123 +1786,176 @@ export default function WebsitePage() {
                 setUpdateState('idle');
               }}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.45rem 1rem',
-                borderRadius: 7,
+                padding: '10px 20px',
                 border: 'none',
-                background: mode === m ? 'rgba(255,255,255,0.09)' : 'transparent',
-                color: mode === m ? '#fff' : 'rgba(255,255,255,0.4)',
-                fontSize: '0.83rem',
-                fontWeight: mode === m ? 500 : 400,
                 cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: isActive ? 600 : 400,
+                background: 'transparent',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
                 transition: 'all 0.2s',
+                position: 'relative',
+                borderBottom: isActive ? '2px solid #6B7AFF' : '2px solid transparent',
+                marginBottom: -1,
+                fontFamily: 'inherit',
               }}
             >
-              <Icon size={13} strokeWidth={2} />
               {label}
+              {isActive && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: -1,
+                    left: '10%',
+                    right: '10%',
+                    height: 2,
+                    background: '#6B7AFF',
+                    boxShadow: '0 0 10px rgba(107,122,255,0.5), 0 0 20px rgba(107,122,255,0.2)',
+                    borderRadius: 1,
+                  }}
+                />
+              )}
             </button>
-          ))}
-        </div>
+          );
+        })}
+      </div>
 
-        {mode === 'create' && (
+      {mode === 'create' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          {/* Form card */}
           <div
             style={{
-              background: 'rgba(255,255,255,0.02)',
+              background: '#111',
               border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 12,
-              padding: '1.75rem',
-              maxWidth: 720,
+              borderRadius: 10,
+              padding: 24,
             }}
           >
-            <h2
-              style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '1.5rem', color: 'rgba(255,255,255,0.85)' }}
-            >
-              Neuen Blogpost erstellen
-            </h2>
+            <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+              Neuer Blogpost
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 20 }}>
+              Erstellen
+            </div>
             <BlogForm initial={emptyForm} onSubmit={handleCreate} submitLabel="Erstellen" submitState={createState} />
           </div>
-        )}
 
-        {mode === 'update' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {gridOpen ? (
-              <div
-                style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 12,
-                  padding: '1.75rem',
-                }}
-              >
-                <h2
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    marginBottom: '1.25rem',
-                    color: 'rgba(255,255,255,0.85)',
-                  }}
-                >
-                  Blogpost auswählen
-                </h2>
-                {postsLoading ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '2.5rem' }}>
-                    <UniqueLoading size="lg" />
-                  </div>
-                ) : postsError ? (
-                  <p style={{ color: 'rgba(255,80,80,0.8)', fontSize: '0.85rem', padding: '1rem 0' }}>{postsError}</p>
-                ) : (
-                  <PostGrid posts={posts} selected={selectedPost} onSelect={handleSelectPost} />
-                )}
+          {/* Preview / stats card */}
+          <div
+            style={{
+              background: '#111',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 10,
+              padding: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+          >
+            <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+              Uebersicht
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '14px 16px' }}>
+                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>Posts</div>
+                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>{posts.length}</div>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setGridOpen(true)}
-                style={{
-                  alignSelf: 'flex-start',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: 'rgba(255,255,255,0.6)',
-                  fontSize: '0.82rem',
-                  borderRadius: 7,
-                  padding: '0.45rem 0.9rem',
-                  cursor: 'pointer',
-                  transition: 'color 0.2s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
-              >
-                <ChevronRight size={13} style={{ transform: 'rotate(180deg)' }} /> Anderen Eintrag wählen
-              </button>
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '14px 16px' }}>
+                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>Autoren</div>
+                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>{new Set(posts.map(p => p.author)).size}</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '14px 16px' }}>
+                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>Tags</div>
+                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>{new Set(posts.flatMap(p => p.tags.split(',').filter(Boolean))).size}</div>
+              </div>
+            </div>
+            {posts.length > 0 && (
+              <div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 10 }}>Letzte Posts</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {posts.slice(0, 5).map(p => (
+                    <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 7, border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{p.title}</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}>{new Date(p.createdAt).toLocaleDateString('de-DE')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-            {selectedPost && (
+          </div>
+        </div>
+      )}
+
+      {mode === 'update' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {gridOpen ? (
+            <div
+              style={{
+                background: '#111',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 10,
+                padding: 24,
+              }}
+            >
+              <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+                Blogpost
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 20 }}>
+                Auswählen
+              </div>
+              {postsLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '2.5rem' }}>
+                  <UniqueLoading size="lg" />
+                </div>
+              ) : postsError ? (
+                <p style={{ color: 'rgba(255,80,80,0.8)', fontSize: 13, padding: '1rem 0' }}>{postsError}</p>
+              ) : (
+                <PostGrid posts={posts} selected={selectedPost} onSelect={handleSelectPost} />
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setGridOpen(true)}
+              style={{
+                alignSelf: 'flex-start',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: '#111',
+                border: '1px solid rgba(255,255,255,0.07)',
+                color: 'rgba(255,255,255,0.6)',
+                fontSize: 12,
+                borderRadius: 8,
+                padding: '8px 14px',
+                cursor: 'pointer',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
+            >
+              <ChevronRight size={13} style={{ transform: 'rotate(180deg)' }} /> Anderen Eintrag wählen
+            </button>
+          )}
+          {selectedPost && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
+                  background: '#111',
                   border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 12,
-                  padding: '1.75rem',
-                  maxWidth: 720,
+                  borderRadius: 10,
+                  padding: 24,
                 }}
               >
-                <h2
-                  style={{
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    marginBottom: '0.2rem',
-                    color: 'rgba(255,255,255,0.85)',
-                  }}
-                >
-                  Blogpost bearbeiten
-                </h2>
-                <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.78rem', marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+                  Blogpost
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 4 }}>
+                  Bearbeiten
+                </div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginBottom: 20 }}>
                   {selectedPost.title}
-                </p>
+                </div>
                 <BlogForm
                   initial={postToForm(selectedPost)}
                   onSubmit={handleUpdate}
@@ -1704,12 +1963,49 @@ export default function WebsitePage() {
                   submitState={updateState}
                 />
               </div>
-            )}
-          </div>
-        )}
 
-        {mode === 'texts' && <WebsiteTextsEditor />}
-      </div>
+              {/* Preview card */}
+              <div
+                style={{
+                  background: '#111',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 10,
+                  padding: 24,
+                }}
+              >
+                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+                  Vorschau
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 20 }}>
+                  {selectedPost.title}
+                </div>
+                {selectedPost.imageUrl && (
+                  <img
+                    src={getImageUrl(selectedPost.imageUrl) ?? ''}
+                    alt=""
+                    style={{ width: '100%', borderRadius: 8, marginBottom: 16, objectFit: 'cover', maxHeight: 200, border: '1px solid rgba(255,255,255,0.06)' }}
+                  />
+                )}
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' }}>
+                  {selectedPost.content}
+                </div>
+                <div style={{ marginTop: 16, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {selectedPost.tags.split(',').filter(Boolean).map(t => (
+                    <span key={t} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 5, background: 'rgba(107,122,255,0.12)', color: 'rgba(107,122,255,0.8)', border: '1px solid rgba(107,122,255,0.2)' }}>
+                      {t.trim()}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ marginTop: 12, fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
+                  {selectedPost.author} · {new Date(selectedPost.createdAt).toLocaleDateString('de-DE')} · {calcReadTime(selectedPost.content)} Min. Lesezeit
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {mode === 'texts' && <WebsiteTextsEditor />}
     </div>
   );
 }

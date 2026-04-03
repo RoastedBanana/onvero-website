@@ -154,6 +154,8 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [followUpDeadline, setFollowUpDeadline] = useState<number | null>(null);
+  const [followUpDisplay, setFollowUpDisplay] = useState('');
   const [scrapingStarted, setScrapingStarted] = useState(false);
   const [scrapingLoading, setScrapingLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -166,7 +168,35 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
     setEmailText(lead?.emailDraft ?? '');
     setStatusDropdown(false);
     setDraftCopied(false);
+    // Restore follow-up timer if email was sent within last 3 days
+    if (lead?.lastContactedAt) {
+      const deadline = new Date(lead.lastContactedAt).getTime() + 3 * 24 * 60 * 60 * 1000;
+      if (deadline > Date.now()) {
+        setFollowUpDeadline(deadline);
+      } else {
+        setFollowUpDeadline(null);
+      }
+    } else {
+      setFollowUpDeadline(null);
+    }
   }, [lead?.id]);
+
+  // Follow-up countdown timer
+  useEffect(() => {
+    if (!followUpDeadline) { setFollowUpDisplay(''); return; }
+    function tick() {
+      const diff = followUpDeadline! - Date.now();
+      if (diff <= 0) { setFollowUpDeadline(null); setFollowUpDisplay(''); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setFollowUpDisplay(`${d}T ${h}h ${m}m ${s}s`);
+    }
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [followUpDeadline]);
 
   // Escape to close
   const onCloseStable = useCallback(() => onClose(), [onClose]);
@@ -253,11 +283,10 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
     if (!lead?.email || !emailText) return;
     setEmailSending(true);
     try {
-      // Parse subject from first line or use default
-      const lines = emailText.split('\n').filter(l => l.trim());
-      const subjectLine = lines.find(l => l.toLowerCase().startsWith('betreff:'));
-      const subject = subjectLine ? subjectLine.replace(/^betreff:\s*/i, '').trim() : `Kontaktanfrage von ${lead.company ?? 'uns'}`;
-      const body = subjectLine ? lines.filter(l => l !== subjectLine).join('\n').trim() : emailText;
+      // First line = subject, rest = body
+      const lines = emailText.split('\n');
+      const subject = lines[0].replace(/^betreff:\s*/i, '').trim() || `Kontaktanfrage von ${lead.company ?? 'uns'}`;
+      const body = lines.slice(1).join('\n').trim();
 
       const res = await fetch('/api/leads/send-email', {
         method: 'POST',
@@ -274,6 +303,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
       if (result.success) {
         setEmailSent(true);
         setTimeout(() => setEmailSent(false), 3000);
+        setFollowUpDeadline(Date.now() + 3 * 24 * 60 * 60 * 1000);
       } else {
         alert('E-Mail senden fehlgeschlagen: ' + (result.error ?? 'Unbekannter Fehler'));
       }
@@ -1575,6 +1605,26 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 flexShrink: 0,
               }}
             >
+              {followUpDisplay && (
+                <div
+                  style={{
+                    width: '100%',
+                    background: 'rgba(251, 191, 36, 0.1)',
+                    border: '1px solid rgba(251, 191, 36, 0.25)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    fontSize: 11,
+                    color: '#FBBF24',
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span>⏱</span>
+                  <span>Follow-up E-Mail in: <strong>{followUpDisplay}</strong></span>
+                </div>
+              )}
               <button
                 onClick={sendEmail}
                 disabled={!lead.emailDraft || !lead.email || emailSending}
