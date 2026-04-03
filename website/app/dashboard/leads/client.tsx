@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Lead, LeadStats } from '@/lib/leads-client';
 import { mapLead, computeStats } from '@/lib/leads-client';
 import LeadKPICards from '@/components/leads/LeadKPICards';
@@ -9,7 +10,7 @@ import TopBranchen from '@/components/leads/TopBranchen';
 import ScoreDonut from '@/components/leads/ScoreDonut';
 import ConversionFunnel from '@/components/leads/ConversionFunnel';
 import LeadsTable from '@/components/leads/LeadsTable';
-import LeadDetailPanel from '@/components/leads/LeadDetailPanel';
+// LeadDetailPanel removed — leads now open as full page at /dashboard/leads/[id]
 import LeadGeneratorModal from '@/components/leads/LeadGeneratorModal';
 import { GeneratorStatusBanner } from '@/components/leads/GeneratorStatusBanner';
 import GenerationBanner from '@/components/leads/GenerationBanner';
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats }: Props) {
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [stats, setStats] = useState<LeadStats>(initialStats);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -438,7 +440,9 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
         <LeadsTable
           leads={filtered}
           selectedId={selectedLeadId}
-          onSelect={setSelectedLeadId}
+          onSelect={(id) => {
+            if (id) router.push(`/dashboard/leads/${id}`);
+          }}
           onStatusChange={(id, status) => {
             setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
             setStats(computeStats(leads.map((l) => (l.id === id ? { ...l, status } : l))));
@@ -451,11 +455,6 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           }}
         />
       </div>
-
-      <LeadDetailPanel
-        lead={leads.find((l) => l.id === selectedLeadId) ?? null}
-        onClose={() => setSelectedLeadId(null)}
-      />
 
       <LeadGeneratorModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </div>

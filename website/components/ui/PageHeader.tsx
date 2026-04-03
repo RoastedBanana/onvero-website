@@ -10,20 +10,24 @@ interface PageHeaderProps {
 }
 
 export default function PageHeader({ title, badge, subtitle, showTime = true }: PageHeaderProps) {
-  const [clock, setClock] = useState(new Date());
+  const [clock, setClock] = useState<Date | null>(null);
 
   useEffect(() => {
+    setClock(new Date());
     if (!showTime) return;
     const tick = setInterval(() => setClock(new Date()), 1000);
     return () => clearInterval(tick);
   }, [showTime]);
 
+  const timeStr = clock
+    ? clock.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : '--:--:--';
   const sub = subtitle
     ? showTime
-      ? `${subtitle} · ${clock.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+      ? `${subtitle} · ${timeStr}`
       : subtitle
     : showTime
-      ? `Onvero BusinessOS · ${clock.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+      ? `Onvero BusinessOS · ${timeStr}`
       : 'Onvero BusinessOS';
 
   return (
