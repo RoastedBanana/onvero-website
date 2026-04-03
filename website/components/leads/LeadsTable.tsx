@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Lead } from '@/lib/leads-client';
 import { updateLeadStatus } from '@/lib/leads-client';
-import { createClient } from '@/lib/supabase';
 import LeadAvatar from '@/components/ui/LeadAvatar';
 
 function ScoreBadge({ score }: { score: number }) {
@@ -257,10 +256,8 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
   async function bulkDelete() {
     setBulkActionLoading(true);
     try {
-      const supabase = createClient();
       const ids = Array.from(selected);
-      const { error } = await supabase.from('leads').delete().in('id', ids);
-      if (error) throw error;
+      await Promise.all(ids.map((id) => fetch(`/api/leads/${id}`, { method: 'DELETE' })));
       onLeadsDeleted?.(ids);
       exitSelectMode();
     } catch (e) {
