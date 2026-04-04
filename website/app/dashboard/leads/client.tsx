@@ -11,7 +11,6 @@ import ScoreDonut from '@/components/leads/ScoreDonut';
 import ConversionFunnel from '@/components/leads/ConversionFunnel';
 import LeadsTable from '@/components/leads/LeadsTable';
 // LeadDetailPanel removed — leads now open as full page at /dashboard/leads/[id]
-import LeadGeneratorModal from '@/components/leads/LeadGeneratorModal';
 import { GeneratorStatusBanner } from '@/components/leads/GeneratorStatusBanner';
 import GenerationBanner from '@/components/leads/GenerationBanner';
 import GenerationSummaryBar from '@/components/leads/GenerationSummaryBar';
@@ -32,7 +31,6 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
   const [search, setSearch] = useState('');
   const [mounted, setMounted] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
   const [industryFilter, setIndustryFilter] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<'hot' | 'warm' | 'cold' | null>(null);
 
@@ -163,7 +161,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
               />
             </div>
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={() => router.push('/dashboard/generate')}
               className="cursor-pointer"
               style={{
                 display: 'flex',
@@ -257,7 +255,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
 
         {/* ── GENERATOR STATUS BANNER ── */}
         <GeneratorStatusBanner currentLeadCount={leads.length} />
-        <GenerationBanner onStartNew={() => setModalOpen(true)} />
+        <GenerationBanner onStartNew={() => router.push('/dashboard/generate')} />
 
         {/* ── HEUTE ZU TUN ── */}
         {(() => {
@@ -475,8 +473,6 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           }}
         />
       </div>
-
-      <LeadGeneratorModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }
