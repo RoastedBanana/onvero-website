@@ -27,12 +27,9 @@ export default function GeneratePage() {
     setFormData(data);
     setState('loading');
     try {
-      const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/lead-reasoning', {
+      const res = await fetch('/api/generate/reasoning', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-onvero-secret': 'onvero-internal-2024',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           industry: data.industry,
           employee_min: data.employeeMin,
@@ -76,22 +73,10 @@ export default function GeneratePage() {
             result={result}
             onBack={() => setState('form')}
             onConfirm={() => {
-              console.log('Firing Apollo webhook with:', {
-                apollo_industries: result.apollo_industries,
-                apollo_keywords: result.apollo_keywords,
-                refined_employee_min: result.refined_employee_min,
-                refined_employee_max: result.refined_employee_max,
-              });
-              fetch('https://n8n.srv1223027.hstgr.cloud/webhook/lead-generator-run', {
+              fetch('/api/generate/trigger', {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'x-webhook-secret': '59317c4c-217d-4046-93d8-15ea3e94dbb6',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90',
-                  secret: '59317c4c-217d-4046-93d8-15ea3e94dbb6',
-                  profile_id: 'default',
                   on_demand: {
                     apollo_industries: result.apollo_industries,
                     apollo_keywords: result.apollo_keywords,
