@@ -2,82 +2,87 @@
 
 import Link from 'next/link';
 
-const STEPS = [
-  { icon: '🧠', label: 'KI-Analyse', done: true },
-  { icon: '⚡', label: 'Apollo-Suche', active: true },
-  { icon: '🌐', label: 'Website-Analyse', pending: true },
-  { icon: '🤖', label: 'KI-Scoring', pending: true },
-  { icon: '📊', label: 'Ergebnisse', pending: true },
+interface Step {
+  icon: string;
+  label: string;
+  status: 'done' | 'active' | 'todo';
+  sub: string;
+}
+
+const STEPS: Step[] = [
+  { icon: '🧠', label: 'KI-Analyse', status: 'done', sub: 'Abgeschlossen' },
+  { icon: '⚡', label: 'Apollo-Suche', status: 'active', sub: 'Läuft...' },
+  { icon: '🌐', label: 'Website-Analyse', status: 'todo', sub: '' },
+  { icon: '🤖', label: 'KI-Scoring', status: 'todo', sub: '' },
+  { icon: '📊', label: 'Ergebnisse', status: 'todo', sub: '' },
 ];
 
 export default function GeneratingState() {
   return (
-    <div style={{ maxWidth: 500, margin: '0 auto' }}>
-      <div
-        style={{
-          background: '#111',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 14,
-          padding: 32,
-          textAlign: 'center',
-        }}
-      >
-        <style>{`@keyframes genPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.1)}}`}</style>
-        <div style={{ fontSize: 36, marginBottom: 12, animation: 'genPulse 2s ease-in-out infinite' }}>⚡</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Lead-Generierung gestartet</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 28 }}>
-          Die Pipeline läuft jetzt im Hintergrund
+    <div style={{ maxWidth: 480, margin: '0 auto' }}>
+      <style>{`@keyframes gsPulse{0%,100%{opacity:1}50%{opacity:0.3}}`}</style>
+      <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 10, padding: 28 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {STEPS.map((step, i) => {
+            const iconBg = step.status === 'done' ? '#1a2a1a' : step.status === 'active' ? '#2a2a1a' : '#151515';
+            const iconColor = step.status === 'done' ? '#4ade80' : step.status === 'active' ? '#f59e0b' : '#333';
+            const textColor = step.status === 'done' ? '#ccc' : step.status === 'active' ? '#fff' : '#444';
+            const subColor = step.status === 'done' ? '#4a7a4a' : step.status === 'active' ? '#857530' : '#333';
+            return (
+              <div key={i}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0' }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      background: iconBg,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 14,
+                      flexShrink: 0,
+                      animation: step.status === 'active' ? 'gsPulse 2s ease-in-out infinite' : 'none',
+                    }}
+                  >
+                    {step.status === 'done' ? (
+                      <span style={{ color: '#4ade80', fontSize: 13 }}>✓</span>
+                    ) : step.status === 'active' ? (
+                      <span style={{ color: iconColor }}>{step.icon}</span>
+                    ) : (
+                      <span style={{ color: iconColor, fontSize: 10 }}>○</span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, color: textColor, fontWeight: step.status === 'active' ? 500 : 400 }}>
+                      {step.label}
+                    </div>
+                    {step.sub && <div style={{ fontSize: 11, color: subColor, marginTop: 1 }}>{step.sub}</div>}
+                  </div>
+                </div>
+                {i < STEPS.length - 1 && <div style={{ borderTop: '0.5px solid #1a1a1a', marginLeft: 46 }} />}
+              </div>
+            );
+          })}
         </div>
+      </div>
 
-        <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 28 }}>
-          {STEPS.map((step, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '10px 0',
-                borderBottom: i < STEPS.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-              }}
-            >
-              <span style={{ fontSize: 16, width: 24, textAlign: 'center', flexShrink: 0 }}>{step.icon}</span>
-              <span
-                style={{
-                  fontSize: 13,
-                  color: step.done ? '#22C55E' : step.active ? '#fff' : 'rgba(255,255,255,0.25)',
-                  fontWeight: step.active ? 600 : 400,
-                  flex: 1,
-                }}
-              >
-                {step.label}
-              </span>
-              {step.done && <span style={{ fontSize: 12, color: '#22C55E' }}>✓</span>}
-              {step.active && (
-                <span style={{ fontSize: 11, color: '#F59E0B', animation: 'genPulse 1.5s ease-in-out infinite' }}>
-                  ⟳
-                </span>
-              )}
-              {step.pending && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.15)' }}>○</span>}
-            </div>
-          ))}
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <div style={{ fontSize: 13, color: '#555', marginBottom: 14 }}>
+          Leads erscheinen automatisch in deiner Übersicht
         </div>
-
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 20 }}>
-          Leads erscheinen automatisch in deiner Lead-Übersicht.
-        </div>
-
         <Link
           href="/dashboard/leads"
           style={{
             display: 'inline-block',
             padding: '10px 24px',
             borderRadius: 8,
-            background: '#6B7AFF',
-            color: '#fff',
+            background: '#e0e0e0',
+            color: '#080808',
             fontSize: 13,
-            fontWeight: 600,
+            fontWeight: 500,
             textDecoration: 'none',
+            fontFamily: 'var(--font-dm-sans)',
           }}
         >
           → Zu den Leads

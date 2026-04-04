@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const INDUSTRIES = [
   { value: 'ecommerce', label: 'E-Commerce / Online-Handel' },
@@ -35,7 +35,7 @@ export interface FormData {
 }
 
 interface Props {
-  initial?: Partial<FormData>;
+  initialData?: FormData;
   onSubmit: (data: FormData) => void;
 }
 
@@ -49,47 +49,68 @@ function ChipInput({
   placeholder: string;
 }) {
   const [input, setInput] = useState('');
+  const ref = useRef<HTMLInputElement>(null);
   const add = () => {
     const v = input.trim();
     if (v && !value.includes(v)) onChange([...value, v]);
     setInput('');
   };
   return (
-    <div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: value.length > 0 ? 6 : 0 }}>
-        {value.map((t) => (
-          <span
-            key={t}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: 11,
-              background: 'rgba(107,122,255,0.12)',
-              color: '#6B7AFF',
-              padding: '3px 8px',
-              borderRadius: 12,
+    <div
+      onClick={() => ref.current?.focus()}
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 5,
+        background: '#0d0d0d',
+        border: '0.5px solid #222',
+        borderRadius: 8,
+        padding: '6px 10px',
+        minHeight: 38,
+        cursor: 'text',
+      }}
+    >
+      {value.map((t) => (
+        <span
+          key={t}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 12,
+            background: '#1a1a1a',
+            border: '0.5px solid #2a2a2a',
+            color: '#bbb',
+            padding: '3px 8px 3px 10px',
+            borderRadius: 6,
+          }}
+        >
+          {t}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange(value.filter((x) => x !== t));
             }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#555',
+              cursor: 'pointer',
+              fontSize: 11,
+              padding: '0 2px',
+              lineHeight: 1,
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#555')}
           >
-            {t}
-            <button
-              onClick={() => onChange(value.filter((x) => x !== t))}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#6B7AFF',
-                cursor: 'pointer',
-                fontSize: 10,
-                padding: 0,
-                lineHeight: 1,
-              }}
-            >
-              ×
-            </button>
-          </span>
-        ))}
-      </div>
+            ×
+          </button>
+        </span>
+      ))}
       <input
+        ref={ref}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={(e) => {
@@ -97,17 +118,18 @@ function ChipInput({
             e.preventDefault();
             add();
           }
+          if (e.key === 'Backspace' && input === '' && value.length > 0) onChange(value.slice(0, -1));
         }}
-        placeholder={placeholder}
+        placeholder={value.length === 0 ? placeholder : ''}
         style={{
-          width: '100%',
-          background: '#0a0a0a',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 8,
-          padding: '9px 12px',
+          flex: 1,
+          minWidth: 120,
+          background: 'transparent',
+          border: 'none',
           fontSize: 12,
-          color: '#fff',
+          color: '#e0e0e0',
           outline: 'none',
+          padding: '3px 0',
           fontFamily: 'var(--font-dm-sans)',
         }}
       />
@@ -115,48 +137,48 @@ function ChipInput({
   );
 }
 
-export default function GenerateForm({ initial, onSubmit }: Props) {
-  const [industry, setIndustry] = useState(initial?.industry ?? '');
-  const [empMin, setEmpMin] = useState(initial?.employeeMin ?? 10);
-  const [empMax, setEmpMax] = useState(initial?.employeeMax ?? 500);
-  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
-  const [keywords, setKeywords] = useState<string[]>(initial?.keywords ?? []);
-  const [source] = useState<'apollo' | 'google_maps'>(initial?.leadSource ?? 'apollo');
+const S = {
+  input: {
+    width: '100%' as const,
+    background: '#0d0d0d',
+    border: '0.5px solid #222',
+    borderRadius: 8,
+    padding: '9px 12px',
+    fontSize: 13,
+    color: '#e0e0e0',
+    outline: 'none',
+    fontFamily: 'var(--font-dm-sans)',
+  },
+  label: { fontSize: 13, color: '#888', display: 'block' as const, marginBottom: 6 },
+};
 
+export default function GenerateForm({ initialData, onSubmit }: Props) {
+  const [industry, setIndustry] = useState(initialData?.industry ?? '');
+  const [empMin, setEmpMin] = useState(initialData?.employeeMin ?? 10);
+  const [empMax, setEmpMax] = useState(initialData?.employeeMax ?? 500);
+  const [tags, setTags] = useState<string[]>(initialData?.tags ?? []);
+  const [keywords, setKeywords] = useState<string[]>(initialData?.keywords ?? []);
   const canSubmit = industry !== '';
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+    <div style={{ maxWidth: 560, margin: '0 auto' }}>
       <div
         style={{
           background: '#111',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 14,
-          padding: 28,
+          border: '0.5px solid #1a1a1a',
+          borderRadius: 10,
+          padding: 24,
           display: 'flex',
           flexDirection: 'column',
-          gap: 20,
+          gap: 18,
         }}
       >
-        {/* Industry */}
         <div>
-          <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 5 }}>
-            Industrie / Branche *
-          </label>
+          <label style={S.label}>Industrie / Branche</label>
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
-            style={{
-              width: '100%',
-              background: '#0a0a0a',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 8,
-              padding: '9px 12px',
-              fontSize: 12,
-              color: industry ? '#fff' : 'rgba(255,255,255,0.35)',
-              outline: 'none',
-              fontFamily: 'var(--font-dm-sans)',
-            }}
+            style={{ ...S.input, color: industry ? '#e0e0e0' : '#555' }}
           >
             <option value="">Branche auswählen...</option>
             {INDUSTRIES.map((i) => (
@@ -166,126 +188,83 @@ export default function GenerateForm({ initial, onSubmit }: Props) {
             ))}
           </select>
         </div>
-
-        {/* Employee Range */}
         <div>
-          <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 5 }}>
-            Mitarbeiter-Bereich
-          </label>
+          <label style={S.label}>Mitarbeiteranzahl</label>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <input
               type="number"
               value={empMin}
               onChange={(e) => setEmpMin(Number(e.target.value))}
-              style={{
-                flex: 1,
-                background: '#0a0a0a',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 8,
-                padding: '9px 12px',
-                fontSize: 12,
-                color: '#fff',
-                outline: 'none',
-                fontFamily: 'var(--font-dm-mono)',
-              }}
+              style={{ ...S.input, flex: 1, fontFamily: 'var(--font-dm-mono)', textAlign: 'right' as const }}
             />
-            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12 }}>bis</span>
+            <span style={{ color: '#444', fontSize: 12 }}>bis</span>
             <input
               type="number"
               value={empMax}
               onChange={(e) => setEmpMax(Number(e.target.value))}
-              style={{
-                flex: 1,
-                background: '#0a0a0a',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 8,
-                padding: '9px 12px',
-                fontSize: 12,
-                color: '#fff',
-                outline: 'none',
-                fontFamily: 'var(--font-dm-mono)',
-              }}
+              style={{ ...S.input, flex: 1, fontFamily: 'var(--font-dm-mono)', textAlign: 'right' as const }}
             />
           </div>
         </div>
-
-        {/* Tags */}
         <div>
-          <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 5 }}>
-            Tags / Suchbegriffe
-          </label>
+          <label style={S.label}>Tags / Suchbegriffe</label>
           <ChipInput
             value={tags}
             onChange={setTags}
             placeholder="z.B. bulk shipping, fulfillment — Enter zum Hinzufügen"
           />
         </div>
-
-        {/* Keywords */}
         <div>
-          <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 5 }}>
-            Keywords / Technologien
-          </label>
+          <label style={S.label}>Keywords / Technologien</label>
           <ChipInput value={keywords} onChange={setKeywords} placeholder="z.B. Shopify, SAP, Warenwirtschaft" />
         </div>
-
-        {/* Source Toggle */}
         <div>
-          <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 5 }}>
-            Lead-Quelle
-          </label>
+          <label style={S.label}>Lead-Quelle</label>
           <div style={{ display: 'flex', gap: 8 }}>
             <div
               style={{
                 flex: 1,
                 padding: '10px 14px',
                 borderRadius: 8,
-                border: '1px solid rgba(107,122,255,0.3)',
-                background: 'rgba(107,122,255,0.08)',
-                cursor: 'default',
+                border: '0.5px solid #333',
+                background: '#1a1a1a',
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#6B7AFF' }}>⚡ Apollo</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
-                B2B Entscheider-Datenbank
-              </div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#e0e0e0' }}>Apollo</div>
             </div>
             <div
               style={{
                 flex: 1,
                 padding: '10px 14px',
                 borderRadius: 8,
-                border: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(255,255,255,0.02)',
-                opacity: 0.4,
+                border: '0.5px solid #1a1a1a',
+                opacity: 0.35,
                 cursor: 'not-allowed',
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.4)' }}>📍 Google Maps</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', marginTop: 2 }}>Coming soon</div>
+              <div style={{ fontSize: 13, color: '#666' }}>Google Maps</div>
+              <div style={{ fontSize: 10, color: '#444', marginTop: 1 }}>Bald verfügbar</div>
             </div>
           </div>
         </div>
-
-        {/* Submit */}
         <button
           onClick={() =>
             canSubmit &&
-            onSubmit({ industry, employeeMin: empMin, employeeMax: empMax, tags, keywords, leadSource: source })
+            onSubmit({ industry, employeeMin: empMin, employeeMax: empMax, tags, keywords, leadSource: 'apollo' })
           }
           disabled={!canSubmit}
           style={{
             width: '100%',
-            padding: '12px',
-            borderRadius: 10,
+            padding: 12,
+            borderRadius: 8,
             border: 'none',
-            background: canSubmit ? '#6B7AFF' : 'rgba(107,122,255,0.2)',
-            color: canSubmit ? '#fff' : 'rgba(255,255,255,0.3)',
+            background: canSubmit ? '#e0e0e0' : '#222',
+            color: canSubmit ? '#080808' : '#555',
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 500,
             cursor: canSubmit ? 'pointer' : 'default',
-            transition: 'background 0.2s',
             fontFamily: 'var(--font-dm-sans)',
+            transition: 'background 0.2s',
           }}
         >
           KI-Analyse starten →

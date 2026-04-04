@@ -14,83 +14,65 @@ export interface ReasoningResult {
 
 interface Props {
   result: ReasoningResult;
-  onAdjust: () => void;
-  onGenerate: () => void;
+  onBack: () => void;
+  onConfirm: () => void;
 }
 
-export default function ReasoningDisplay({ result, onAdjust, onGenerate }: Props) {
-  const confColor = result.confidence >= 80 ? '#22C55E' : result.confidence >= 60 ? '#F59E0B' : '#6b7280';
+export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
+  const confColor = result.confidence >= 80 ? '#4ade80' : result.confidence >= 60 ? '#f59e0b' : '#444';
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto' }}>
-      <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: 28 }}>
+    <div style={{ maxWidth: 620, margin: '0 auto' }}>
+      <style>{`@keyframes confBar{from{width:0%}}`}</style>
+      <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 10, padding: 24 }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-          <span style={{ fontSize: 20 }}>🧠</span>
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>KI-Analyse abgeschlossen</span>
+        <div
+          style={{
+            fontSize: 11,
+            color: '#4a9a6a',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase' as const,
+            marginBottom: 14,
+          }}
+        >
+          KI-Analyse
         </div>
 
         {/* Reasoning */}
-        <div style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'rgba(255,255,255,0.25)',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase' as const,
-              marginBottom: 6,
-            }}
-          >
-            Analyse
-          </div>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: 0 }}>{result.reasoning}</p>
-        </div>
+        <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.65, margin: '0 0 16px' }}>{result.reasoning}</p>
 
         {/* Strategy */}
-        <div style={{ marginBottom: 20 }}>
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'rgba(255,255,255,0.25)',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase' as const,
-              marginBottom: 6,
-            }}
-          >
-            Strategie
-          </div>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, margin: 0 }}>{result.strategy}</p>
+        <div style={{ borderTop: '0.5px solid #1a1a1a', paddingTop: 14, marginBottom: 18 }}>
+          <p style={{ fontSize: 14, color: '#888', lineHeight: 1.65, margin: 0 }}>{result.strategy}</p>
         </div>
 
         {/* Refined Search */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, marginBottom: 16 }}>
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: 'rgba(255,255,255,0.25)',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase' as const,
-              marginBottom: 10,
-            }}
-          >
-            Verfeinerte Apollo-Suche
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', width: 80, flexShrink: 0 }}>Keywords:</span>
+        <div style={{ borderTop: '0.5px solid #1a1a1a', paddingTop: 14, marginBottom: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: '#555',
+                  width: 80,
+                  flexShrink: 0,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase' as const,
+                }}
+              >
+                Keywords
+              </span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {result.apollo_keywords.map((k) => (
                   <span
                     key={k}
                     style={{
-                      fontSize: 10,
-                      background: 'rgba(107,122,255,0.12)',
-                      color: '#6B7AFF',
+                      fontSize: 11,
+                      background: '#1a1a2a',
+                      border: '0.5px solid #2a2a3a',
+                      color: '#7c9cef',
                       padding: '2px 8px',
-                      borderRadius: 10,
+                      borderRadius: 6,
                     }}
                   >
                     {k}
@@ -98,20 +80,30 @@ export default function ReasoningDisplay({ result, onAdjust, onGenerate }: Props
                 ))}
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', width: 80, flexShrink: 0 }}>
-                Industrien:
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: '#555',
+                  width: 80,
+                  flexShrink: 0,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase' as const,
+                }}
+              >
+                Industrien
               </span>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {result.apollo_industries.map((i) => (
                   <span
                     key={i}
                     style={{
-                      fontSize: 10,
-                      background: 'rgba(255,255,255,0.06)',
-                      color: 'rgba(255,255,255,0.6)',
+                      fontSize: 11,
+                      background: '#1a2a1a',
+                      border: '0.5px solid #2a3a2a',
+                      color: '#6dbf8a',
                       padding: '2px 8px',
-                      borderRadius: 10,
+                      borderRadius: 6,
                     }}
                   >
                     {i}
@@ -120,32 +112,60 @@ export default function ReasoningDisplay({ result, onAdjust, onGenerate }: Props
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', width: 80, flexShrink: 0 }}>
-                Mitarbeiter:
+              <span
+                style={{
+                  fontSize: 11,
+                  color: '#555',
+                  width: 80,
+                  flexShrink: 0,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase' as const,
+                }}
+              >
+                Mitarbeiter
               </span>
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-dm-mono)' }}>
-                {result.refined_employee_min} – {result.refined_employee_max}
+              <span style={{ fontSize: 13, color: '#aaa', fontFamily: 'var(--font-dm-mono)' }}>
+                {result.refined_employee_min} – {result.refined_employee_max} Mitarbeiter
               </span>
             </div>
           </div>
 
           {/* Confidence */}
           <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', width: 80, flexShrink: 0 }}>Konfidenz:</span>
-            <div
-              style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}
+            <span
+              style={{
+                fontSize: 11,
+                color: '#555',
+                width: 80,
+                flexShrink: 0,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase' as const,
+              }}
             >
+              Konfidenz
+            </span>
+            <div style={{ flex: 1, height: 4, background: '#1a1a1a', borderRadius: 2, overflow: 'hidden' }}>
               <div
                 style={{
                   height: '100%',
                   width: `${result.confidence}%`,
                   background: confColor,
-                  borderRadius: 3,
+                  borderRadius: 2,
                   transition: 'width 0.6s ease',
+                  animation: 'confBar 0.6s ease',
                 }}
               />
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: confColor, fontFamily: 'var(--font-dm-mono)' }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: confColor,
+                fontFamily: 'var(--font-dm-mono)',
+                width: 36,
+                textAlign: 'right' as const,
+              }}
+            >
               {result.confidence}%
             </span>
           </div>
@@ -153,51 +173,65 @@ export default function ReasoningDisplay({ result, onAdjust, onGenerate }: Props
 
         {/* Why contact */}
         {result.why_contact_even_if_low_score && (
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 14, marginBottom: 20 }}>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 13, flexShrink: 0 }}>💡</span>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>
-                  Auch bei niedrigem Score:
-                </div>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, margin: 0 }}>
-                  {result.why_contact_even_if_low_score}
-                </p>
-              </div>
+          <div
+            style={{
+              background: '#0f1a10',
+              border: '0.5px solid #1a2a1a',
+              borderRadius: 8,
+              padding: 14,
+              marginBottom: 18,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                color: '#4a7a4a',
+                marginBottom: 4,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase' as const,
+              }}
+            >
+              Auch bei niedrigem Score
             </div>
+            <p style={{ fontSize: 13, color: '#6dbf8a', lineHeight: 1.55, margin: 0 }}>
+              {result.why_contact_even_if_low_score}
+            </p>
           </div>
         )}
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: 10, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={onAdjust}
+            onClick={onBack}
             style={{
               flex: 1,
               padding: '10px',
               borderRadius: 8,
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.04)',
-              color: 'rgba(255,255,255,0.6)',
+              border: '0.5px solid #222',
+              background: 'transparent',
+              color: '#888',
               fontSize: 13,
               fontWeight: 500,
               cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)',
+              transition: 'border-color 0.15s',
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#333')}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#222')}
           >
             Anpassen
           </button>
           <button
-            onClick={onGenerate}
+            onClick={onConfirm}
             style={{
               flex: 2,
               padding: '10px',
               borderRadius: 8,
               border: 'none',
-              background: '#6B7AFF',
-              color: '#fff',
+              background: '#e0e0e0',
+              color: '#080808',
               fontSize: 13,
-              fontWeight: 600,
+              fontWeight: 500,
               cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)',
             }}
