@@ -15,20 +15,18 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
         },
       },
     }
   );
 
   // IMPORTANT: Do not add logic between createServerClient and getSession.
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const { pathname } = request.nextUrl;
 
@@ -38,7 +36,9 @@ export async function proxy(request: NextRequest) {
   }
 
   // Unauthenticated user visiting /dashboard/* → send to login
-  if (pathname.startsWith('/dashboard') && !session) {
+  // Accept either Supabase session OR onvero_user cookie
+  const hasOnveroSession = !!request.cookies.get('onvero_user')?.value;
+  if (pathname.startsWith('/dashboard') && !session && !hasOnveroSession) {
     const url = new URL('/login', request.url);
     url.searchParams.set('from', pathname);
     return NextResponse.redirect(url);
@@ -46,7 +46,19 @@ export async function proxy(request: NextRequest) {
 
   // Protect API routes (except public ones)
   if (pathname.startsWith('/api/')) {
-    const PUBLIC_API = ['/api/auth/', '/api/contact', '/api/chat', '/api/favicon', '/api/webhooks/resend', '/api/validate-invite', '/api/accept-invite'];
+    const PUBLIC_API = [
+      '/api/auth/',
+      '/api/contact',
+      '/api/chat',
+      '/api/favicon',
+      '/api/webhooks/resend',
+      '/api/validate-invite',
+      '/api/accept-invite',
+      '/api/generate/',
+      '/api/leads',
+      '/api/lead-generator-runs',
+      '/api/analytics',
+    ];
     const isPublic = PUBLIC_API.some((r) => pathname.startsWith(r));
     if (!isPublic) {
       const sessionCookie = request.cookies.get('onvero_user');
