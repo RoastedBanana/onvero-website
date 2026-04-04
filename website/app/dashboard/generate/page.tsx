@@ -14,6 +14,7 @@ type GenerateState = 'form' | 'loading' | 'reasoning' | 'generating';
 export default function GeneratePage() {
   const [state, setState] = useState<GenerateState>('form');
   const [formData, setFormData] = useState<FormData>({
+    freetext: '',
     industry: '',
     employeeMin: 10,
     employeeMax: 500,
@@ -31,11 +32,12 @@ export default function GeneratePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          industry: data.industry,
+          freetext: data.freetext,
+          industry: data.industry || undefined,
           employee_min: data.employeeMin,
           employee_max: data.employeeMax,
-          tags: data.tags,
-          keywords: data.keywords,
+          tags: data.tags.length > 0 ? data.tags : undefined,
+          keywords: data.keywords.length > 0 ? data.keywords : undefined,
           lead_source: 'apollo',
           tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90',
         }),
@@ -46,10 +48,10 @@ export default function GeneratePage() {
     } catch {
       setResult({
         success: true,
-        reasoning: `Suche nach ${data.industry}-Unternehmen mit ${data.employeeMin}–${data.employeeMax} Mitarbeitern.`,
+        reasoning: `Suche basierend auf: "${data.freetext.slice(0, 100)}"`,
         strategy: 'Standard Apollo-Suche mit deinen Kriterien.',
         apollo_keywords: data.tags.concat(data.keywords),
-        apollo_industries: [data.industry],
+        apollo_industries: data.industry ? [data.industry] : [],
         refined_employee_min: data.employeeMin,
         refined_employee_max: data.employeeMax,
         confidence: 50,

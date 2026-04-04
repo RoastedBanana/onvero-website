@@ -26,6 +26,7 @@ const INDUSTRIES = [
 ];
 
 export interface FormData {
+  freetext: string;
   industry: string;
   employeeMin: number;
   employeeMax: number;
@@ -153,109 +154,158 @@ const S = {
 };
 
 export default function GenerateForm({ initialData, onSubmit }: Props) {
+  const [freetext, setFreetext] = useState(initialData?.freetext ?? '');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [industry, setIndustry] = useState(initialData?.industry ?? '');
   const [empMin, setEmpMin] = useState(initialData?.employeeMin ?? 10);
   const [empMax, setEmpMax] = useState(initialData?.employeeMax ?? 500);
   const [tags, setTags] = useState<string[]>(initialData?.tags ?? []);
   const [keywords, setKeywords] = useState<string[]>(initialData?.keywords ?? []);
-  const canSubmit = industry !== '';
+  const canSubmit = freetext.trim().length > 10;
 
   return (
-    <div style={{ maxWidth: 560, margin: '0 auto' }}>
+    <div style={{ maxWidth: 600, margin: '0 auto' }}>
       <div
         style={{
           background: '#111',
           border: '0.5px solid #1a1a1a',
           borderRadius: 10,
-          padding: 24,
+          padding: 28,
           display: 'flex',
           flexDirection: 'column',
           gap: 18,
         }}
       >
+        {/* Main freetext input */}
         <div>
-          <label style={S.label}>Industrie / Branche</label>
-          <select
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-            style={{ ...S.input, color: industry ? '#e0e0e0' : '#555' }}
-          >
-            <option value="">Branche auswählen...</option>
-            {INDUSTRIES.map((i) => (
-              <option key={i.value} value={i.value}>
-                {i.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label style={S.label}>Mitarbeiteranzahl</label>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <input
-              type="number"
-              value={empMin}
-              onChange={(e) => setEmpMin(Number(e.target.value))}
-              style={{ ...S.input, flex: 1, fontFamily: 'var(--font-dm-mono)', textAlign: 'right' as const }}
-            />
-            <span style={{ color: '#444', fontSize: 12 }}>bis</span>
-            <input
-              type="number"
-              value={empMax}
-              onChange={(e) => setEmpMax(Number(e.target.value))}
-              style={{ ...S.input, flex: 1, fontFamily: 'var(--font-dm-mono)', textAlign: 'right' as const }}
-            />
-          </div>
-        </div>
-        <div>
-          <label style={S.label}>Tags / Suchbegriffe</label>
-          <ChipInput
-            value={tags}
-            onChange={setTags}
-            placeholder="z.B. bulk shipping, fulfillment — Enter zum Hinzufügen"
+          <label style={{ fontSize: 14, color: '#ccc', display: 'block', marginBottom: 8, fontWeight: 500 }}>
+            Wen suchst du?
+          </label>
+          <textarea
+            value={freetext}
+            onChange={(e) => setFreetext(e.target.value)}
+            placeholder="Beschreibe in eigenen Worten welche Kunden du suchst…&#10;&#10;z.B. 'Mittelständische E-Commerce Unternehmen mit 50-200 Mitarbeitern die Shopify oder WooCommerce nutzen und einen Fulfillment-Partner brauchen'"
+            rows={5}
+            style={{
+              width: '100%',
+              background: '#0a0a0a',
+              border: '0.5px solid #222',
+              borderRadius: 10,
+              padding: '14px 16px',
+              fontSize: 14,
+              color: '#e0e0e0',
+              outline: 'none',
+              resize: 'vertical',
+              lineHeight: 1.6,
+              fontFamily: 'var(--font-dm-sans)',
+            }}
           />
-        </div>
-        <div>
-          <label style={S.label}>Keywords / Technologien</label>
-          <ChipInput value={keywords} onChange={setKeywords} placeholder="z.B. Shopify, SAP, Warenwirtschaft" />
-        </div>
-        <div>
-          <label style={S.label}>Lead-Quelle</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: 8,
-                border: '0.5px solid #333',
-                background: '#1a1a1a',
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#e0e0e0' }}>Apollo</div>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: 8,
-                border: '0.5px solid #1a1a1a',
-                opacity: 0.35,
-                cursor: 'not-allowed',
-              }}
-            >
-              <div style={{ fontSize: 13, color: '#666' }}>Google Maps</div>
-              <div style={{ fontSize: 10, color: '#444', marginTop: 1 }}>Bald verfügbar</div>
-            </div>
+          <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>
+            Die KI analysiert deine Beschreibung und erstellt automatisch die optimale Suchanfrage.
           </div>
         </div>
+
+        {/* Advanced toggle */}
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#555',
+            fontSize: 12,
+            cursor: 'pointer',
+            textAlign: 'left' as const,
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 10,
+              transition: 'transform 0.2s',
+              transform: showAdvanced ? 'rotate(90deg)' : 'rotate(0)',
+            }}
+          >
+            ▶
+          </span>
+          Erweiterte Optionen
+        </button>
+
+        {/* Advanced fields (hidden by default) */}
+        {showAdvanced && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+              paddingTop: 4,
+              borderTop: '0.5px solid #1a1a1a',
+            }}
+          >
+            <div>
+              <label style={S.label}>Industrie / Branche (optional)</label>
+              <select
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                style={{ ...S.input, color: industry ? '#e0e0e0' : '#555' }}
+              >
+                <option value="">Automatisch erkennen</option>
+                {INDUSTRIES.map((i) => (
+                  <option key={i.value} value={i.value}>
+                    {i.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={S.label}>Mitarbeiteranzahl</label>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <input
+                  type="number"
+                  value={empMin}
+                  onChange={(e) => setEmpMin(Number(e.target.value))}
+                  style={{ ...S.input, flex: 1, fontFamily: 'var(--font-dm-mono)', textAlign: 'right' as const }}
+                />
+                <span style={{ color: '#444', fontSize: 12 }}>bis</span>
+                <input
+                  type="number"
+                  value={empMax}
+                  onChange={(e) => setEmpMax(Number(e.target.value))}
+                  style={{ ...S.input, flex: 1, fontFamily: 'var(--font-dm-mono)', textAlign: 'right' as const }}
+                />
+              </div>
+            </div>
+            <div>
+              <label style={S.label}>Tags / Suchbegriffe</label>
+              <ChipInput value={tags} onChange={setTags} placeholder="z.B. bulk shipping, fulfillment" />
+            </div>
+            <div>
+              <label style={S.label}>Keywords / Technologien</label>
+              <ChipInput value={keywords} onChange={setKeywords} placeholder="z.B. Shopify, SAP" />
+            </div>
+          </div>
+        )}
+
+        {/* Submit */}
         <button
           onClick={() =>
             canSubmit &&
-            onSubmit({ industry, employeeMin: empMin, employeeMax: empMax, tags, keywords, leadSource: 'apollo' })
+            onSubmit({
+              freetext,
+              industry,
+              employeeMin: empMin,
+              employeeMax: empMax,
+              tags,
+              keywords,
+              leadSource: 'apollo',
+            })
           }
           disabled={!canSubmit}
           style={{
             width: '100%',
-            padding: 12,
+            padding: 13,
             borderRadius: 8,
             border: 'none',
             background: canSubmit ? '#e0e0e0' : '#222',
