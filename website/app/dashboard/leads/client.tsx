@@ -14,6 +14,7 @@ import LeadsTable from '@/components/leads/LeadsTable';
 import LeadGeneratorModal from '@/components/leads/LeadGeneratorModal';
 import { GeneratorStatusBanner } from '@/components/leads/GeneratorStatusBanner';
 import GenerationBanner from '@/components/leads/GenerationBanner';
+import GenerationSummaryBar from '@/components/leads/GenerationSummaryBar';
 import PageHeader from '@/components/ui/PageHeader';
 
 type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost' | 'google_maps';
@@ -194,6 +195,25 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
             </button>
           </div>
         </div>
+
+        {/* ── GENERATION SUMMARY ── */}
+        {(() => {
+          const now24h = Date.now() - 24 * 60 * 60 * 1000;
+          const recent = leads.filter((l) => new Date(l.createdAt).getTime() > now24h);
+          if (recent.length === 0) return null;
+          const qualified = recent.filter((l) => l.score >= 60).length;
+          const hot = recent.filter((l) => l.score >= 70).length;
+          const avg = Math.round(recent.reduce((s, l) => s + l.score, 0) / recent.length);
+          return (
+            <GenerationSummaryBar
+              totalLeads={recent.length}
+              qualifiedLeads={qualified}
+              hotLeads={hot}
+              avgScore={avg}
+              lastGeneratedAt={recent[0].createdAt}
+            />
+          );
+        })()}
 
         {/* ── STATUS TABS ── */}
         <div
