@@ -76,6 +76,12 @@ export default function GeneratePage() {
             result={result}
             onBack={() => setState('form')}
             onConfirm={() => {
+              console.log('Firing Apollo webhook with:', {
+                apollo_industries: result.apollo_industries,
+                apollo_keywords: result.apollo_keywords,
+                refined_employee_min: result.refined_employee_min,
+                refined_employee_max: result.refined_employee_max,
+              });
               fetch('https://n8n.srv1223027.hstgr.cloud/webhook/lead-generator-run', {
                 method: 'POST',
                 headers: {
