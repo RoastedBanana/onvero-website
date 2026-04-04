@@ -152,16 +152,23 @@ export default function LeadDetailPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    setError(null);
     fetch(`/api/leads/${id}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`API returned ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
         if (d.lead) setLead(mapLead(d.lead));
+        else setError('Lead-Daten leer');
         setActivities(d.activities ?? []);
       })
-      .catch(() => {})
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -190,13 +197,31 @@ export default function LeadDetailPage() {
           minHeight: '100vh',
           background: '#0a0a0a',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          gap: 12,
           color: 'rgba(255,255,255,0.3)',
           fontFamily: 'var(--font-dm-sans)',
         }}
       >
-        Lead nicht gefunden
+        <div style={{ fontSize: 14 }}>Lead nicht gefunden</div>
+        {error && <div style={{ fontSize: 11, color: '#ef4444' }}>{error}</div>}
+        <button
+          onClick={() => router.push('/dashboard/leads')}
+          style={{
+            marginTop: 8,
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.4)',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6,
+            padding: '6px 14px',
+            cursor: 'pointer',
+          }}
+        >
+          ← Zurück zu Leads
+        </button>
       </div>
     );
   }
