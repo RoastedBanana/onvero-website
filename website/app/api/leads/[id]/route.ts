@@ -1,51 +1,63 @@
 import { createClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
+
+function getAdmin() {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (serviceKey) {
+    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
+  }
+  return null;
+}
+
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
 
-  // Use service role to bypass RLS
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  try {
+    const client = getAdmin() ?? (await createServerSupabaseClient());
 
-  const [leadRes, activitiesRes] = await Promise.all([
-    admin
-      .from('leads')
-      .select(
-        `id, company_name, first_name, last_name, email, phone,
-         website, city, country, status, score, source,
-         ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
-         email_draft, website_summary, website_title,
-         custom_fields, last_contacted_at, created_at, apollo_id`
-      )
-      .eq('id', id)
-      .eq('tenant_id', TENANT)
-      .single(),
-    admin
-      .from('lead_activities')
-      .select('id, type, title, content, created_at, metadata')
-      .eq('lead_id', id)
-      .eq('tenant_id', TENANT)
-      .order('created_at', { ascending: false })
-      .limit(20),
-  ]);
+    const [leadRes, activitiesRes] = await Promise.all([
+      client
+        .from('leads')
+        .select(
+          `id, company_name, first_name, last_name, email, phone,
+           website, city, country, status, score, source,
+           ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
+           email_draft, website_summary, website_title,
+           custom_fields, last_contacted_at, created_at, apollo_id`
+        )
+        .eq('id', id)
+        .eq('tenant_id', TENANT)
+        .single(),
+      client
+        .from('lead_activities')
+        .select('id, type, title, content, created_at, metadata')
+        .eq('lead_id', id)
+        .eq('tenant_id', TENANT)
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ]);
 
-  return NextResponse.json({
-    lead: leadRes.data ?? null,
-    activities: activitiesRes.data ?? [],
-  });
+    return NextResponse.json({
+      lead: leadRes.data ?? null,
+      activities: activitiesRes.data ?? [],
+    });
+  } catch (e) {
+    return NextResponse.json({ error: String(e), lead: null, activities: [] }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
   const body = await req.json();
 
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const client = getAdmin() ?? (await createServerSupabaseClient());
 
-  const { data, error } = await admin
+  const { data, error } = await client
     .from('leads')
     .update({ ...body, updated_at: new Date().toISOString() })
     .eq('id', id)
@@ -55,7 +67,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  await admin.from('lead_activities').insert({
+  await client.from('lead_activities').insert({
     lead_id: id,
     tenant_id: TENANT,
     type: 'status_change',
@@ -69,13 +81,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
 
-  // Use service role key to bypass RLS for delete operations
-  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const client = getAdmin() ?? (await createServerSupabaseClient());
 
-  await admin.from('lead_activities').delete().eq('lead_id', id).eq('tenant_id', TENANT);
-  const { error } = await admin.from('leads').delete().eq('id', id).eq('tenant_id', TENANT);
+  await client.from('lead_activities').delete().eq('lead_id', id).eq('tenant_id', TENANT);
+  const { error } = await client.from('leads').delete().eq('id', id).eq('tenant_id', TENANT);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
