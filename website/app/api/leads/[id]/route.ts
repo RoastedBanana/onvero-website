@@ -1,4 +1,3 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
@@ -6,11 +5,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createServerSupabaseClient();
   const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
 
+  // Use service role to bypass RLS
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
   const [leadRes, activitiesRes] = await Promise.all([
-    supabase
+    admin
       .from('leads')
       .select(
         `id, company_name, first_name, last_name, email, phone,
@@ -22,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       .eq('id', id)
       .eq('tenant_id', TENANT)
       .single(),
-    supabase
+    admin
       .from('lead_activities')
       .select('id, type, title, content, created_at, metadata')
       .eq('lead_id', id)
@@ -39,11 +40,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createServerSupabaseClient();
   const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
   const body = await req.json();
 
-  const { data, error } = await supabase
+  const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+
+  const { data, error } = await admin
     .from('leads')
     .update({ ...body, updated_at: new Date().toISOString() })
     .eq('id', id)
@@ -53,7 +55,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  await supabase.from('lead_activities').insert({
+  await admin.from('lead_activities').insert({
     lead_id: id,
     tenant_id: TENANT,
     type: 'status_change',
