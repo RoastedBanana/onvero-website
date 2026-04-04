@@ -12,6 +12,7 @@ import {
   Users,
   BarChart2,
   Sparkles,
+  Zap,
   BookOpen,
   Settings,
   Search,
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/meetings', icon: Calendar, label: 'Meetings' },
   { href: '/dashboard/support', icon: Headphones, label: 'Support' },
   { href: '/dashboard/leads', icon: Users, label: 'Leads' },
+  { href: '/dashboard/generate', icon: Zap, label: 'Generate' },
   { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics' },
   { href: '/dashboard/business-ai', icon: Sparkles, label: 'Business AI' },
 ];
