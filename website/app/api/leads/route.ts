@@ -13,7 +13,7 @@ export async function GET() {
       website, street, city, zip, country,
       status, score, source, notes, estimated_value,
       ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
-      email_draft, website_summary, website_title, website_description,
+      email_draft_subject, email_draft_body, email_subject, website_summary, website_title, website_description,
       custom_fields, last_contacted_at, follow_up_at, created_at, apollo_id
     `
     )

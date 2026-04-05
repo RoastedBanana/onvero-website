@@ -12,6 +12,9 @@ interface Activity {
   type: string;
   title: string;
   content: string | null;
+  content_full_title: string | null;
+  content_full_content: string | null;
+  interested: boolean | null;
   created_at: string;
   metadata: Record<string, unknown> | null;
 }
@@ -149,8 +152,18 @@ export default function LeadDetailPage() {
   const [statusDropdown, setStatusDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [viewActivity, setViewActivity] = useState<Activity | null>(null);
+  const [activityPage, setActivityPage] = useState(0);
+  const ACTIVITIES_PER_PAGE = 5;
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [editedDraft, setEditedDraft] = useState('');
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -378,6 +391,53 @@ export default function LeadDetailPage() {
               >
                 {copied ? '✓ Kopiert' : '📧 E-Mail kopieren'}
               </button>
+              {/* Send email */}
+              {lead.emailDraft && (
+                <button
+                  disabled={emailSending || emailSent}
+                  onClick={async () => {
+                    if (!lead.emailDraft || !lead.email) return;
+                    setEmailSending(true);
+                    try {
+                      const subject = lead.emailDraftSubject ?? '';
+                      const emailBody = editedDraft || lead.emailDraft || '';
+                      const res = await fetch('/api/leads/send-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          lead_id: lead.id,
+                          tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90',
+                          to: lead.email,
+                          subject,
+                          html: emailBody,
+                        }),
+                      });
+                      if (res.ok) {
+                        setEmailSent(true);
+                      } else {
+                        alert('E-Mail senden fehlgeschlagen');
+                      }
+                    } catch {
+                      alert('E-Mail senden fehlgeschlagen');
+                    } finally {
+                      setEmailSending(false);
+                    }
+                  }}
+                  style={{
+                    background: emailSent ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.08)',
+                    border: `1px solid ${emailSent ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.15)'}`,
+                    borderRadius: 8,
+                    padding: '6px 14px',
+                    fontSize: 12,
+                    color: emailSent ? '#22C55E' : '#F59E0B',
+                    cursor: emailSending || emailSent ? 'default' : 'pointer',
+                    opacity: emailSending ? 0.6 : 1,
+                    transition: 'color 0.2s',
+                  }}
+                >
+                  {emailSent ? '✓ Gesendet' : emailSending ? '⏳ Sende...' : '📨 E-Mail senden'}
+                </button>
+              )}
               {/* Delete */}
               {!deleteConfirm ? (
                 <button
@@ -491,10 +551,10 @@ export default function LeadDetailPage() {
             {/* E-Mail Draft */}
             {lead.emailDraft && (
               <Card title="Personalisierte E-Mail">
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginBottom: 8 }}>
                   <button
                     onClick={() => {
-                      navigator.clipboard?.writeText(lead.emailDraft ?? '');
+                      navigator.clipboard?.writeText(editedDraft || lead.emailDraft || '');
                       setEmailCopied(true);
                       setTimeout(() => setEmailCopied(false), 2000);
                     }}
@@ -510,22 +570,161 @@ export default function LeadDetailPage() {
                   >
                     {emailCopied ? '✓ Kopiert' : '📋 Kopieren'}
                   </button>
+                  <button
+                    disabled={emailSending || emailSent}
+                    onClick={async () => {
+                      if (!lead.emailDraft || !lead.email) return;
+                      setEmailSending(true);
+                      try {
+                        const subject = lead.emailDraftSubject ?? '';
+                        const emailBody = editedDraft || lead.emailDraft || '';
+                        const res = await fetch('/api/leads/send-email', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            lead_id: lead.id,
+                            tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90',
+                            to: lead.email,
+                            subject,
+                            html: emailBody,
+                          }),
+                        });
+                        if (res.ok) {
+                          setEmailSent(true);
+                        } else {
+                          alert('E-Mail senden fehlgeschlagen');
+                        }
+                      } catch {
+                        alert('E-Mail senden fehlgeschlagen');
+                      } finally {
+                        setEmailSending(false);
+                      }
+                    }}
+                    style={{
+                      fontSize: 11,
+                      color: emailSent ? '#22C55E' : '#F59E0B',
+                      background: emailSent ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                      border: `1px solid ${emailSent ? 'rgba(34,197,94,0.2)' : 'rgba(245,158,11,0.2)'}`,
+                      borderRadius: 6,
+                      padding: '4px 10px',
+                      cursor: emailSending || emailSent ? 'default' : 'pointer',
+                      opacity: emailSending ? 0.6 : 1,
+                    }}
+                  >
+                    {emailSent ? '✓ Gesendet' : emailSending ? '⏳ Sende...' : '📨 E-Mail senden'}
+                  </button>
                 </div>
                 <div
                   style={{
                     background: '#0a0a0a',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    border: aiLoading ? '1px solid rgba(107,122,255,0.2)' : '1px solid rgba(255,255,255,0.06)',
                     borderRadius: 8,
                     padding: 14,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'border-color 0.3s',
                   }}
                 >
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 6 }}>
-                    {lead.emailDraft.split('\n')[0]}
-                  </div>
-                  <div
-                    style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, whiteSpace: 'pre-line' }}
-                  >
-                    {lead.emailDraft.split('\n').slice(1).join('\n').trim()}
+                  {aiLoading && (
+                    <>
+                      <style>{`@keyframes aiShimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
+                      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
+                        <div style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.12) 40%, rgba(107,122,255,0.22) 50%, rgba(107,122,255,0.12) 60%, transparent 100%)',
+                          animation: 'aiShimmer 1.5s ease-in-out infinite',
+                        }} />
+                      </div>
+                    </>
+                  )}
+                  {editingEmail ? (
+                    <textarea
+                      value={editedDraft}
+                      onChange={(e) => setEditedDraft(e.target.value)}
+                      style={{
+                        width: '100%',
+                        minHeight: 180,
+                        background: 'transparent',
+                        border: 'none',
+                        outline: 'none',
+                        color: 'rgba(255,255,255,0.7)',
+                        fontSize: 12,
+                        lineHeight: 1.7,
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                      }}
+                    />
+                  ) : (
+                    <>
+                      {lead.emailDraftSubject && (
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
+                          {lead.emailDraftSubject}
+                        </div>
+                      )}
+                      <style>{`.email-draft-content p { margin: 0 0 0.8em; } .email-draft-content br { display: block; content: ""; margin-top: 0.4em; }`}</style>
+                      <div
+                        className="email-draft-content"
+                        style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, whiteSpace: 'pre-line' }}
+                        dangerouslySetInnerHTML={{ __html: editedDraft || lead.emailDraft || '' }}
+                      />
+                    </>
+                  )}
+                  {/* Edit + AI buttons */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 10 }}>
+                    <button
+                      onClick={async () => {
+                        if (editingEmail) {
+                          setEditingEmail(false);
+                          if (editedDraft && editedDraft !== lead.emailDraft) {
+                            await fetch(`/api/leads/${lead.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ email_draft_body: editedDraft }),
+                            });
+                            setLead((prev) => prev ? { ...prev, emailDraft: editedDraft } : prev);
+                          }
+                        } else {
+                          setEditedDraft(editedDraft || lead.emailDraft || '');
+                          setEditingEmail(true);
+                        }
+                      }}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 6,
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        background: editingEmail ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
+                        color: editingEmail ? '#22C55E' : 'rgba(255,255,255,0.4)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 14,
+                      }}
+                      title={editingEmail ? 'Speichern' : 'Bearbeiten'}
+                    >
+                      {editingEmail ? '✓' : '✏️'}
+                    </button>
+                    <button
+                      onClick={() => setAiModalOpen(true)}
+                      style={{
+                        width: 30,
+                        height: 30,
+                        borderRadius: 6,
+                        border: '1px solid rgba(107,122,255,0.25)',
+                        background: 'rgba(107,122,255,0.12)',
+                        color: '#6B7AFF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 14,
+                      }}
+                      title="KI-Änderung"
+                    >
+                      ✦
+                    </button>
                   </div>
                 </div>
               </Card>
@@ -777,18 +976,57 @@ export default function LeadDetailPage() {
             )}
 
             {/* Activities */}
-            {activities.length > 0 && (
+            {activities.length > 0 && (() => {
+              const totalPages = Math.ceil(activities.length / ACTIVITIES_PER_PAGE);
+              const paged = activities.slice(activityPage * ACTIVITIES_PER_PAGE, (activityPage + 1) * ACTIVITIES_PER_PAGE);
+              return (
               <Card title={`Aktivitäten (${activities.length})`}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  {activities.map((a, i) => (
+                  {paged.map((a, i) => {
+                    const dimmed = a.type === 'task' || a.type === 'ai_analysis';
+                    const intBg = a.interested === true
+                      ? 'rgba(34,197,94,0.08)'
+                      : a.interested === false
+                        ? 'rgba(239,68,68,0.08)'
+                        : 'transparent';
+                    const intBorder = a.interested === true
+                      ? '1px solid rgba(34,197,94,0.15)'
+                      : a.interested === false
+                        ? '1px solid rgba(239,68,68,0.15)'
+                        : 'none';
+                    return (
                     <div
                       key={a.id}
                       style={{
-                        padding: '8px 0',
-                        borderBottom: i < activities.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                        padding: '8px',
+                        marginBottom: i < paged.length - 1 ? 4 : 0,
+                        borderRadius: a.interested != null ? 6 : 0,
+                        background: intBg,
+                        border: intBorder,
+                        borderBottom: a.interested == null && i < paged.length - 1 ? '1px solid rgba(255,255,255,0.04)' : undefined,
+                        opacity: dimmed ? 0.4 : 1,
                       }}
                     >
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>{a.title}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontSize: 12, color: dimmed ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.7)', flex: 1 }}>{a.title}</div>
+                        {(a.content_full_title || a.content_full_content) && (
+                          <button
+                            onClick={() => setViewActivity(a)}
+                            style={{
+                              fontSize: 10,
+                              color: '#6B7AFF',
+                              background: 'rgba(107,122,255,0.1)',
+                              border: '1px solid rgba(107,122,255,0.2)',
+                              borderRadius: 5,
+                              padding: '2px 8px',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          >
+                            Ansehen
+                          </button>
+                        )}
+                      </div>
                       {a.content && (
                         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{a.content}</div>
                       )}
@@ -809,10 +1047,49 @@ export default function LeadDetailPage() {
                         })}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <button
+                      disabled={activityPage === 0}
+                      onClick={() => setActivityPage((p) => p - 1)}
+                      style={{
+                        fontSize: 11,
+                        color: activityPage === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 5,
+                        padding: '3px 10px',
+                        cursor: activityPage === 0 ? 'default' : 'pointer',
+                      }}
+                    >
+                      ← Zurück
+                    </button>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-mono)' }}>
+                      {activityPage + 1} / {totalPages}
+                    </span>
+                    <button
+                      disabled={activityPage >= totalPages - 1}
+                      onClick={() => setActivityPage((p) => p + 1)}
+                      style={{
+                        fontSize: 11,
+                        color: activityPage >= totalPages - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 5,
+                        padding: '3px 10px',
+                        cursor: activityPage >= totalPages - 1 ? 'default' : 'pointer',
+                      }}
+                    >
+                      Weiter →
+                    </button>
+                  </div>
+                )}
               </Card>
-            )}
+              );
+            })()}
 
             {/* Meta */}
             <Card title="Metadaten">
@@ -839,6 +1116,177 @@ export default function LeadDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* AI Rewrite Modal */}
+      {aiModalOpen && (
+        <div
+          onClick={() => { if (!aiLoading) setAiModalOpen(false); }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#111',
+              border: '1px solid rgba(107,122,255,0.2)',
+              borderRadius: 14,
+              padding: 24,
+              maxWidth: 500,
+              width: '90%',
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 14 }}>
+              ✦ KI-Änderung
+            </div>
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Beschreibe, was die KI ändern soll..."
+              style={{
+                width: '100%',
+                minHeight: 100,
+                background: '#0a0a0a',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                padding: 12,
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: 13,
+                lineHeight: 1.6,
+                fontFamily: 'inherit',
+                resize: 'vertical',
+                outline: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+              <button
+                disabled={aiLoading}
+                onClick={() => { setAiModalOpen(false); setAiPrompt(''); }}
+                style={{
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.4)',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6,
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                }}
+              >
+                Abbrechen
+              </button>
+              <button
+                disabled={aiLoading || !aiPrompt.trim()}
+                onClick={() => {
+                  const subject = lead?.emailDraftSubject ?? '';
+                  const body = editedDraft || lead?.emailDraft || '';
+                  const prompt = aiPrompt;
+                  setAiModalOpen(false);
+                  setAiPrompt('');
+                  setAiLoading(true);
+                  fetch('/api/leads/ai-rewrite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, subject, body, lead_id: lead?.id, tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90' }),
+                  })
+                    .then((res) => res.ok ? res.json() : Promise.reject())
+                    .then(async () => {
+                      // Webhook updates Supabase directly — reload lead data
+                      const res2 = await fetch(`/api/leads/${lead?.id}`);
+                      if (res2.ok) {
+                        const d = await res2.json();
+                        if (d.lead) {
+                          const updated = mapLead(d.lead);
+                          setLead(updated);
+                          setEditedDraft(updated.emailDraft ?? '');
+                        }
+                      }
+                    })
+                    .catch(() => alert('KI-Änderung fehlgeschlagen'))
+                    .finally(() => setAiLoading(false));
+                }}
+                style={{
+                  fontSize: 12,
+                  color: '#fff',
+                  background: aiLoading ? 'rgba(107,122,255,0.3)' : '#6B7AFF',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 14px',
+                  cursor: aiLoading || !aiPrompt.trim() ? 'default' : 'pointer',
+                  opacity: !aiPrompt.trim() ? 0.5 : 1,
+                }}
+              >
+                {aiLoading ? '⏳ KI arbeitet...' : '✦ Absenden'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity Detail Popup */}
+      {viewActivity && (
+        <div
+          onClick={() => setViewActivity(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#111',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 14,
+              padding: 24,
+              maxWidth: 600,
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#fff' }}>
+                {viewActivity.content_full_title ?? viewActivity.title}
+              </div>
+              <button
+                onClick={() => setViewActivity(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.5)',
+                  cursor: 'pointer',
+                }}
+              >
+                Schliessen
+              </button>
+            </div>
+            {viewActivity.content_full_content && (
+              <div
+                style={{
+                  fontSize: 13,
+                  color: 'rgba(255,255,255,0.7)',
+                  lineHeight: 1.7,
+                }}
+                dangerouslySetInnerHTML={{ __html: viewActivity.content_full_content }}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

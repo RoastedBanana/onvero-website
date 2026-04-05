@@ -28,6 +28,7 @@ export type Lead = {
   aiNextAction?: string;
   aiScoredAt?: string;
   emailDraft?: string;
+  emailDraftSubject?: string;
   websiteSummary?: string;
   websiteTitle?: string;
   lastContactedAt?: string;
@@ -96,7 +97,8 @@ export function mapLead(raw: any): Lead {
     aiTags: raw.ai_tags ?? [],
     aiNextAction: raw.ai_next_action ?? cf.next_action,
     aiScoredAt: raw.ai_scored_at,
-    emailDraft: raw.email_draft,
+    emailDraft: raw.email_draft_body ?? raw.email_draft,
+    emailDraftSubject: raw.email_draft_subject ?? raw.email_subject ?? null,
     websiteSummary: raw.website_summary,
     websiteTitle: raw.website_title,
     lastContactedAt: raw.last_contacted_at,

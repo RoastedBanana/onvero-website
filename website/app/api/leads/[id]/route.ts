@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           `id, company_name, first_name, last_name, email, phone,
            website, city, country, status, score, source,
            ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
-           email_draft, website_summary, website_title,
+           email_draft_subject, email_draft_body, email_subject, website_summary, website_title,
            custom_fields, last_contacted_at, created_at, apollo_id`
         )
         .eq('id', id)
@@ -35,7 +35,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         .single(),
       client
         .from('lead_activities')
-        .select('id, type, title, content, created_at, metadata')
+        .select('id, type, title, content, content_full_title, content_full_content, interested, created_at, metadata')
         .eq('lead_id', id)
         .eq('tenant_id', TENANT)
         .order('created_at', { ascending: false })
