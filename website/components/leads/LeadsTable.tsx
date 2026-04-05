@@ -5,7 +5,28 @@ import type { Lead } from '@/lib/leads-client';
 import { updateLeadStatus } from '@/lib/leads-client';
 import LeadAvatar from '@/components/ui/LeadAvatar';
 
-function ScoreBadge({ score }: { score: number }) {
+function ScoreBadge({ score }: { score: number | null }) {
+  if (score === null || score === undefined) {
+    return (
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          background: 'rgba(255,255,255,0.04)',
+          borderRadius: 20,
+          padding: '3px 10px',
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <style>{`@keyframes scorePulse{0%,100%{opacity:0.4}50%{opacity:1}}`}</style>
+        <span
+          style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', animation: 'scorePulse 1.5s ease-in-out infinite' }}
+        >
+          Wird analysiert...
+        </span>
+      </div>
+    );
+  }
   const isHot = score >= 70;
   const isWarm = score >= 45;
   const label = isHot ? 'HOT' : isWarm ? 'WARM' : 'COLD';
@@ -642,6 +663,7 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
       {/* ── Rows ── */}
       {sorted.map((lead, i) => {
         const isSelected = selected.has(lead.id);
+        const isNewLead = Date.now() - new Date(lead.createdAt).getTime() < 24 * 60 * 60 * 1000;
         return (
           <div
             key={lead.id}
@@ -657,6 +679,7 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
               gridTemplateColumns: gridCols,
               padding: '12px 20px',
               borderBottom: i < sorted.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+              borderLeft: isNewLead ? '2px solid rgba(34,197,94,0.4)' : '2px solid transparent',
               alignItems: 'center',
               cursor: 'pointer',
               background:
@@ -700,6 +723,24 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {lead.name}
                   </span>
+                  {isNewLead && (
+                    <span
+                      style={{
+                        fontSize: 8,
+                        fontWeight: 700,
+                        color: '#22C55E',
+                        background: 'rgba(34,197,94,0.15)',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                        borderRadius: 4,
+                        padding: '2px 6px',
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase' as const,
+                        flexShrink: 0,
+                      }}
+                    >
+                      NEU
+                    </span>
+                  )}
                   {lead.source === 'google_maps_apify' && (
                     <span
                       style={{

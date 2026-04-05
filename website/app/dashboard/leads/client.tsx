@@ -121,7 +121,11 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           className="sticky top-0 z-20 -mx-6 flex items-center justify-between border-b border-white/5 px-6 py-4"
           style={{ background: '#0a0a0a' }}
         >
-          <PageHeader title="Leads" badge={{ label: 'Live', variant: 'live' }} subtitle="Lead Intelligence Dashboard" />
+          <PageHeader
+            title="Leads"
+            badge={{ label: 'Live', variant: 'live' }}
+            subtitle={`${leads.length} Leads · ${leads.filter((l) => l.score >= 70).length} HOT · ${leads.filter((l) => l.score >= 45 && l.score < 70).length} WARM · ${leads.filter((l) => l.score < 45).length} COLD`}
+          />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div
               style={{
@@ -455,23 +459,69 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           <ConversionFunnel leads={leads} activeTab={statusFilter} />
         </div>
 
-        <LeadsTable
-          leads={filtered}
-          selectedId={selectedLeadId}
-          onSelect={(id) => {
-            if (id) router.push(`/dashboard/leads/${id}`);
-          }}
-          onStatusChange={(id, status) => {
-            setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
-            setStats(computeStats(leads.map((l) => (l.id === id ? { ...l, status } : l))));
-          }}
-          onLeadsDeleted={(ids) => {
-            const remaining = leads.filter((l) => !ids.includes(l.id));
-            setLeads(remaining);
-            setStats(computeStats(remaining));
-            setSelectedLeadId(null);
-          }}
-        />
+        {leads.length === 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '80px 20px',
+              textAlign: 'center',
+            }}
+          >
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style={{ marginBottom: 20, opacity: 0.3 }}>
+              <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
+              <circle cx="32" cy="24" r="8" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
+              <path
+                d="M18 48c0-7.7 6.3-14 14-14s14 6.3 14 14"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#fff', marginBottom: 6 }}>Noch keine Leads</div>
+            <div
+              style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', maxWidth: 360, marginBottom: 20, lineHeight: 1.5 }}
+            >
+              Beschreibe welche Kunden du suchst und die KI generiert passende Leads für dich.
+            </div>
+            <button
+              onClick={() => router.push('/dashboard/generate')}
+              style={{
+                background: '#e0e0e0',
+                color: '#080808',
+                border: 'none',
+                borderRadius: 8,
+                padding: '10px 20px',
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)',
+              }}
+            >
+              Erste Leads generieren →
+            </button>
+          </div>
+        ) : (
+          <LeadsTable
+            leads={filtered}
+            selectedId={selectedLeadId}
+            onSelect={(id) => {
+              if (id) router.push(`/dashboard/leads/${id}`);
+            }}
+            onStatusChange={(id, status) => {
+              setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
+              setStats(computeStats(leads.map((l) => (l.id === id ? { ...l, status } : l))));
+            }}
+            onLeadsDeleted={(ids) => {
+              const remaining = leads.filter((l) => !ids.includes(l.id));
+              setLeads(remaining);
+              setStats(computeStats(remaining));
+              setSelectedLeadId(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
