@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   const [leadsData, plausibleAgg, plausibleSeries, plausibleSources, plausiblePages] = await Promise.all([
     supabase
       .from('leads')
-      .select('id, score, status, email_draft, created_at, custom_fields, city, country')
+      .select('id, score, status, email_draft_body, created_at, custom_fields, city, country')
       .eq('tenant_id', TENANT),
     plausibleKey
       ? plausibleStats(['visitors', 'pageviews', 'bounce_rate', 'visit_duration', 'visits'], period, plausibleKey)
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   const cold = leads.filter((l) => (l.score || 0) < 45).length;
   const contacted = leads.filter((l) => l.status === 'contacted').length;
   const qualified = leads.filter((l) => l.status === 'qualified').length;
-  const withEmail = leads.filter((l) => l.email_draft).length;
+  const withEmail = leads.filter((l) => l.email_draft_body).length;
   const avgScore = total > 0 ? Math.round(leads.reduce((s, l) => s + (l.score || 0), 0) / total) : 0;
 
   const weeklyLeads = buildWeeklyData(leads);

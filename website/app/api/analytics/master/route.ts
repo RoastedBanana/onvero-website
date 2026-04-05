@@ -13,7 +13,7 @@ export async function GET() {
   const [leadsData, plausibleAgg, plausibleSeries] = await Promise.all([
     supabase
       .from('leads')
-      .select('id, score, status, email_draft, created_at, ai_summary, website_summary')
+      .select('id, score, status, email_draft_body, created_at, ai_summary, website_summary')
       .eq('tenant_id', TENANT),
     plausibleKey
       ? plausibleStats(['visitors', 'pageviews', 'bounce_rate', 'visit_duration'], 'month', plausibleKey)
@@ -30,7 +30,7 @@ export async function GET() {
   const cold = leads.filter((l) => (l.score || 0) < 45).length;
   const contacted = leads.filter((l) => l.status === 'contacted').length;
   const qualified = leads.filter((l) => l.status === 'qualified').length;
-  const withEmail = leads.filter((l) => l.email_draft).length;
+  const withEmail = leads.filter((l) => l.email_draft_body).length;
   const aiScored = leads.filter((l) => l.score !== null && l.score !== undefined).length;
   const avgScore = leads.length > 0 ? Math.round(leads.reduce((s, l) => s + (l.score || 0), 0) / leads.length) : 0;
 

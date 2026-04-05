@@ -14,6 +14,7 @@ export async function GET() {
       status, score, source, notes, estimated_value,
       ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
       email_draft_subject, email_draft_body, email_subject, website_summary, website_title, website_description,
+      google_rating, google_reviews, google_maps_url, google_place_id,
       custom_fields, last_contacted_at, follow_up_at, created_at, apollo_id
     `
     )

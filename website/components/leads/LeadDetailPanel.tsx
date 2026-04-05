@@ -195,13 +195,25 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
 
   // Per-lead follow-up countdown: 3 days from status change
   useEffect(() => {
-    if (!followUpTimestamp) { setFollowUpDisplay(''); setFollowUpExpired(false); return; }
+    if (!followUpTimestamp) {
+      setFollowUpDisplay('');
+      setFollowUpExpired(false);
+      return;
+    }
     const deadline = new Date(followUpTimestamp).getTime() + 3 * 24 * 60 * 60 * 1000;
-    if (deadline <= Date.now()) { setFollowUpDisplay(''); setFollowUpExpired(true); return; }
+    if (deadline <= Date.now()) {
+      setFollowUpDisplay('');
+      setFollowUpExpired(true);
+      return;
+    }
     setFollowUpExpired(false);
     function tick() {
       const diff = deadline - Date.now();
-      if (diff <= 0) { setFollowUpDisplay(''); setFollowUpExpired(true); return; }
+      if (diff <= 0) {
+        setFollowUpDisplay('');
+        setFollowUpExpired(true);
+        return;
+      }
       const d = Math.floor(diff / 86400000);
       const h = Math.floor((diff % 86400000) / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
@@ -272,7 +284,12 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
       await fetch('/api/proxy/n8n', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'website-analysis', lead_id: lead.id, website: lead.website, tenant_id: TENANT_ID }),
+        body: JSON.stringify({
+          action: 'website-analysis',
+          lead_id: lead.id,
+          website: lead.website,
+          tenant_id: TENANT_ID,
+        }),
       });
       setScrapingStarted(true);
       setTimeout(() => setScrapingStarted(false), 5000);
@@ -333,7 +350,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
     try {
       const { createClient } = await import('@/lib/supabase');
       const supabase = createClient();
-      await supabase.from('leads').update({ email_draft: emailText }).eq('id', lead.id);
+      await supabase.from('leads').update({ email_draft_body: emailText }).eq('id', lead.id);
       setEmailEditing(false);
     } catch (e) {
       console.error('Email save failed:', e);
@@ -1658,7 +1675,9 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                   }}
                 >
                   <span>⏱</span>
-                  <span>Follow-up E-Mail in: <strong>{followUpDisplay}</strong></span>
+                  <span>
+                    Follow-up E-Mail in: <strong>{followUpDisplay}</strong>
+                  </span>
                 </div>
               ) : (
                 <button
@@ -1676,10 +1695,19 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                     cursor: lead.emailDraft && lead.email && !emailSending ? 'pointer' : 'default',
                     opacity: lead.emailDraft && lead.email ? 1 : 0.4,
                     transition: 'all 0.2s',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 5,
                   }}
                 >
-                  {emailSending ? '⏳ Senden…' : emailSent ? '✓ Gesendet' : followUpExpired && !autoFollowUp ? '📧 Follow Up' : '📧 E-Mail senden'}
+                  {emailSending
+                    ? '⏳ Senden…'
+                    : emailSent
+                      ? '✓ Gesendet'
+                      : followUpExpired && !autoFollowUp
+                        ? '📧 Follow Up'
+                        : '📧 E-Mail senden'}
                 </button>
               )}
               <button
@@ -1696,7 +1724,9 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                   fontSize: 13,
                   cursor: lead.emailDraft ? 'pointer' : 'default',
                   opacity: lead.emailDraft ? 1 : 0.4,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   transition: 'color 0.2s',
                 }}
               >

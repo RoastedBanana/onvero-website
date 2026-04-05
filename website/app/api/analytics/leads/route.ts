@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   const { data: leads } = await supabase
     .from('leads')
     .select(
-      'id, first_name, last_name, company_name, score, status, email_draft, created_at, city, country, custom_fields, ai_summary, ai_tags, ai_next_action'
+      'id, first_name, last_name, company_name, score, status, email_draft_body, created_at, city, country, custom_fields, ai_summary, ai_tags, ai_next_action'
     )
     .eq('tenant_id', TENANT)
     .gte('created_at', since)
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
       industry: (l.custom_fields || {}).industry_de || (l.custom_fields || {}).industry || '—',
       tags: l.ai_tags || [],
       nextAction: l.ai_next_action,
-      hasEmail: !!l.email_draft,
+      hasEmail: !!l.email_draft_body,
     }));
 
   const weeklyLeads = buildWeekly(all);
@@ -94,7 +94,7 @@ export async function GET(req: Request) {
   // Data quality score per lead
   const qualityScores = all.map((l) => {
     let q = 0;
-    if (l.email_draft) q += 20;
+    if (l.email_draft_body) q += 20;
     if (l.custom_fields?.industry || l.custom_fields?.industry_de) q += 15;
     if (l.city) q += 10;
     if (l.custom_fields?.linkedin_url) q += 10;
@@ -131,7 +131,7 @@ export async function GET(req: Request) {
     warm: all.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 75).length,
     cold: all.filter((l) => (l.score || 0) < 45).length,
     avgScore: all.length > 0 ? Math.round(all.reduce((s, l) => s + (l.score || 0), 0) / all.length) : 0,
-    withEmail: all.filter((l) => l.email_draft).length,
+    withEmail: all.filter((l) => l.email_draft_body).length,
     scored: all.filter((l) => l.score !== null).length,
     avgDataQuality,
     scoreRanges,
