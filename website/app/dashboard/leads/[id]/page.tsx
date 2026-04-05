@@ -164,6 +164,7 @@ export default function LeadDetailPage() {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -625,6 +626,39 @@ export default function LeadDetailPage() {
                     transition: 'border-color 0.3s',
                   }}
                 >
+                  {aiError && (
+                    <div style={{
+                      background: 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.25)',
+                      borderRadius: 6,
+                      padding: '8px 12px',
+                      marginBottom: 10,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}>
+                      <div
+                        style={{ fontSize: 12, color: '#ef4444', lineHeight: 1.6, flex: 1 }}
+                        dangerouslySetInnerHTML={{ __html: aiError
+                          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\n/g, '<br>')
+                        }}
+                      />
+                      <button
+                        onClick={() => setAiError(null)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          padding: '0 4px',
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                   {aiLoading && (
                     <>
                       <style>{`@keyframes aiShimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
@@ -639,20 +673,24 @@ export default function LeadDetailPage() {
                     </>
                   )}
                   {editingEmail ? (
-                    <textarea
-                      value={editedDraft}
-                      onChange={(e) => setEditedDraft(e.target.value)}
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => setEditedDraft(e.currentTarget.innerHTML)}
+                      onInput={(e) => setEditedDraft(e.currentTarget.innerHTML)}
+                      dangerouslySetInnerHTML={{ __html: editedDraft }}
                       style={{
                         width: '100%',
                         minHeight: 180,
                         background: 'transparent',
-                        border: 'none',
                         outline: 'none',
                         color: 'rgba(255,255,255,0.7)',
-                        fontSize: 12,
+                        fontSize: 13,
                         lineHeight: 1.7,
                         fontFamily: 'inherit',
-                        resize: 'vertical',
+                        border: '1px dashed rgba(107,122,255,0.3)',
+                        borderRadius: 6,
+                        padding: 8,
                       }}
                     />
                   ) : (
@@ -1188,14 +1226,23 @@ export default function LeadDetailPage() {
                   const prompt = aiPrompt;
                   setAiModalOpen(false);
                   setAiPrompt('');
+                  setAiError(null);
                   setAiLoading(true);
                   fetch('/api/leads/ai-rewrite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt, subject, body, lead_id: lead?.id, tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90' }),
                   })
-                    .then((res) => res.ok ? res.json() : Promise.reject())
-                    .then(async () => {
+                    .then(async (res) => {
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok || data.error) {
+                        setAiError(data.error ?? 'KI-Änderung fehlgeschlagen');
+                        return;
+                      }
+                      return data;
+                    })
+                    .then(async (data) => {
+                      if (!data) return;
                       // Webhook updates Supabase directly — reload lead data
                       const res2 = await fetch(`/api/leads/${lead?.id}`);
                       if (res2.ok) {
@@ -1207,7 +1254,7 @@ export default function LeadDetailPage() {
                         }
                       }
                     })
-                    .catch(() => alert('KI-Änderung fehlgeschlagen'))
+                    .catch(() => setAiError('KI-Änderung fehlgeschlagen'))
                     .finally(() => setAiLoading(false));
                 }}
                 style={{
