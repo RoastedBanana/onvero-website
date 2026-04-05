@@ -162,6 +162,7 @@ export default function LeadDetailPage() {
   const [editingEmail, setEditingEmail] = useState(false);
   const [editedDraft, setEditedDraft] = useState('');
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [isScoring, setIsScoring] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -185,6 +186,36 @@ export default function LeadDetailPage() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const refreshLead = async () => {
+    if (!id) return;
+    try {
+      const r = await fetch(`/api/leads/${id}`);
+      const d = await r.json();
+      if (d.lead) setLead(mapLead(d.lead));
+      setActivities(d.activities ?? []);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleRescore = async () => {
+    if (isScoring || !lead) return;
+    setIsScoring(true);
+    try {
+      await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/lead-scoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_id: lead.id, tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90' }),
+      });
+      await new Promise((r) => setTimeout(r, 75000));
+      await refreshLead();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsScoring(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -300,11 +331,31 @@ export default function LeadDetailPage() {
                     color: scoreColor,
                     fontFamily: 'var(--font-dm-mono)',
                     lineHeight: 1,
+                    animation: isScoring ? 'onvero-pulse 1.5s ease-in-out infinite' : 'none',
                   }}
                 >
                   {lead.score}
                 </span>
+                <button
+                  onClick={handleRescore}
+                  disabled={isScoring}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    background: isScoring ? 'transparent' : 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 6,
+                    color: isScoring ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.6)',
+                    cursor: isScoring ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {isScoring ? 'Wird analysiert...' : '↻ Neu scoren'}
+                </button>
               </div>
+              <style>{`@keyframes onvero-pulse{0%,100%{opacity:0.3}50%{opacity:0.8}}`}</style>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
                 {lead.name}
                 {lead.jobTitle ? ` · ${lead.jobTitle}` : ''}
