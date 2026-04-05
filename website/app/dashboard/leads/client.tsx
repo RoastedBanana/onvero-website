@@ -459,6 +459,26 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           <ConversionFunnel leads={leads} activeTab={statusFilter} />
         </div>
 
+        <style>{`@keyframes onvero-pulse{0%,100%{opacity:0.3}50%{opacity:0.8}}`}</style>
+
+        {/* Skeleton loading before mount */}
+        {!mounted && leads.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  height: 56,
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.03)',
+                  animation: 'onvero-pulse 1.5s ease-in-out infinite',
+                  animationDelay: `${i * 0.1}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {leads.length === 0 ? (
           <div
             style={{
@@ -466,38 +486,37 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '80px 20px',
-              textAlign: 'center',
+              padding: '120px 24px',
+              gap: 16,
             }}
           >
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" style={{ marginBottom: 20, opacity: 0.3 }}>
-              <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
-              <circle cx="32" cy="24" r="8" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
-              <path
-                d="M18 48c0-7.7 6.3-14 14-14s14 6.3 14 14"
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
+              <circle cx="24" cy="24" r="12" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+              <line x1="24" y1="4" x2="24" y2="44" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+              <line x1="4" y1="24" x2="44" y2="24" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+              <circle cx="24" cy="24" r="3" fill="rgba(255,255,255,0.2)" />
             </svg>
-            <div style={{ fontSize: 18, fontWeight: 600, color: '#fff', marginBottom: 6 }}>Noch keine Leads</div>
-            <div
-              style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', maxWidth: 360, marginBottom: 20, lineHeight: 1.5 }}
-            >
-              Beschreibe welche Kunden du suchst und die KI generiert passende Leads für dich.
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 500, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>
+                Noch keine Leads
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', maxWidth: 280, lineHeight: 1.5 }}>
+                Beschreibe welche Kunden du suchst — die KI findet und bewertet passende Leads automatisch.
+              </div>
             </div>
             <button
               onClick={() => router.push('/dashboard/generate')}
               style={{
-                background: '#e0e0e0',
+                marginTop: 8,
+                padding: '10px 20px',
+                background: 'white',
                 color: '#080808',
                 border: 'none',
                 borderRadius: 8,
-                padding: '10px 20px',
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: 500,
                 cursor: 'pointer',
-                fontFamily: 'var(--font-dm-sans)',
               }}
             >
               Erste Leads generieren →
