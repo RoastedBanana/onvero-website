@@ -58,6 +58,7 @@ export async function proxy(request: NextRequest) {
       '/api/leads',
       '/api/lead-generator-runs',
       '/api/analytics',
+      '/api/profile',
     ];
     const isPublic = PUBLIC_API.some((r) => pathname.startsWith(r));
     if (!isPublic) {
