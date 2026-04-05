@@ -30,8 +30,8 @@ export default function ConversionFunnel({ leads, activeTab }: ConversionFunnelP
     if (activeTab === 'new') {
       const tabLeads = leads.filter((l) => l.status === 'new');
       const t = tabLeads.length;
-      const hot = tabLeads.filter((l) => l.score >= 75).length;
-      const warm = tabLeads.filter((l) => l.score >= 45 && l.score < 75).length;
+      const hot = tabLeads.filter((l) => l.score >= 70).length;
+      const warm = tabLeads.filter((l) => l.score >= 45 && l.score < 70).length;
       const cold = tabLeads.filter((l) => l.score < 45).length;
       const withDraft = tabLeads.filter((l) => l.emailDraft).length;
       return {
@@ -62,7 +62,7 @@ export default function ConversionFunnel({ leads, activeTab }: ConversionFunnelP
     if (activeTab === 'qualified') {
       const qual = leads.filter((l) => l.status === 'qualified');
       const qLen = qual.length;
-      const hotQ = qual.filter((l) => l.score >= 75).length;
+      const hotQ = qual.filter((l) => l.score >= 70).length;
       const avgS = qLen > 0 ? Math.round(qual.reduce((s, l) => s + l.score, 0) / qLen) : 0;
       return {
         title: 'Qualifiziert — Übersicht',

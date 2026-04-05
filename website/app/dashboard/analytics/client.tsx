@@ -1143,10 +1143,10 @@ export default function AnalyticsClient() {
                                     fontSize: 9,
                                     fontWeight: 700,
                                     fontFamily: 'var(--font-dm-mono)',
-                                    color: a.score >= 75 ? '#FF5C2E' : a.score >= 45 ? '#F59E0B' : '#6B7AFF',
+                                    color: a.score >= 70 ? '#FF5C2E' : a.score >= 45 ? '#F59E0B' : '#6B7AFF',
                                     padding: '1px 5px',
                                     background:
-                                      a.score >= 75
+                                      a.score >= 70
                                         ? 'rgba(255,92,46,0.1)'
                                         : a.score >= 45
                                           ? 'rgba(245,158,11,0.1)'
@@ -2774,7 +2774,6 @@ export default function AnalyticsClient() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

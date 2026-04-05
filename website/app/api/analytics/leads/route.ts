@@ -31,7 +31,7 @@ export async function GET(req: Request) {
     if (!industryMap[ind]) industryMap[ind] = { count: 0, totalScore: 0, hot: 0 };
     industryMap[ind].count++;
     industryMap[ind].totalScore += l.score || 0;
-    if ((l.score || 0) >= 75) industryMap[ind].hot++;
+    if ((l.score || 0) >= 70) industryMap[ind].hot++;
   });
   const industries = Object.entries(industryMap)
     .map(([name, d]) => ({
@@ -74,7 +74,7 @@ export async function GET(req: Request) {
   }));
 
   const hotLeads = all
-    .filter((l) => (l.score || 0) >= 75)
+    .filter((l) => (l.score || 0) >= 70)
     .slice(0, 10)
     .map((l) => ({
       id: l.id,
@@ -127,8 +127,8 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     total: all.length,
-    hot: all.filter((l) => (l.score || 0) >= 75).length,
-    warm: all.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 75).length,
+    hot: all.filter((l) => (l.score || 0) >= 70).length,
+    warm: all.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 70).length,
     cold: all.filter((l) => (l.score || 0) < 45).length,
     avgScore: all.length > 0 ? Math.round(all.reduce((s, l) => s + (l.score || 0), 0) / all.length) : 0,
     withEmail: all.filter((l) => l.email_draft_body).length,
@@ -160,8 +160,8 @@ function buildWeekly(leads: Record<string, any>[]) {
     return {
       week: `KW${getWeek(start)}`,
       total: week.length,
-      hot: week.filter((l) => (l.score || 0) >= 75).length,
-      warm: week.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 75).length,
+      hot: week.filter((l) => (l.score || 0) >= 70).length,
+      warm: week.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 70).length,
       cold: week.filter((l) => (l.score || 0) < 45).length,
     };
   });

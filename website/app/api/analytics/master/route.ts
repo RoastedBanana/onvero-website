@@ -25,8 +25,8 @@ export async function GET() {
   const now = new Date();
   const last24h = leads.filter((l) => new Date(l.created_at) > new Date(now.getTime() - 86400000)).length;
   const last7d = leads.filter((l) => new Date(l.created_at) > new Date(now.getTime() - 7 * 86400000)).length;
-  const hot = leads.filter((l) => (l.score || 0) >= 75).length;
-  const warm = leads.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 75).length;
+  const hot = leads.filter((l) => (l.score || 0) >= 70).length;
+  const warm = leads.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 70).length;
   const cold = leads.filter((l) => (l.score || 0) < 45).length;
   const contacted = leads.filter((l) => l.status === 'contacted').length;
   const qualified = leads.filter((l) => l.status === 'qualified').length;

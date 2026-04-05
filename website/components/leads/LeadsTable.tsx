@@ -6,7 +6,7 @@ import { updateLeadStatus } from '@/lib/leads-client';
 import LeadAvatar from '@/components/ui/LeadAvatar';
 
 function ScoreBadge({ score }: { score: number }) {
-  const isHot = score >= 75;
+  const isHot = score >= 70;
   const isWarm = score >= 45;
   const label = isHot ? 'HOT' : isWarm ? 'WARM' : 'COLD';
   const color = isHot ? '#FF5C2E' : isWarm ? '#F59E0B' : '#6B7AFF';

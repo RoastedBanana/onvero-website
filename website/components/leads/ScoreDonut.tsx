@@ -26,8 +26,8 @@ interface ScoreDonutProps {
 
 export default function ScoreDonut({ leads, activeTab, activeTier, onTierClick }: ScoreDonutProps) {
   const { hot, warm, cold, avgScore } = useMemo(() => {
-    const h = leads.filter((l) => l.score >= 75).length;
-    const w = leads.filter((l) => l.score >= 45 && l.score < 75).length;
+    const h = leads.filter((l) => l.score >= 70).length;
+    const w = leads.filter((l) => l.score >= 45 && l.score < 70).length;
     const c = leads.filter((l) => l.score < 45).length;
     const avg = leads.length > 0 ? Math.round(leads.reduce((s, l) => s + l.score, 0) / leads.length) : 0;
     return { hot: h, warm: w, cold: c, avgScore: avg };

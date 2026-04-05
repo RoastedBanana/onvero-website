@@ -117,7 +117,7 @@ export default function LeadsLineChart({ leads, activeTab }: LeadsLineChartProps
     const tabLeads = activeTab === 'all' ? leads : leads.filter((l) => l.status === activeTab);
     const t = tabLeads.length;
     if (t === 0) return null;
-    const hot = tabLeads.filter((l) => l.score >= 75).length;
+    const hot = tabLeads.filter((l) => l.score >= 70).length;
     const avg = Math.round(tabLeads.reduce((s, l) => s + l.score, 0) / t);
     const withDraft = tabLeads.filter((l) => l.emailDraft).length;
     if (activeTab === 'all') {

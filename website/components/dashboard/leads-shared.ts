@@ -163,7 +163,7 @@ export const STATUS_FG: Record<string, string> = {
 
 export function getScoreLabel(s: number | null) {
   if (s === null || s === undefined) return 'COLD';
-  if (s >= 75) return 'HOT';
+  if (s >= 70) return 'HOT';
   if (s >= 45) return 'WARM';
   return 'COLD';
 }

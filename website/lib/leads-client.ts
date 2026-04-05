@@ -127,7 +127,7 @@ export function mapLead(raw: any): Lead {
     hasNewsSignal: cf.has_news_signal ?? false,
     emailStatus: cf.email_status ?? null,
     buyingSignals: cf.buying_signals ?? [],
-    tier: cf.tier ?? null,
+    tier: cf.tier ?? (score >= 70 ? 'HOT' : score >= 45 ? 'WARM' : 'COLD'),
     googleMapsMatchScore: cf.google_maps?.match_score ?? null,
     source: raw.source ?? null,
   };

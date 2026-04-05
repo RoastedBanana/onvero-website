@@ -27,8 +27,8 @@ export async function GET(req: Request) {
 
   const leads = (leadsData.data || []) as Record<string, any>[];
   const total = leads.length;
-  const hot = leads.filter((l) => (l.score || 0) >= 75).length;
-  const warm = leads.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 75).length;
+  const hot = leads.filter((l) => (l.score || 0) >= 70).length;
+  const warm = leads.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 70).length;
   const cold = leads.filter((l) => (l.score || 0) < 45).length;
   const contacted = leads.filter((l) => l.status === 'contacted').length;
   const qualified = leads.filter((l) => l.status === 'qualified').length;
@@ -124,8 +124,8 @@ function buildWeeklyData(leads: Record<string, any>[]) {
     weeks.push({
       week: `KW${getWeek(start)}`,
       total: week.length,
-      hot: week.filter((l) => (l.score || 0) >= 75).length,
-      warm: week.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 75).length,
+      hot: week.filter((l) => (l.score || 0) >= 70).length,
+      warm: week.filter((l) => (l.score || 0) >= 45 && (l.score || 0) < 70).length,
       cold: week.filter((l) => (l.score || 0) < 45).length,
     });
   }

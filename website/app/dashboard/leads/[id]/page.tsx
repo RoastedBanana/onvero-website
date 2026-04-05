@@ -240,8 +240,8 @@ export default function LeadDetailPage() {
     );
   }
 
-  const scoreColor = lead.score >= 75 ? '#FF5C2E' : lead.score >= 45 ? '#F59E0B' : '#6B7AFF';
-  const tierLabel = lead.tier?.toUpperCase() ?? (lead.score >= 75 ? 'HOT' : lead.score >= 45 ? 'WARM' : 'COLD');
+  const scoreColor = lead.score >= 70 ? '#FF5C2E' : lead.score >= 45 ? '#F59E0B' : '#6B7AFF';
+  const tierLabel = lead.tier?.toUpperCase() ?? (lead.score >= 70 ? 'HOT' : lead.score >= 45 ? 'WARM' : 'COLD');
   const bd = lead.scoreBreakdown;
   const st = STATUS_OPTIONS.find((o) => o.value === lead.status) ?? STATUS_OPTIONS[0];
 
@@ -627,21 +627,22 @@ export default function LeadDetailPage() {
                   }}
                 >
                   {aiError && (
-                    <div style={{
-                      background: 'rgba(239,68,68,0.1)',
-                      border: '1px solid rgba(239,68,68,0.25)',
-                      borderRadius: 6,
-                      padding: '8px 12px',
-                      marginBottom: 10,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}>
+                    <div
+                      style={{
+                        background: 'rgba(239,68,68,0.1)',
+                        border: '1px solid rgba(239,68,68,0.25)',
+                        borderRadius: 6,
+                        padding: '8px 12px',
+                        marginBottom: 10,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
                       <div
                         style={{ fontSize: 12, color: '#ef4444', lineHeight: 1.6, flex: 1 }}
-                        dangerouslySetInnerHTML={{ __html: aiError
-                          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\n/g, '<br>')
+                        dangerouslySetInnerHTML={{
+                          __html: aiError.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'),
                         }}
                       />
                       <button
@@ -663,12 +664,15 @@ export default function LeadDetailPage() {
                     <>
                       <style>{`@keyframes aiShimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
                       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2 }}>
-                        <div style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background: 'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.12) 40%, rgba(107,122,255,0.22) 50%, rgba(107,122,255,0.12) 60%, transparent 100%)',
-                          animation: 'aiShimmer 1.5s ease-in-out infinite',
-                        }} />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background:
+                              'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.12) 40%, rgba(107,122,255,0.22) 50%, rgba(107,122,255,0.12) 60%, transparent 100%)',
+                            animation: 'aiShimmer 1.5s ease-in-out infinite',
+                          }}
+                        />
                       </div>
                     </>
                   )}
@@ -703,7 +707,12 @@ export default function LeadDetailPage() {
                       <style>{`.email-draft-content p { margin: 0 0 0.8em; } .email-draft-content br { display: block; content: ""; margin-top: 0.4em; }`}</style>
                       <div
                         className="email-draft-content"
-                        style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, whiteSpace: 'pre-line' }}
+                        style={{
+                          fontSize: 13,
+                          color: 'rgba(255,255,255,0.7)',
+                          lineHeight: 1.7,
+                          whiteSpace: 'pre-line',
+                        }}
                         dangerouslySetInnerHTML={{ __html: editedDraft || lead.emailDraft || '' }}
                       />
                     </>
@@ -720,7 +729,7 @@ export default function LeadDetailPage() {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ email_draft_body: editedDraft }),
                             });
-                            setLead((prev) => prev ? { ...prev, emailDraft: editedDraft } : prev);
+                            setLead((prev) => (prev ? { ...prev, emailDraft: editedDraft } : prev));
                           }
                         } else {
                           setEditedDraft(editedDraft || lead.emailDraft || '');
@@ -1014,120 +1023,150 @@ export default function LeadDetailPage() {
             )}
 
             {/* Activities */}
-            {activities.length > 0 && (() => {
-              const totalPages = Math.ceil(activities.length / ACTIVITIES_PER_PAGE);
-              const paged = activities.slice(activityPage * ACTIVITIES_PER_PAGE, (activityPage + 1) * ACTIVITIES_PER_PAGE);
-              return (
-              <Card title={`Aktivitäten (${activities.length})`}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  {paged.map((a, i) => {
-                    const dimmed = a.type === 'task' || a.type === 'ai_analysis';
-                    const intBg = a.interested === true
-                      ? 'rgba(34,197,94,0.08)'
-                      : a.interested === false
-                        ? 'rgba(239,68,68,0.08)'
-                        : 'transparent';
-                    const intBorder = a.interested === true
-                      ? '1px solid rgba(34,197,94,0.15)'
-                      : a.interested === false
-                        ? '1px solid rgba(239,68,68,0.15)'
-                        : 'none';
-                    return (
-                    <div
-                      key={a.id}
-                      style={{
-                        padding: '8px',
-                        marginBottom: i < paged.length - 1 ? 4 : 0,
-                        borderRadius: a.interested != null ? 6 : 0,
-                        background: intBg,
-                        border: intBorder,
-                        borderBottom: a.interested == null && i < paged.length - 1 ? '1px solid rgba(255,255,255,0.04)' : undefined,
-                        opacity: dimmed ? 0.4 : 1,
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ fontSize: 12, color: dimmed ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.7)', flex: 1 }}>{a.title}</div>
-                        {(a.content_full_title || a.content_full_content) && (
-                          <button
-                            onClick={() => setViewActivity(a)}
+            {activities.length > 0 &&
+              (() => {
+                const totalPages = Math.ceil(activities.length / ACTIVITIES_PER_PAGE);
+                const paged = activities.slice(
+                  activityPage * ACTIVITIES_PER_PAGE,
+                  (activityPage + 1) * ACTIVITIES_PER_PAGE
+                );
+                return (
+                  <Card title={`Aktivitäten (${activities.length})`}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                      {paged.map((a, i) => {
+                        const dimmed = a.type === 'task' || a.type === 'ai_analysis';
+                        const intBg =
+                          a.interested === true
+                            ? 'rgba(34,197,94,0.08)'
+                            : a.interested === false
+                              ? 'rgba(239,68,68,0.08)'
+                              : 'transparent';
+                        const intBorder =
+                          a.interested === true
+                            ? '1px solid rgba(34,197,94,0.15)'
+                            : a.interested === false
+                              ? '1px solid rgba(239,68,68,0.15)'
+                              : 'none';
+                        return (
+                          <div
+                            key={a.id}
                             style={{
-                              fontSize: 10,
-                              color: '#6B7AFF',
-                              background: 'rgba(107,122,255,0.1)',
-                              border: '1px solid rgba(107,122,255,0.2)',
-                              borderRadius: 5,
-                              padding: '2px 8px',
-                              cursor: 'pointer',
-                              flexShrink: 0,
+                              padding: '8px',
+                              marginBottom: i < paged.length - 1 ? 4 : 0,
+                              borderRadius: a.interested != null ? 6 : 0,
+                              background: intBg,
+                              border: intBorder,
+                              borderBottom:
+                                a.interested == null && i < paged.length - 1
+                                  ? '1px solid rgba(255,255,255,0.04)'
+                                  : undefined,
+                              opacity: dimmed ? 0.4 : 1,
                             }}
                           >
-                            Ansehen
-                          </button>
-                        )}
-                      </div>
-                      {a.content && (
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{a.content}</div>
-                      )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div
+                                style={{
+                                  fontSize: 12,
+                                  color: dimmed ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.7)',
+                                  flex: 1,
+                                }}
+                              >
+                                {a.title}
+                              </div>
+                              {(a.content_full_title || a.content_full_content) && (
+                                <button
+                                  onClick={() => setViewActivity(a)}
+                                  style={{
+                                    fontSize: 10,
+                                    color: '#6B7AFF',
+                                    background: 'rgba(107,122,255,0.1)',
+                                    border: '1px solid rgba(107,122,255,0.2)',
+                                    borderRadius: 5,
+                                    padding: '2px 8px',
+                                    cursor: 'pointer',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  Ansehen
+                                </button>
+                              )}
+                            </div>
+                            {a.content && (
+                              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
+                                {a.content}
+                              </div>
+                            )}
+                            <div
+                              style={{
+                                fontSize: 10,
+                                color: 'rgba(255,255,255,0.2)',
+                                marginTop: 3,
+                                fontFamily: 'var(--font-dm-mono)',
+                              }}
+                            >
+                              {new Date(a.created_at).toLocaleDateString('de-DE', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {totalPages > 1 && (
                       <div
                         style={{
-                          fontSize: 10,
-                          color: 'rgba(255,255,255,0.2)',
-                          marginTop: 3,
-                          fontFamily: 'var(--font-dm-mono)',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginTop: 10,
+                          paddingTop: 10,
+                          borderTop: '1px solid rgba(255,255,255,0.06)',
                         }}
                       >
-                        {new Date(a.created_at).toLocaleDateString('de-DE', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        <button
+                          disabled={activityPage === 0}
+                          onClick={() => setActivityPage((p) => p - 1)}
+                          style={{
+                            fontSize: 11,
+                            color: activityPage === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: 5,
+                            padding: '3px 10px',
+                            cursor: activityPage === 0 ? 'default' : 'pointer',
+                          }}
+                        >
+                          ← Zurück
+                        </button>
+                        <span
+                          style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-mono)' }}
+                        >
+                          {activityPage + 1} / {totalPages}
+                        </span>
+                        <button
+                          disabled={activityPage >= totalPages - 1}
+                          onClick={() => setActivityPage((p) => p + 1)}
+                          style={{
+                            fontSize: 11,
+                            color: activityPage >= totalPages - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: 5,
+                            padding: '3px 10px',
+                            cursor: activityPage >= totalPages - 1 ? 'default' : 'pointer',
+                          }}
+                        >
+                          Weiter →
+                        </button>
                       </div>
-                    </div>
-                    );
-                  })}
-                </div>
-                {totalPages > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <button
-                      disabled={activityPage === 0}
-                      onClick={() => setActivityPage((p) => p - 1)}
-                      style={{
-                        fontSize: 11,
-                        color: activityPage === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: 5,
-                        padding: '3px 10px',
-                        cursor: activityPage === 0 ? 'default' : 'pointer',
-                      }}
-                    >
-                      ← Zurück
-                    </button>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-mono)' }}>
-                      {activityPage + 1} / {totalPages}
-                    </span>
-                    <button
-                      disabled={activityPage >= totalPages - 1}
-                      onClick={() => setActivityPage((p) => p + 1)}
-                      style={{
-                        fontSize: 11,
-                        color: activityPage >= totalPages - 1 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.5)',
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: 5,
-                        padding: '3px 10px',
-                        cursor: activityPage >= totalPages - 1 ? 'default' : 'pointer',
-                      }}
-                    >
-                      Weiter →
-                    </button>
-                  </div>
-                )}
-              </Card>
-              );
-            })()}
+                    )}
+                  </Card>
+                );
+              })()}
 
             {/* Meta */}
             <Card title="Metadaten">
@@ -1158,7 +1197,9 @@ export default function LeadDetailPage() {
       {/* AI Rewrite Modal */}
       {aiModalOpen && (
         <div
-          onClick={() => { if (!aiLoading) setAiModalOpen(false); }}
+          onClick={() => {
+            if (!aiLoading) setAiModalOpen(false);
+          }}
           style={{
             position: 'fixed',
             inset: 0,
@@ -1180,9 +1221,7 @@ export default function LeadDetailPage() {
               width: '90%',
             }}
           >
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 14 }}>
-              ✦ KI-Änderung
-            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 14 }}>✦ KI-Änderung</div>
             <textarea
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
@@ -1205,7 +1244,10 @@ export default function LeadDetailPage() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
               <button
                 disabled={aiLoading}
-                onClick={() => { setAiModalOpen(false); setAiPrompt(''); }}
+                onClick={() => {
+                  setAiModalOpen(false);
+                  setAiPrompt('');
+                }}
                 style={{
                   fontSize: 12,
                   color: 'rgba(255,255,255,0.4)',
@@ -1231,7 +1273,13 @@ export default function LeadDetailPage() {
                   fetch('/api/leads/ai-rewrite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, subject, body, lead_id: lead?.id, tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90' }),
+                    body: JSON.stringify({
+                      prompt,
+                      subject,
+                      body,
+                      lead_id: lead?.id,
+                      tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90',
+                    }),
                   })
                     .then(async (res) => {
                       const data = await res.json().catch(() => ({}));

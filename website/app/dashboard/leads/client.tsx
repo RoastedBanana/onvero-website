@@ -259,7 +259,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
 
         {/* ── HEUTE ZU TUN ── */}
         {(() => {
-          const hotUntouched = leads.filter((l) => l.score >= 75 && l.status !== 'contacted').slice(0, 3);
+          const hotUntouched = leads.filter((l) => l.score >= 70 && l.status !== 'contacted').slice(0, 3);
           if (hotUntouched.length === 0) return null;
           return (
             <div
