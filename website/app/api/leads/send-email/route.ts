@@ -10,8 +10,8 @@ export async function POST(req: NextRequest) {
     if (!success) return NextResponse.json({ error: 'Zu viele Anfragen' }, { status: 429 });
     const { lead_id, tenant_id, to, subject, html, text } = await req.json();
 
-    if (!to || !subject || (!html && !text)) {
-      return NextResponse.json({ error: 'to, subject, and html/text are required' }, { status: 400 });
+    if (!to || (!html && !text)) {
+      return NextResponse.json({ error: 'to and html/text are required' }, { status: 400 });
     }
 
     // Get tenant domain from Supabase
@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
 
     const fromField = `${fromName} <${integration.email_resend.trim()}>`;
 
+    // Get logo URL from tenant_preferences
+    const { data: prefs } = await supabase
+      .from('tenant_preferences')
+      .select('logo_url')
+      .eq('tenant_id', tenant_id)
+      .single();
+
     // Send via n8n webhook
     const res = await fetch(process.env.N8N_WEBHOOK_SEND_EMAIL!, {
       method: 'POST',
@@ -57,6 +64,7 @@ export async function POST(req: NextRequest) {
         text: text || undefined,
         tenant_id,
         lead_id,
+        logo_url: prefs?.logo_url || undefined,
       }),
     });
 

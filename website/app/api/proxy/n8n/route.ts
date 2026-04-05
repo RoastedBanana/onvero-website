@@ -11,6 +11,7 @@ const WEBHOOK_MAP: Record<string, string> = {
   'chat': 'N8N_WEBHOOK_CHAT',
   'chat-image': 'N8N_WEBHOOK_CHAT_IMAGE',
   'meeting-summarizer': 'N8N_WEBHOOK_MEETING_SUMMARIZER',
+  'vector-store': 'N8N_WEBHOOK_VECTOR_STORE',
 };
 
 export async function POST(req: NextRequest) {
