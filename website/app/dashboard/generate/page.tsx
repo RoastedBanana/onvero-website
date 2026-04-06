@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import PageHeader from '@/components/ui/PageHeader';
+import { HowItWorks } from '@/components/ui/how-it-works';
+import { PenLine, Brain, Rocket } from 'lucide-react';
 import GenerateForm from './components/GenerateForm';
 import type { FormData } from './components/GenerateForm';
 import ReasoningDisplay from './components/ReasoningDisplay';
@@ -68,7 +70,45 @@ export default function GeneratePage() {
           <PageHeader title="Leads generieren" subtitle="KI-gestützte Lead-Recherche" />
         </div>
 
-        {state === 'form' && <GenerateForm initialData={formData} onSubmit={handleSubmit} />}
+        {state === 'form' && (
+          <>
+            <div style={{ marginBottom: 24, maxWidth: 560, margin: '0 auto 24px' }}>
+              <HowItWorks
+                title="So generierst du Leads"
+                compact
+                steps={[
+                  {
+                    icon: <PenLine className="w-5 h-5 text-white/50" />,
+                    title: 'Beschreiben',
+                    description: 'Beschreibe in eigenen Worten welche Kunden du suchst.',
+                    benefits: ['Freitext wie im Chat', 'Branche, Größe, Technologien', 'So spezifisch wie du willst'],
+                  },
+                  {
+                    icon: <Brain className="w-5 h-5 text-[#6B7AFF]" />,
+                    title: 'KI analysiert',
+                    description: 'Die KI verfeinert deine Suche und zeigt dir die Strategie.',
+                    benefits: [
+                      'Keywords & Industrien werden optimiert',
+                      'Konfidenz-Score zeigt Qualität',
+                      'Du kannst anpassen vor dem Start',
+                    ],
+                  },
+                  {
+                    icon: <Rocket className="w-5 h-5 text-[#22C55E]" />,
+                    title: 'Leads erscheinen',
+                    description: 'Die Pipeline läuft ~2 Min. im Hintergrund, Leads erscheinen automatisch.',
+                    benefits: [
+                      'Apollo-Suche + Website-Analyse',
+                      'Jeder Lead wird KI-gescored',
+                      'Personalisierte E-Mails werden erstellt',
+                    ],
+                  },
+                ]}
+              />
+            </div>
+            <GenerateForm initialData={formData} onSubmit={handleSubmit} />
+          </>
+        )}
         {state === 'loading' && <LoadingState />}
         {state === 'reasoning' && result && (
           <ReasoningDisplay

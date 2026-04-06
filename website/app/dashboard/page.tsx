@@ -6,7 +6,8 @@ import { DottedSurface } from '@/components/ui/dotted-surface';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import type { BentoItem } from '@/components/ui/bento-grid';
-import { Users, BarChart2, Zap } from 'lucide-react';
+import { HowItWorks } from '@/components/ui/how-it-works';
+import { Users, BarChart2, Zap, Target, Mail, TrendingUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat';
@@ -488,9 +489,50 @@ export default function DashboardPage() {
 
         {/* ── Feature Cards (BentoGrid) ── */}
         {!hasMessages && (
-          <div style={{ padding: '0 20px 48px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
-            <BentoGrid items={bentoItems} />
-          </div>
+          <>
+            <div style={{ padding: '0 20px 24px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+              <BentoGrid items={bentoItems} />
+            </div>
+            <div style={{ padding: '0 20px 48px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+              <HowItWorks
+                title="Erste Schritte"
+                subtitle="In 3 Schritten zu deinen ersten qualifizierten Leads"
+                compact
+                steps={[
+                  {
+                    icon: <Target className="w-5 h-5 text-[#F59E0B]" />,
+                    title: 'Zielkunden beschreiben',
+                    description: 'Gehe zu "Generate" und beschreibe in eigenen Worten welche Kunden du suchst.',
+                    benefits: [
+                      'Freitext oder strukturierte Suche',
+                      'KI optimiert deine Anfrage',
+                      'Apollo + Google Maps als Quellen',
+                    ],
+                  },
+                  {
+                    icon: <Mail className="w-5 h-5 text-[#6B7AFF]" />,
+                    title: 'Leads prüfen & kontaktieren',
+                    description: 'Öffne deine Leads, prüfe den KI-Score und nutze die vorbereitete E-Mail.',
+                    benefits: [
+                      'HOT Leads (≥70) zuerst kontaktieren',
+                      'E-Mail-Draft per Klick kopieren',
+                      'KI-Analyse erklärt warum der Lead passt',
+                    ],
+                  },
+                  {
+                    icon: <TrendingUp className="w-5 h-5 text-[#22C55E]" />,
+                    title: 'Pipeline aufbauen',
+                    description: 'Tracke deinen Fortschritt in Analytics und generiere regelmäßig neue Leads.',
+                    benefits: [
+                      'Status-Tracking pro Lead',
+                      'Analytics zeigt Konversion',
+                      'Profil in Settings verfeinern',
+                    ],
+                  },
+                ]}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>
