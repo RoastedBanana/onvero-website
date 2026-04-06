@@ -11,7 +11,6 @@ import ScoreDonut from '@/components/leads/ScoreDonut';
 import ConversionFunnel from '@/components/leads/ConversionFunnel';
 import LeadsTable from '@/components/leads/LeadsTable';
 // LeadDetailPanel removed — leads now open as full page at /dashboard/leads/[id]
-import { GeneratorStatusBanner } from '@/components/leads/GeneratorStatusBanner';
 import GenerationBanner from '@/components/leads/GenerationBanner';
 import GenerationSummaryBar from '@/components/leads/GenerationSummaryBar';
 import PageHeader from '@/components/ui/PageHeader';
@@ -167,24 +166,6 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
               />
             </div>
             <button
-              onClick={() => router.push('/dashboard/generate')}
-              className="cursor-pointer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                background: '#fff',
-                color: '#000',
-                border: 'none',
-                borderRadius: 8,
-                padding: '8px 16px',
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              ⚡ Lead Generator
-            </button>
-            <button
               style={{
                 background: 'transparent',
                 color: 'rgba(255,255,255,0.5)',
@@ -302,8 +283,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           </span>
         </div>
 
-        {/* ── GENERATOR STATUS BANNER ── */}
-        <GeneratorStatusBanner currentLeadCount={leads.length} />
+        {/* ── GENERATION HISTORY ── */}
         <GenerationBanner onStartNew={() => router.push('/dashboard/generate')} />
 
         {/* ── HEUTE ZU TUN ── */}

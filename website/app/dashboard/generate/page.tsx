@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '@/components/ui/PageHeader';
 import { HowItWorks } from '@/components/ui/how-it-works';
 import { PenLine, Brain, Rocket } from 'lucide-react';
@@ -10,6 +10,35 @@ import ReasoningDisplay from './components/ReasoningDisplay';
 import type { ReasoningResult } from './components/ReasoningDisplay';
 import GeneratingState from './components/GeneratingState';
 import LoadingState from './components/LoadingState';
+
+const HISTORY_KEY = 'onvero_generate_history';
+const LAST_INPUT_KEY = 'onvero_generate_last_input';
+
+interface HistoryEntry {
+  freetext: string;
+  date: string;
+}
+
+function loadHistory(): HistoryEntry[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveToHistory(freetext: string) {
+  if (!freetext.trim()) return;
+  const h = loadHistory().filter((e) => e.freetext !== freetext);
+  h.unshift({ freetext, date: new Date().toISOString() });
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 5)));
+}
+
+function loadLastInput(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(LAST_INPUT_KEY) ?? '';
+}
 
 type GenerateState = 'form' | 'loading' | 'reasoning' | 'generating';
 
@@ -25,10 +54,23 @@ export default function GeneratePage() {
     leadSource: 'apollo',
   });
   const [result, setResult] = useState<ReasoningResult | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  // Load last input + history on mount
+  useEffect(() => {
+    const last = loadLastInput();
+    if (last) setFormData((prev) => ({ ...prev, freetext: last }));
+    setHistory(loadHistory());
+  }, []);
 
   const handleSubmit = async (data: FormData) => {
     setFormData(data);
     setState('loading');
+    // Persist input
+    localStorage.setItem(LAST_INPUT_KEY, data.freetext);
+    saveToHistory(data.freetext);
+    setHistory(loadHistory());
+
     try {
       const res = await fetch('/api/generate/reasoning', {
         method: 'POST',
@@ -61,6 +103,10 @@ export default function GeneratePage() {
       });
       setState('reasoning');
     }
+  };
+
+  const handleHistoryClick = (entry: HistoryEntry) => {
+    setFormData((prev) => ({ ...prev, freetext: entry.freetext }));
   };
 
   return (
@@ -107,6 +153,78 @@ export default function GeneratePage() {
                 ]}
               />
             </div>
+
+            {/* History */}
+            {history.length > 0 && (
+              <div style={{ maxWidth: 560, margin: '0 auto 16px' }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'rgba(255,255,255,0.25)',
+                    marginBottom: 6,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Letzte Suchen
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {history.map((entry, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleHistoryClick(entry)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        background: 'rgba(255,255,255,0.02)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s',
+                        width: '100%',
+                        fontFamily: 'inherit',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: 'rgba(255,255,255,0.5)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          flex: 1,
+                          marginRight: 12,
+                        }}
+                      >
+                        {entry.freetext}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: 'rgba(255,255,255,0.2)',
+                          flexShrink: 0,
+                          fontFamily: 'var(--font-dm-mono)',
+                        }}
+                      >
+                        {new Date(entry.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <GenerateForm initialData={formData} onSubmit={handleSubmit} />
           </>
         )}
