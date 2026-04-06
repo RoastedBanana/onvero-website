@@ -18,6 +18,13 @@ const modes = [
   { key: 'create', label: 'Erstellen', icon: '✦' },
 ];
 
+const quickActions = [
+  { label: 'Zeig mir meine HOT Leads', icon: '🔥' },
+  { label: 'Wie ist mein Ø Score?', icon: '📊' },
+  { label: 'Neue Leads generieren', icon: '⚡' },
+  { label: 'E-Mail für Top-Lead schreiben', icon: '✉️' },
+];
+
 interface LiveStats {
   total: number;
   hot: number;
@@ -28,140 +35,29 @@ interface LiveStats {
   topLeads: { name: string; score: number }[];
   weeklyData: number[];
 }
-
 interface Message {
   role: 'user' | 'ai';
   text: string;
 }
 
-// ── Mini SVG Visualizations ──
-
-function MiniDonut({ hot, warm, cold, accent }: { hot: number; warm: number; cold: number; accent: string }) {
-  const total = hot + warm + cold || 1;
-  const r = 36;
-  const c = 2 * Math.PI * r;
-  const hotLen = (hot / total) * c;
-  const warmLen = (warm / total) * c;
-  const coldLen = (cold / total) * c;
+function AnimatedCounter({ target, color, suffix }: { target: number; color: string; suffix?: string }) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    let current = 0;
+    const step = Math.max(1, Math.floor(target / 20));
+    const t = setInterval(() => {
+      current = Math.min(current + step, target);
+      setVal(current);
+      if (current >= target) clearInterval(t);
+    }, 40);
+    return () => clearInterval(t);
+  }, [target]);
   return (
-    <svg width="100" height="100" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="8" />
-      <circle
-        cx="50"
-        cy="50"
-        r={r}
-        fill="none"
-        stroke="#FF5C2E"
-        strokeWidth="8"
-        strokeDasharray={`${hotLen} ${c}`}
-        strokeDashoffset="0"
-        transform="rotate(-90 50 50)"
-        strokeLinecap="round"
-      />
-      <circle
-        cx="50"
-        cy="50"
-        r={r}
-        fill="none"
-        stroke="#F59E0B"
-        strokeWidth="8"
-        strokeDasharray={`${warmLen} ${c}`}
-        strokeDashoffset={`${-hotLen}`}
-        transform="rotate(-90 50 50)"
-        strokeLinecap="round"
-      />
-      <circle
-        cx="50"
-        cy="50"
-        r={r}
-        fill="none"
-        stroke={accent}
-        strokeWidth="8"
-        strokeDasharray={`${coldLen} ${c}`}
-        strokeDashoffset={`${-(hotLen + warmLen)}`}
-        transform="rotate(-90 50 50)"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
-      <text
-        x="50"
-        y="47"
-        textAnchor="middle"
-        fill="#fff"
-        fontSize="18"
-        fontWeight="700"
-        fontFamily="var(--font-dm-mono)"
-      >
-        {hot + warm + cold}
-      </text>
-      <text x="50" y="62" textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize="8">
-        LEADS
-      </text>
-    </svg>
-  );
-}
-
-function MiniBarChart({ data, accent }: { data: number[]; accent: string }) {
-  const max = Math.max(...data, 1);
-  const w = 14;
-  const gap = 4;
-  const h = 70;
-  return (
-    <svg width={data.length * (w + gap)} height={h + 16} viewBox={`0 0 ${data.length * (w + gap)} ${h + 16}`}>
-      {data.map((v, i) => {
-        const barH = Math.max((v / max) * h, 2);
-        return (
-          <g key={i}>
-            <rect
-              x={i * (w + gap)}
-              y={h - barH}
-              width={w}
-              height={barH}
-              rx="3"
-              fill={i === data.length - 1 ? accent : `${accent}40`}
-            />
-          </g>
-        );
-      })}
-      {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].slice(0, data.length).map((d, i) => (
-        <text
-          key={d}
-          x={i * (w + gap) + w / 2}
-          y={h + 12}
-          textAnchor="middle"
-          fill="rgba(255,255,255,0.15)"
-          fontSize="7"
-        >
-          {d}
-        </text>
-      ))}
-    </svg>
-  );
-}
-
-function MiniPipeline({ accent }: { accent: string }) {
-  const steps = [
-    { label: 'KI', pct: 100 },
-    { label: 'Apollo', pct: 85 },
-    { label: 'Score', pct: 60 },
-    { label: 'E-Mail', pct: 40 },
-  ];
-  return (
-    <svg width="130" height="80" viewBox="0 0 130 80">
-      {steps.map((s, i) => {
-        const y = i * 19;
-        const w = (s.pct / 100) * 110;
-        return (
-          <g key={i}>
-            <rect x="0" y={y} width="110" height="14" rx="3" fill="rgba(255,255,255,0.03)" />
-            <rect x="0" y={y} width={w} height="14" rx="3" fill={`${accent}${i === 0 ? '' : '60'}`} />
-            <text x="115" y={y + 11} fill="rgba(255,255,255,0.25)" fontSize="8" fontFamily="var(--font-dm-mono)">
-              {s.label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <span style={{ color, fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>
+      {val}
+      {suffix}
+    </span>
   );
 }
 
@@ -178,13 +74,18 @@ export default function DashboardPage() {
     avg: 0,
     recent: 0,
     topLeads: [],
-    weeklyData: [3, 5, 2, 8, 4, 1, 6],
+    weeklyData: [0, 0, 0, 0, 0, 0, 0],
   });
+  const [mounted, setMounted] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const hasMessages = messages.length > 0;
+
+  useEffect(() => {
+    setTimeout(() => setMounted(true), 100);
+  }, []);
 
   useEffect(() => {
     fetch('/api/leads')
@@ -205,7 +106,6 @@ export default function DashboardPage() {
           .sort((a: Record<string, number>, b: Record<string, number>) => (b.score ?? 0) - (a.score ?? 0))
           .slice(0, 3)
           .map((l: Record<string, string | number>) => ({ name: String(l.company_name), score: Number(l.score ?? 0) }));
-        // Fake weekly breakdown from recent data
         const days = [0, 0, 0, 0, 0, 0, 0];
         leads.forEach((l: Record<string, string>) => {
           const d = new Date(l.created_at).getDay();
@@ -228,16 +128,16 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
-    const text = input.trim();
+  const handleSend = async (text?: string) => {
+    const msg = (text ?? input).trim();
+    if (!msg || loading) return;
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = '56px';
-    setMessages((prev) => [...prev, { role: 'user', text }]);
+    setMessages((prev) => [...prev, { role: 'user', text: msg }]);
     setLoading(true);
     try {
       const form = new FormData();
-      form.append('chatInput', text);
+      form.append('chatInput', msg);
       form.append('sessionId', sessionId);
       const res = await fetch(WEBHOOK, { method: 'POST', body: form });
       const json = await res.json();
@@ -311,10 +211,17 @@ export default function DashboardPage() {
         overflow: 'hidden',
       }}
     >
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes glowPulse{0%,100%{opacity:0.4}50%{opacity:0.8}}
+        @keyframes borderGlow{0%{border-color:rgba(255,255,255,0.08)}50%{border-color:rgba(107,122,255,0.2)}100%{border-color:rgba(255,255,255,0.08)}}
+        @keyframes chipSlide{from{opacity:0;transform:translateY(8px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+      `}</style>
+
       {!hasMessages && <DottedSurface />}
 
       <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        {/* ── Chat ── */}
+        {/* ── Chat Section ── */}
         <div
           style={{
             flex: 1,
@@ -383,14 +290,49 @@ export default function DashboardPage() {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                paddingTop: '15vh',
-                paddingBottom: 16,
+                paddingTop: '12vh',
+                paddingBottom: 12,
               }}
             >
-              <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8, letterSpacing: '-0.02em' }}>
+              {/* Animated heading */}
+              <h1
+                style={{
+                  fontSize: 34,
+                  fontWeight: 700,
+                  marginBottom: 6,
+                  letterSpacing: '-0.03em',
+                  animation: mounted ? 'fadeUp 0.6s ease forwards' : 'none',
+                  opacity: mounted ? 1 : 0,
+                }}
+              >
                 Wie kann ich helfen?
               </h1>
-              <div style={{ display: 'flex', gap: 6 }}>
+
+              {/* Live stats bar */}
+              {stats.total > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 16,
+                    marginBottom: 14,
+                    fontSize: 12,
+                    animation: mounted ? 'fadeUp 0.6s ease 0.15s both' : 'none',
+                  }}
+                >
+                  <span style={{ color: 'rgba(255,255,255,0.25)' }}>
+                    <AnimatedCounter target={stats.total} color="rgba(255,255,255,0.5)" /> Leads
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.25)' }}>
+                    <AnimatedCounter target={stats.hot} color="#FF5C2E" /> HOT
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.25)' }}>
+                    Ø <AnimatedCounter target={stats.avg} color="rgba(255,255,255,0.5)" />
+                  </span>
+                </div>
+              )}
+
+              {/* Mode pills */}
+              <div style={{ display: 'flex', gap: 6, animation: mounted ? 'fadeUp 0.6s ease 0.25s both' : 'none' }}>
                 {modes.map((m) => (
                   <button
                     key={m.key}
@@ -404,7 +346,7 @@ export default function DashboardPage() {
                       border: mode === m.key ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.07)',
                       background: mode === m.key ? 'rgba(255,255,255,0.08)' : 'transparent',
                       color: mode === m.key ? '#fff' : 'rgba(255,255,255,0.35)',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.2s',
                       fontFamily: 'inherit',
                     }}
                   >
@@ -416,13 +358,20 @@ export default function DashboardPage() {
           )}
 
           {/* Input */}
-          <div style={{ paddingBottom: hasMessages ? 20 : 16, flexShrink: 0 }}>
+          <div
+            style={{
+              paddingBottom: hasMessages ? 20 : 8,
+              flexShrink: 0,
+              animation: !hasMessages && mounted ? 'fadeUp 0.6s ease 0.35s both' : 'none',
+            }}
+          >
             <div
               style={{
                 background: '#111',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 14,
                 overflow: 'hidden',
+                animation: !hasMessages ? 'borderGlow 4s ease-in-out infinite' : 'none',
               }}
             >
               <textarea
@@ -464,7 +413,7 @@ export default function DashboardPage() {
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 12px 12px' }}
               >
                 <button
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   style={{
                     width: 32,
                     height: 32,
@@ -477,7 +426,7 @@ export default function DashboardPage() {
                     justifyContent: 'center',
                     color: input.trim() ? '#080808' : 'rgba(255,255,255,0.2)',
                     fontSize: 14,
-                    transition: 'all 0.15s',
+                    transition: 'all 0.2s',
                   }}
                 >
                   ▸
@@ -485,15 +434,67 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          {/* Quick action chips — only on welcome */}
+          {!hasMessages && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, paddingBottom: 24 }}>
+              {quickActions.map((qa, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSend(qa.label)}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'rgba(255,255,255,0.02)',
+                    color: 'rgba(255,255,255,0.4)',
+                    transition: 'all 0.2s',
+                    fontFamily: 'inherit',
+                    animation: mounted ? `chipSlide 0.4s ease ${0.5 + i * 0.08}s both` : 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                  }}
+                >
+                  {qa.icon} {qa.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* ── Feature Cards (BentoGrid) ── */}
+        {/* ── Feature Cards + Getting Started ── */}
         {!hasMessages && (
           <>
-            <div style={{ padding: '0 20px 24px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+            <div
+              style={{
+                padding: '0 20px 24px',
+                maxWidth: 1100,
+                margin: '0 auto',
+                width: '100%',
+                animation: mounted ? 'fadeUp 0.6s ease 0.6s both' : 'none',
+              }}
+            >
               <BentoGrid items={bentoItems} />
             </div>
-            <div style={{ padding: '0 20px 48px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+            <div
+              style={{
+                padding: '0 20px 48px',
+                maxWidth: 1100,
+                margin: '0 auto',
+                width: '100%',
+                animation: mounted ? 'fadeUp 0.6s ease 0.7s both' : 'none',
+              }}
+            >
               <HowItWorks
                 storageKey="home"
                 title="Erste Schritte"
