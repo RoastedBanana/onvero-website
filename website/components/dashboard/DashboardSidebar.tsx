@@ -29,9 +29,7 @@ interface UserInfo {
 const NAV_ITEMS = [
   { href: '/dashboard', icon: Home, label: 'Home' },
   { href: '/dashboard/website', icon: Globe, label: 'Website' },
-  { href: '/dashboard/workflows', icon: GitBranch, label: 'Workflows' },
   { href: '/dashboard/meetings', icon: Calendar, label: 'Meetings' },
-  { href: '/dashboard/support', icon: Headphones, label: 'Support' },
   { href: '/dashboard/leads', icon: Users, label: 'Leads' },
   { href: '/dashboard/generate', icon: Zap, label: 'Generate' },
   { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics' },
