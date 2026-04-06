@@ -4,6 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DottedSurface } from '@/components/ui/dotted-surface';
 import { TextShimmer } from '@/components/ui/text-shimmer';
+import { BentoGrid } from '@/components/ui/bento-grid';
+import type { BentoItem } from '@/components/ui/bento-grid';
+import { Users, BarChart2, Zap } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat';
@@ -166,7 +169,6 @@ export default function DashboardPage() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [stats, setStats] = useState<LiveStats>({
     total: 0,
     hot: 0,
@@ -247,6 +249,55 @@ export default function DashboardPage() {
   };
 
   const scoreColor = (s: number) => (s >= 70 ? '#FF5C2E' : s >= 45 ? '#F59E0B' : '#6B7AFF');
+
+  const bentoItems: BentoItem[] = [
+    {
+      title: 'Leads',
+      meta: `${stats.total} gesamt`,
+      description:
+        stats.topLeads.length > 0
+          ? stats.topLeads.map((l) => `${l.name} — ${l.score}`).join(' · ')
+          : 'KI-qualifizierte B2B-Kontakte mit Score-Bewertung',
+      icon: <Users className="w-4 h-4 text-[#6B7AFF]" />,
+      status: `${stats.hot} HOT`,
+      tags: [`${stats.hot} HOT`, `${stats.warm} WARM`, `Ø ${stats.avg}`],
+      cta: 'Leads öffnen →',
+      colSpan: 2,
+      hasPersistentHover: true,
+      onClick: () => router.push('/dashboard/leads'),
+    },
+    {
+      title: 'Analytics',
+      meta: `Ø ${stats.avg}`,
+      description: 'Echtzeit-Kennzahlen, Pipeline-Analyse und KI-Performance auf einen Blick',
+      icon: <BarChart2 className="w-4 h-4 text-emerald-500" />,
+      status: `${stats.recent} neue`,
+      tags: ['Pipeline', 'Score', 'Traffic'],
+      cta: 'Dashboard öffnen →',
+      onClick: () => router.push('/dashboard/analytics'),
+    },
+    {
+      title: 'Generate',
+      meta: 'KI-Pipeline',
+      description: 'Beschreibe deine Zielkunden — die KI findet, analysiert und bewertet passende Leads',
+      icon: <Zap className="w-4 h-4 text-amber-500" />,
+      status: 'Bereit',
+      tags: ['Freitext', 'Apollo', 'Google Maps'],
+      cta: 'Leads generieren →',
+      colSpan: 2,
+      onClick: () => router.push('/dashboard/generate'),
+    },
+    {
+      title: 'Business AI',
+      meta: 'Chat',
+      description: 'Dein persönlicher KI-Assistent für Geschäftsfragen, Analysen und Automatisierung',
+      icon: <span className="text-purple-400 text-sm">✦</span>,
+      status: 'Live',
+      tags: ['Fragen', 'Suchen', 'Erstellen'],
+      cta: 'Chat starten →',
+      onClick: () => router.push('/dashboard/business-ai'),
+    },
+  ];
 
   return (
     <div
@@ -435,359 +486,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Feature Cards ── */}
+        {/* ── Feature Cards (BentoGrid) ── */}
         {!hasMessages && (
-          <div style={{ padding: '0 40px 48px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-              {/* ── LEADS CARD ── */}
-              <div
-                onClick={() => router.push('/dashboard/leads')}
-                onMouseEnter={() => setHoveredCard('leads')}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  background: hoveredCard === 'leads' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${hoveredCard === 'leads' ? 'rgba(107,122,255,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                  borderRadius: 16,
-                  padding: '22px 24px',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s',
-                  transform: hoveredCard === 'leads' ? 'translateY(-3px)' : 'none',
-                  minHeight: 260,
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}
-                >
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>Leads</div>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: hoveredCard === 'leads' ? '#6B7AFF' : 'rgba(255,255,255,0.15)',
-                      transition: 'color 0.2s',
-                    }}
-                  >
-                    View All →
-                  </span>
-                </div>
-                {/* Visual: Donut + Top Leads */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 }}>
-                  <MiniDonut hot={stats.hot} warm={stats.warm} cold={stats.cold} accent="#6B7AFF" />
-                  <div style={{ flex: 1 }}>
-                    {stats.topLeads.map((l, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '5px 0',
-                          borderBottom: i < stats.topLeads.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 11,
-                            color: 'rgba(255,255,255,0.5)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            maxWidth: 120,
-                          }}
-                        >
-                          {l.name}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: scoreColor(l.score),
-                            fontFamily: 'var(--font-dm-mono)',
-                          }}
-                        >
-                          {l.score}
-                        </span>
-                      </div>
-                    ))}
-                    {stats.topLeads.length === 0 && (
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.15)' }}>Laden...</div>
-                    )}
-                  </div>
-                </div>
-                {/* Tags */}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 5,
-                    flexWrap: 'wrap',
-                    borderTop: '1px solid rgba(255,255,255,0.05)',
-                    paddingTop: 10,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(255,92,46,0.1)',
-                      color: '#FF5C2E',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {stats.hot} HOT
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(245,158,11,0.1)',
-                      color: '#F59E0B',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {stats.warm} WARM
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(107,122,255,0.1)',
-                      color: '#6B7AFF',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {stats.cold} COLD
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(255,255,255,0.04)',
-                      color: 'rgba(255,255,255,0.3)',
-                    }}
-                  >
-                    Ø {stats.avg}
-                  </span>
-                </div>
-              </div>
-
-              {/* ── ANALYTICS CARD ── */}
-              <div
-                onClick={() => router.push('/dashboard/analytics')}
-                onMouseEnter={() => setHoveredCard('analytics')}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  background: hoveredCard === 'analytics' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${hoveredCard === 'analytics' ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                  borderRadius: 16,
-                  padding: '22px 24px',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s',
-                  transform: hoveredCard === 'analytics' ? 'translateY(-3px)' : 'none',
-                  minHeight: 260,
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}
-                >
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>Analytics</div>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: hoveredCard === 'analytics' ? '#22C55E' : 'rgba(255,255,255,0.15)',
-                      transition: 'color 0.2s',
-                    }}
-                  >
-                    View All →
-                  </span>
-                </div>
-                {/* Visual: Bar Chart + Stats */}
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 12,
-                    marginBottom: 14,
-                  }}
-                >
-                  <MiniBarChart data={stats.weeklyData} accent="#22C55E" />
-                  <div style={{ display: 'flex', gap: 20, width: '100%', justifyContent: 'center' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div
-                        style={{ fontSize: 22, fontWeight: 700, color: '#22C55E', fontFamily: 'var(--font-dm-mono)' }}
-                      >
-                        {stats.recent}
-                      </div>
-                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)' }}>diese Woche</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div
-                        style={{
-                          fontSize: 22,
-                          fontWeight: 700,
-                          color: 'rgba(255,255,255,0.7)',
-                          fontFamily: 'var(--font-dm-mono)',
-                        }}
-                      >
-                        {stats.avg}
-                      </div>
-                      <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)' }}>Ø Score</div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 5,
-                    flexWrap: 'wrap',
-                    borderTop: '1px solid rgba(255,255,255,0.05)',
-                    paddingTop: 10,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(255,255,255,0.04)',
-                      color: 'rgba(255,255,255,0.3)',
-                    }}
-                  >
-                    Pipeline
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(255,255,255,0.04)',
-                      color: 'rgba(255,255,255,0.3)',
-                    }}
-                  >
-                    Konversion
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(255,255,255,0.04)',
-                      color: 'rgba(255,255,255,0.3)',
-                    }}
-                  >
-                    Traffic
-                  </span>
-                </div>
-              </div>
-
-              {/* ── GENERATE CARD ── */}
-              <div
-                onClick={() => router.push('/dashboard/generate')}
-                onMouseEnter={() => setHoveredCard('generate')}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  background: hoveredCard === 'generate' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${hoveredCard === 'generate' ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                  borderRadius: 16,
-                  padding: '22px 24px',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s',
-                  transform: hoveredCard === 'generate' ? 'translateY(-3px)' : 'none',
-                  minHeight: 260,
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}
-                >
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>Generate</div>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: hoveredCard === 'generate' ? '#F59E0B' : 'rgba(255,255,255,0.15)',
-                      transition: 'color 0.2s',
-                    }}
-                  >
-                    View All →
-                  </span>
-                </div>
-                {/* Visual: Pipeline + Description */}
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 14,
-                    marginBottom: 14,
-                  }}
-                >
-                  <MiniPipeline accent="#F59E0B" />
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
-                      KI-gestützte Lead-Generierung
-                    </div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
-                      Freitext → KI-Analyse → Apollo → Scoring
-                    </div>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 5,
-                    flexWrap: 'wrap',
-                    borderTop: '1px solid rgba(255,255,255,0.05)',
-                    paddingTop: 10,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(245,158,11,0.08)',
-                      color: '#F59E0B',
-                    }}
-                  >
-                    KI-Analyse
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(255,255,255,0.04)',
-                      color: 'rgba(255,255,255,0.3)',
-                    }}
-                  >
-                    Apollo
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      background: 'rgba(255,255,255,0.04)',
-                      color: 'rgba(255,255,255,0.3)',
-                    }}
-                  >
-                    Google Maps
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div style={{ padding: '0 20px 48px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+            <BentoGrid items={bentoItems} />
           </div>
         )}
       </div>
