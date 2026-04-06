@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const INDUSTRIES = [
   { value: 'ecommerce', label: 'E-Commerce / Online-Handel' },
@@ -161,6 +161,13 @@ export default function GenerateForm({ initialData, onSubmit }: Props) {
   const [empMax, setEmpMax] = useState(initialData?.employeeMax ?? 500);
   const [tags, setTags] = useState<string[]>(initialData?.tags ?? []);
   const [keywords, setKeywords] = useState<string[]>(initialData?.keywords ?? []);
+  // Sync freetext when parent changes it (e.g. history click)
+  useEffect(() => {
+    if (initialData?.freetext && initialData.freetext !== freetext) {
+      setFreetext(initialData.freetext);
+    }
+  }, [initialData?.freetext]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const canSubmit = freetext.trim().length > 10;
 
   return (

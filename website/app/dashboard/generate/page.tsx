@@ -107,6 +107,13 @@ export default function GeneratePage() {
 
   const handleHistoryClick = (entry: HistoryEntry) => {
     setFormData((prev) => ({ ...prev, freetext: entry.freetext }));
+    localStorage.setItem(LAST_INPUT_KEY, entry.freetext);
+  };
+
+  const handleHistoryDelete = (entry: HistoryEntry) => {
+    const updated = loadHistory().filter((e) => e.freetext !== entry.freetext);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    setHistory(updated);
   };
 
   return (
@@ -170,22 +177,16 @@ export default function GeneratePage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {history.map((entry, i) => (
-                    <button
+                    <div
                       key={i}
-                      onClick={() => handleHistoryClick(entry)}
                       style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
                         alignItems: 'center',
-                        padding: '8px 12px',
                         borderRadius: 8,
                         border: '1px solid rgba(255,255,255,0.06)',
                         background: 'rgba(255,255,255,0.02)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
+                        overflow: 'hidden',
                         transition: 'all 0.15s',
-                        width: '100%',
-                        fontFamily: 'inherit',
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
@@ -196,30 +197,66 @@ export default function GeneratePage() {
                         e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
                       }}
                     >
-                      <span
+                      <button
+                        onClick={() => handleHistoryClick(entry)}
                         style={{
-                          fontSize: 12,
-                          color: 'rgba(255,255,255,0.5)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
                           flex: 1,
-                          marginRight: 12,
+                          padding: '8px 12px',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          fontFamily: 'inherit',
+                          minWidth: 0,
                         }}
                       >
-                        {entry.freetext}
-                      </span>
-                      <span
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: 'rgba(255,255,255,0.5)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            flex: 1,
+                            marginRight: 12,
+                          }}
+                        >
+                          {entry.freetext}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: 'rgba(255,255,255,0.2)',
+                            flexShrink: 0,
+                            fontFamily: 'var(--font-dm-mono)',
+                          }}
+                        >
+                          {new Date(entry.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => handleHistoryDelete(entry)}
+                        title="Löschen"
                         style={{
-                          fontSize: 10,
-                          color: 'rgba(255,255,255,0.2)',
+                          padding: '8px 10px',
+                          background: 'none',
+                          border: 'none',
+                          borderLeft: '1px solid rgba(255,255,255,0.05)',
+                          color: 'rgba(255,255,255,0.15)',
+                          cursor: 'pointer',
+                          fontSize: 12,
                           flexShrink: 0,
-                          fontFamily: 'var(--font-dm-mono)',
+                          transition: 'color 0.15s',
                         }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}
                       >
-                        {new Date(entry.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
-                      </span>
-                    </button>
+                        ×
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
