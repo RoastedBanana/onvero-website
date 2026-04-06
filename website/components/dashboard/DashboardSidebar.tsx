@@ -6,9 +6,7 @@ import Link from 'next/link';
 import {
   Home,
   Globe,
-  GitBranch,
   Calendar,
-  Headphones,
   Users,
   BarChart2,
   Sparkles,
@@ -26,12 +24,23 @@ interface UserInfo {
   email: string;
 }
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  icon: typeof Home;
+  label: string;
+  children?: NavItem[];
+}
+
+const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', icon: Home, label: 'Home' },
   { href: '/dashboard/website', icon: Globe, label: 'Website' },
   { href: '/dashboard/meetings', icon: Calendar, label: 'Meetings' },
-  { href: '/dashboard/leads', icon: Users, label: 'Leads' },
-  { href: '/dashboard/generate', icon: Zap, label: 'Generate' },
+  {
+    href: '/dashboard/leads',
+    icon: Users,
+    label: 'Leads',
+    children: [{ href: '/dashboard/generate', icon: Zap, label: 'Generate' }],
+  },
   { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics' },
   { href: '/dashboard/business-ai', icon: Sparkles, label: 'Business AI' },
 ];
@@ -161,54 +170,97 @@ export default function DashboardSidebar() {
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
+          const childActive = item.children?.some((c) => isActive(c.href)) ?? false;
+          const showChildren = active || childActive;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '7px 10px',
-                borderRadius: 7,
-                background: active ? 'rgba(255,255,255,0.06)' : 'transparent',
-                color: active ? '#ffffff' : 'rgba(255,255,255,0.45)',
-                fontSize: 13,
-                fontWeight: active ? 500 : 400,
-                textDecoration: 'none',
-                transition: 'background 0.15s, color 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.45)';
-                }
-              }}
-            >
-              {active && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 2,
-                    height: 16,
-                    background: '#fff',
-                    borderRadius: '0 2px 2px 0',
-                  }}
-                />
-              )}
-              <Icon size={14} strokeWidth={1.8} style={{ flexShrink: 0 }} />
-              {item.label}
-            </Link>
+            <div key={item.href}>
+              <Link
+                href={item.href}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '7px 10px',
+                  borderRadius: 7,
+                  background: active ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  color: active ? '#ffffff' : 'rgba(255,255,255,0.45)',
+                  fontSize: 13,
+                  fontWeight: active ? 500 : 400,
+                  textDecoration: 'none',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.45)';
+                  }
+                }}
+              >
+                {active && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: 2,
+                      height: 16,
+                      background: '#fff',
+                      borderRadius: '0 2px 2px 0',
+                    }}
+                  />
+                )}
+                <Icon size={14} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+                {item.label}
+              </Link>
+              {showChildren && item.children?.map((child) => {
+                const ChildIcon = child.icon;
+                const childIsActive = isActive(child.href);
+                return (
+                  <Link
+                    key={child.href}
+                    href={child.href}
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '6px 10px 6px 26px',
+                      marginTop: 1,
+                      borderRadius: 7,
+                      background: childIsActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+                      color: childIsActive ? '#ffffff' : 'rgba(255,255,255,0.4)',
+                      fontSize: 12,
+                      fontWeight: childIsActive ? 500 : 400,
+                      textDecoration: 'none',
+                      transition: 'background 0.15s, color 0.15s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!childIsActive) {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!childIsActive) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                      }
+                    }}
+                  >
+                    <ChildIcon size={12} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+                    {child.label}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
