@@ -2,8 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { DottedSurface } from '@/components/ui/dotted-surface';
+import { TextShimmer } from '@/components/ui/text-shimmer';
+import ReactMarkdown from 'react-markdown';
 
-const modes = ['Suchen', 'Fragen', 'Erstellen'];
+const WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat';
+
+const modes = [
+  { key: 'search', label: 'Suchen', icon: '⌕' },
+  { key: 'ask', label: 'Fragen', icon: '○' },
+  { key: 'create', label: 'Erstellen', icon: '✦' },
+];
 
 interface CardData {
   key: string;
@@ -12,9 +21,8 @@ interface CardData {
   href: string;
   stat: string;
   statLabel: string;
-  items: string[];
+  tags: string[];
   accent: string;
-  icon: string;
 }
 
 const defaultCards: CardData[] = [
@@ -25,9 +33,8 @@ const defaultCards: CardData[] = [
     href: '/dashboard/leads',
     stat: '—',
     statLabel: 'HOT Leads',
-    items: [],
+    tags: [],
     accent: '#6B7AFF',
-    icon: '◈',
   },
   {
     key: 'analytics',
@@ -36,9 +43,8 @@ const defaultCards: CardData[] = [
     href: '/dashboard/analytics',
     stat: '—',
     statLabel: 'Leads diese Woche',
-    items: [],
+    tags: [],
     accent: '#22C55E',
-    icon: '▦',
   },
   {
     key: 'generate',
@@ -47,52 +53,63 @@ const defaultCards: CardData[] = [
     href: '/dashboard/generate',
     stat: '—',
     statLabel: 'Letzte Kampagne',
-    items: [],
+    tags: [],
     accent: '#F59E0B',
-    icon: '✦',
   },
 ];
 
+interface Message {
+  role: 'user' | 'ai';
+  text: string;
+}
+
 export default function DashboardPage() {
-  const [mode, setMode] = useState('Fragen');
+  const [mode, setMode] = useState('ask');
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [cards, setCards] = useState(defaultCards);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-  const [cards, setCards] = useState<CardData[]>(defaultCards);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Load real stats
+  const hasMessages = messages.length > 0;
+
+  // Load live stats
   useEffect(() => {
     fetch('/api/leads')
       .then((r) => r.json())
       .then((d) => {
         const leads = d.leads ?? [];
-        const hot = leads.filter((l: { score: number }) => (l.score ?? 0) >= 70).length;
+        const hot = leads.filter((l: Record<string, number>) => (l.score ?? 0) >= 70).length;
         const total = leads.length;
-        const avgScore =
-          total > 0 ? Math.round(leads.reduce((s: number, l: { score: number }) => s + (l.score ?? 0), 0) / total) : 0;
-        const now24h = Date.now() - 24 * 60 * 60 * 1000;
-        const recent = leads.filter((l: { created_at: string }) => new Date(l.created_at).getTime() > now24h);
-        const topLeads = leads
-          .sort((a: { score: number }, b: { score: number }) => (b.score ?? 0) - (a.score ?? 0))
-          .slice(0, 3)
-          .map((l: { company_name: string; score: number }) => `${l.company_name} · ${l.score ?? 0}`);
-
+        const avg =
+          total > 0
+            ? Math.round(leads.reduce((s: number, l: Record<string, number>) => s + (l.score ?? 0), 0) / total)
+            : 0;
+        const now24h = Date.now() - 86400000;
+        const recent = leads.filter((l: Record<string, string>) => new Date(l.created_at).getTime() > now24h).length;
         setCards((prev) =>
           prev.map((c) => {
             if (c.key === 'leads')
-              return { ...c, stat: String(hot), statLabel: `HOT von ${total} Leads`, items: topLeads };
+              return {
+                ...c,
+                stat: String(hot),
+                statLabel: `HOT von ${total}`,
+                tags: ['Score-Ø ' + avg, total + ' gesamt', hot + ' HOT'],
+              };
             if (c.key === 'analytics')
               return {
                 ...c,
-                stat: String(recent.length),
-                statLabel: 'Neue Leads (24h)',
-                items: [`Ø Score ${avgScore}`, `${total} gesamt`, `${hot} HOT`],
+                stat: String(recent),
+                statLabel: 'Neue (24h)',
+                tags: ['Ø ' + avg, total + ' Leads', hot + ' HOT'],
               };
             if (c.key === 'generate')
-              return { ...c, items: ['Freitext-KI-Suche', 'Apollo + Google Maps', 'Profil-gesteuert'] };
+              return { ...c, stat: '→', statLabel: 'Jetzt starten', tags: ['KI-Analyse', 'Apollo', 'Google Maps'] };
             return c;
           })
         );
@@ -100,28 +117,39 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = input.trim();
-    setInput('');
-    setMessages((prev) => [...prev, { role: 'user', text: userMsg }]);
-    setLoading(true);
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'ai',
-          text: 'Diese Funktion wird in Kürze verbunden. Dein BusinessOS KI-Assistent antwortet bald hier.',
-        },
-      ]);
-      setLoading(false);
-    }, 800);
+  // Scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  // Auto-resize textarea
+  const adjustHeight = () => {
+    const ta = textareaRef.current;
+    if (ta) {
+      ta.style.height = '0';
+      ta.style.height = Math.min(ta.scrollHeight, 150) + 'px';
+    }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+    const text = input.trim();
+    setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = '56px';
+    setMessages((prev) => [...prev, { role: 'user', text }]);
+    setLoading(true);
+
+    try {
+      const form = new FormData();
+      form.append('chatInput', text);
+      form.append('sessionId', sessionId);
+      const res = await fetch(WEBHOOK, { method: 'POST', body: form });
+      const json = await res.json();
+      setMessages((prev) => [...prev, { role: 'ai', text: json.output ?? 'Keine Antwort erhalten.' }]);
+    } catch {
+      setMessages((prev) => [...prev, { role: 'ai', text: 'Verbindung fehlgeschlagen. Bitte versuche es erneut.' }]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -136,303 +164,281 @@ export default function DashboardPage() {
         overflow: 'hidden',
       }}
     >
-      {/* Subtle background glow */}
-      <div
-        style={{
-          position: 'absolute',
-          top: -200,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 800,
-          height: 500,
-          borderRadius: '50%',
-          background:
-            'radial-gradient(ellipse, rgba(107,122,255,0.06) 0%, rgba(107,122,255,0.02) 40%, transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          bottom: -300,
-          right: -200,
-          width: 600,
-          height: 600,
-          borderRadius: '50%',
-          background: 'radial-gradient(ellipse, rgba(34,197,94,0.03) 0%, transparent 60%)',
-          pointerEvents: 'none',
-        }}
-      />
+      {/* Dotted background — only when no messages */}
+      {!hasMessages && <DottedSurface />}
 
-      <div style={{ position: 'relative', padding: '48px 40px 60px', maxWidth: 1000, margin: '0 auto' }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <h1
-            style={{
-              fontSize: 32,
-              fontWeight: 600,
-              letterSpacing: '-0.03em',
-              marginBottom: 8,
-              background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Willkommen zurück
-          </h1>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Onvero BusinessOS</p>
-        </div>
-
-        {/* Mode Pills */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 16 }}>
-          {modes.map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              style={{
-                padding: '6px 18px',
-                borderRadius: 20,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: 'pointer',
-                border: m === mode ? '1px solid rgba(107,122,255,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                background: m === mode ? 'rgba(107,122,255,0.1)' : 'transparent',
-                color: m === mode ? '#a5b4fc' : 'rgba(255,255,255,0.35)',
-                transition: 'all 0.2s',
-                fontFamily: 'inherit',
-              }}
-            >
-              {m === 'Suchen' ? '⌕ ' : m === 'Fragen' ? '○ ' : '✦ '}
-              {m}
-            </button>
-          ))}
-        </div>
-
-        {/* Chat Box */}
+      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* ── Chat Section ── */}
         <div
           style={{
-            maxWidth: 640,
-            margin: '0 auto 48px',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 16,
-            overflow: 'hidden',
-            backdropFilter: 'blur(12px)',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            maxWidth: 720,
+            width: '100%',
+            margin: '0 auto',
+            padding: '0 20px',
           }}
         >
-          {messages.length > 0 && (
-            <div
-              style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
-                maxHeight: 240,
-                overflowY: 'auto',
-              }}
-            >
+          {hasMessages ? (
+            /* Messages */
+            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', paddingTop: 32, paddingBottom: 8 }}>
               {messages.map((msg, i) => (
                 <div
                   key={i}
                   style={{
-                    marginBottom: 10,
                     display: 'flex',
                     justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    marginBottom: 12,
                   }}
                 >
                   <div
                     style={{
                       maxWidth: '80%',
-                      padding: '8px 14px',
-                      borderRadius: 12,
-                      fontSize: 13,
-                      lineHeight: 1.5,
-                      background: msg.role === 'user' ? 'rgba(107,122,255,0.15)' : 'rgba(255,255,255,0.04)',
-                      color: msg.role === 'user' ? '#a5b4fc' : 'rgba(255,255,255,0.75)',
+                      padding: '10px 16px',
+                      borderRadius: 16,
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      background: msg.role === 'user' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
+                      color: msg.role === 'user' ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.7)',
+                      border: msg.role === 'ai' ? '1px solid rgba(255,255,255,0.07)' : 'none',
                     }}
                   >
-                    {msg.text}
+                    {msg.role === 'ai' ? (
+                      <div className="prose prose-invert prose-sm max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:text-white [&_a]:text-blue-400 [&_code]:bg-white/10 [&_code]:px-1 [&_code]:rounded [&_code]:text-xs">
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.text}</p>
+                    )}
                   </div>
                 </div>
               ))}
               {loading && (
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.25)', padding: '4px 0' }}>
-                  <style>{`@keyframes homeDots{0%,20%{content:''}40%{content:'.'}60%{content:'..'}80%,100%{content:'...'}}`}</style>
-                  KI denkt
-                  <span style={{ display: 'inline-block', width: 20 }}>
-                    <span style={{ animation: 'homeDots 1.2s steps(1) infinite' }} />
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
+                  <div
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: 16,
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                    }}
+                  >
+                    <TextShimmer className="text-sm font-medium" duration={1}>
+                      Denkt nach…
+                    </TextShimmer>
+                  </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
+            </div>
+          ) : (
+            /* Welcome */
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingBottom: 20,
+              }}
+            >
+              <h1 style={{ fontSize: 32, fontWeight: 700, color: '#fff', marginBottom: 12, letterSpacing: '-0.02em' }}>
+                Wie kann ich helfen?
+              </h1>
+
+              {/* Mode Pills */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 0 }}>
+                {modes.map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={() => setMode(m.key)}
+                    style={{
+                      padding: '6px 16px',
+                      borderRadius: 20,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      border: mode === m.key ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.07)',
+                      background: mode === m.key ? 'rgba(255,255,255,0.08)' : 'transparent',
+                      color: mode === m.key ? '#fff' : 'rgba(255,255,255,0.35)',
+                      transition: 'all 0.15s',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {m.icon} {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
-          <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'flex-end', gap: 12 }}>
-            <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.15)', flexShrink: 0, marginBottom: 2 }}>+</div>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                mode === 'Suchen'
-                  ? 'Leads, Firmen, Kennzahlen suchen...'
-                  : mode === 'Erstellen'
-                    ? 'Neue Kampagne, Report oder Task erstellen...'
-                    : 'Frag dein BusinessOS...'
-              }
-              rows={1}
+          {/* ── Input Bar ── */}
+          <div style={{ paddingBottom: hasMessages ? 20 : 32, flexShrink: 0 }}>
+            <div
               style={{
-                flex: 1,
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                fontSize: 14,
-                color: '#fff',
-                fontFamily: 'inherit',
-                lineHeight: 1.5,
-              }}
-            />
-            <button
-              onClick={handleSend}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
-                background: input.trim() ? '#6B7AFF' : 'rgba(255,255,255,0.06)',
-                border: 'none',
-                cursor: input.trim() ? 'pointer' : 'default',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 15,
-                color: input.trim() ? '#fff' : 'rgba(255,255,255,0.2)',
-                flexShrink: 0,
-                transition: 'all 0.2s',
+                background: '#111',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 14,
+                overflow: 'hidden',
               }}
             >
-              ▸
-            </button>
+              <div style={{ overflowY: 'auto' }}>
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    adjustHeight();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder={
+                    mode === 'search'
+                      ? 'Leads, Firmen, Kennzahlen suchen...'
+                      : mode === 'create'
+                        ? 'Neue Kampagne, Report oder Task...'
+                        : 'Stell eine Frage an dein BusinessOS…'
+                  }
+                  style={{
+                    width: '100%',
+                    padding: '16px 18px',
+                    resize: 'none',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontFamily: 'inherit',
+                    lineHeight: 1.5,
+                    minHeight: 56,
+                    overflow: 'hidden',
+                  }}
+                />
+              </div>
+              <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 12px 12px' }}
+              >
+                <button
+                  onClick={handleSend}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: input.trim() ? '#fff' : 'rgba(255,255,255,0.06)',
+                    border: 'none',
+                    cursor: input.trim() ? 'pointer' : 'default',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: input.trim() ? '#080808' : 'rgba(255,255,255,0.2)',
+                    fontSize: 14,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  ▸
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Feature Cards */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 18,
-          }}
-        >
-          {cards.map((card) => {
-            const isHovered = hoveredCard === card.key;
-            return (
-              <div
-                key={card.key}
-                onClick={() => router.push(card.href)}
-                onMouseEnter={() => setHoveredCard(card.key)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  background: isHovered ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${isHovered ? card.accent + '35' : 'rgba(255,255,255,0.06)'}`,
-                  borderRadius: 16,
-                  padding: 24,
-                  cursor: 'pointer',
-                  transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)',
-                  transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
-                  boxShadow: isHovered ? `0 8px 32px ${card.accent}10` : 'none',
-                }}
-              >
-                {/* Header */}
-                <div
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        background: `${card.accent}12`,
-                        border: `1px solid ${card.accent}20`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 16,
-                        color: card.accent,
-                      }}
-                    >
-                      {card.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>{card.title}</div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{card.subtitle}</div>
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: isHovered ? card.accent : 'rgba(255,255,255,0.15)',
-                      transition: 'color 0.2s',
-                      fontWeight: 500,
-                    }}
-                  >
-                    View All →
-                  </span>
-                </div>
-
-                {/* Stat */}
-                <div style={{ marginBottom: 20 }}>
+        {/* ── Feature Cards (below chat, reference-style) ── */}
+        {!hasMessages && (
+          <div style={{ padding: '0 40px 48px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              {cards.map((card) => {
+                const hovered = hoveredCard === card.key;
+                return (
                   <div
+                    key={card.key}
+                    onClick={() => router.push(card.href)}
+                    onMouseEnter={() => setHoveredCard(card.key)}
+                    onMouseLeave={() => setHoveredCard(null)}
                     style={{
-                      fontSize: 36,
-                      fontWeight: 700,
-                      color: card.accent,
-                      letterSpacing: '-0.04em',
-                      fontFamily: 'var(--font-dm-mono)',
-                      lineHeight: 1,
+                      background: hovered ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
+                      border: `1px solid ${hovered ? card.accent + '30' : 'rgba(255,255,255,0.06)'}`,
+                      borderRadius: 16,
+                      padding: '20px 22px',
+                      cursor: 'pointer',
+                      transition: 'all 0.25s cubic-bezier(0.4,0,0.2,1)',
+                      transform: hovered ? 'translateY(-2px)' : 'none',
+                      boxShadow: hovered ? `0 6px 24px ${card.accent}08` : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 14,
                     }}
                   >
-                    {card.stat}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>{card.statLabel}</div>
-                </div>
-
-                {/* Items */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14 }}>
-                  {card.items.length > 0 ? (
-                    card.items.map((item, j) => (
-                      <div
-                        key={j}
+                    {/* Title row */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{card.title}</div>
+                      <span
                         style={{
-                          fontSize: 12,
-                          color: 'rgba(255,255,255,0.4)',
-                          padding: '4px 0',
-                          borderBottom: j < card.items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
+                          fontSize: 11,
+                          color: hovered ? card.accent : 'rgba(255,255,255,0.15)',
+                          transition: 'color 0.2s',
                         }}
                       >
-                        <span
-                          style={{
-                            width: 4,
-                            height: 4,
-                            borderRadius: '50%',
-                            background: `${card.accent}40`,
-                            flexShrink: 0,
-                          }}
-                        />
-                        {item}
+                        View All →
+                      </span>
+                    </div>
+
+                    {/* Stat */}
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 40,
+                          fontWeight: 700,
+                          color: card.accent,
+                          fontFamily: 'var(--font-dm-mono)',
+                          letterSpacing: '-0.04em',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {card.stat}
                       </div>
-                    ))
-                  ) : (
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.15)', padding: '4px 0' }}>Laden...</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>{card.statLabel}</div>
+                    </div>
+
+                    {/* Tags */}
+                    {card.tags.length > 0 && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 5,
+                          borderTop: '1px solid rgba(255,255,255,0.05)',
+                          paddingTop: 12,
+                        }}
+                      >
+                        {card.tags.map((tag, j) => (
+                          <span
+                            key={j}
+                            style={{
+                              fontSize: 10,
+                              padding: '3px 10px',
+                              borderRadius: 20,
+                              background: 'rgba(255,255,255,0.04)',
+                              border: '1px solid rgba(255,255,255,0.07)',
+                              color: 'rgba(255,255,255,0.45)',
+                            }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
