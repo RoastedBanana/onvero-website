@@ -7,7 +7,7 @@ import { TextShimmer } from '@/components/ui/text-shimmer';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import type { BentoItem } from '@/components/ui/bento-grid';
 import { HowItWorks } from '@/components/ui/how-it-works';
-import { Users, BarChart2, Zap, Target, Mail, TrendingUp } from 'lucide-react';
+import { Users, BarChart2, Zap, Target, Mail, TrendingUp, Calendar, Search, PenLine, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat';
@@ -19,10 +19,10 @@ const modes = [
 ];
 
 const quickActions = [
-  { label: 'Zeig mir meine HOT Leads', icon: '🔥' },
-  { label: 'Wie ist mein Ø Score?', icon: '📊' },
-  { label: 'Neue Leads generieren', icon: '⚡' },
-  { label: 'E-Mail für Top-Lead schreiben', icon: '✉️' },
+  { label: 'Was steht diese Woche an?', lucide: Calendar },
+  { label: 'Zeig mir eine Übersicht', lucide: Search },
+  { label: 'Neue Kampagne starten', lucide: Zap },
+  { label: 'Meeting zusammenfassen', lucide: PenLine },
 ];
 
 interface LiveStats {
@@ -38,27 +38,6 @@ interface LiveStats {
 interface Message {
   role: 'user' | 'ai';
   text: string;
-}
-
-function AnimatedCounter({ target, color, suffix }: { target: number; color: string; suffix?: string }) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    if (target === 0) return;
-    let current = 0;
-    const step = Math.max(1, Math.floor(target / 20));
-    const t = setInterval(() => {
-      current = Math.min(current + step, target);
-      setVal(current);
-      if (current >= target) clearInterval(t);
-    }, 40);
-    return () => clearInterval(t);
-  }, [target]);
-  return (
-    <span style={{ color, fontFamily: 'var(--font-dm-mono)', fontWeight: 700 }}>
-      {val}
-      {suffix}
-    </span>
-  );
 }
 
 export default function DashboardPage() {
@@ -149,52 +128,56 @@ export default function DashboardPage() {
     }
   };
 
-  const scoreColor = (s: number) => (s >= 70 ? '#FF5C2E' : s >= 45 ? '#F59E0B' : '#6B7AFF');
-
   const bentoItems: BentoItem[] = [
     {
       title: 'Leads',
-      meta: `${stats.total} gesamt`,
-      description:
-        stats.topLeads.length > 0
-          ? stats.topLeads.map((l) => `${l.name} — ${l.score}`).join(' · ')
-          : 'KI-qualifizierte B2B-Kontakte mit Score-Bewertung',
+      meta: stats.total > 0 ? `${stats.total} Kontakte` : undefined,
+      description: 'Kontakte verwalten, KI-Bewertungen prüfen und personalisierte E-Mails versenden',
       icon: <Users className="w-4 h-4 text-[#6B7AFF]" />,
-      status: `${stats.hot} HOT`,
-      tags: [`${stats.hot} HOT`, `${stats.warm} WARM`, `Ø ${stats.avg}`],
-      cta: 'Leads öffnen →',
+      status: 'Aktiv',
+      tags: ['Kontakte', 'Scoring', 'E-Mail'],
+      cta: 'Öffnen →',
       colSpan: 2,
       hasPersistentHover: true,
       onClick: () => router.push('/dashboard/leads'),
     },
     {
+      title: 'Meetings',
+      meta: 'Aufnahmen',
+      description: 'Meetings aufnehmen, transkribieren und KI-Zusammenfassungen erstellen',
+      icon: <Calendar className="w-4 h-4 text-sky-400" />,
+      status: 'Bereit',
+      tags: ['Transkription', 'Zusammenfassung'],
+      cta: 'Öffnen →',
+      onClick: () => router.push('/dashboard/meetings'),
+    },
+    {
       title: 'Analytics',
-      meta: `Ø ${stats.avg}`,
-      description: 'Echtzeit-Kennzahlen, Pipeline-Analyse und KI-Performance auf einen Blick',
+      description: 'Kennzahlen, Trends und Performance deines gesamten BusinessOS auf einen Blick',
       icon: <BarChart2 className="w-4 h-4 text-emerald-500" />,
-      status: `${stats.recent} neue`,
-      tags: ['Pipeline', 'Score', 'Traffic'],
+      status: 'Live',
+      tags: ['Kennzahlen', 'Trends', 'Reports'],
       cta: 'Dashboard öffnen →',
       onClick: () => router.push('/dashboard/analytics'),
     },
     {
       title: 'Generate',
       meta: 'KI-Pipeline',
-      description: 'Beschreibe deine Zielkunden — die KI findet, analysiert und bewertet passende Leads',
+      description: 'Beschreibe deine Zielgruppe — die KI recherchiert, analysiert und bewertet automatisch',
       icon: <Zap className="w-4 h-4 text-amber-500" />,
       status: 'Bereit',
-      tags: ['Freitext', 'Apollo', 'Google Maps'],
-      cta: 'Leads generieren →',
+      tags: ['KI-Suche', 'Automatisierung'],
+      cta: 'Starten →',
       colSpan: 2,
       onClick: () => router.push('/dashboard/generate'),
     },
     {
       title: 'Business AI',
-      meta: 'Chat',
-      description: 'Dein persönlicher KI-Assistent für Geschäftsfragen, Analysen und Automatisierung',
-      icon: <span className="text-purple-400 text-sm">✦</span>,
+      meta: 'Assistent',
+      description: 'Dein persönlicher KI-Assistent für Geschäftsfragen, Analysen und Aufgaben',
+      icon: <Sparkles className="w-4 h-4 text-purple-400" />,
       status: 'Live',
-      tags: ['Fragen', 'Suchen', 'Erstellen'],
+      tags: ['Chat', 'Analyse', 'Automatisierung'],
       cta: 'Chat starten →',
       onClick: () => router.push('/dashboard/business-ai'),
     },
@@ -308,28 +291,17 @@ export default function DashboardPage() {
                 Wie kann ich helfen?
               </h1>
 
-              {/* Live stats bar */}
-              {stats.total > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 16,
-                    marginBottom: 14,
-                    fontSize: 12,
-                    animation: mounted ? 'fadeUp 0.6s ease 0.15s both' : 'none',
-                  }}
-                >
-                  <span style={{ color: 'rgba(255,255,255,0.25)' }}>
-                    <AnimatedCounter target={stats.total} color="rgba(255,255,255,0.5)" /> Leads
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.25)' }}>
-                    <AnimatedCounter target={stats.hot} color="#FF5C2E" /> HOT
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.25)' }}>
-                    Ø <AnimatedCounter target={stats.avg} color="rgba(255,255,255,0.5)" />
-                  </span>
-                </div>
-              )}
+              {/* Subtitle */}
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'rgba(255,255,255,0.25)',
+                  marginBottom: 14,
+                  animation: mounted ? 'fadeUp 0.6s ease 0.15s both' : 'none',
+                }}
+              >
+                Dein BusinessOS — alles an einem Ort
+              </p>
 
               {/* Mode pills */}
               <div style={{ display: 'flex', gap: 6, animation: mounted ? 'fadeUp 0.6s ease 0.25s both' : 'none' }}>
@@ -465,7 +437,7 @@ export default function DashboardPage() {
                     e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
                   }}
                 >
-                  {qa.icon} {qa.label}
+                  <qa.lucide size={12} style={{ opacity: 0.6 }} /> {qa.label}
                 </button>
               ))}
             </div>
@@ -498,38 +470,31 @@ export default function DashboardPage() {
               <HowItWorks
                 storageKey="home"
                 title="Erste Schritte"
-                subtitle="In 3 Schritten zu deinen ersten qualifizierten Leads"
+                subtitle="So holst du das meiste aus deinem BusinessOS"
                 compact
                 steps={[
                   {
                     icon: <Target className="w-5 h-5 text-[#F59E0B]" />,
-                    title: 'Zielkunden beschreiben',
-                    description: 'Gehe zu "Generate" und beschreibe in eigenen Worten welche Kunden du suchst.',
+                    title: 'Profil einrichten',
+                    description: 'Gehe zu Settings und beschreibe dein Unternehmen, deine Zielkunden und dein Angebot.',
                     benefits: [
-                      'Freitext oder strukturierte Suche',
-                      'KI optimiert deine Anfrage',
-                      'Apollo + Google Maps als Quellen',
+                      'KI-Profil in den Einstellungen',
+                      'Beschreibt wer du bist',
+                      'Verbessert alle KI-Ergebnisse',
                     ],
                   },
                   {
-                    icon: <Mail className="w-5 h-5 text-[#6B7AFF]" />,
-                    title: 'Leads prüfen & kontaktieren',
-                    description: 'Öffne deine Leads, prüfe den KI-Score und nutze die vorbereitete E-Mail.',
-                    benefits: [
-                      'HOT Leads (≥70) zuerst kontaktieren',
-                      'E-Mail-Draft per Klick kopieren',
-                      'KI-Analyse erklärt warum der Lead passt',
-                    ],
+                    icon: <Zap className="w-5 h-5 text-[#6B7AFF]" />,
+                    title: 'Tools erkunden',
+                    description: 'Nutze Generate, Meetings und Analytics um dein Business zu automatisieren.',
+                    benefits: ['KI-gestützte Kampagnen', 'Meeting-Zusammenfassungen', 'Echtzeit-Kennzahlen'],
                   },
                   {
                     icon: <TrendingUp className="w-5 h-5 text-[#22C55E]" />,
-                    title: 'Pipeline aufbauen',
-                    description: 'Tracke deinen Fortschritt in Analytics und generiere regelmäßig neue Leads.',
-                    benefits: [
-                      'Status-Tracking pro Lead',
-                      'Analytics zeigt Konversion',
-                      'Profil in Settings verfeinern',
-                    ],
+                    title: 'KI-Assistent fragen',
+                    description:
+                      'Nutze die Business AI auf dieser Seite um Fragen zu stellen oder Aufgaben zu erledigen.',
+                    benefits: ['Fragen in natürlicher Sprache', 'Zugriff auf alle Daten', 'Arbeitet mit deinem Profil'],
                   },
                 ]}
               />
