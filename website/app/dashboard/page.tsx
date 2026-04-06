@@ -328,12 +328,11 @@ export default function DashboardPage() {
           ) : (
             <div
               style={{
-                flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                paddingBottom: 0,
+                paddingTop: '15vh',
+                paddingBottom: 16,
               }}
             >
               <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8, letterSpacing: '-0.02em' }}>
