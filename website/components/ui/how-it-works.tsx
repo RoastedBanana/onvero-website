@@ -1,6 +1,8 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+import { ChevronDown, X } from 'lucide-react';
 import type React from 'react';
 
 export interface StepData {
@@ -15,6 +17,7 @@ interface HowItWorksProps extends React.HTMLAttributes<HTMLElement> {
   subtitle?: string;
   steps: StepData[];
   compact?: boolean;
+  storageKey?: string;
 }
 
 const StepCard: React.FC<StepData & { compact?: boolean }> = ({ icon, title, description, benefits, compact }) => (
@@ -49,43 +52,131 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
   subtitle,
   steps,
   compact,
+  storageKey,
   ...props
 }) => {
-  return (
-    <section className={cn('w-full py-8', className)} {...props}>
-      <div className="mx-auto max-w-4xl">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h2 className={cn('font-bold tracking-tight text-white/90', compact ? 'text-lg' : 'text-xl')}>{title}</h2>
-          {subtitle && <p className="mt-2 text-sm text-white/30 max-w-md mx-auto">{subtitle}</p>}
-        </div>
+  const dismissKey = storageKey ? `onvero_tutorial_${storageKey}_dismissed` : null;
+  const collapseKey = storageKey ? `onvero_tutorial_${storageKey}_collapsed` : null;
 
-        {/* Step numbers with line */}
-        <div className="relative mx-auto mb-6 w-full max-w-3xl">
-          <div
-            aria-hidden="true"
-            className="absolute left-[16.6667%] top-1/2 h-px w-[66.6667%] -translate-y-1/2 bg-white/[0.06]"
-          />
-          <div className="relative grid" style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}>
-            {steps.map((_, index) => (
-              <div
-                key={index}
-                className="flex h-7 w-7 items-center justify-center justify-self-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-white/50 ring-4 ring-[#080808]"
+  const [dismissed, setDismissed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (dismissKey && localStorage.getItem(dismissKey) === '1') setDismissed(true);
+    if (collapseKey && localStorage.getItem(collapseKey) === '1') setCollapsed(true);
+  }, [dismissKey, collapseKey]);
+
+  if (dismissKey && dismissed) return null;
+  if (!mounted && storageKey) return null;
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    if (dismissKey) localStorage.setItem(dismissKey, '1');
+  };
+
+  const handleToggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    if (collapseKey) localStorage.setItem(collapseKey, next ? '1' : '0');
+  };
+
+  return (
+    <section className={cn('w-full', className)} {...props}>
+      <div className="mx-auto max-w-4xl">
+        {/* Header — always visible, acts as toggle */}
+        <button
+          onClick={handleToggle}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 4px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.15)' }}>💡</span>
+            <span style={{ fontSize: compact ? 13 : 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>
+              {title}
+            </span>
+            {subtitle && !collapsed && (
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', marginLeft: 4 }}>— {subtitle}</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <ChevronDown
+              size={14}
+              style={{
+                color: 'rgba(255,255,255,0.2)',
+                transition: 'transform 0.2s',
+                transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)',
+              }}
+            />
+            {storageKey && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDismiss();
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title="Tipps dauerhaft ausblenden"
               >
-                {index + 1}
-              </div>
+                <X size={13} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              </button>
+            )}
+          </div>
+        </button>
+
+        {/* Content — collapsible */}
+        <div
+          style={{
+            maxHeight: collapsed ? 0 : 600,
+            overflow: 'hidden',
+            transition: 'max-height 0.3s ease, opacity 0.2s ease',
+            opacity: collapsed ? 0 : 1,
+          }}
+        >
+          {/* Step numbers with line */}
+          <div className="relative mx-auto mb-6 w-full max-w-3xl">
+            <div
+              aria-hidden="true"
+              className="absolute left-[16.6667%] top-1/2 h-px w-[66.6667%] -translate-y-1/2 bg-white/[0.06]"
+            />
+            <div className="relative grid" style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}>
+              {steps.map((_, index) => (
+                <div
+                  key={index}
+                  className="flex h-7 w-7 items-center justify-center justify-self-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-white/50 ring-4 ring-[#080808]"
+                >
+                  {index + 1}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Steps Grid */}
+          <div
+            className="grid grid-cols-1 gap-4"
+            style={{ gridTemplateColumns: `repeat(${Math.min(steps.length, 3)}, 1fr)` }}
+          >
+            {steps.map((step, index) => (
+              <StepCard key={index} {...step} compact={compact} />
             ))}
           </div>
-        </div>
-
-        {/* Steps Grid */}
-        <div
-          className="grid grid-cols-1 gap-4 md:grid-cols-3"
-          style={{ gridTemplateColumns: `repeat(${Math.min(steps.length, 3)}, 1fr)` }}
-        >
-          {steps.map((step, index) => (
-            <StepCard key={index} {...step} compact={compact} />
-          ))}
+          <div style={{ height: 8 }} />
         </div>
       </div>
     </section>

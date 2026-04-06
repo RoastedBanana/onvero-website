@@ -34,10 +34,6 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
   const [mounted, setMounted] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [industryFilter, setIndustryFilter] = useState<string | null>(null);
-  const [showTutorial, setShowTutorial] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return !localStorage.getItem('onvero_leads_tutorial_dismissed');
-  });
   const [tierFilter, setTierFilter] = useState<'hot' | 'warm' | 'cold' | null>(null);
 
   useEffect(() => {
@@ -205,79 +201,47 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
         </div>
 
         {/* ── TUTORIAL ── */}
-        {showTutorial && (
-          <div
-            style={{
-              position: 'relative',
-              marginBottom: 12,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}
-          >
-            <button
-              onClick={() => {
-                setShowTutorial(false);
-                localStorage.setItem('onvero_leads_tutorial_dismissed', '1');
-              }}
-              style={{
-                position: 'absolute',
-                top: 12,
-                right: 14,
-                background: 'none',
-                border: 'none',
-                color: 'rgba(255,255,255,0.25)',
-                cursor: 'pointer',
-                fontSize: 16,
-                zIndex: 2,
-              }}
-              title="Tutorial schließen"
-            >
-              ×
-            </button>
-            <HowItWorks
-              title="So funktionieren Leads"
-              subtitle="In 3 Schritten von der KI-Suche zum qualifizierten Kontakt"
-              compact
-              steps={[
-                {
-                  icon: <Zap className="w-5 h-5 text-[#F59E0B]" />,
-                  title: 'Leads generieren',
-                  description:
-                    'Beschreibe deine Zielkunden — die KI sucht und findet passende B2B-Kontakte über Apollo und Google Maps.',
-                  benefits: [
-                    'Freitext-Eingabe in natürlicher Sprache',
-                    'KI verfeinert deine Suche automatisch',
-                    'Apollo + Google Maps als Datenquellen',
-                  ],
-                },
-                {
-                  icon: <Filter className="w-5 h-5 text-[#6B7AFF]" />,
-                  title: 'KI bewertet & scored',
-                  description:
-                    'Jeder Lead wird automatisch analysiert und erhält einen Score von 0-100 (COLD → WARM → HOT).',
-                  benefits: [
-                    'Score ≥70 = HOT (sofort kontaktieren)',
-                    'Score 45-69 = WARM (nachfassen)',
-                    'Personalisierte E-Mail wird generiert',
-                  ],
-                },
-                {
-                  icon: <MousePointerClick className="w-5 h-5 text-[#22C55E]" />,
-                  title: 'Kontaktieren & konvertieren',
-                  description:
-                    'Klicke auf einen Lead für alle Details, kopiere die E-Mail und ändere den Status nach Kontaktaufnahme.',
-                  benefits: [
-                    'Detailseite mit allen Infos',
-                    'E-Mail-Draft per Klick kopieren',
-                    'Status-Tracking: Neu → Kontaktiert → Qualifiziert',
-                  ],
-                },
-              ]}
-            />
-          </div>
-        )}
+        <HowItWorks
+          storageKey="leads"
+          title="So funktionieren Leads"
+          subtitle="In 3 Schritten von der KI-Suche zum qualifizierten Kontakt"
+          compact
+          steps={[
+            {
+              icon: <Zap className="w-5 h-5 text-[#F59E0B]" />,
+              title: 'Leads generieren',
+              description:
+                'Beschreibe deine Zielkunden — die KI sucht und findet passende B2B-Kontakte über Apollo und Google Maps.',
+              benefits: [
+                'Freitext-Eingabe in natürlicher Sprache',
+                'KI verfeinert deine Suche automatisch',
+                'Apollo + Google Maps als Datenquellen',
+              ],
+            },
+            {
+              icon: <Filter className="w-5 h-5 text-[#6B7AFF]" />,
+              title: 'KI bewertet & scored',
+              description:
+                'Jeder Lead wird automatisch analysiert und erhält einen Score von 0-100 (COLD → WARM → HOT).',
+              benefits: [
+                'Score ≥70 = HOT (sofort kontaktieren)',
+                'Score 45-69 = WARM (nachfassen)',
+                'Personalisierte E-Mail wird generiert',
+              ],
+            },
+            {
+              icon: <MousePointerClick className="w-5 h-5 text-[#22C55E]" />,
+              title: 'Kontaktieren & konvertieren',
+              description:
+                'Klicke auf einen Lead für alle Details, kopiere die E-Mail und ändere den Status nach Kontaktaufnahme.',
+              benefits: [
+                'Detailseite mit allen Infos',
+                'E-Mail-Draft per Klick kopieren',
+                'Status-Tracking: Neu → Kontaktiert → Qualifiziert',
+              ],
+            },
+          ]}
+        />
 
         {/* ── GENERATION SUMMARY ── */}
         {(() => {

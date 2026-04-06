@@ -495,6 +495,7 @@ export default function DashboardPage() {
             </div>
             <div style={{ padding: '0 20px 48px', maxWidth: 1100, margin: '0 auto', width: '100%' }}>
               <HowItWorks
+                storageKey="home"
                 title="Erste Schritte"
                 subtitle="In 3 Schritten zu deinen ersten qualifizierten Leads"
                 compact

@@ -74,6 +74,7 @@ export default function GeneratePage() {
           <>
             <div style={{ marginBottom: 24, maxWidth: 560, margin: '0 auto 24px' }}>
               <HowItWorks
+                storageKey="generate"
                 title="So generierst du Leads"
                 compact
                 steps={[
