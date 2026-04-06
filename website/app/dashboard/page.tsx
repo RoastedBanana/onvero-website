@@ -333,10 +333,10 @@ export default function DashboardPage() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingBottom: 20,
+                paddingBottom: 0,
               }}
             >
-              <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.02em' }}>
+              <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8, letterSpacing: '-0.02em' }}>
                 Wie kann ich helfen?
               </h1>
               <div style={{ display: 'flex', gap: 6 }}>
@@ -365,7 +365,7 @@ export default function DashboardPage() {
           )}
 
           {/* Input */}
-          <div style={{ paddingBottom: hasMessages ? 20 : 32, flexShrink: 0 }}>
+          <div style={{ paddingBottom: hasMessages ? 20 : 16, flexShrink: 0 }}>
             <div
               style={{
                 background: '#111',
