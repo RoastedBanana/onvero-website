@@ -129,7 +129,7 @@ export default function NotificationBell() {
   }, []);
 
   return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
+    <div ref={containerRef} style={{ position: 'relative', zIndex: 50 }}>
       {/* Bell Button */}
       <button
         onClick={() => setOpen((v) => !v)}

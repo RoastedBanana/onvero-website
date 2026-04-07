@@ -86,8 +86,13 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
     <section className={cn('w-full', className)} {...props}>
       <div className="mx-auto max-w-4xl">
         {/* Header — always visible, acts as toggle */}
-        <button
+        <div
           onClick={handleToggle}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') handleToggle();
+          }}
           style={{
             width: '100%',
             display: 'flex',
@@ -138,7 +143,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
               </button>
             )}
           </div>
-        </button>
+        </div>
 
         {/* Content — collapsible */}
         <div
