@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/ui/PageHeader';
 import {
   BarChart,
@@ -18,7 +19,7 @@ import {
   Area,
 } from 'recharts';
 
-type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki';
+type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki' | 'activity';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'master', label: 'Master' },
@@ -26,6 +27,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'website', label: 'Website & Traffic' },
   { id: 'pipeline', label: 'Sales Pipeline' },
   { id: 'ki', label: 'KI-Performance' },
+  { id: 'activity', label: 'Aktivitäten' },
 ];
 
 const S = {
@@ -2774,7 +2776,140 @@ export default function AnalyticsClient() {
             </div>
           </div>
         )}
+
+        {/* ═══ ACTIVITY TAB ═══ */}
+        {tab === 'activity' && <ActivityFeed />}
       </div>
+    </div>
+  );
+}
+
+function ActivityFeed() {
+  const [items, setItems] = useState<
+    { id: string; title: string; desc: string; color: string; time: string; href?: string }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/leads')
+        .then((r) => r.json())
+        .catch(() => ({ leads: [] })),
+      fetch('/api/lead-generator-runs?limit=5')
+        .then((r) => r.json())
+        .catch(() => ({ runs: [] })),
+    ]).then(([leadsData, runsData]) => {
+      const leads = (leadsData.leads ?? []) as Record<string, string | number | null>[];
+      const runs = (runsData.runs ?? []) as Record<string, string | number | null>[];
+      const all: typeof items = [];
+
+      for (const l of leads.slice(0, 20)) {
+        const score = Number(l.score ?? 0);
+        const color = score >= 70 ? '#FF5C2E' : score >= 45 ? '#F59E0B' : '#6B7AFF';
+        all.push({
+          id: `s-${l.id}`,
+          title: `${l.company_name}`,
+          desc: `Score ${score} · ${score >= 70 ? 'HOT' : score >= 45 ? 'WARM' : 'COLD'}`,
+          color,
+          time: String(l.created_at),
+          href: `/dashboard/leads/${l.id}`,
+        });
+      }
+      for (const r of runs) {
+        const terms = Array.isArray(r.search_terms) ? (r.search_terms as string[]).join(', ') : '';
+        all.push({
+          id: `r-${r.id}`,
+          title: 'Kampagne',
+          desc: terms || 'Lead-Generierung',
+          color: '#F59E0B',
+          time: String(r.started_at ?? r.created_at),
+        });
+      }
+      all.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setItems(all);
+      setLoading(false);
+    });
+  }, []);
+
+  const fmt = (d: string) => {
+    const ms = Date.now() - new Date(d).getTime();
+    const m = Math.floor(ms / 60000);
+    const h = Math.floor(ms / 3600000);
+    const dy = Math.floor(ms / 86400000);
+    if (m < 1) return 'gerade eben';
+    if (m < 60) return `vor ${m} Min.`;
+    if (h < 24) return `vor ${h} Std.`;
+    if (dy === 1) return 'gestern';
+    return new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  };
+
+  if (loading)
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: 13 }}>Laden...</div>
+    );
+  if (items.length === 0)
+    return (
+      <div style={{ padding: 40, textAlign: 'center', color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>
+        Keine Aktivitäten
+      </div>
+    );
+
+  return (
+    <div style={{ position: 'relative', paddingLeft: 24 }}>
+      <div
+        style={{ position: 'absolute', left: 7, top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,0.06)' }}
+      />
+      {items.map((item, i) => (
+        <div
+          key={item.id}
+          onClick={() => item.href && router.push(item.href)}
+          style={{
+            display: 'flex',
+            gap: 14,
+            marginBottom: 8,
+            cursor: item.href ? 'pointer' : 'default',
+            padding: '8px 12px',
+            borderRadius: 10,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => {
+            if (item.href) e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: item.color,
+              marginTop: 4,
+              flexShrink: 0,
+              marginLeft: -29,
+            }}
+          />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{item.title}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{item.desc}</div>
+          </div>
+          <div
+            style={{
+              fontSize: 10,
+              color: 'rgba(255,255,255,0.15)',
+              fontFamily: 'var(--font-dm-mono)',
+              flexShrink: 0,
+              marginTop: 2,
+            }}
+          >
+            {fmt(item.time)}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

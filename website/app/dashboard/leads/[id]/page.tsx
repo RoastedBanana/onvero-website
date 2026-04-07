@@ -6,7 +6,6 @@ import { mapLead, updateLeadStatus } from '@/lib/leads-client';
 import type { Lead } from '@/lib/leads-client';
 import LeadAvatar from '@/components/ui/LeadAvatar';
 import PageHeader from '@/components/ui/PageHeader';
-import EmailPreviewModal from '@/components/leads/EmailPreviewModal';
 import ScoreExplanation from '@/components/leads/ScoreExplanation';
 
 interface Activity {
@@ -443,44 +442,6 @@ export default function LeadDetailPage() {
                   </>
                 )}
               </div>
-              {/* Copy email */}
-              <button
-                onClick={() => {
-                  navigator.clipboard?.writeText(lead.email);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-                style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 8,
-                  padding: '6px 14px',
-                  fontSize: 12,
-                  color: copied ? '#22C55E' : 'rgba(255,255,255,0.5)',
-                  cursor: 'pointer',
-                  transition: 'color 0.2s',
-                }}
-              >
-                {copied ? '✓ Kopiert' : '📧 E-Mail kopieren'}
-              </button>
-              {/* Email preview */}
-              {lead.emailDraft && (
-                <button
-                  onClick={() => setEmailPreviewOpen(true)}
-                  style={{
-                    background: 'rgba(107,122,255,0.08)',
-                    border: '1px solid rgba(107,122,255,0.15)',
-                    borderRadius: 8,
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    color: '#6B7AFF',
-                    cursor: 'pointer',
-                    transition: 'color 0.2s',
-                  }}
-                >
-                  E-Mail Vorschau
-                </button>
-              )}
               {/* Send email */}
               {lead.emailDraft && (
                 <button
@@ -1474,17 +1435,6 @@ export default function LeadDetailPage() {
 
       {lead && (
         <>
-          <EmailPreviewModal
-            isOpen={emailPreviewOpen}
-            onClose={() => setEmailPreviewOpen(false)}
-            lead={{
-              company: lead.company,
-              name: lead.name,
-              email: lead.email,
-              emailDraft: editedDraft || lead.emailDraft,
-              emailDraftSubject: lead.emailDraftSubject,
-            }}
-          />
           <ScoreExplanation
             isOpen={scoreExplanationOpen}
             onClose={() => setScoreExplanationOpen(false)}
