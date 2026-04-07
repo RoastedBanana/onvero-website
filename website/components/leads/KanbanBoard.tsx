@@ -41,12 +41,15 @@ function tierLabel(s: number) {
 interface Props {
   leads: Lead[];
   onStatusChange?: (id: string, status: string) => void;
+  onLeadDeleted?: (id: string) => void;
 }
 
-export default function KanbanBoard({ leads, onStatusChange }: Props) {
+export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Props) {
   const router = useRouter();
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const dragRef = useRef<string | null>(null);
 
   const handleDragStart = (id: string) => {
@@ -73,230 +76,293 @@ export default function KanbanBoard({ leads, onStatusChange }: Props) {
   };
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)`,
-        gap: 12,
-        marginTop: 12,
-        minHeight: 400,
-      }}
-    >
-      {COLUMNS.map((col) => {
-        const colLeads = leads.filter((l) => l.status === col.key).sort((a, b) => b.score - a.score);
-        const isOver = dragOver === col.key;
+    <div>
+      <style>{`div:hover > .kanban-delete-btn { opacity: 1 !important; }`}</style>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)`,
+          gap: 12,
+          marginTop: 12,
+          minHeight: 400,
+        }}
+      >
+        {COLUMNS.map((col) => {
+          const colLeads = leads.filter((l) => l.status === col.key).sort((a, b) => b.score - a.score);
+          const isOver = dragOver === col.key;
 
-        return (
-          <div
-            key={col.key}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(col.key);
-            }}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={(e) => {
-              e.preventDefault();
-              handleDrop(col.key);
-            }}
-            style={{
-              background: isOver ? col.bg : 'rgba(255,255,255,0.01)',
-              border: `1px solid ${isOver ? col.border : 'rgba(255,255,255,0.05)'}`,
-              borderRadius: 12,
-              padding: 10,
-              transition: 'all 0.2s',
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 300,
-            }}
-          >
-            {/* Column Header */}
+          return (
             <div
+              key={col.key}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(col.key);
+              }}
+              onDragLeave={() => setDragOver(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(col.key);
+              }}
               style={{
+                background: isOver ? col.bg : 'rgba(255,255,255,0.01)',
+                border: `1px solid ${isOver ? col.border : 'rgba(255,255,255,0.05)'}`,
+                borderRadius: 12,
+                padding: 10,
+                transition: 'all 0.2s',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '6px 6px 10px',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
-                marginBottom: 8,
+                flexDirection: 'column',
+                minHeight: 300,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: col.color }} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: col.color }}>{col.label}</span>
+              {/* Column Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '6px 6px 10px',
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  marginBottom: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: col.color }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: col.color }}>{col.label}</span>
+                </div>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
+                  {colLeads.length}
+                </span>
               </div>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
-                {colLeads.length}
-              </span>
-            </div>
 
-            {/* Cards */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
-              {colLeads.map((lead) => (
-                <div
-                  key={lead.id}
-                  draggable
-                  onDragStart={() => handleDragStart(lead.id)}
-                  onDragEnd={() => {
-                    setDragId(null);
-                    setDragOver(null);
-                  }}
-                  onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
-                  style={{
-                    background: dragId === lead.id ? 'rgba(255,255,255,0.06)' : '#111',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 10,
-                    padding: '10px 12px',
-                    cursor: 'grab',
-                    transition: 'all 0.15s',
-                    opacity: dragId === lead.id ? 0.5 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (dragId !== lead.id) {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (dragId !== lead.id) {
-                      e.currentTarget.style.background = '#111';
-                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                    }
-                  }}
-                >
-                  {/* Card Header: Avatar + Name */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="sm" />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 500,
-                          color: '#fff',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {lead.company}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: 'rgba(255,255,255,0.3)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {lead.name}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Score + Industry */}
+              {/* Cards */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
+                {colLeads.map((lead) => (
                   <div
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: scoreColor(lead.score),
-                          fontFamily: 'var(--font-dm-mono)',
-                        }}
-                      >
-                        {lead.score}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 8,
-                          fontWeight: 600,
-                          color: scoreColor(lead.score),
-                          letterSpacing: '0.08em',
-                          opacity: 0.7,
-                        }}
-                      >
-                        {tierLabel(lead.score)}
-                      </span>
-                    </div>
-                    {lead.industry && (
-                      <span
-                        style={{
-                          fontSize: 9,
-                          color: 'rgba(255,255,255,0.25)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: 80,
-                        }}
-                      >
-                        {lead.industry.split('/')[0]}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Tags */}
-                  {lead.source && (
-                    <div style={{ marginTop: 4 }}>
-                      {lead.source === 'google_maps_apify' && (
-                        <span
-                          style={{
-                            fontSize: 8,
-                            color: '#1D9E75',
-                            background: 'rgba(29,158,117,0.1)',
-                            padding: '1px 5px',
-                            borderRadius: 4,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Maps
-                        </span>
-                      )}
-                      {lead.source === 'apollo_outbound' && (
-                        <span
-                          style={{
-                            fontSize: 8,
-                            color: '#8B5CF6',
-                            background: 'rgba(139,92,246,0.1)',
-                            padding: '1px 5px',
-                            borderRadius: 4,
-                            fontWeight: 500,
-                          }}
-                        >
-                          Apollo
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Date */}
-                  <div
+                    key={lead.id}
+                    draggable
+                    onDragStart={() => handleDragStart(lead.id)}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setDragOver(null);
+                    }}
+                    onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
                     style={{
-                      fontSize: 9,
-                      color: 'rgba(255,255,255,0.15)',
-                      marginTop: 6,
-                      fontFamily: 'var(--font-dm-mono)',
+                      background: dragId === lead.id ? 'rgba(255,255,255,0.06)' : '#111',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: 10,
+                      padding: '10px 12px',
+                      cursor: 'grab',
+                      transition: 'all 0.15s',
+                      opacity: dragId === lead.id ? 0.5 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (dragId !== lead.id) {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (dragId !== lead.id) {
+                        e.currentTarget.style.background = '#111';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                      }
                     }}
                   >
-                    {new Date(lead.createdAt).toLocaleDateString('de-DE', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                    })}
-                  </div>
-                </div>
-              ))}
+                    {/* Card Header: Avatar + Name */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="sm" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: '#fff',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {lead.company}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: 'rgba(255,255,255,0.3)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {lead.name}
+                        </div>
+                      </div>
+                    </div>
 
-              {colLeads.length === 0 && (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.12)' }}>Keine Leads</span>
-                </div>
-              )}
+                    {/* Score + Industry */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: scoreColor(lead.score),
+                            fontFamily: 'var(--font-dm-mono)',
+                          }}
+                        >
+                          {lead.score}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 8,
+                            fontWeight: 600,
+                            color: scoreColor(lead.score),
+                            letterSpacing: '0.08em',
+                            opacity: 0.7,
+                          }}
+                        >
+                          {tierLabel(lead.score)}
+                        </span>
+                      </div>
+                      {lead.industry && (
+                        <span
+                          style={{
+                            fontSize: 9,
+                            color: 'rgba(255,255,255,0.25)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: 80,
+                          }}
+                        >
+                          {lead.industry.split('/')[0]}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Tags */}
+                    {lead.source && (
+                      <div style={{ marginTop: 4 }}>
+                        {lead.source === 'apollo_outbound' && (
+                          <span
+                            style={{
+                              fontSize: 8,
+                              color: '#8B5CF6',
+                              background: 'rgba(139,92,246,0.1)',
+                              padding: '1px 5px',
+                              borderRadius: 4,
+                              fontWeight: 500,
+                            }}
+                          >
+                            Apollo
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Date + Delete */}
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}
+                    >
+                      <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--font-dm-mono)' }}>
+                        {new Date(lead.createdAt).toLocaleDateString('de-DE', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                      </span>
+                      {deleteConfirmId === lead.id ? (
+                        <div style={{ display: 'flex', gap: 3 }} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setDeleting(true);
+                              try {
+                                await fetch(`/api/leads/${lead.id}`, { method: 'DELETE' });
+                                onLeadDeleted?.(lead.id);
+                              } catch {}
+                              setDeleting(false);
+                              setDeleteConfirmId(null);
+                            }}
+                            disabled={deleting}
+                            style={{
+                              fontSize: 9,
+                              background: '#ef4444',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                              opacity: deleting ? 0.5 : 1,
+                            }}
+                          >
+                            Ja
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmId(null);
+                            }}
+                            style={{
+                              fontSize: 9,
+                              background: 'rgba(255,255,255,0.06)',
+                              color: 'rgba(255,255,255,0.4)',
+                              border: 'none',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Nein
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteConfirmId(lead.id);
+                          }}
+                          className="kanban-delete-btn"
+                          style={{
+                            fontSize: 10,
+                            background: 'none',
+                            border: 'none',
+                            color: 'rgba(255,255,255,0.1)',
+                            cursor: 'pointer',
+                            padding: '0 2px',
+                            opacity: 0,
+                            transition: 'opacity 0.15s, color 0.15s',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.1)')}
+                          title="Löschen"
+                        >
+                          x
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {colLeads.length === 0 && (
+                  <div
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+                  >
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.12)' }}>Keine Leads</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -18,7 +18,7 @@ import { HowItWorks } from '@/components/ui/how-it-works';
 import { Zap, MousePointerClick, Filter, LayoutGrid, List } from 'lucide-react';
 import KanbanBoard from '@/components/leads/KanbanBoard';
 
-type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost' | 'google_maps';
+type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost';
 
 interface Props {
   leads: Lead[];
@@ -89,9 +89,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
-      if (statusFilter === 'google_maps') {
-        if (l.source !== 'google_maps_apify') return false;
-      } else if (statusFilter !== 'all' && l.status !== statusFilter) return false;
+      if (statusFilter !== 'all' && l.status !== statusFilter) return false;
       if (industryFilter && l.industry !== industryFilter) return false;
       if (tierFilter === 'hot' && l.score < 70) return false;
       if (tierFilter === 'warm' && (l.score < 45 || l.score >= 70)) return false;
@@ -112,11 +110,6 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
     { key: 'contacted', label: 'Kontaktiert', count: stats.byStatus.contacted },
     { key: 'qualified', label: 'Qualifiziert', count: stats.byStatus.qualified },
     { key: 'lost', label: 'Verloren', count: stats.byStatus.lost },
-    {
-      key: 'google_maps',
-      label: '📍 Google Maps',
-      count: leads.filter((l) => l.source === 'google_maps_apify').length,
-    },
   ];
 
   return (
@@ -285,12 +278,11 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
             {
               icon: <Zap className="w-5 h-5 text-[#F59E0B]" />,
               title: 'Leads generieren',
-              description:
-                'Beschreibe deine Zielkunden — die KI sucht und findet passende B2B-Kontakte über Apollo und Google Maps.',
+              description: 'Beschreibe deine Zielkunden — die KI sucht und findet passende B2B-Kontakte automatisch.',
               benefits: [
                 'Freitext-Eingabe in natürlicher Sprache',
                 'KI verfeinert deine Suche automatisch',
-                'Apollo + Google Maps als Datenquellen',
+                'KI-gestützte Datenquellen',
               ],
             },
             {
@@ -607,6 +599,11 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
             onStatusChange={(id, status) => {
               setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
               setStats(computeStats(leads.map((l) => (l.id === id ? { ...l, status } : l))));
+            }}
+            onLeadDeleted={(id) => {
+              const remaining = leads.filter((l) => l.id !== id);
+              setLeads(remaining);
+              setStats(computeStats(remaining));
             }}
           />
         ) : (

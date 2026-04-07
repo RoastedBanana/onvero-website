@@ -741,21 +741,6 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
                       NEU
                     </span>
                   )}
-                  {lead.source === 'google_maps_apify' && (
-                    <span
-                      style={{
-                        fontSize: 9,
-                        color: '#1D9E75',
-                        background: 'rgba(29,158,117,0.1)',
-                        padding: '1px 5px',
-                        borderRadius: 6,
-                        flexShrink: 0,
-                        fontWeight: 500,
-                      }}
-                    >
-                      📍 Maps
-                    </span>
-                  )}
                   {lead.source === 'apollo_outbound' && (
                     <span
                       style={{
