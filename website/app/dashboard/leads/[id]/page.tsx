@@ -30,8 +30,8 @@ const STATUS_OPTIONS = [
 function ScoreBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', width: 120, flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', width: 120, flexShrink: 0 }}>{label}</span>
+      <div style={{ flex: 1, height: 5, background: 'rgba(255,255,255,0.04)', borderRadius: 3, overflow: 'hidden' }}>
         <div
           style={{
             height: '100%',
@@ -61,9 +61,9 @@ function Card({ children, title }: { children: React.ReactNode; title?: string }
   return (
     <div
       style={{
-        background: '#111',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 12,
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: 16,
         padding: 20,
         marginBottom: 14,
       }}
@@ -73,8 +73,8 @@ function Card({ children, title }: { children: React.ReactNode; title?: string }
           style={{
             fontSize: 10,
             fontWeight: 600,
-            color: 'rgba(255,255,255,0.25)',
-            letterSpacing: '0.1em',
+            color: 'rgba(255,255,255,0.2)',
+            letterSpacing: '0.08em',
             textTransform: 'uppercase' as const,
             marginBottom: 12,
           }}
@@ -109,7 +109,7 @@ function InfoRow({
         borderBottom: '1px solid rgba(255,255,255,0.03)',
       }}
     >
-      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{label}</span>
+      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{label}</span>
       {href ? (
         <a
           href={href}
@@ -128,7 +128,7 @@ function InfoRow({
         <span
           style={{
             fontSize: 12,
-            color: 'rgba(255,255,255,0.75)',
+            color: 'rgba(255,255,255,0.65)',
             fontFamily: mono ? 'var(--font-dm-mono)' : undefined,
             textAlign: 'right',
             maxWidth: '60%',
@@ -225,7 +225,7 @@ export default function LeadDetailPage() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#0a0a0a',
+          background: '#050505',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -243,7 +243,7 @@ export default function LeadDetailPage() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#0a0a0a',
+          background: '#050505',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -287,7 +287,7 @@ export default function LeadDetailPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', fontFamily: 'var(--font-dm-sans)', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: '#050505', fontFamily: 'var(--font-dm-sans)', color: '#e8e8e8' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px' }}>
         {/* ── Back + Header ── */}
         <div style={{ marginBottom: 20 }}>
@@ -296,7 +296,7 @@ export default function LeadDetailPage() {
             style={{
               background: 'none',
               border: 'none',
-              color: 'rgba(255,255,255,0.4)',
+              color: 'rgba(255,255,255,0.3)',
               cursor: 'pointer',
               fontSize: 12,
               padding: '4px 0',
@@ -312,16 +312,18 @@ export default function LeadDetailPage() {
             <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="lg" />
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{lead.company}</h1>
+                <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: '#e8e8e8', letterSpacing: '-0.02em' }}>
+                  {lead.company}
+                </h1>
                 <span
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
                     color: scoreColor,
                     letterSpacing: '0.1em',
-                    background: `${scoreColor}15`,
-                    border: `1px solid ${scoreColor}30`,
-                    borderRadius: 20,
+                    background: `${scoreColor}10`,
+                    border: `1px solid ${scoreColor}20`,
+                    borderRadius: 8,
                     padding: '3px 10px',
                   }}
                 >
@@ -386,9 +388,9 @@ export default function LeadDetailPage() {
                 <button
                   onClick={() => setStatusDropdown(!statusDropdown)}
                   style={{
-                    background: `${st.color}18`,
+                    background: 'rgba(255,255,255,0.05)',
                     color: st.color,
-                    border: `1px solid ${st.color}30`,
+                    border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 8,
                     padding: '6px 14px',
                     fontSize: 12,
@@ -495,13 +497,13 @@ export default function LeadDetailPage() {
                   onClick={() => setDeleteConfirm(true)}
                   style={{
                     background: 'none',
-                    border: '1px solid rgba(239,68,68,0.15)',
+                    border: '1px solid rgba(239,68,68,0.1)',
                     borderRadius: 8,
                     padding: '6px 10px',
                     fontSize: 12,
-                    color: '#ef4444',
+                    color: 'rgba(239,68,68,0.6)',
                     cursor: 'pointer',
-                    opacity: 0.6,
+                    opacity: 0.5,
                     transition: 'opacity 0.15s',
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
@@ -667,7 +669,7 @@ export default function LeadDetailPage() {
                 </div>
                 <div
                   style={{
-                    background: '#0a0a0a',
+                    background: '#050505',
                     border: aiLoading ? '1px solid rgba(107,122,255,0.2)' : '1px solid rgba(255,255,255,0.06)',
                     borderRadius: 8,
                     padding: 14,
@@ -1279,7 +1281,7 @@ export default function LeadDetailPage() {
               style={{
                 width: '100%',
                 minHeight: 100,
-                background: '#0a0a0a',
+                background: '#050505',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 8,
                 padding: 12,

@@ -126,10 +126,10 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0a0a', fontFamily: 'var(--font-dm-sans)' }}>
+    <div className="min-h-screen" style={{ background: '#050505', fontFamily: 'var(--font-dm-sans)' }}>
       <div className="mx-auto max-w-[1400px] px-6 pb-6 pt-0">
         {/* ── STICKY HEADER ── */}
-        <div className="sticky top-0 z-20 -mx-6 px-6 py-3 border-b border-white/5" style={{ background: '#0a0a0a' }}>
+        <div className="sticky top-0 z-20 -mx-6 px-6 py-3 border-b border-white/5" style={{ background: '#050505' }}>
           {/* Row 1: Title + Controls */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <PageHeader
@@ -144,11 +144,12 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: '#111',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: 12,
                   padding: '6px 12px',
                   width: 200,
+                  backdropFilter: 'blur(12px)',
                 }}
               >
                 <svg
@@ -184,16 +185,22 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                   alignItems: 'center',
                   gap: 4,
                   background: 'transparent',
-                  color: 'rgba(255,255,255,0.4)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.3)',
+                  border: 'none',
                   borderRadius: 8,
                   padding: '6px 12px',
                   fontSize: 11,
                   cursor: 'pointer',
-                  transition: 'color 0.15s',
+                  transition: 'all 0.5s cubic-bezier(0.32,0.72,0,1)',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.3)';
+                  e.currentTarget.style.background = 'transparent';
+                }}
               >
                 <Download size={12} /> Export
               </button>
@@ -201,8 +208,8 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
               <div
                 style={{
                   display: 'flex',
-                  background: 'rgba(255,255,255,0.04)',
-                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: 12,
                   border: '1px solid rgba(255,255,255,0.06)',
                   overflow: 'hidden',
                 }}
@@ -254,15 +261,18 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                   onClick={() => setStatusFilter(tab.key)}
                   style={{
                     padding: '5px 12px',
-                    borderRadius: 20,
+                    borderRadius: 8,
                     fontSize: 12,
                     fontWeight: 500,
                     cursor: 'pointer',
                     fontFamily: 'inherit',
-                    background: statusFilter === tab.key ? '#fff' : 'transparent',
-                    color: statusFilter === tab.key ? '#0a0a0a' : 'rgba(255,255,255,0.3)',
-                    border: statusFilter === tab.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                    transition: 'all 0.15s',
+                    background: statusFilter === tab.key ? 'rgba(255,255,255,0.1)' : 'transparent',
+                    color: statusFilter === tab.key ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)',
+                    border:
+                      statusFilter === tab.key
+                        ? '1px solid rgba(255,255,255,0.15)'
+                        : '1px solid rgba(255,255,255,0.06)',
+                    transition: 'all 0.5s cubic-bezier(0.32,0.72,0,1)',
                   }}
                 >
                   {tab.label}
@@ -274,10 +284,10 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
             </div>
             {/* Compact KPIs */}
             <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
-              <span style={{ color: '#FF5C2E', fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>
+              <span style={{ color: '#FF5C2E', fontFamily: 'var(--font-dm-mono)', fontWeight: 500 }}>
                 {hot} <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.2)' }}>HOT</span>
               </span>
-              <span style={{ color: '#F59E0B', fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>
+              <span style={{ color: '#F59E0B', fontFamily: 'var(--font-dm-mono)', fontWeight: 500 }}>
                 {warm} <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.2)' }}>WARM</span>
               </span>
               <span style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-mono)' }}>Ø {avg}</span>
@@ -298,8 +308,8 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                   fontSize: 11,
                   color: 'rgba(255,255,255,0.5)',
                   background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 6,
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 8,
                   padding: '3px 8px',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
@@ -318,8 +328,8 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                   fontSize: 11,
                   color: tierFilter === 'hot' ? '#FF5C2E' : tierFilter === 'warm' ? '#F59E0B' : '#6B7AFF',
                   background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 6,
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 8,
                   padding: '3px 8px',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
@@ -372,7 +382,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                 gap: 14,
               }}
             >
-              <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+              <svg width="52" height="52" viewBox="0 0 48 48" fill="none">
                 <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
                 <circle cx="24" cy="24" r="12" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
                 <circle cx="24" cy="24" r="3" fill="rgba(255,255,255,0.15)" />
@@ -390,14 +400,17 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                 style={{
                   marginTop: 6,
                   padding: '8px 18px',
-                  background: '#fff',
-                  color: '#080808',
+                  background: 'rgba(255,255,255,0.9)',
+                  color: '#050505',
                   border: 'none',
-                  borderRadius: 8,
+                  borderRadius: 12,
                   fontSize: 12,
                   fontWeight: 500,
                   cursor: 'pointer',
+                  transition: 'transform 0.15s',
                 }}
+                onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+                onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
               >
                 Erste Kontakte generieren
               </button>

@@ -13,7 +13,7 @@ function ScoreBadge({ score }: { score: number | null }) {
           display: 'inline-flex',
           alignItems: 'center',
           background: 'rgba(255,255,255,0.04)',
-          borderRadius: 20,
+          borderRadius: 8,
           padding: '3px 10px',
           border: '1px solid rgba(255,255,255,0.06)',
         }}
@@ -31,7 +31,7 @@ function ScoreBadge({ score }: { score: number | null }) {
   const isWarm = score >= 45;
   const label = isHot ? 'HOT' : isWarm ? 'WARM' : 'COLD';
   const color = isHot ? '#FF5C2E' : isWarm ? '#F59E0B' : '#6B7AFF';
-  const bg = isHot ? 'rgba(255,92,46,0.12)' : isWarm ? 'rgba(245,158,11,0.12)' : 'rgba(107,122,255,0.12)';
+  const bg = isHot ? 'rgba(255,92,46,0.08)' : isWarm ? 'rgba(245,158,11,0.08)' : 'rgba(107,122,255,0.08)';
   return (
     <div
       style={{
@@ -39,11 +39,11 @@ function ScoreBadge({ score }: { score: number | null }) {
         alignItems: 'center',
         gap: 5,
         background: bg,
-        borderRadius: 20,
+        borderRadius: 8,
         padding: '3px 10px',
       }}
     >
-      <span style={{ fontSize: 15, fontWeight: 700, color, fontFamily: 'var(--font-dm-mono)' }}>{score}</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color, fontFamily: 'var(--font-dm-mono)' }}>{score}</span>
       <span style={{ fontSize: 9, fontWeight: 600, color, letterSpacing: '0.1em', opacity: 0.85 }}>{label}</span>
     </div>
   );
@@ -329,9 +329,9 @@ export default function LeadsTable({
   return (
     <div
       style={{
-        background: '#111',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 12,
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: 16,
         overflow: 'hidden',
         marginTop: 12,
         position: 'relative',
@@ -644,9 +644,9 @@ export default function LeadsTable({
             key={label}
             onClick={() => key && setSortBy(key as 'score' | 'date')}
             style={{
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 600,
-              color: key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
+              color: key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)',
               letterSpacing: '0.08em',
               cursor: key ? 'pointer' : 'default',
               userSelect: 'none',
@@ -657,8 +657,7 @@ export default function LeadsTable({
             }}
             onMouseLeave={(e) => {
               if (key)
-                e.currentTarget.style.color =
-                  key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
+                e.currentTarget.style.color = key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)';
             }}
           >
             {label}
@@ -724,7 +723,7 @@ export default function LeadsTable({
               display: 'grid',
               gridTemplateColumns: gridCols,
               padding: '12px 20px',
-              borderBottom: i < sorted.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+              borderBottom: 'none',
               borderLeft: isNewLead ? '2px solid rgba(34,197,94,0.4)' : '2px solid transparent',
               alignItems: 'center',
               cursor: 'pointer',
@@ -732,15 +731,15 @@ export default function LeadsTable({
                 selectMode && isSelected
                   ? 'rgba(107,122,255,0.08)'
                   : selectedId === lead.id
-                    ? 'rgba(107,122,255,0.05)'
+                    ? 'rgba(255,255,255,0.05)'
                     : 'transparent',
-              transition: 'background 0.15s',
+              transition: 'all 0.5s cubic-bezier(0.32,0.72,0,1)',
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLElement;
               if (selectMode && isSelected) return;
               if (selectedId !== lead.id)
-                el.style.background = selectMode ? 'rgba(107,122,255,0.04)' : 'rgba(255,255,255,0.02)';
+                el.style.background = selectMode ? 'rgba(107,122,255,0.04)' : 'rgba(255,255,255,0.03)';
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLElement;
@@ -760,7 +759,7 @@ export default function LeadsTable({
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: '#fff',
+                    color: '#e8e8e8',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,

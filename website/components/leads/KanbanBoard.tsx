@@ -104,9 +104,9 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                 handleDrop(col.key);
               }}
               style={{
-                background: isOver ? col.bg : 'rgba(255,255,255,0.01)',
-                border: `1px solid ${isOver ? col.border : 'rgba(255,255,255,0.05)'}`,
-                borderRadius: 12,
+                background: isOver ? col.bg : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${isOver ? col.border : 'rgba(255,255,255,0.04)'}`,
+                borderRadius: 16,
                 padding: 10,
                 transition: 'all 0.2s',
                 display: 'flex',
@@ -126,10 +126,10 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: col.color }} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: col.color }}>{col.label}</span>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: col.color }} />
+                  <span style={{ fontSize: 11, fontWeight: 500, color: col.color }}>{col.label}</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-dm-mono)' }}>
                   {colLeads.length}
                 </span>
               </div>
@@ -147,24 +147,26 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                     }}
                     onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
                     style={{
-                      background: dragId === lead.id ? 'rgba(255,255,255,0.06)' : '#111',
+                      background: dragId === lead.id ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)',
                       border: '1px solid rgba(255,255,255,0.06)',
-                      borderRadius: 10,
+                      borderRadius: 12,
                       padding: '10px 12px',
                       cursor: 'grab',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.5s cubic-bezier(0.32,0.72,0,1)',
                       opacity: dragId === lead.id ? 0.5 : 1,
                     }}
                     onMouseEnter={(e) => {
                       if (dragId !== lead.id) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
                         e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (dragId !== lead.id) {
-                        e.currentTarget.style.background = '#111';
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
                         e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                        e.currentTarget.style.transform = 'translateY(0)';
                       }
                     }}
                   >
@@ -176,7 +178,7 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                           style={{
                             fontSize: 12,
                             fontWeight: 500,
-                            color: '#fff',
+                            color: '#e8e8e8',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -211,7 +213,7 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                         <span
                           style={{
                             fontSize: 14,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             color: scoreColor(lead.score),
                             fontFamily: 'var(--font-dm-mono)',
                           }}

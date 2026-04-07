@@ -9,7 +9,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       style={{
         display: 'flex',
         minHeight: '100vh',
-        backgroundColor: '#0a0a0a',
+        backgroundColor: '#050505',
         color: '#f5f5f5',
         position: 'relative',
       }}
