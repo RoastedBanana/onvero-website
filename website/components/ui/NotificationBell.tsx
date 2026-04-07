@@ -1,110 +1,133 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'lead' | 'system' | 'campaign';
   title: string;
   description: string;
   dotColor: string;
   timestamp: string;
   read: boolean;
-}
-
-interface Lead {
-  id: string;
-  company_name: string;
-  score: number | null;
-  created_at: string;
-}
-
-function getTier(score: number | null): 'HOT' | 'WARM' | 'COLD' {
-  if (score !== null && score >= 70) return 'HOT';
-  if (score !== null && score >= 40) return 'WARM';
-  return 'COLD';
-}
-
-function getTierColor(tier: 'HOT' | 'WARM' | 'COLD'): string {
-  if (tier === 'HOT') return '#22c55e';
-  if (tier === 'WARM') return '#f59e0b';
-  return '#3b82f6';
+  href?: string;
 }
 
 function formatRelativeTime(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffMs = now - then;
-  const diffMin = Math.floor(diffMs / 60000);
-  const diffHrs = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  const hrs = Math.floor(diffMs / 3600000);
+  const days = Math.floor(diffMs / 86400000);
+  if (mins < 1) return 'gerade eben';
+  if (mins < 60) return `vor ${mins} Min.`;
+  if (hrs < 24) return `vor ${hrs} Std.`;
+  if (days === 1) return 'gestern';
+  if (days < 7) return `vor ${days} Tagen`;
+  return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+}
 
-  if (diffMin < 1) return 'gerade eben';
-  if (diffMin < 60) return `vor ${diffMin} Minute${diffMin === 1 ? '' : 'n'}`;
-  if (diffHrs < 24) return `vor ${diffHrs} Stunde${diffHrs === 1 ? '' : 'n'}`;
-  if (diffDays === 1) return 'gestern';
-  if (diffDays < 7) return `vor ${diffDays} Tagen`;
-  return `vor ${Math.floor(diffDays / 7)} Woche${Math.floor(diffDays / 7) === 1 ? '' : 'n'}`;
+const READ_KEY = 'onvero_notifications_read';
+
+function getReadIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    return new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? '[]'));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveReadIds(ids: Set<string>) {
+  localStorage.setItem(READ_KEY, JSON.stringify([...ids]));
 }
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  // Fetch leads and generate notifications
   useEffect(() => {
-    fetch('/api/leads?limit=5')
+    setReadIds(getReadIds());
+
+    fetch('/api/leads')
       .then((r) => r.json())
       .then((data) => {
-        const leads: Lead[] = (data.leads ?? [])
-          .sort((a: Lead, b: Lead) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 5);
-
+        const leads = (data.leads ?? []) as {
+          id: string;
+          company_name: string;
+          score: number | null;
+          status: string;
+          created_at: string;
+          source: string;
+        }[];
         if (leads.length === 0) return;
 
+        const sorted = [...leads].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         const items: Notification[] = [];
+        const savedRead = getReadIds();
 
-        // Create lead notifications from the most recent leads (up to 3)
-        const leadSlice = leads.slice(0, 3);
-        for (const lead of leadSlice) {
-          const tier = getTier(lead.score);
+        // Recent scored leads (last 5)
+        const recentScored = sorted.filter((l) => l.score !== null).slice(0, 5);
+        for (const lead of recentScored) {
+          const score = lead.score ?? 0;
+          const tier = score >= 70 ? 'HOT' : score >= 45 ? 'WARM' : 'COLD';
+          const color = score >= 70 ? '#FF5C2E' : score >= 45 ? '#F59E0B' : '#6B7AFF';
           items.push({
-            id: `lead-${lead.id}`,
-            type: 'lead',
-            title: 'Neuer Lead gescored',
-            description: `${lead.company_name || 'Unbekannt'} hat Score ${lead.score ?? '–'} erhalten`,
-            dotColor: getTierColor(tier),
+            id: `score-${lead.id}`,
+            title: `${lead.company_name} — ${tier}`,
+            description: `Score ${score} · ${tier === 'HOT' ? 'Sofort kontaktieren' : tier === 'WARM' ? 'Nachfassen empfohlen' : 'Beobachten'}`,
+            dotColor: color,
             timestamp: lead.created_at,
-            read: false,
+            read: savedRead.has(`score-${lead.id}`),
+            href: `/dashboard/leads/${lead.id}`,
           });
         }
 
-        // System notification — scoring summary
-        const scoredCount = leads.filter((l) => l.score !== null).length;
-        if (scoredCount > 0) {
+        // New leads without score yet
+        const unscored = sorted.filter((l) => l.score === null).slice(0, 2);
+        for (const lead of unscored) {
           items.push({
-            id: 'system-scoring',
-            type: 'system',
-            title: 'Scoring abgeschlossen',
-            description: `${scoredCount} Leads wurden bewertet`,
-            dotColor: '#3b82f6',
-            timestamp: leads[0].created_at,
-            read: false,
+            id: `new-${lead.id}`,
+            title: `${lead.company_name} importiert`,
+            description: 'Wird gerade von der KI analysiert...',
+            dotColor: 'rgba(255,255,255,0.3)',
+            timestamp: lead.created_at,
+            read: savedRead.has(`new-${lead.id}`),
+            href: `/dashboard/leads/${lead.id}`,
           });
         }
 
-        // Campaign notification
-        items.push({
-          id: 'campaign-1',
-          type: 'campaign',
-          title: 'Kampagne abgeschlossen',
-          description: `${leads.length} neue Kontakte gefunden`,
-          dotColor: '#f59e0b',
-          timestamp: leads[leads.length - 1].created_at,
-          read: false,
-        });
+        // Google Maps leads
+        const mapsLeads = sorted.filter((l) => l.source === 'google_maps_apify').length;
+        if (mapsLeads > 0) {
+          items.push({
+            id: 'maps-summary',
+            title: `${mapsLeads} Google Maps Leads`,
+            description: 'Über Google Maps Scraper importiert',
+            dotColor: '#1D9E75',
+            timestamp: sorted.find((l) => l.source === 'google_maps_apify')?.created_at ?? sorted[0].created_at,
+            read: savedRead.has('maps-summary'),
+            href: '/dashboard/leads',
+          });
+        }
+
+        // Summary
+        const total = leads.length;
+        const hot = leads.filter((l) => (l.score ?? 0) >= 70).length;
+        if (total > 0) {
+          items.push({
+            id: 'summary',
+            title: `${total} Leads insgesamt`,
+            description: `${hot} HOT · Ø Score ${Math.round(leads.reduce((s, l) => s + (l.score ?? 0), 0) / total)}`,
+            dotColor: '#6B7AFF',
+            timestamp: sorted[0].created_at,
+            read: savedRead.has('summary'),
+            href: '/dashboard/analytics',
+          });
+        }
 
         setNotifications(items);
       })
@@ -113,24 +136,40 @@ export default function NotificationBell() {
 
   // Click outside to close
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
+    const handle = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
   }, []);
 
   const hasUnread = notifications.some((n) => !n.read);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAllRead = useCallback(() => {
+  const markAllRead = () => {
+    const allIds = new Set(notifications.map((n) => n.id));
+    setReadIds(allIds);
+    saveReadIds(allIds);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+  };
+
+  const handleClick = (notif: Notification) => {
+    // Mark as read
+    const next = new Set(readIds);
+    next.add(notif.id);
+    setReadIds(next);
+    saveReadIds(next);
+    setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)));
+
+    // Navigate
+    if (notif.href) {
+      setOpen(false);
+      router.push(notif.href);
+    }
+  };
 
   return (
     <div ref={containerRef} style={{ position: 'relative', zIndex: 50 }}>
-      {/* Bell Button */}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -161,18 +200,27 @@ export default function NotificationBell() {
           <span
             style={{
               position: 'absolute',
-              top: 2,
-              right: 2,
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
+              top: 1,
+              right: 1,
+              minWidth: 14,
+              height: 14,
+              borderRadius: 7,
               background: '#ef4444',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 8,
+              fontWeight: 700,
+              color: '#fff',
+              padding: '0 3px',
+              fontFamily: 'var(--font-dm-mono)',
             }}
-          />
+          >
+            {unreadCount}
+          </span>
         )}
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div
           style={{
@@ -180,13 +228,13 @@ export default function NotificationBell() {
             top: '100%',
             right: 0,
             marginTop: 8,
-            width: 340,
-            maxHeight: 400,
+            width: 360,
+            maxHeight: 440,
             overflowY: 'auto',
             background: '#111',
             border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
             zIndex: 100,
             fontFamily: 'var(--font-dm-sans)',
           }}
@@ -197,111 +245,121 @@ export default function NotificationBell() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '12px 14px 10px',
+              padding: '12px 16px 10px',
             }}
           >
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>Benachrichtigungen</span>
-            <button
-              onClick={markAllRead}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 11,
-                color: 'rgba(255,255,255,0.3)',
-                padding: 0,
-                fontFamily: 'var(--font-dm-sans)',
-                transition: 'color 0.15s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
-            >
-              Alle lesen
-            </button>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
+              Benachrichtigungen
+              {unreadCount > 0 && (
+                <span style={{ marginLeft: 6, fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 400 }}>
+                  {unreadCount} neu
+                </span>
+              )}
+            </span>
+            {hasUnread && (
+              <button
+                onClick={markAllRead}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  color: 'rgba(255,255,255,0.3)',
+                  padding: 0,
+                  fontFamily: 'inherit',
+                  transition: 'color 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
+              >
+                Alle gelesen
+              </button>
+            )}
           </div>
-
-          {/* Separator */}
           <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
 
-          {/* Notification Items */}
           {notifications.length === 0 ? (
-            <div
-              style={{
-                padding: '24px 14px',
-                textAlign: 'center',
-                fontSize: 12,
-                color: 'rgba(255,255,255,0.25)',
-              }}
-            >
+            <div style={{ padding: '32px 16px', textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>
               Keine Benachrichtigungen
             </div>
           ) : (
-            notifications.map((n) => <NotificationItem key={n.id} notification={n} />)
+            notifications.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => handleClick(n)}
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  padding: '10px 16px',
+                  width: '100%',
+                  background: n.read ? 'transparent' : 'rgba(255,255,255,0.02)',
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  cursor: n.href ? 'pointer' : 'default',
+                  transition: 'background 0.15s',
+                  border: 'none',
+                  textAlign: 'left',
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(255,255,255,0.02)')
+                }
+              >
+                <div style={{ paddingTop: 4, flexShrink: 0 }}>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: n.dotColor,
+                      opacity: n.read ? 0.3 : 1,
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: n.read ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.75)',
+                      fontWeight: n.read ? 400 : 500,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {n.title}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: 'rgba(255,255,255,0.3)',
+                      marginTop: 2,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {n.description}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: 'rgba(255,255,255,0.15)',
+                      marginTop: 3,
+                      fontFamily: 'var(--font-dm-mono)',
+                    }}
+                  >
+                    {formatRelativeTime(n.timestamp)}
+                  </div>
+                </div>
+                {n.href && (
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.1)', alignSelf: 'center', flexShrink: 0 }}>
+                    →
+                  </span>
+                )}
+              </button>
+            ))
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function NotificationItem({ notification }: { notification: Notification }) {
-  const [hover, setHover] = useState(false);
-
-  return (
-    <div
-      style={{
-        display: 'flex',
-        gap: 10,
-        padding: '10px 14px',
-        background: hover ? 'rgba(255,255,255,0.04)' : notification.read ? 'transparent' : 'rgba(255,255,255,0.03)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        cursor: 'default',
-        transition: 'background 0.15s',
-      }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-    >
-      {/* Dot */}
-      <div style={{ paddingTop: 4, flexShrink: 0 }}>
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            background: notification.dotColor,
-          }}
-        />
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 500, lineHeight: 1.3 }}>
-          {notification.title}
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.35)',
-            lineHeight: 1.4,
-            marginTop: 2,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {notification.description}
-        </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: 'rgba(255,255,255,0.2)',
-            marginTop: 3,
-            fontFamily: 'var(--font-dm-mono)',
-          }}
-        >
-          {formatRelativeTime(notification.timestamp)}
-        </div>
-      </div>
     </div>
   );
 }
