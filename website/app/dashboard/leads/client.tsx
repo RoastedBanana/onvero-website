@@ -233,6 +233,48 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           </div>
         </div>
 
+        {/* ── STATUS TABS (inside sticky) ── */}
+        <div className="sticky z-20 -mx-6 px-6 pb-3" style={{ top: 56, background: '#0a0a0a' }}>
+          <div
+            className="flex items-center gap-2"
+            style={{
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+              transition: 'opacity 0.4s ease 60ms, transform 0.4s ease 60ms',
+            }}
+          >
+            {statusTabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className="flex cursor-pointer items-center gap-2 rounded-full text-[13px] font-medium"
+                style={{
+                  padding: '6px 16px',
+                  background: statusFilter === tab.key ? '#ffffff' : 'transparent',
+                  color: statusFilter === tab.key ? '#0a0a0a' : 'rgba(255,255,255,0.30)',
+                  border: statusFilter === tab.key ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.07)',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <span
+                  className="rounded-[10px] px-1.5 text-[11px]"
+                  style={{
+                    background: statusFilter === tab.key ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)',
+                    color: statusFilter === tab.key ? '#0a0a0a' : 'rgba(255,255,255,0.55)',
+                  }}
+                >
+                  {tab.count}
+                </span>
+                {tab.label}
+              </button>
+            ))}
+            <div className="flex-1" />
+            <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.30)' }}>
+              {filtered.length} von {leads.length} Leads
+            </span>
+          </div>
+        </div>
+
         {/* ── TUTORIAL ── */}
         <HowItWorks
           storageKey="leads"
@@ -294,46 +336,6 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
             />
           );
         })()}
-
-        {/* ── STATUS TABS ── */}
-        <div
-          className="mb-4 flex items-center gap-2"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? 'translateY(0)' : 'translateY(8px)',
-            transition: 'opacity 0.4s ease 60ms, transform 0.4s ease 60ms',
-          }}
-        >
-          {statusTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setStatusFilter(tab.key)}
-              className="flex cursor-pointer items-center gap-2 rounded-full text-[13px] font-medium"
-              style={{
-                padding: '6px 16px',
-                background: statusFilter === tab.key ? '#ffffff' : 'transparent',
-                color: statusFilter === tab.key ? '#0a0a0a' : 'rgba(255,255,255,0.30)',
-                border: statusFilter === tab.key ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.07)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span
-                className="rounded-[10px] px-1.5 text-[11px]"
-                style={{
-                  background: statusFilter === tab.key ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.06)',
-                  color: statusFilter === tab.key ? '#0a0a0a' : 'rgba(255,255,255,0.55)',
-                }}
-              >
-                {tab.count}
-              </span>
-              {tab.label}
-            </button>
-          ))}
-          <div className="flex-1" />
-          <span className="text-[13px]" style={{ color: 'rgba(255,255,255,0.30)' }}>
-            {filtered.length} von {leads.length} Leads
-          </span>
-        </div>
 
         {/* ── GENERATION HISTORY ── */}
         <GenerationBanner onStartNew={() => router.push('/dashboard/generate')} />
