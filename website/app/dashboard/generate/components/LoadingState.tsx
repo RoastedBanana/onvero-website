@@ -28,9 +28,9 @@ export default function LoadingState() {
     <div style={{ maxWidth: 480, margin: '0 auto' }}>
       <div
         style={{
-          background: '#111',
-          border: '0.5px solid #1a1a1a',
-          borderRadius: 10,
+          background: 'rgba(255,255,255,0.03)',
+          border: '0.5px solid rgba(255,255,255,0.05)',
+          borderRadius: 14,
           padding: 40,
           minHeight: 320,
           display: 'flex',
@@ -48,8 +48,8 @@ export default function LoadingState() {
             width: 40,
             height: 40,
             borderRadius: '50%',
-            border: '2.5px solid #1a1a1a',
-            borderTopColor: '#555',
+            border: '2.5px solid rgba(255,255,255,0.06)',
+            borderTopColor: 'rgba(255,255,255,0.3)',
             animation: 'lsSpin 0.8s linear infinite',
           }}
         />

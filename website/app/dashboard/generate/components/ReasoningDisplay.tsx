@@ -35,9 +35,9 @@ interface Props {
 const labelStyle = { fontSize: 11, color: '#555', display: 'block' as const, marginBottom: 4 };
 const inputStyle = {
   width: '100%',
-  background: '#0d0d0d',
-  border: '0.5px solid #222',
-  borderRadius: 6,
+  background: 'rgba(255,255,255,0.02)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: 12,
   padding: '7px 10px',
   fontSize: 12,
   color: '#e0e0e0',
@@ -98,7 +98,14 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
       <style>{`@keyframes confBar{from{width:0%}}`}</style>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
         {/* ── Left: KI-Analyse ── */}
-        <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 10, padding: 24 }}>
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '0.5px solid rgba(255,255,255,0.05)',
+            borderRadius: 14,
+            padding: 24,
+          }}
+        >
           <div
             style={{
               fontSize: 11,
@@ -264,7 +271,14 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
         </div>
 
         {/* ── Right: Profil ── */}
-        <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 10, padding: 24 }}>
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '0.5px solid rgba(255,255,255,0.05)',
+            borderRadius: 14,
+            padding: 24,
+          }}
+        >
           <div
             style={{
               fontSize: 11,
@@ -394,8 +408,8 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
           style={{
             flex: 1,
             padding: '10px',
-            borderRadius: 8,
-            border: '0.5px solid #222',
+            borderRadius: 12,
+            border: '0.5px solid rgba(255,255,255,0.06)',
             background: 'transparent',
             color: '#888',
             fontSize: 13,
@@ -411,10 +425,10 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
           style={{
             flex: 2,
             padding: '10px',
-            borderRadius: 8,
+            borderRadius: 12,
             border: 'none',
-            background: '#e0e0e0',
-            color: '#080808',
+            background: 'rgba(255,255,255,0.9)',
+            color: '#050505',
             fontSize: 13,
             fontWeight: 500,
             cursor: 'pointer',

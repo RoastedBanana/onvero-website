@@ -117,7 +117,7 @@ export default function GeneratePage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', fontFamily: 'var(--font-dm-sans)' }}>
+    <div style={{ minHeight: '100vh', background: '#050505', fontFamily: 'var(--font-dm-sans)' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px' }}>
         <div style={{ marginBottom: 32 }}>
           <PageHeader title="Leads generieren" subtitle="KI-gestützte Lead-Recherche" />

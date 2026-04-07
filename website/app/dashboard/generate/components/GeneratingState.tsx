@@ -47,7 +47,14 @@ export default function GeneratingState() {
   return (
     <div style={{ maxWidth: 480, margin: '0 auto' }}>
       <style>{`@keyframes gsPulse{0%,100%{opacity:1}50%{opacity:0.3}}`}</style>
-      <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 10, padding: 28 }}>
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '0.5px solid rgba(255,255,255,0.05)',
+          borderRadius: 14,
+          padding: 28,
+        }}
+      >
         {/* Progress bar */}
         <div style={{ height: 4, background: '#1a1a1a', borderRadius: 2, overflow: 'hidden', marginBottom: 20 }}>
           <div
@@ -80,7 +87,7 @@ export default function GeneratingState() {
         {/* Steps */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           {steps.map((step, i) => {
-            const iconBg = step.status === 'done' ? '#1a2a1a' : step.status === 'active' ? '#2a2a1a' : '#151515';
+            const iconBg = step.status === 'done' ? '#141f14' : step.status === 'active' ? '#22220f' : '#111';
             const textColor = step.status === 'done' ? '#ccc' : step.status === 'active' ? '#fff' : '#444';
             const subColor = step.status === 'done' ? '#4a7a4a' : step.status === 'active' ? '#857530' : '#333';
             return (
@@ -140,9 +147,9 @@ export default function GeneratingState() {
             style={{
               display: 'inline-block',
               padding: '10px 24px',
-              borderRadius: 8,
-              background: '#e0e0e0',
-              color: '#080808',
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.9)',
+              color: '#050505',
               fontSize: 13,
               fontWeight: 500,
               textDecoration: 'none',

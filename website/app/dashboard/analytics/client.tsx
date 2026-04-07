@@ -30,19 +30,23 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 const S = {
-  card: { background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 } as React.CSSProperties,
+  card: {
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.05)',
+    borderRadius: 14,
+  } as React.CSSProperties,
   kpiCard: {
-    background: '#111',
-    border: '1px solid rgba(255,255,255,0.07)',
-    borderRadius: 10,
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.05)',
+    borderRadius: 14,
     padding: '14px 16px',
   } as React.CSSProperties,
   label: {
-    fontSize: 9,
+    fontSize: 10,
     textTransform: 'uppercase' as const,
-    letterSpacing: '0.09em',
-    color: 'rgba(255,255,255,0.35)',
-    fontWeight: 600,
+    letterSpacing: '0.08em',
+    color: 'rgba(255,255,255,0.2)',
+    fontWeight: 500,
     marginBottom: 6,
   } as React.CSSProperties,
   val: {
@@ -51,10 +55,18 @@ const S = {
     fontFamily: 'var(--font-dm-mono)',
     lineHeight: 1,
     marginBottom: 3,
+    color: '#e8e8e8',
   } as React.CSSProperties,
   sub: { fontSize: 11, color: 'rgba(255,255,255,0.3)' } as React.CSSProperties,
-  chartTitle: { fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 2 } as React.CSSProperties,
-  chartSub: { fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 12 } as React.CSSProperties,
+  chartTitle: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.2)',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    fontWeight: 500,
+    marginBottom: 2,
+  } as React.CSSProperties,
+  chartSub: { fontSize: 11, color: 'rgba(255,255,255,0.25)', marginBottom: 12 } as React.CSSProperties,
 };
 
 function TooltipBox({ text, children }: { text: string; children: React.ReactNode }) {
@@ -784,11 +796,11 @@ export default function AnalyticsClient() {
                 cursor: 'pointer',
                 fontSize: 13,
                 fontWeight: isActive ? 600 : 400,
-                background: 'transparent',
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
+                background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+                color: isActive ? '#e8e8e8' : 'rgba(255,255,255,0.3)',
                 transition: 'all 0.2s',
                 position: 'relative',
-                borderBottom: isActive ? '2px solid #6B7AFF' : '2px solid transparent',
+                borderBottom: isActive ? '2px solid rgba(255,255,255,0.15)' : '2px solid transparent',
                 marginBottom: -1,
               }}
             >
@@ -801,8 +813,8 @@ export default function AnalyticsClient() {
                     left: '10%',
                     right: '10%',
                     height: 2,
-                    background: '#6B7AFF',
-                    boxShadow: '0 0 10px rgba(107,122,255,0.5), 0 0 20px rgba(107,122,255,0.2)',
+                    background: 'rgba(255,255,255,0.15)',
+                    boxShadow: 'none',
                     borderRadius: 1,
                   }}
                 />

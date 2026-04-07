@@ -112,7 +112,7 @@ export default function PageHeader({ title, badge, subtitle, showTime = true }: 
         <p
           style={{
             fontSize: 13,
-            color: 'rgba(255,255,255,0.35)',
+            color: 'rgba(255,255,255,0.25)',
             margin: 0,
             fontFamily: 'var(--font-dm-sans)',
           }}

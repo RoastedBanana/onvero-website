@@ -64,9 +64,9 @@ function ChipInput({
         flexWrap: 'wrap',
         alignItems: 'center',
         gap: 5,
-        background: '#0d0d0d',
-        border: '0.5px solid #222',
-        borderRadius: 8,
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 12,
         padding: '6px 10px',
         minHeight: 38,
         cursor: 'text',
@@ -141,16 +141,16 @@ function ChipInput({
 const S = {
   input: {
     width: '100%' as const,
-    background: '#0d0d0d',
-    border: '0.5px solid #222',
-    borderRadius: 8,
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px solid rgba(255,255,255,0.06)',
+    borderRadius: 12,
     padding: '9px 12px',
     fontSize: 13,
     color: '#e0e0e0',
     outline: 'none',
     fontFamily: 'var(--font-dm-sans)',
   },
-  label: { fontSize: 13, color: '#888', display: 'block' as const, marginBottom: 6 },
+  label: { fontSize: 13, color: 'rgba(255,255,255,0.35)', display: 'block' as const, marginBottom: 6 },
 };
 
 export default function GenerateForm({ initialData, onSubmit }: Props) {
@@ -174,9 +174,9 @@ export default function GenerateForm({ initialData, onSubmit }: Props) {
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
       <div
         style={{
-          background: '#111',
-          border: '0.5px solid #1a1a1a',
-          borderRadius: 10,
+          background: 'rgba(255,255,255,0.03)',
+          border: '0.5px solid rgba(255,255,255,0.05)',
+          borderRadius: 14,
           padding: 28,
           display: 'flex',
           flexDirection: 'column',
@@ -195,9 +195,9 @@ export default function GenerateForm({ initialData, onSubmit }: Props) {
             rows={5}
             style={{
               width: '100%',
-              background: '#0a0a0a',
-              border: '0.5px solid #222',
-              borderRadius: 10,
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 12,
               padding: '14px 16px',
               fontSize: 14,
               color: '#e0e0e0',
@@ -313,10 +313,10 @@ export default function GenerateForm({ initialData, onSubmit }: Props) {
           style={{
             width: '100%',
             padding: 13,
-            borderRadius: 8,
+            borderRadius: 12,
             border: 'none',
-            background: canSubmit ? '#e0e0e0' : '#222',
-            color: canSubmit ? '#080808' : '#555',
+            background: canSubmit ? 'rgba(255,255,255,0.9)' : '#222',
+            color: canSubmit ? '#050505' : '#555',
             fontSize: 14,
             fontWeight: 500,
             cursor: canSubmit ? 'pointer' : 'default',

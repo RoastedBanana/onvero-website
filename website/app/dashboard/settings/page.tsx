@@ -39,14 +39,14 @@ interface Profile {
 
 const sectionLabel = {
   fontSize: 11,
-  color: 'rgba(255,255,255,0.3)',
+  color: 'rgba(255,255,255,0.2)',
   letterSpacing: '0.06em',
   textTransform: 'uppercase' as const,
   marginBottom: 10,
   marginTop: 20,
   fontWeight: 600,
 };
-const fieldLabel = { fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block' as const, marginBottom: 4 };
+const fieldLabel = { fontSize: 12, color: 'rgba(255,255,255,0.35)', display: 'block' as const, marginBottom: 4 };
 const fieldInput = {
   width: '100%',
   background: 'rgba(255,255,255,0.03)',
@@ -190,7 +190,10 @@ export default function SettingsPage() {
     setProfileSaving(true);
     const payload = {
       ...profile,
-      services: servicesText.split(',').map((s) => s.trim()).filter(Boolean),
+      services: servicesText
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
     };
     try {
       await fetch('/api/profile', {
@@ -202,11 +205,18 @@ export default function SettingsPage() {
       fetch('/api/proxy/n8n', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify((() => { const { websites, ...rest } = { action: 'vector-store', tenant_id: TENANT_ID, ...payload }; return { ...rest, urls: (websites ?? []).join(', ') }; })()),
+        body: JSON.stringify(
+          (() => {
+            const { websites, ...rest } = { action: 'vector-store', tenant_id: TENANT_ID, ...payload };
+            return { ...rest, urls: (websites ?? []).join(', ') };
+          })()
+        ),
       }).catch(() => {});
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 1500);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setProfileSaving(false);
   }
 
@@ -294,9 +304,7 @@ export default function SettingsPage() {
                 marginBottom: 24,
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 500, color: '#fff', marginBottom: 4 }}>
-                Firmenlogo
-              </div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Firmenlogo</div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 16 }}>
                 Wird als Signatur am Ende jeder ausgehenden E-Mail angezeigt.
               </div>
@@ -417,221 +425,224 @@ export default function SettingsPage() {
                 <SkeletonField />
                 <SkeletonField />
               </div>
-            ) : profile && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={sectionLabel}>Dein Unternehmen</div>
-                <div>
-                  <label style={fieldLabel}>Firmenname</label>
-                  <input
-                    value={profile.company_name ?? ''}
-                    onChange={(e) => updateProfile('company_name', e.target.value)}
-                    style={fieldInput}
-                  />
-                </div>
-                <div>
-                  <label style={fieldLabel}>Was ihr macht</label>
-                  <textarea
-                    value={profile.company_description ?? ''}
-                    onChange={(e) => updateProfile('company_description', e.target.value)}
-                    rows={4}
-                    style={{ ...fieldInput, resize: 'vertical' as const }}
-                  />
-                </div>
-                <div>
-                  <label style={fieldLabel}>Standort</label>
-                  <input
-                    value={profile.company_location ?? ''}
-                    onChange={(e) => updateProfile('company_location', e.target.value)}
-                    style={fieldInput}
-                  />
-                </div>
-                <div>
-                  <label style={fieldLabel}>URLs</label>
-                  {(profile.websites ?? []).length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                      {(profile.websites ?? []).map((url, i) => (
-                        <span
-                          key={i}
-                          style={{
-                            fontSize: 12,
-                            color: '#6B7AFF',
-                            background: 'rgba(107,122,255,0.1)',
-                            border: '1px solid rgba(107,122,255,0.2)',
-                            borderRadius: 6,
-                            padding: '4px 8px 4px 10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                          }}
-                        >
-                          {url}
-                          <button
-                            onClick={() => {
-                              const next = (profile.websites ?? []).filter((_, idx) => idx !== i);
-                              setProfile({ ...profile, websites: next });
-                            }}
+            ) : (
+              profile && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={sectionLabel}>Dein Unternehmen</div>
+                  <div>
+                    <label style={fieldLabel}>Firmenname</label>
+                    <input
+                      value={profile.company_name ?? ''}
+                      onChange={(e) => updateProfile('company_name', e.target.value)}
+                      style={fieldInput}
+                    />
+                  </div>
+                  <div>
+                    <label style={fieldLabel}>Was ihr macht</label>
+                    <textarea
+                      value={profile.company_description ?? ''}
+                      onChange={(e) => updateProfile('company_description', e.target.value)}
+                      rows={4}
+                      style={{ ...fieldInput, resize: 'vertical' as const }}
+                    />
+                  </div>
+                  <div>
+                    <label style={fieldLabel}>Standort</label>
+                    <input
+                      value={profile.company_location ?? ''}
+                      onChange={(e) => updateProfile('company_location', e.target.value)}
+                      style={fieldInput}
+                    />
+                  </div>
+                  <div>
+                    <label style={fieldLabel}>URLs</label>
+                    {(profile.websites ?? []).length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                        {(profile.websites ?? []).map((url, i) => (
+                          <span
+                            key={i}
                             style={{
-                              background: 'none',
-                              border: 'none',
-                              color: 'rgba(255,255,255,0.3)',
-                              cursor: 'pointer',
-                              fontSize: 13,
-                              padding: 0,
-                              lineHeight: 1,
+                              fontSize: 12,
+                              color: '#6B7AFF',
+                              background: 'rgba(107,122,255,0.1)',
+                              border: '1px solid rgba(107,122,255,0.2)',
+                              borderRadius: 6,
+                              padding: '4px 8px 4px 10px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
                             }}
                           >
-                            x
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <input
-                    placeholder="URL eingeben und Enter druecken"
-                    style={fieldInput}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const val = e.currentTarget.value.trim();
-                        if (val && !(profile.websites ?? []).includes(val)) {
-                          setProfile({ ...profile, websites: [...(profile.websites ?? []), val] });
+                            {url}
+                            <button
+                              onClick={() => {
+                                const next = (profile.websites ?? []).filter((_, idx) => idx !== i);
+                                setProfile({ ...profile, websites: next });
+                              }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'rgba(255,255,255,0.3)',
+                                cursor: 'pointer',
+                                fontSize: 13,
+                                padding: 0,
+                                lineHeight: 1,
+                              }}
+                            >
+                              x
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <input
+                      placeholder="URL eingeben und Enter druecken"
+                      style={fieldInput}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const val = e.currentTarget.value.trim();
+                          if (val && !(profile.websites ?? []).includes(val)) {
+                            setProfile({ ...profile, websites: [...(profile.websites ?? []), val] });
+                          }
+                          e.currentTarget.value = '';
                         }
-                        e.currentTarget.value = '';
-                      }
+                      }}
+                    />
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 6, lineHeight: 1.5 }}>
+                      Die URLs werden zur Erschliessung Ihres Unternehmensprofils verwendet. Nutzen Sie vor allem Ihre
+                      Startseite, Leistungen, Preise und Ueber-uns-Seite.
+                    </div>
+                  </div>
+
+                  <div style={sectionLabel}>Zielkunden</div>
+                  <div>
+                    <label style={fieldLabel}>Wen ihr sucht</label>
+                    <textarea
+                      value={profile.target_customers ?? ''}
+                      onChange={(e) => updateProfile('target_customers', e.target.value)}
+                      rows={4}
+                      style={{ ...fieldInput, resize: 'vertical' as const }}
+                    />
+                  </div>
+                  <div>
+                    <label style={fieldLabel}>Ideales Profil</label>
+                    <textarea
+                      value={profile.ideal_lead_profile ?? ''}
+                      onChange={(e) => updateProfile('ideal_lead_profile', e.target.value)}
+                      rows={3}
+                      style={{ ...fieldInput, resize: 'vertical' as const }}
+                    />
+                  </div>
+                  <div>
+                    <label style={fieldLabel}>Ausgeschlossen</label>
+                    <textarea
+                      value={profile.excluded_profiles ?? ''}
+                      onChange={(e) => updateProfile('excluded_profiles', e.target.value)}
+                      rows={2}
+                      style={{ ...fieldInput, resize: 'vertical' as const }}
+                    />
+                  </div>
+
+                  <div style={sectionLabel}>Angebot</div>
+                  <div>
+                    <label style={fieldLabel}>Leistungen (kommagetrennt)</label>
+                    <textarea
+                      value={servicesText}
+                      onChange={(e) => setServicesText(e.target.value)}
+                      rows={3}
+                      style={{ ...fieldInput, resize: 'vertical' as const }}
+                    />
+                  </div>
+                  <div>
+                    <label style={fieldLabel}>USP</label>
+                    <textarea
+                      value={profile.usp ?? ''}
+                      onChange={(e) => updateProfile('usp', e.target.value)}
+                      rows={2}
+                      style={{ ...fieldInput, resize: 'vertical' as const }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={fieldLabel}>Deal-Groesse min EUR</label>
+                      <input
+                        type="number"
+                        value={profile.deal_size_min ?? ''}
+                        onChange={(e) => updateProfile('deal_size_min', e.target.value ? Number(e.target.value) : null)}
+                        style={{ ...fieldInput, fontFamily: 'var(--font-dm-mono)' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={fieldLabel}>Deal-Groesse max EUR</label>
+                      <input
+                        type="number"
+                        value={profile.deal_size_max ?? ''}
+                        onChange={(e) => updateProfile('deal_size_max', e.target.value ? Number(e.target.value) : null)}
+                        style={{ ...fieldInput, fontFamily: 'var(--font-dm-mono)' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={sectionLabel}>E-Mail & Absender</div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={fieldLabel}>Absender Name</label>
+                      <input
+                        value={profile.sender_name ?? ''}
+                        onChange={(e) => updateProfile('sender_name', e.target.value)}
+                        style={fieldInput}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={fieldLabel}>Absender Rolle</label>
+                      <input
+                        value={profile.sender_role ?? ''}
+                        onChange={(e) => updateProfile('sender_role', e.target.value)}
+                        style={fieldInput}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={fieldLabel}>Tonalitaet</label>
+                    <input
+                      value={profile.tone_of_voice ?? ''}
+                      onChange={(e) => updateProfile('tone_of_voice', e.target.value)}
+                      style={fieldInput}
+                    />
+                  </div>
+                  <div>
+                    <label style={fieldLabel}>E-Mail Signatur</label>
+                    <textarea
+                      value={profile.email_signature ?? ''}
+                      onChange={(e) => updateProfile('email_signature', e.target.value)}
+                      rows={3}
+                      style={{ ...fieldInput, resize: 'vertical' as const }}
+                    />
+                  </div>
+
+                  <button
+                    onClick={saveProfile}
+                    disabled={profileSaving}
+                    style={{
+                      marginTop: 12,
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: profileSaved ? 'rgba(74,222,128,0.15)' : '#e0e0e0',
+                      color: profileSaved ? '#4ade80' : '#080808',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      cursor: profileSaving ? 'default' : 'pointer',
+                      transition: 'all 0.2s',
+                      fontFamily: 'var(--font-dm-sans)',
                     }}
-                  />
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 6, lineHeight: 1.5 }}>
-                    Die URLs werden zur Erschliessung Ihres Unternehmensprofils verwendet. Nutzen Sie vor allem Ihre Startseite, Leistungen, Preise und Ueber-uns-Seite.
-                  </div>
+                  >
+                    {profileSaving ? '...' : profileSaved ? 'Gespeichert ✓' : 'Speichern'}
+                  </button>
                 </div>
-
-                <div style={sectionLabel}>Zielkunden</div>
-                <div>
-                  <label style={fieldLabel}>Wen ihr sucht</label>
-                  <textarea
-                    value={profile.target_customers ?? ''}
-                    onChange={(e) => updateProfile('target_customers', e.target.value)}
-                    rows={4}
-                    style={{ ...fieldInput, resize: 'vertical' as const }}
-                  />
-                </div>
-                <div>
-                  <label style={fieldLabel}>Ideales Profil</label>
-                  <textarea
-                    value={profile.ideal_lead_profile ?? ''}
-                    onChange={(e) => updateProfile('ideal_lead_profile', e.target.value)}
-                    rows={3}
-                    style={{ ...fieldInput, resize: 'vertical' as const }}
-                  />
-                </div>
-                <div>
-                  <label style={fieldLabel}>Ausgeschlossen</label>
-                  <textarea
-                    value={profile.excluded_profiles ?? ''}
-                    onChange={(e) => updateProfile('excluded_profiles', e.target.value)}
-                    rows={2}
-                    style={{ ...fieldInput, resize: 'vertical' as const }}
-                  />
-                </div>
-
-                <div style={sectionLabel}>Angebot</div>
-                <div>
-                  <label style={fieldLabel}>Leistungen (kommagetrennt)</label>
-                  <textarea
-                    value={servicesText}
-                    onChange={(e) => setServicesText(e.target.value)}
-                    rows={3}
-                    style={{ ...fieldInput, resize: 'vertical' as const }}
-                  />
-                </div>
-                <div>
-                  <label style={fieldLabel}>USP</label>
-                  <textarea
-                    value={profile.usp ?? ''}
-                    onChange={(e) => updateProfile('usp', e.target.value)}
-                    rows={2}
-                    style={{ ...fieldInput, resize: 'vertical' as const }}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={fieldLabel}>Deal-Groesse min EUR</label>
-                    <input
-                      type="number"
-                      value={profile.deal_size_min ?? ''}
-                      onChange={(e) => updateProfile('deal_size_min', e.target.value ? Number(e.target.value) : null)}
-                      style={{ ...fieldInput, fontFamily: 'var(--font-dm-mono)' }}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={fieldLabel}>Deal-Groesse max EUR</label>
-                    <input
-                      type="number"
-                      value={profile.deal_size_max ?? ''}
-                      onChange={(e) => updateProfile('deal_size_max', e.target.value ? Number(e.target.value) : null)}
-                      style={{ ...fieldInput, fontFamily: 'var(--font-dm-mono)' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={sectionLabel}>E-Mail & Absender</div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={fieldLabel}>Absender Name</label>
-                    <input
-                      value={profile.sender_name ?? ''}
-                      onChange={(e) => updateProfile('sender_name', e.target.value)}
-                      style={fieldInput}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={fieldLabel}>Absender Rolle</label>
-                    <input
-                      value={profile.sender_role ?? ''}
-                      onChange={(e) => updateProfile('sender_role', e.target.value)}
-                      style={fieldInput}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label style={fieldLabel}>Tonalitaet</label>
-                  <input
-                    value={profile.tone_of_voice ?? ''}
-                    onChange={(e) => updateProfile('tone_of_voice', e.target.value)}
-                    style={fieldInput}
-                  />
-                </div>
-                <div>
-                  <label style={fieldLabel}>E-Mail Signatur</label>
-                  <textarea
-                    value={profile.email_signature ?? ''}
-                    onChange={(e) => updateProfile('email_signature', e.target.value)}
-                    rows={3}
-                    style={{ ...fieldInput, resize: 'vertical' as const }}
-                  />
-                </div>
-
-                <button
-                  onClick={saveProfile}
-                  disabled={profileSaving}
-                  style={{
-                    marginTop: 12,
-                    width: '100%',
-                    padding: '10px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: profileSaved ? 'rgba(74,222,128,0.15)' : '#e0e0e0',
-                    color: profileSaved ? '#4ade80' : '#080808',
-                    fontSize: 14,
-                    fontWeight: 500,
-                    cursor: profileSaving ? 'default' : 'pointer',
-                    transition: 'all 0.2s',
-                    fontFamily: 'var(--font-dm-sans)',
-                  }}
-                >
-                  {profileSaving ? '...' : profileSaved ? 'Gespeichert ✓' : 'Speichern'}
-                </button>
-              </div>
+              )
             )}
           </div>
         )}
