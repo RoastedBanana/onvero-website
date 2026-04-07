@@ -132,20 +132,31 @@ export default function NotificationBell() {
     <div ref={containerRef} style={{ position: 'relative', zIndex: 50 }}>
       {/* Bell Button */}
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
         style={{
           position: 'relative',
-          background: 'none',
-          border: 'none',
+          background: open ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 6,
           cursor: 'pointer',
-          padding: 4,
+          padding: 6,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          transition: 'background 0.15s',
+          width: 28,
+          height: 28,
         }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.background = open ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)')
+        }
         title="Benachrichtigungen"
       >
-        <Bell size={16} style={{ color: 'rgba(255,255,255,0.4)' }} />
+        <Bell size={14} style={{ color: 'rgba(255,255,255,0.5)' }} />
         {hasUnread && (
           <span
             style={{
