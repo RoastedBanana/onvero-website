@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X, Lightbulb } from 'lucide-react';
 import type React from 'react';
 
 export interface StepData {
@@ -106,7 +106,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.15)' }}>💡</span>
+            <Lightbulb size={13} style={{ color: 'rgba(255,255,255,0.15)' }} />
             <span style={{ fontSize: compact ? 13 : 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>
               {title}
             </span>

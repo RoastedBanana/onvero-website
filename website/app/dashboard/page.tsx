@@ -9,15 +9,28 @@ import { BentoGrid } from '@/components/ui/bento-grid';
 import type { BentoItem } from '@/components/ui/bento-grid';
 import { HowItWorks } from '@/components/ui/how-it-works';
 import { DashboardWidgets } from '@/components/ui/DashboardWidgets';
-import { Users, BarChart2, Zap, Target, Mail, TrendingUp, Calendar, Search, PenLine, Sparkles } from 'lucide-react';
+import {
+  Users,
+  BarChart2,
+  Zap,
+  Target,
+  Mail,
+  TrendingUp,
+  Calendar,
+  Search,
+  PenLine,
+  Sparkles,
+  MessageCircle,
+  ArrowUp,
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat';
 
 const modes = [
-  { key: 'search', label: 'Suchen', icon: '⌕' },
-  { key: 'ask', label: 'Fragen', icon: '○' },
-  { key: 'create', label: 'Erstellen', icon: '✦' },
+  { key: 'search', label: 'Suchen', icon: <Search size={12} style={{ opacity: 0.7 }} /> },
+  { key: 'ask', label: 'Fragen', icon: <MessageCircle size={12} style={{ opacity: 0.7 }} /> },
+  { key: 'create', label: 'Erstellen', icon: <Sparkles size={12} style={{ opacity: 0.7 }} /> },
 ];
 
 const quickActions = [
@@ -322,6 +335,9 @@ export default function DashboardPage() {
                       color: mode === m.key ? '#fff' : 'rgba(255,255,255,0.35)',
                       transition: 'all 0.2s',
                       fontFamily: 'inherit',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
                     }}
                   >
                     {m.icon} {m.label}
@@ -403,7 +419,7 @@ export default function DashboardPage() {
                     transition: 'all 0.2s',
                   }}
                 >
-                  ▸
+                  <ArrowUp size={16} />
                 </button>
               </div>
             </div>

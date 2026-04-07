@@ -73,14 +73,12 @@ function ScoreBar({ label, value, max, color }: { label: string; value: number; 
 }
 
 function ContactRow({
-  icon,
   label,
   value,
   action,
   href,
   onCopy,
 }: {
-  icon: string;
   label: string;
   value?: string;
   action?: 'copy' | 'link' | 'tel';
@@ -90,7 +88,6 @@ function ContactRow({
   const display = value || '—';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ fontSize: 11, width: 16, textAlign: 'center', flexShrink: 0, opacity: 0.5 }}>{icon}</span>
       <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', width: 68, flexShrink: 0 }}>{label}</span>
       <span
         style={{
@@ -392,10 +389,10 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
 
   const ACTIVITY_META: Record<string, { icon: string; color: string; label: string }> = {
     lead_created: { icon: '＋', color: '#22C55E', label: 'Lead erstellt' },
-    scored: { icon: '⚡', color: '#6B7AFF', label: 'KI-Score' },
-    email_generated: { icon: '✉', color: '#8B5CF6', label: 'E-Mail generiert' },
+    scored: { icon: 'S', color: '#6B7AFF', label: 'KI-Score' },
+    email_generated: { icon: 'E', color: '#8B5CF6', label: 'E-Mail generiert' },
     status_change: { icon: '↻', color: '#F59E0B', label: 'Status geändert' },
-    website_analysis: { icon: '🌐', color: '#3B82F6', label: 'Website-Analyse' },
+    website_analysis: { icon: 'W', color: '#3B82F6', label: 'Website-Analyse' },
     enrichment: { icon: '★', color: '#22C55E', label: 'Anreicherung' },
     contact: { icon: '☎', color: '#a78bfa', label: 'Kontaktiert' },
   };
@@ -423,7 +420,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                     text: `KI-Score: ${lead.score}`,
                     content: null,
                     color: '#6B7AFF',
-                    icon: '⚡',
+                    icon: 'S',
                   },
                 ]
               : [
@@ -432,7 +429,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                     text: `KI-Score: ${lead.score}`,
                     content: null,
                     color: '#6B7AFF',
-                    icon: '⚡',
+                    icon: 'S',
                   },
                 ]),
             ...(lead.lastContactedAt
@@ -662,7 +659,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                       gap: 4,
                     }}
                   >
-                    ⚡ Kaufsignale
+                    Kaufsignale
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                     {lead.buyingSignals.slice(0, 4).map((signal, i) => (
@@ -712,7 +709,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                       marginBottom: 4,
                     }}
                   >
-                    ⚡ Nächste Aktion
+                    Nächste Aktion
                   </div>
                   <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>{lead.nextAction}</div>
                 </>
@@ -741,7 +738,6 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <ContactRow
-                        icon="✉"
                         label="E-Mail"
                         value={lead.email}
                         action="copy"
@@ -779,29 +775,23 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                       </span>
                     )}
                   </div>
-                  <ContactRow icon="📱" label="Telefon" value={lead.phone} action="tel" />
+                  <ContactRow label="Telefon" value={lead.phone} action="tel" />
                   <ContactRow
-                    icon="🌐"
                     label="Website"
                     value={lead.website?.replace(/^https?:\/\/(www\.)?/, '')}
                     action="link"
                     href={lead.website}
                   />
                   <ContactRow
-                    icon="💼"
                     label="LinkedIn"
                     value={lead.linkedinUrl ? 'Profil öffnen' : undefined}
                     action="link"
                     href={lead.linkedinUrl}
                   />
-                  <ContactRow icon="🏢" label="Branche" value={lead.industry} />
-                  <ContactRow
-                    icon="👥"
-                    label="Mitarbeiter"
-                    value={lead.employeeCount ? String(lead.employeeCount) : undefined}
-                  />
-                  <ContactRow icon="📍" label="Stadt" value={lead.city} />
-                  <ContactRow icon="🏷️" label="Budget" value={lead.budgetEstimate} />
+                  <ContactRow label="Branche" value={lead.industry} />
+                  <ContactRow label="Mitarbeiter" value={lead.employeeCount ? String(lead.employeeCount) : undefined} />
+                  <ContactRow label="Stadt" value={lead.city} />
+                  <ContactRow label="Budget" value={lead.budgetEstimate} />
                 </div>
 
                 {/* Lokale Präsenz (Google Maps) */}
@@ -820,7 +810,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                         gap: 5,
                       }}
                     >
-                      <span style={{ fontSize: 11 }}>📍</span> Lokale Präsenz
+                      Lokale Präsenz
                     </div>
 
                     {lead.googleBusinessStatus === 'OPERATIONAL' && lead.googleRating != null ? (
@@ -1036,7 +1026,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                         gap: 5,
                       }}
                     >
-                      <span style={{ fontSize: 11 }}>⚡</span> Aktuelle Signale
+                      Aktuelle Signale
                     </div>
 
                     {lead.newsSignals && lead.newsSignals.length > 0 && (
@@ -1092,7 +1082,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
 
                 {lead.technologies.length > 0 && (
                   <div style={{ marginTop: 10 }}>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>💻 Technologien:</span>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>Technologien:</span>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                       {lead.technologies.map((t) => (
                         <span
@@ -1303,7 +1293,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                       ? '⟳ Analysiere...'
                       : scrapingStarted
                         ? '✓ Analyse gestartet'
-                        : '🌐 Website analysieren'}
+                        : 'Website analysieren'}
                   </button>
                 )}
 
@@ -1311,7 +1301,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                   <div style={{ marginTop: 8, fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
                     {lead.websiteTitle && (
                       <div style={{ fontWeight: 500, color: 'rgba(255,255,255,0.55)', marginBottom: 2 }}>
-                        🌐 {lead.websiteTitle}
+                        {lead.websiteTitle}
                       </div>
                     )}
                     {lead.websiteSummary}
@@ -1387,7 +1377,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                               cursor: 'pointer',
                             }}
                           >
-                            ✏️ Bearbeiten
+                            Bearbeiten
                           </button>
                           <button
                             onClick={copyDraft}
@@ -1402,7 +1392,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                               transition: 'all 0.2s',
                             }}
                           >
-                            {draftCopied ? '✓' : '📋 Kopieren'}
+                            {draftCopied ? '✓' : 'Kopieren'}
                           </button>
                           <button
                             onClick={() => setEmailExpanded((e) => !e)}
@@ -1579,15 +1569,15 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                     ) : (
                       realActivities.map((activity) => {
                         const typeIcon: Record<string, { icon: string; color: string }> = {
-                          task: { icon: '🔥', color: '#f97316' },
+                          task: { icon: 'T', color: '#f97316' },
                           status_change: { icon: '↔', color: '#60a5fa' },
-                          note: { icon: '📝', color: 'rgba(255,255,255,0.4)' },
-                          email: { icon: '✉', color: '#22C55E' },
-                          email_generated: { icon: '✉', color: '#8B5CF6' },
-                          call: { icon: '📞', color: '#a78bfa' },
-                          scored: { icon: '⚡', color: '#6B7AFF' },
-                          lead_created: { icon: '＋', color: '#22C55E' },
-                          website_analysis: { icon: '🌐', color: '#3B82F6' },
+                          note: { icon: 'N', color: 'rgba(255,255,255,0.4)' },
+                          email: { icon: 'E', color: '#22C55E' },
+                          email_generated: { icon: 'E', color: '#8B5CF6' },
+                          call: { icon: 'A', color: '#a78bfa' },
+                          scored: { icon: 'S', color: '#6B7AFF' },
+                          lead_created: { icon: '+', color: '#22C55E' },
+                          website_analysis: { icon: 'W', color: '#3B82F6' },
                           enrichment: { icon: '★', color: '#22C55E' },
                         };
                         const ti = typeIcon[activity.type] ?? { icon: '•', color: 'rgba(255,255,255,0.3)' };
@@ -1674,7 +1664,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                     gap: 6,
                   }}
                 >
-                  <span>⏱</span>
+                  <span></span>
                   <span>
                     Follow-up E-Mail in: <strong>{followUpDisplay}</strong>
                   </span>
@@ -1702,12 +1692,12 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                   }}
                 >
                   {emailSending
-                    ? '⏳ Senden…'
+                    ? 'Senden...'
                     : emailSent
                       ? '✓ Gesendet'
                       : followUpExpired && !autoFollowUp
-                        ? '📧 Follow Up'
-                        : '📧 E-Mail senden'}
+                        ? 'Follow Up'
+                        : 'E-Mail senden'}
                 </button>
               )}
               <button
@@ -1730,7 +1720,7 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                   transition: 'color 0.2s',
                 }}
               >
-                {draftCopied ? '✓' : '📋'}
+                {draftCopied ? '✓' : 'Kopieren'}
               </button>
 
               <div style={{ position: 'relative', flex: 1 }}>

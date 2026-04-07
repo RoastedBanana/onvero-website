@@ -486,7 +486,7 @@ export default function LeadDetailPage() {
                     transition: 'color 0.2s',
                   }}
                 >
-                  {emailSent ? '✓ Gesendet' : emailSending ? '⏳ Sende...' : '📨 E-Mail senden'}
+                  {emailSent ? '✓ Gesendet' : emailSending ? 'Sende...' : 'E-Mail senden'}
                 </button>
               )}
               {/* Delete */}
@@ -619,7 +619,7 @@ export default function LeadDetailPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    {emailCopied ? '✓ Kopiert' : '📋 Kopieren'}
+                    {emailCopied ? '✓ Kopiert' : 'Kopieren'}
                   </button>
                   <button
                     disabled={emailSending || emailSent}
@@ -662,7 +662,7 @@ export default function LeadDetailPage() {
                       opacity: emailSending ? 0.6 : 1,
                     }}
                   >
-                    {emailSent ? '✓ Gesendet' : emailSending ? '⏳ Sende...' : '📨 E-Mail senden'}
+                    {emailSent ? '✓ Gesendet' : emailSending ? 'Sende...' : 'E-Mail senden'}
                   </button>
                 </div>
                 <div
@@ -801,7 +801,7 @@ export default function LeadDetailPage() {
                       }}
                       title={editingEmail ? 'Speichern' : 'Bearbeiten'}
                     >
-                      {editingEmail ? '✓' : '✏️'}
+                      {editingEmail ? '✓' : 'Bearbeiten'}
                     </button>
                     <button
                       onClick={() => setAiModalOpen(true)}
@@ -829,7 +829,7 @@ export default function LeadDetailPage() {
 
             {/* Buying Signals */}
             {lead.buyingSignals && lead.buyingSignals.length > 0 && (
-              <Card title="⚡ Kaufsignale">
+              <Card title="Kaufsignale">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {lead.buyingSignals.map((s, i) => (
                     <span
@@ -923,7 +923,7 @@ export default function LeadDetailPage() {
 
             {/* Next Action */}
             {lead.nextAction && (
-              <Card title="⚡ Nächste Aktion">
+              <Card title="Nächste Aktion">
                 <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, margin: 0 }}>
                   {lead.nextAction}
                 </p>
@@ -1021,7 +1021,7 @@ export default function LeadDetailPage() {
 
             {/* Google Maps */}
             {lead.googleBusinessStatus === 'OPERATIONAL' && lead.googleRating != null && (
-              <Card title="📍 Lokale Präsenz">
+              <Card title="Lokale Präsenz">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span
                     style={{
@@ -1232,9 +1232,9 @@ export default function LeadDetailPage() {
                 label="Quelle"
                 value={
                   lead.source === 'google_maps_apify'
-                    ? '📍 Google Maps'
+                    ? 'Google Maps'
                     : lead.source === 'apollo_outbound'
-                      ? '⚡ Apollo'
+                      ? 'Apollo'
                       : (lead.source ?? '—')
                 }
               />
@@ -1366,7 +1366,7 @@ export default function LeadDetailPage() {
                   opacity: !aiPrompt.trim() ? 0.5 : 1,
                 }}
               >
-                {aiLoading ? '⏳ KI arbeitet...' : '✦ Absenden'}
+                {aiLoading ? 'KI arbeitet...' : 'Absenden'}
               </button>
             </div>
           </div>

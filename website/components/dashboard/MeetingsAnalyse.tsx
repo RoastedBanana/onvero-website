@@ -27,7 +27,7 @@ export function MeetingsAnalyse() {
           marginBottom: '0.5rem',
         }}
       >
-        📊
+        M
       </div>
       <h2 style={{ fontWeight: 600, fontSize: '1.05rem', color: '#fff' }}>Meeting-Analyse</h2>
       <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', maxWidth: 320 }}>

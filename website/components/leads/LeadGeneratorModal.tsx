@@ -24,10 +24,10 @@ const INDUSTRY_OPTIONS = [
 const COUNTRY_OPTIONS = ['DE', 'AT', 'CH'];
 
 const STEPS = [
-  { icon: '🔍', label: 'Apollo durchsuchen' },
-  { icon: '✓', label: 'Duplikate prüfen' },
-  { icon: '🌐', label: 'Websites analysieren' },
-  { icon: '🤖', label: 'KI bewertet Leads' },
+  { icon: '1', label: 'Apollo durchsuchen' },
+  { icon: '2', label: 'Duplikate prüfen' },
+  { icon: '3', label: 'Websites analysieren' },
+  { icon: '4', label: 'KI bewertet Leads' },
 ];
 
 const CSS = `
@@ -445,7 +445,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                   }}
                 >
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#8B5CF6', marginBottom: 4 }}>
-                    ⚡ Apollo Outbound
+                    Apollo Outbound
                   </div>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
                     B2B Entscheider über Apollo — CEO, GF, Inhaber
@@ -471,7 +471,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                     e.currentTarget.style.borderColor = 'rgba(29,158,117,0.15)';
                   }}
                 >
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1D9E75', marginBottom: 4 }}>📍 Google Maps</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1D9E75', marginBottom: 4 }}>Google Maps</div>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
                     Lokale Betriebe für Website-Verkauf — Handwerk, Gastronomie, Einzelhandel
                   </div>
@@ -528,15 +528,13 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                 >
                   ←
                 </button>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#1D9E75' }}>📍 Google Maps Scraper</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#1D9E75' }}>Google Maps Scraper</div>
               </div>
 
               {mapsPhase === 'running' ? (
                 <div style={{ padding: '40px 24px', textAlign: 'center' }}>
                   <style>{`@keyframes mapsSpin{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}`}</style>
-                  <div style={{ fontSize: 40, marginBottom: 12, animation: 'mapsSpin 2s ease-in-out infinite' }}>
-                    📍
-                  </div>
+                  <div style={{ fontSize: 40, marginBottom: 12, animation: 'mapsSpin 2s ease-in-out infinite' }}>●</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
                     Google Maps Scraper läuft...
                   </div>
@@ -573,7 +571,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                     }}
                   >
                     <span>
-                      ⏱ {Math.floor(mapsElapsed / 60)}:{String(mapsElapsed % 60).padStart(2, '0')}
+                      {Math.floor(mapsElapsed / 60)}:{String(mapsElapsed % 60).padStart(2, '0')}
                     </span>
                     <span>Geschätzt ~2 Min.</span>
                   </div>
@@ -596,7 +594,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                 </div>
               ) : mapsPhase === 'done' ? (
                 <div style={{ textAlign: 'center', padding: '40px 24px' }}>
-                  <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: '#1D9E75', marginBottom: 4 }}>
                     Import abgeschlossen
                   </div>
@@ -666,9 +664,9 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                       Branchen-Shortcuts
                     </label>
                     {[
-                      ['🔨 Maler', '⚡ Elektriker', '🔧 Klempner', '🪟 Schreiner', '🏠 Dachdecker'],
-                      ['✂️ Friseur', '💆 Massage', '💅 Kosmetik', '🦷 Zahnarzt', '🏥 Arzt'],
-                      ['🍕 Restaurant', '☕ Café', '🥐 Bäckerei', '🛍️ Einzelhandel', '🚗 Autowerkstatt'],
+                      ['Maler', 'Elektriker', 'Klempner', 'Schreiner', 'Dachdecker'],
+                      ['Friseur', 'Massage', 'Kosmetik', 'Zahnarzt', 'Arzt'],
+                      ['Restaurant', 'Cafe', 'Backerei', 'Einzelhandel', 'Autowerkstatt'],
                     ].map((row, ri) => (
                       <div key={ri} style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}>
                         {row.map((chip) => {
@@ -998,7 +996,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                         transition: 'opacity 0.15s',
                       }}
                     >
-                      {mapsLoading ? '⟳ Starte Scraper...' : '📍 Google Maps Scraper starten'}
+                      {mapsLoading ? 'Starte Scraper...' : 'Google Maps Scraper starten'}
                     </button>
                     <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 6 }}>
                       ~2 Min. Laufzeit · ca. 0,004€ pro Lead
@@ -1023,7 +1021,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>⚡ Lead Generator</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>Lead Generator</div>
                   <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
                     Neue B2B-Leads automatisch finden &amp; bewerten
                   </div>
@@ -1217,10 +1215,10 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                         }}
                       >
                         {leadsPerRun <= 10
-                          ? '⚡ Schnell · ~2-3 Min · empfohlen'
+                          ? 'Schnell · ~2-3 Min · empfohlen'
                           : leadsPerRun <= 20
-                            ? '⏱ Normal · ~5-8 Min'
-                            : '☕ Maximum · ~10-15 Min'}
+                            ? 'Normal · ~5-8 Min'
+                            : 'Maximum · ~10-15 Min'}
                       </div>
                     </div>
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 4 }}>
@@ -1286,7 +1284,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                         lineHeight: 1.5,
                       }}
                     >
-                      ℹ️ Sucht neue Kontakte via Apollo, bewertet mit KI, speichert direkt im Dashboard.
+                      Sucht neue Kontakte via Apollo, bewertet mit KI, speichert direkt im Dashboard.
                     </div>
                   </>
                 )}
@@ -1355,7 +1353,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                   animation: 'pulse-ring 2s ease-in-out infinite',
                 }}
               >
-                <span style={{ fontSize: 28 }}>⚡</span>
+                <span style={{ fontSize: 28 }}>●</span>
               </div>
 
               <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 4 }}>
@@ -1465,7 +1463,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                     textAlign: 'left',
                   }}
                 >
-                  ⏳ Läuft seit {Math.floor(runningSeconds / 60)} Min — Apollo-Suche kann bei vielen Ergebnissen länger
+                  Läuft seit {Math.floor(runningSeconds / 60)} Min — Apollo-Suche kann bei vielen Ergebnissen länger
                   dauern.
                 </div>
               )}
@@ -1545,7 +1543,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                   lineHeight: 1.5,
                 }}
               >
-                💡 <strong style={{ color: 'rgba(255,255,255,0.8)' }}>Tipp:</strong> HOT-Leads erscheinen automatisch im
+                <strong style={{ color: 'rgba(255,255,255,0.8)' }}>Tipp:</strong> HOT-Leads erscheinen automatisch im
                 roten Banner oben. Scroll nach unten oder warte auf das Update.
               </div>
 
@@ -1715,7 +1713,7 @@ export default function LeadGeneratorModal({ isOpen, onClose }: Props) {
                     fontFamily: 'var(--font-dm-mono)',
                   }}
                 >
-                  📋 Fehlerdetails kopieren
+                  Fehlerdetails kopieren
                 </button>
               )}
             </div>

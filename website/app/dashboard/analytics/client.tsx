@@ -257,7 +257,7 @@ function LeadDevelopmentChart({ weeklyData, trendData }: { weeklyData: any[]; tr
                 transition: 'all 0.15s',
               }}
             >
-              {v === 'weekly' ? 'Woechentlich' : 'Taeglich'}
+              {v === 'weekly' ? 'Wöchentlich' : 'Täglich'}
             </button>
           ))}
         </div>
@@ -421,7 +421,7 @@ function LeadDevelopmentChart({ weeklyData, trendData }: { weeklyData: any[]; tr
               pointerEvents: 'none',
             }}
           >
-            Taeglich ansehen fuer mehr Detail
+            Täglich ansehen fuer mehr Detail
           </div>
         )}
       </div>
@@ -473,10 +473,10 @@ export default function AnalyticsClient() {
     score_alert: 'HOT Lead Alert',
   };
   const typeColors: Record<string, string> = {
-    ai_analysis: '#8B5CF6',
-    score_update: '#F59E0B',
-    status_change: '#22C55E',
-    task: '#6B7AFF',
+    ai_analysis: '#6B7AFF',
+    score_update: '#6B7AFF',
+    status_change: '#a78bfa',
+    task: '#22C55E',
     form_submit: '#FF5C2E',
     score_alert: '#FF5C2E',
   };
@@ -484,12 +484,12 @@ export default function AnalyticsClient() {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return 'gerade eben';
-    if (mins < 60) return `vor ${mins} Min`;
+    if (mins < 60) return `vor ${mins} Min.`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `vor ${hrs}h`;
+    if (hrs < 24) return `vor ${hrs} Std.`;
     const days = Math.floor(hrs / 24);
     return days < 7
-      ? `vor ${days} Tagen`
+      ? `vor ${days} ${days === 1 ? 'Tag' : 'Tagen'}`
       : new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
   };
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
@@ -915,125 +915,21 @@ export default function AnalyticsClient() {
                 </div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px 280px', gap: 12, marginBottom: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 12, marginBottom: 12 }}>
               <LeadDevelopmentChart weeklyData={weekly} trendData={trendData?.trend || []} />
               <div style={{ ...S.card, padding: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 4 }}>System-Status</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 14 }}>Aktive KI-Prozesse</div>
-                {[
-                  {
-                    name: 'Lead Generator',
-                    detail: `${leads.total} Leads`,
-                    status: 'active',
-                    tip: 'Sucht taeglich neue Kontakte ueber eine 270-Mio-Datenbank. Filtert nach Branche, Groesse und Position.',
-                  },
-                  {
-                    name: 'KI-Bewertung',
-                    detail: `${leads.aiScored} bewertet`,
-                    status: 'active',
-                    tip: 'Analysiert jeden Lead mit Claude AI: Website, Branche, Technologien, Senioritaet. Score 0-100.',
-                  },
-                  {
-                    name: 'E-Mail Drafts',
-                    detail: `${leads.withEmail} erstellt`,
-                    status: 'active',
-                    tip: 'Schreibt personalisierte Erstkontakt-E-Mails basierend auf der Firmenwebsite des Leads.',
-                  },
-                  {
-                    name: 'Website-Tracking',
-                    detail:
-                      website?.visitors > 0 ? fmt(website.visitors) + ' Besucher' : 'Script auf Website einbinden',
-                    status: website?.visitors > 0 ? 'active' : 'pending',
-                    tip: 'Plausible Analytics: DSGVO-konform, ohne Cookie-Banner.',
-                  },
-                  {
-                    name: 'E-Mail Versand',
-                    detail: 'In Planung',
-                    status: 'planned',
-                    tip: 'Automatischer Versand der KI-Drafts nach Einrichtung der E-Mail-Integration.',
-                  },
-                ].map((item, i, arr) => {
-                  const color =
-                    item.status === 'active'
-                      ? '#22C55E'
-                      : item.status === 'pending'
-                        ? '#F59E0B'
-                        : 'rgba(255,255,255,0.2)';
-                  const label = item.status === 'active' ? 'Aktiv' : item.status === 'pending' ? 'Setup' : 'Geplant';
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '9px 0',
-                        borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : '',
-                      }}
-                    >
-                      <div style={{ position: 'relative', flexShrink: 0, width: 8, height: 8 }}>
-                        <div
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            background: color,
-                            position: 'relative',
-                            zIndex: 1,
-                          }}
-                        />
-                        {item.status === 'active' && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              inset: -3,
-                              borderRadius: '50%',
-                              background: color,
-                              opacity: 0.2,
-                              animation: 'livePulse 2.5s ease-in-out infinite',
-                            }}
-                          />
-                        )}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{item.name}</div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{item.detail}</div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                        <div
-                          style={{
-                            fontSize: 9,
-                            padding: '2px 7px',
-                            borderRadius: 4,
-                            background: `${color}18`,
-                            color,
-                            fontWeight: 600,
-                            border: `1px solid ${color}25`,
-                          }}
-                        >
-                          {label}
-                        </div>
-                        <InfoIcon tooltip={item.tip} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ ...S.card, padding: 20 }}>
-                <div style={S.chartTitle}>Aktivitaet</div>
+                <div style={S.chartTitle}>Aktivität</div>
                 <div style={S.chartSub}>Letzte Ereignisse</div>
                 {(activityData?.activities || []).slice(0, 5).map((a: any, i: number) => {
-                  const color = typeColors[a.type] || 'rgba(255,255,255,0.2)';
+                  const color = typeColors[a.type] || 'rgba(255,255,255,0.3)';
                   const icon =
                     a.type === 'status_change'
-                      ? '⊙'
-                      : a.type === 'ai_analysis'
-                        ? '◆'
-                        : a.type === 'score_update'
-                          ? '↑'
-                          : a.type === 'task'
-                            ? '✓'
-                            : '●';
+                      ? '↔'
+                      : a.type === 'ai_analysis' || a.type === 'score_update'
+                        ? '◈'
+                        : a.type === 'task'
+                          ? '◇'
+                          : '·';
                   const getTitle = () => {
                     if (a.type === 'status_change' && a.metadata) {
                       const labels: Record<string, string> = {
@@ -1151,7 +1047,7 @@ export default function AnalyticsClient() {
                 })}
                 {(!activityData || activityData.activities?.length === 0) && (
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', padding: '12px 0' }}>
-                    Noch keine Aktivitaeten
+                    Noch keine Aktivitäten
                   </div>
                 )}
               </div>
@@ -1159,7 +1055,7 @@ export default function AnalyticsClient() {
             {trendData?.trend && (
               <div style={{ ...S.card, padding: 20, marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <div style={S.chartTitle}>Taeglich</div>
+                  <div style={S.chartTitle}>Täglich</div>
                   <InfoIcon tooltip="Neu generierte Leads pro Tag, letzte 14 Tage." />
                 </div>
                 <div style={S.chartSub}>14 Tage</div>
@@ -1847,7 +1743,7 @@ export default function AnalyticsClient() {
                       }}
                     >
                       <div>
-                        <div style={S.chartTitle}>Lead-Aktivitaeten</div>
+                        <div style={S.chartTitle}>Lead-Aktivitäten</div>
                         <div style={S.chartSub}>{fmt(activityData.total)} Aktionen gesamt</div>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
@@ -2647,7 +2543,7 @@ export default function AnalyticsClient() {
                 {[
                   {
                     name: 'Lead-Generierung',
-                    desc: 'Findet taeglich neue Kunden via Apollo-Datenbank.',
+                    desc: 'Findet täglich neue Kunden via Apollo-Datenbank.',
                     status: 'active',
                     metric: `${masterData?.leads?.total || 0} Leads`,
                   },
