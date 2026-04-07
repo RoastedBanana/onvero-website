@@ -1,0 +1,302 @@
+'use client';
+
+import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import type { Lead } from '@/lib/leads-client';
+import { updateLeadStatus } from '@/lib/leads-client';
+import LeadAvatar from '@/components/ui/LeadAvatar';
+
+const COLUMNS = [
+  { key: 'new', label: 'Neu', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.15)' },
+  {
+    key: 'contacted',
+    label: 'Kontaktiert',
+    color: '#6B7AFF',
+    bg: 'rgba(107,122,255,0.08)',
+    border: 'rgba(107,122,255,0.15)',
+  },
+  {
+    key: 'qualified',
+    label: 'Qualifiziert',
+    color: '#22C55E',
+    bg: 'rgba(34,197,94,0.08)',
+    border: 'rgba(34,197,94,0.15)',
+  },
+  {
+    key: 'lost',
+    label: 'Verloren',
+    color: 'rgba(255,255,255,0.35)',
+    bg: 'rgba(255,255,255,0.03)',
+    border: 'rgba(255,255,255,0.06)',
+  },
+];
+
+function scoreColor(s: number) {
+  return s >= 70 ? '#FF5C2E' : s >= 45 ? '#F59E0B' : '#6B7AFF';
+}
+function tierLabel(s: number) {
+  return s >= 70 ? 'HOT' : s >= 45 ? 'WARM' : 'COLD';
+}
+
+interface Props {
+  leads: Lead[];
+  onStatusChange?: (id: string, status: string) => void;
+}
+
+export default function KanbanBoard({ leads, onStatusChange }: Props) {
+  const router = useRouter();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  const dragRef = useRef<string | null>(null);
+
+  const handleDragStart = (id: string) => {
+    setDragId(id);
+    dragRef.current = id;
+  };
+
+  const handleDrop = async (targetStatus: string) => {
+    const id = dragRef.current;
+    if (!id) return;
+    setDragId(null);
+    setDragOver(null);
+    dragRef.current = null;
+
+    const lead = leads.find((l) => l.id === id);
+    if (!lead || lead.status === targetStatus) return;
+
+    try {
+      await updateLeadStatus(id, targetStatus);
+      onStatusChange?.(id, targetStatus);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)`,
+        gap: 12,
+        marginTop: 12,
+        minHeight: 400,
+      }}
+    >
+      {COLUMNS.map((col) => {
+        const colLeads = leads.filter((l) => l.status === col.key).sort((a, b) => b.score - a.score);
+        const isOver = dragOver === col.key;
+
+        return (
+          <div
+            key={col.key}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(col.key);
+            }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleDrop(col.key);
+            }}
+            style={{
+              background: isOver ? col.bg : 'rgba(255,255,255,0.01)',
+              border: `1px solid ${isOver ? col.border : 'rgba(255,255,255,0.05)'}`,
+              borderRadius: 12,
+              padding: 10,
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 300,
+            }}
+          >
+            {/* Column Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '6px 6px 10px',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: col.color }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: col.color }}>{col.label}</span>
+              </div>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
+                {colLeads.length}
+              </span>
+            </div>
+
+            {/* Cards */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
+              {colLeads.map((lead) => (
+                <div
+                  key={lead.id}
+                  draggable
+                  onDragStart={() => handleDragStart(lead.id)}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setDragOver(null);
+                  }}
+                  onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
+                  style={{
+                    background: dragId === lead.id ? 'rgba(255,255,255,0.06)' : '#111',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 10,
+                    padding: '10px 12px',
+                    cursor: 'grab',
+                    transition: 'all 0.15s',
+                    opacity: dragId === lead.id ? 0.5 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (dragId !== lead.id) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (dragId !== lead.id) {
+                      e.currentTarget.style.background = '#111';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                    }
+                  }}
+                >
+                  {/* Card Header: Avatar + Name */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="sm" />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: '#fff',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {lead.company}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: 'rgba(255,255,255,0.3)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {lead.name}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Score + Industry */}
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: scoreColor(lead.score),
+                          fontFamily: 'var(--font-dm-mono)',
+                        }}
+                      >
+                        {lead.score}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 8,
+                          fontWeight: 600,
+                          color: scoreColor(lead.score),
+                          letterSpacing: '0.08em',
+                          opacity: 0.7,
+                        }}
+                      >
+                        {tierLabel(lead.score)}
+                      </span>
+                    </div>
+                    {lead.industry && (
+                      <span
+                        style={{
+                          fontSize: 9,
+                          color: 'rgba(255,255,255,0.25)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: 80,
+                        }}
+                      >
+                        {lead.industry.split('/')[0]}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Tags */}
+                  {lead.source && (
+                    <div style={{ marginTop: 4 }}>
+                      {lead.source === 'google_maps_apify' && (
+                        <span
+                          style={{
+                            fontSize: 8,
+                            color: '#1D9E75',
+                            background: 'rgba(29,158,117,0.1)',
+                            padding: '1px 5px',
+                            borderRadius: 4,
+                            fontWeight: 500,
+                          }}
+                        >
+                          Maps
+                        </span>
+                      )}
+                      {lead.source === 'apollo_outbound' && (
+                        <span
+                          style={{
+                            fontSize: 8,
+                            color: '#8B5CF6',
+                            background: 'rgba(139,92,246,0.1)',
+                            padding: '1px 5px',
+                            borderRadius: 4,
+                            fontWeight: 500,
+                          }}
+                        >
+                          Apollo
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Date */}
+                  <div
+                    style={{
+                      fontSize: 9,
+                      color: 'rgba(255,255,255,0.15)',
+                      marginTop: 6,
+                      fontFamily: 'var(--font-dm-mono)',
+                    }}
+                  >
+                    {new Date(lead.createdAt).toLocaleDateString('de-DE', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {colLeads.length === 0 && (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.12)' }}>Keine Leads</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

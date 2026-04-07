@@ -15,7 +15,8 @@ import GenerationBanner from '@/components/leads/GenerationBanner';
 import GenerationSummaryBar from '@/components/leads/GenerationSummaryBar';
 import PageHeader from '@/components/ui/PageHeader';
 import { HowItWorks } from '@/components/ui/how-it-works';
-import { Zap, MousePointerClick, Filter } from 'lucide-react';
+import { Zap, MousePointerClick, Filter, LayoutGrid, List } from 'lucide-react';
+import KanbanBoard from '@/components/leads/KanbanBoard';
 
 type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost' | 'google_maps';
 
@@ -34,6 +35,10 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [industryFilter, setIndustryFilter] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<'hot' | 'warm' | 'cold' | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'board'>(() => {
+    if (typeof window === 'undefined') return 'table';
+    return (localStorage.getItem('onvero_leads_view') as 'table' | 'board') ?? 'table';
+  });
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 50);
@@ -178,6 +183,53 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
             >
               Filter
             </button>
+            {/* View toggle */}
+            <div
+              style={{
+                display: 'flex',
+                background: 'rgba(255,255,255,0.04)',
+                borderRadius: 8,
+                border: '1px solid rgba(255,255,255,0.06)',
+                overflow: 'hidden',
+              }}
+            >
+              <button
+                onClick={() => {
+                  setViewMode('table');
+                  localStorage.setItem('onvero_leads_view', 'table');
+                }}
+                style={{
+                  padding: '6px 10px',
+                  background: viewMode === 'table' ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'background 0.15s',
+                }}
+                title="Tabelle"
+              >
+                <List size={14} style={{ color: viewMode === 'table' ? '#fff' : 'rgba(255,255,255,0.3)' }} />
+              </button>
+              <button
+                onClick={() => {
+                  setViewMode('board');
+                  localStorage.setItem('onvero_leads_view', 'board');
+                }}
+                style={{
+                  padding: '6px 10px',
+                  background: viewMode === 'board' ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'background 0.15s',
+                }}
+                title="Board"
+              >
+                <LayoutGrid size={14} style={{ color: viewMode === 'board' ? '#fff' : 'rgba(255,255,255,0.3)' }} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -547,6 +599,14 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
               Erste Leads generieren →
             </button>
           </div>
+        ) : viewMode === 'board' ? (
+          <KanbanBoard
+            leads={filtered}
+            onStatusChange={(id, status) => {
+              setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
+              setStats(computeStats(leads.map((l) => (l.id === id ? { ...l, status } : l))));
+            }}
+          />
         ) : (
           <LeadsTable
             leads={filtered}
