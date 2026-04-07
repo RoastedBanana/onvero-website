@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 
 interface StepData {
   title: string;
+  description: string;
   link: string;
   done: boolean;
+  accent: string;
 }
 
 const LS_DISMISSED = 'onvero_onboarding_dismissed';
@@ -15,62 +17,85 @@ const LS_STEP4 = 'onvero_onboarding_step4';
 
 export function OnboardingProgress() {
   const router = useRouter();
-  const [dismissed, setDismissed] = useState(true); // start hidden until we check
+  const [dismissed, setDismissed] = useState(true);
   const [fadingOut, setFadingOut] = useState(false);
   const [steps, setSteps] = useState<StepData[]>([
-    { title: 'Profil einrichten', link: '/dashboard/settings', done: false },
-    { title: 'Erste Leads generieren', link: '/dashboard/generate', done: false },
-    { title: 'Analytics prüfen', link: '/dashboard/analytics', done: false },
-    { title: 'Business AI ausprobieren', link: '/dashboard/business-ai', done: false },
+    {
+      title: 'Profil einrichten',
+      description: 'Beschreibe dein Unternehmen und deine Zielkunden in den Einstellungen',
+      link: '/dashboard/settings',
+      done: false,
+      accent: '#6B7AFF',
+    },
+    {
+      title: 'Erste Kampagne starten',
+      description: 'Generiere Kontakte mit der KI-gestützten Suche',
+      link: '/dashboard/generate',
+      done: false,
+      accent: '#F59E0B',
+    },
+    {
+      title: 'Analytics erkunden',
+      description: 'Prüfe Kennzahlen und Performance deines BusinessOS',
+      link: '/dashboard/analytics',
+      done: false,
+      accent: '#22C55E',
+    },
+    {
+      title: 'KI-Assistent testen',
+      description: 'Stelle eine Frage an deine Business AI',
+      link: '/dashboard/business-ai',
+      done: false,
+      accent: '#a78bfa',
+    },
   ]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // Check dismissed state
-    if (typeof window !== 'undefined') {
-      const wasDismissed = localStorage.getItem(LS_DISMISSED) === 'true';
-      setDismissed(wasDismissed);
-
-      // Load localStorage steps
-      const s3 = localStorage.getItem(LS_STEP3) === 'true';
-      const s4 = localStorage.getItem(LS_STEP4) === 'true';
-
-      // Fetch API data
-      Promise.all([
-        fetch('/api/profile')
-          .then((r) => r.json())
-          .catch(() => ({})),
-        fetch('/api/leads')
-          .then((r) => r.json())
-          .catch(() => ({ leads: [] })),
-      ]).then(([profile, leadsData]) => {
-        const step1Done = !!profile?.company_name;
-        const step2Done = (leadsData?.leads?.length ?? 0) > 0;
-
-        setSteps([
-          { title: 'Profil einrichten', link: '/dashboard/settings', done: step1Done },
-          { title: 'Erste Leads generieren', link: '/dashboard/generate', done: step2Done },
-          { title: 'Analytics prüfen', link: '/dashboard/analytics', done: s3 },
-          { title: 'Business AI ausprobieren', link: '/dashboard/business-ai', done: s4 },
-        ]);
-        setLoaded(true);
-      });
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem(LS_DISMISSED) === 'true') {
+      setDismissed(true);
+      return;
     }
+    setDismissed(false);
+
+    const s3 = localStorage.getItem(LS_STEP3) === 'true';
+    const s4 = localStorage.getItem(LS_STEP4) === 'true';
+
+    Promise.all([
+      fetch('/api/profile')
+        .then((r) => r.json())
+        .catch(() => ({})),
+      fetch('/api/leads')
+        .then((r) => r.json())
+        .catch(() => ({ leads: [] })),
+    ]).then(([profile, leadsData]) => {
+      const profileDone = !!profile?.profile?.company_name;
+      const leadsDone = (leadsData?.leads?.length ?? 0) > 0;
+      setSteps((prev) =>
+        prev.map((s, i) => {
+          if (i === 0) return { ...s, done: profileDone };
+          if (i === 1) return { ...s, done: leadsDone };
+          if (i === 2) return { ...s, done: s3 };
+          if (i === 3) return { ...s, done: s4 };
+          return s;
+        })
+      );
+      setLoaded(true);
+    });
   }, []);
 
-  // Auto-hide when all steps done
   useEffect(() => {
     if (!loaded) return;
-    const allDone = steps.every((s) => s.done);
-    if (allDone && !dismissed) {
-      const timer = setTimeout(() => {
+    if (steps.every((s) => s.done) && !dismissed) {
+      const t = setTimeout(() => {
         setFadingOut(true);
         setTimeout(() => {
           localStorage.setItem(LS_DISMISSED, 'true');
           setDismissed(true);
         }, 500);
       }, 3000);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(t);
     }
   }, [steps, loaded, dismissed]);
 
@@ -84,10 +109,8 @@ export function OnboardingProgress() {
 
   const handleStepClick = useCallback(
     (index: number) => {
-      // Mark localStorage steps
       if (index === 2) localStorage.setItem(LS_STEP3, 'true');
       if (index === 3) localStorage.setItem(LS_STEP4, 'true');
-
       setSteps((prev) => prev.map((s, i) => (i === index ? { ...s, done: true } : s)));
       router.push(steps[index].link);
     },
@@ -97,35 +120,32 @@ export function OnboardingProgress() {
   if (dismissed) return null;
 
   const doneCount = steps.filter((s) => s.done).length;
-  const progressPercent = (doneCount / steps.length) * 100;
+  const pct = (doneCount / steps.length) * 100;
 
   return (
     <>
-      <style>{`
-        @keyframes onb-bar-fill { from { width: 0% } }
-        @keyframes onb-fade-out { to { opacity: 0; transform: translateY(-8px) } }
-      `}</style>
+      <style>{`@keyframes onb-fill{from{width:0%}}@keyframes onb-fade{to{opacity:0;transform:translateY(-8px)}}`}</style>
       <div
         style={{
-          background: 'rgba(255,255,255,0.02)',
+          background: '#111',
           border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 12,
-          padding: '16px 20px',
+          borderRadius: 14,
+          padding: '20px 24px',
           fontFamily: 'var(--font-dm-sans)',
           opacity: fadingOut ? 0 : 1,
-          transform: fadingOut ? 'translateY(-8px)' : 'translateY(0)',
-          transition: 'opacity 0.4s ease, transform 0.4s ease',
+          transform: fadingOut ? 'translateY(-8px)' : 'none',
+          transition: 'opacity 0.4s, transform 0.4s',
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>Einrichtung</span>
-            <span
-              style={{ fontSize: 11, fontFamily: 'var(--font-dm-mono, monospace)', color: 'rgba(255,255,255,0.3)' }}
-            >
-              {doneCount} von {steps.length}
-            </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', marginBottom: 2 }}>Willkommen bei Onvero</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+              {doneCount === steps.length
+                ? 'Alles eingerichtet'
+                : `${doneCount} von ${steps.length} Schritten erledigt`}
+            </div>
           </div>
           <button
             onClick={handleDismiss}
@@ -134,19 +154,11 @@ export function OnboardingProgress() {
               border: 'none',
               cursor: 'pointer',
               padding: 4,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'rgba(255,255,255,0.2)',
-              transition: 'color 0.2s',
+              color: 'rgba(255,255,255,0.15)',
+              transition: 'color 0.15s',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'rgba(255,255,255,0.2)';
-            }}
-            aria-label="Dismiss onboarding"
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path
@@ -162,68 +174,74 @@ export function OnboardingProgress() {
         {/* Progress bar */}
         <div
           style={{
-            height: 4,
-            background: 'rgba(255,255,255,0.05)',
+            height: 3,
+            background: 'rgba(255,255,255,0.04)',
             borderRadius: 2,
-            marginBottom: 14,
+            marginBottom: 18,
             overflow: 'hidden',
           }}
         >
           <div
             style={{
               height: '100%',
-              width: `${progressPercent}%`,
+              width: `${pct}%`,
               background: 'linear-gradient(90deg, #6B7AFF, #22C55E)',
               borderRadius: 2,
               transition: 'width 0.6s ease',
-              animation: loaded ? 'onb-bar-fill 0.8s ease' : 'none',
+              animation: loaded ? 'onb-fill 0.8s ease' : 'none',
             }}
           />
         </div>
 
         {/* Steps */}
-        <div style={{ position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
           {steps.map((step, i) => (
             <div
               key={i}
+              onClick={() => !step.done && handleStepClick(i)}
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                height: 36,
-                position: 'relative',
+                alignItems: 'flex-start',
+                gap: 12,
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: `1px solid ${step.done ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.05)'}`,
+                background: step.done ? 'rgba(34,197,94,0.03)' : 'rgba(255,255,255,0.02)',
+                cursor: step.done ? 'default' : 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (!step.done) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                  e.currentTarget.style.borderColor = `${step.accent}25`;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!step.done) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+                }
               }}
             >
-              {/* Connecting line */}
-              {i < steps.length - 1 && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 9,
-                    top: 28,
-                    width: 1,
-                    height: 8,
-                    background: 'rgba(255,255,255,0.04)',
-                  }}
-                />
-              )}
-
               {/* Circle */}
               <div
                 style={{
-                  width: 20,
-                  height: 20,
+                  width: 24,
+                  height: 24,
                   borderRadius: '50%',
+                  flexShrink: 0,
+                  marginTop: 1,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0,
-                  background: step.done ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+                  background: step.done ? 'rgba(34,197,94,0.15)' : `${step.accent}12`,
+                  border: `1px solid ${step.done ? 'rgba(34,197,94,0.25)' : `${step.accent}20`}`,
                 }}
               >
                 {step.done ? (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path
-                      d="M2 5.5L4 7.5L8 3"
+                      d="M2.5 6.5L4.5 8.5L9.5 3.5"
                       stroke="#22C55E"
                       strokeWidth="1.5"
                       strokeLinecap="round"
@@ -231,48 +249,44 @@ export function OnboardingProgress() {
                     />
                   </svg>
                 ) : (
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontWeight: 600 }}>{i + 1}</span>
+                  <span
+                    style={{ fontSize: 10, fontWeight: 700, color: step.accent, fontFamily: 'var(--font-dm-mono)' }}
+                  >
+                    {i + 1}
+                  </span>
                 )}
               </div>
 
-              {/* Title */}
-              <span
-                style={{
-                  flex: 1,
-                  fontSize: 12,
-                  marginLeft: 10,
-                  color: step.done ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.6)',
-                  textDecoration: step.done ? 'line-through' : 'none',
-                  textDecorationColor: step.done ? 'rgba(255,255,255,0.15)' : undefined,
-                }}
-              >
-                {step.title}
-              </span>
-
-              {/* Action link — only for pending steps */}
-              {!step.done && (
-                <button
-                  onClick={() => handleStepClick(i)}
+              {/* Content */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: 10,
-                    color: 'rgba(255,255,255,0.2)',
-                    fontFamily: 'inherit',
-                    padding: '2px 0',
-                    transition: 'color 0.2s',
-                    whiteSpace: 'nowrap',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.2)';
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: step.done ? 'rgba(255,255,255,0.35)' : '#fff',
+                    marginBottom: 2,
+                    textDecoration: step.done ? 'line-through' : 'none',
+                    textDecorationColor: 'rgba(255,255,255,0.15)',
                   }}
                 >
-                  Öffnen →
-                </button>
+                  {step.title}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: step.done ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.35)',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {step.done ? 'Erledigt' : step.description}
+                </div>
+              </div>
+
+              {/* Arrow for pending */}
+              {!step.done && (
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.15)', alignSelf: 'center', flexShrink: 0 }}>
+                  →
+                </span>
               )}
             </div>
           ))}
