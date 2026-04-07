@@ -19,14 +19,13 @@ import {
   Area,
 } from 'recharts';
 
-type Tab = 'master' | 'leads' | 'website' | 'pipeline' | 'ki' | 'activity';
+type Tab = 'master' | 'leads' | 'pipeline' | 'ki' | 'activity';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'master', label: 'Master' },
-  { id: 'leads', label: 'Lead Intelligence' },
-  { id: 'website', label: 'Website & Traffic' },
-  { id: 'pipeline', label: 'Sales Pipeline' },
-  { id: 'ki', label: 'KI-Performance' },
+  { id: 'master', label: 'Übersicht' },
+  { id: 'leads', label: 'Leads' },
+  { id: 'pipeline', label: 'Pipeline' },
+  { id: 'ki', label: 'KI' },
   { id: 'activity', label: 'Aktivitäten' },
 ];
 
@@ -570,18 +569,18 @@ export default function AnalyticsClient() {
       .catch(() => {});
   }, []);
 
-  // Load content data lazily for website tab
+  // Load content data lazily
   useEffect(() => {
-    if (tab === 'website' && !contentData) {
+    if (!contentData) {
       fetch('/api/analytics/content')
         .then((r) => r.json())
         .then(setContentData)
         .catch(() => {});
     }
-  }, [tab, contentData]);
+  }, [contentData]);
 
   useEffect(() => {
-    if (tab === 'website' && !pageSpeed) {
+    if (!pageSpeed) {
       fetch('/api/analytics/pagespeed')
         .then((r) => r.json())
         .then((d) => {
@@ -728,7 +727,7 @@ export default function AnalyticsClient() {
       >
         <PageHeader title="Analytics" badge={{ label: 'Live', variant: 'live' }} />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {(tab === 'leads' || tab === 'website' || tab === 'pipeline') && (
+          {(tab === 'leads' || tab === 'pipeline') && (
             <div
               style={{
                 display: 'flex',
@@ -864,33 +863,14 @@ export default function AnalyticsClient() {
                 </div>
               </div>
               <div
-                onClick={() => setTab('website')}
+                onClick={() => setTab('activity')}
                 style={{ ...S.card, padding: '18px 20px', cursor: 'pointer', transition: 'border-color 0.15s' }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
               >
-                <div style={S.label}>Website</div>
-                <div
-                  style={{ ...S.val, fontSize: 24, color: website.visitors > 0 ? '#6B7AFF' : 'rgba(255,255,255,0.2)' }}
-                >
-                  {website.visitors > 0 ? fmt(website.visitors) : '—'}
-                </div>
-                <div style={S.sub}>{website.visitors > 0 ? 'Unique Visitors' : 'Script ausstehend'}</div>
-                {!hasPlausible && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      fontSize: 9,
-                      padding: '3px 6px',
-                      background: 'rgba(245,158,11,0.1)',
-                      color: '#F59E0B',
-                      borderRadius: 4,
-                      display: 'inline-block',
-                    }}
-                  >
-                    Setup
-                  </div>
-                )}
+                <div style={S.label}>Aktivitäten</div>
+                <div style={{ ...S.val, fontSize: 24, color: '#6B7AFF' }}>{leads.total > 0 ? leads.total : '—'}</div>
+                <div style={S.sub}>Ereignisse gesamt</div>
               </div>
               <div
                 onClick={() => setTab('pipeline')}
@@ -1296,7 +1276,7 @@ export default function AnalyticsClient() {
                 </div>
               ))}
             </div>
-            {(!hasPlausible || website.visitors === 0) && (
+            {false && (
               <div style={{ ...S.card, padding: 20, marginTop: 12 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 10 }}>Setup-Checkliste</div>
                 {[
@@ -1966,8 +1946,8 @@ export default function AnalyticsClient() {
           </div>
         )}
 
-        {/* WEBSITE */}
-        {tab === 'website' && (
+        {/* WEBSITE — removed, see /dashboard/website */}
+        {false && (
           <div>
             {hasPlausible && website.visitors === 0 && (
               <div
