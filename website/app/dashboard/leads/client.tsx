@@ -15,7 +15,7 @@ import GenerationBanner from '@/components/leads/GenerationBanner';
 import GenerationSummaryBar from '@/components/leads/GenerationSummaryBar';
 import PageHeader from '@/components/ui/PageHeader';
 import { HowItWorks } from '@/components/ui/how-it-works';
-import { Zap, MousePointerClick, Filter, LayoutGrid, List } from 'lucide-react';
+import { Zap, MousePointerClick, Filter, LayoutGrid, List, Download } from 'lucide-react';
 import KanbanBoard from '@/components/leads/KanbanBoard';
 
 type StatusFilter = 'all' | 'new' | 'contacted' | 'qualified' | 'lost';
@@ -104,6 +104,36 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
     });
   }, [leads, statusFilter, industryFilter, tierFilter, search]);
 
+  const STATUS_LABELS: Record<string, string> = {
+    new: 'Neu',
+    contacted: 'Kontaktiert',
+    qualified: 'Qualifiziert',
+    lost: 'Verloren',
+  };
+
+  function exportAllFiltered() {
+    const headers = ['Firma', 'Name', 'E-Mail', 'Score', 'Status', 'Branche', 'Stadt', 'Quelle', 'Erstellt'];
+    const rows = filtered.map((l) => [
+      l.company,
+      l.name,
+      l.email,
+      String(l.score),
+      STATUS_LABELS[l.status] ?? l.status,
+      l.industry ?? '',
+      l.city ?? '',
+      l.source ?? '',
+      new Date(l.createdAt).toLocaleDateString('de-DE'),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `onvero-leads-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const statusTabs: { key: StatusFilter; label: string; count: number }[] = [
     { key: 'all', label: 'Alle Leads', count: leads.length },
     { key: 'new', label: 'Neu', count: stats.byStatus.new },
@@ -175,6 +205,24 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
               }}
             >
               Filter
+            </button>
+            <button
+              onClick={exportAllFiltered}
+              style={{
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.5)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 8,
+                padding: '7px 14px',
+                fontSize: 12,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Download size={12} />
+              Export
             </button>
             {/* View toggle */}
             <div

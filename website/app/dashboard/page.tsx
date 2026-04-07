@@ -8,6 +8,7 @@ import { TextShimmer } from '@/components/ui/text-shimmer';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import type { BentoItem } from '@/components/ui/bento-grid';
 import { HowItWorks } from '@/components/ui/how-it-works';
+import { DashboardWidgets } from '@/components/ui/DashboardWidgets';
 import { Users, BarChart2, Zap, Target, Mail, TrendingUp, Calendar, Search, PenLine, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -444,6 +445,21 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* ── Dashboard Widgets ── */}
+        {!hasMessages && (
+          <div
+            style={{
+              padding: '0 20px 16px',
+              maxWidth: 1100,
+              margin: '0 auto',
+              width: '100%',
+              animation: mounted ? 'fadeUp 0.6s ease 0.5s both' : 'none',
+            }}
+          >
+            <DashboardWidgets />
+          </div>
+        )}
 
         {/* ── Onboarding + Feature Cards + Getting Started ── */}
         {!hasMessages && (

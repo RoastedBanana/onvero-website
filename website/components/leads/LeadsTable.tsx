@@ -212,9 +212,17 @@ interface LeadsTableProps {
   onSelect: (id: string | null) => void;
   onStatusChange?: (id: string, status: string) => void;
   onLeadsDeleted?: (ids: string[]) => void;
+  onCompare?: (selectedLeads: Lead[]) => void;
 }
 
-export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange, onLeadsDeleted }: LeadsTableProps) {
+export default function LeadsTable({
+  leads,
+  selectedId,
+  onSelect,
+  onStatusChange,
+  onLeadsDeleted,
+  onCompare,
+}: LeadsTableProps) {
   const [sortBy, setSortBy] = useState<'score' | 'date'>('score');
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -449,6 +457,44 @@ export default function LeadsTable({ leads, selectedId, onSelect, onStatusChange
               </>
             )}
           </div>
+
+          {/* Vergleichen */}
+          {selected.size >= 2 && selected.size <= 3 && onCompare && (
+            <button
+              onClick={() => {
+                const selectedLeads = sorted.filter((l) => selected.has(l.id));
+                onCompare(selectedLeads);
+              }}
+              style={{
+                background: 'rgba(107,122,255,0.1)',
+                border: '1px solid rgba(107,122,255,0.2)',
+                borderRadius: 8,
+                padding: '6px 14px',
+                fontSize: 11,
+                fontWeight: 500,
+                color: '#6B7AFF',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(107,122,255,0.18)';
+                e.currentTarget.style.color = '#8B9AFF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(107,122,255,0.1)';
+                e.currentTarget.style.color = '#6B7AFF';
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="3" width="8" height="18" rx="1" />
+                <rect x="14" y="3" width="8" height="18" rx="1" />
+              </svg>
+              Vergleichen
+            </button>
+          )}
 
           {/* Exportieren */}
           <button

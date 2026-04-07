@@ -9,8 +9,10 @@ import {
   Calendar,
   Users,
   BarChart2,
+  Activity,
   Sparkles,
   Zap,
+  Plug,
   BookOpen,
   Settings,
   Search,
@@ -42,7 +44,9 @@ const NAV_ITEMS: NavItem[] = [
     children: [{ href: '/dashboard/generate', icon: Zap, label: 'Generate' }],
   },
   { href: '/dashboard/analytics', icon: BarChart2, label: 'Analytics' },
+  { href: '/dashboard/activity', icon: Activity, label: 'Aktivitaeten' },
   { href: '/dashboard/business-ai', icon: Sparkles, label: 'Business AI' },
+  { href: '/dashboard/integrations', icon: Plug, label: 'Integrationen' },
 ];
 
 const NAV_BOTTOM = [

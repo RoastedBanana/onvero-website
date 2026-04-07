@@ -6,6 +6,8 @@ import { mapLead, updateLeadStatus } from '@/lib/leads-client';
 import type { Lead } from '@/lib/leads-client';
 import LeadAvatar from '@/components/ui/LeadAvatar';
 import PageHeader from '@/components/ui/PageHeader';
+import EmailPreviewModal from '@/components/leads/EmailPreviewModal';
+import ScoreExplanation from '@/components/leads/ScoreExplanation';
 
 interface Activity {
   id: string;
@@ -163,6 +165,8 @@ export default function LeadDetailPage() {
   const [editedDraft, setEditedDraft] = useState('');
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [isScoring, setIsScoring] = useState(false);
+  const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
+  const [scoreExplanationOpen, setScoreExplanationOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -337,6 +341,22 @@ export default function LeadDetailPage() {
                   {lead.score}
                 </span>
                 <button
+                  onClick={() => setScoreExplanationOpen(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.25)',
+                    cursor: 'pointer',
+                    fontSize: 10,
+                    padding: '2px 6px',
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.25)')}
+                >
+                  Warum?
+                </button>
+                <button
                   onClick={handleRescore}
                   disabled={isScoring}
                   style={{
@@ -443,6 +463,24 @@ export default function LeadDetailPage() {
               >
                 {copied ? '✓ Kopiert' : '📧 E-Mail kopieren'}
               </button>
+              {/* Email preview */}
+              {lead.emailDraft && (
+                <button
+                  onClick={() => setEmailPreviewOpen(true)}
+                  style={{
+                    background: 'rgba(107,122,255,0.08)',
+                    border: '1px solid rgba(107,122,255,0.15)',
+                    borderRadius: 8,
+                    padding: '6px 14px',
+                    fontSize: 12,
+                    color: '#6B7AFF',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s',
+                  }}
+                >
+                  E-Mail Vorschau
+                </button>
+              )}
               {/* Send email */}
               {lead.emailDraft && (
                 <button
@@ -1432,6 +1470,34 @@ export default function LeadDetailPage() {
             )}
           </div>
         </div>
+      )}
+
+      {lead && (
+        <>
+          <EmailPreviewModal
+            isOpen={emailPreviewOpen}
+            onClose={() => setEmailPreviewOpen(false)}
+            lead={{
+              company: lead.company,
+              name: lead.name,
+              email: lead.email,
+              emailDraft: editedDraft || lead.emailDraft,
+              emailDraftSubject: lead.emailDraftSubject,
+            }}
+          />
+          <ScoreExplanation
+            isOpen={scoreExplanationOpen}
+            onClose={() => setScoreExplanationOpen(false)}
+            lead={{
+              company: lead.company,
+              score: lead.score,
+              scoreBreakdown: lead.scoreBreakdown,
+              aiSummary: lead.aiSummary,
+              strengths: lead.strengths,
+              concerns: lead.concerns,
+            }}
+          />
+        </>
       )}
     </div>
   );
