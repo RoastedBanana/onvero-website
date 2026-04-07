@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabase();
     const { token } = await req.json();
 
     if (!token) {
@@ -33,11 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch tenant info for the card display
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('name, logo_url')
-      .eq('id', data.tenant_id)
-      .single();
+    const { data: tenant } = await supabase.from('tenants').select('name, logo_url').eq('id', data.tenant_id).single();
 
     return NextResponse.json({
       valid: true,

@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+function getSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabase();
     const { token, password, displayName } = await req.json();
 
     if (!token || !password || password.length < 8) {
-      return NextResponse.json(
-        { error: 'Token und Passwort (min. 8 Zeichen) erforderlich.' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Token und Passwort (min. 8 Zeichen) erforderlich.' }, { status: 400 });
     }
 
     // Re-validate token server-side
@@ -51,7 +48,7 @@ export async function POST(req: NextRequest) {
       console.error('accept-invite: auth.admin.createUser failed', authError);
       return NextResponse.json(
         { error: authError?.message || 'Benutzer konnte nicht erstellt werden.' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -67,17 +64,11 @@ export async function POST(req: NextRequest) {
       console.error('accept-invite: tenant_users insert failed', tenantError);
       // Rollback: delete the auth user if tenant_users insert fails
       await supabase.auth.admin.deleteUser(authData.user.id);
-      return NextResponse.json(
-        { error: 'Fehler beim Zuweisen des Teams.' },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: 'Fehler beim Zuweisen des Teams.' }, { status: 500 });
     }
 
     // Mark invitation as used
-    await supabase
-      .from('invitations')
-      .update({ used_at: new Date().toISOString() })
-      .eq('token', token);
+    await supabase.from('invitations').update({ used_at: new Date().toISOString() }).eq('token', token);
 
     return NextResponse.json({
       success: true,
