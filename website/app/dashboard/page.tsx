@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { DottedSurface } from '@/components/ui/dotted-surface';
+import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { BentoGrid } from '@/components/ui/bento-grid';
 import type { BentoItem } from '@/components/ui/bento-grid';
@@ -444,9 +445,20 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* ── Feature Cards + Getting Started ── */}
+        {/* ── Onboarding + Feature Cards + Getting Started ── */}
         {!hasMessages && (
           <>
+            <div
+              style={{
+                padding: '0 20px 16px',
+                maxWidth: 1100,
+                margin: '0 auto',
+                width: '100%',
+                animation: mounted ? 'fadeUp 0.6s ease 0.55s both' : 'none',
+              }}
+            >
+              <OnboardingProgress />
+            </div>
             <div
               style={{
                 padding: '0 20px 24px',

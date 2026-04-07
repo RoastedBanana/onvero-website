@@ -1,5 +1,6 @@
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import BounceNotifications from '@/components/dashboard/BounceNotifications';
+import CommandPalette from '@/components/ui/CommandPalette';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,6 +8,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <DashboardSidebar />
       <main style={{ flex: 1, overflowY: 'auto' }}>{children}</main>
       <BounceNotifications />
+      <CommandPalette />
     </div>
   );
 }

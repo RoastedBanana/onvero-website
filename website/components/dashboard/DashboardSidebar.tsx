@@ -17,6 +17,7 @@ import {
   LogOut,
   AlertCircle,
 } from 'lucide-react';
+import NotificationBell from '@/components/ui/NotificationBell';
 
 interface UserInfo {
   firstName: string;
@@ -91,17 +92,20 @@ export default function DashboardSidebar() {
     >
       {/* ── Logo ── */}
       <div style={{ padding: '20px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: '#ffffff',
-              flexShrink: 0,
-            }}
-          />
-          <span style={{ fontSize: 15, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em' }}>Onvero.</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: '#ffffff',
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em' }}>Onvero.</span>
+          </div>
+          <NotificationBell />
         </div>
         <div
           style={{
@@ -138,6 +142,9 @@ export default function DashboardSidebar() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Suchen..."
+            readOnly
+            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+            onFocus={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
             style={{
               flex: 1,
               background: 'none',
@@ -147,6 +154,7 @@ export default function DashboardSidebar() {
               fontSize: 11,
               padding: 0,
               fontFamily: 'var(--font-dm-sans)',
+              cursor: 'pointer',
             }}
           />
           <span
@@ -220,46 +228,47 @@ export default function DashboardSidebar() {
                 <Icon size={14} strokeWidth={1.8} style={{ flexShrink: 0 }} />
                 {item.label}
               </Link>
-              {showChildren && item.children?.map((child) => {
-                const ChildIcon = child.icon;
-                const childIsActive = isActive(child.href);
-                return (
-                  <Link
-                    key={child.href}
-                    href={child.href}
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '6px 10px 6px 26px',
-                      marginTop: 1,
-                      borderRadius: 7,
-                      background: childIsActive ? 'rgba(255,255,255,0.06)' : 'transparent',
-                      color: childIsActive ? '#ffffff' : 'rgba(255,255,255,0.4)',
-                      fontSize: 12,
-                      fontWeight: childIsActive ? 500 : 400,
-                      textDecoration: 'none',
-                      transition: 'background 0.15s, color 0.15s',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!childIsActive) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!childIsActive) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
-                      }
-                    }}
-                  >
-                    <ChildIcon size={12} strokeWidth={1.8} style={{ flexShrink: 0 }} />
-                    {child.label}
-                  </Link>
-                );
-              })}
+              {showChildren &&
+                item.children?.map((child) => {
+                  const ChildIcon = child.icon;
+                  const childIsActive = isActive(child.href);
+                  return (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '6px 10px 6px 26px',
+                        marginTop: 1,
+                        borderRadius: 7,
+                        background: childIsActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+                        color: childIsActive ? '#ffffff' : 'rgba(255,255,255,0.4)',
+                        fontSize: 12,
+                        fontWeight: childIsActive ? 500 : 400,
+                        textDecoration: 'none',
+                        transition: 'background 0.15s, color 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!childIsActive) {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                          e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!childIsActive) {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                        }
+                      }}
+                    >
+                      <ChildIcon size={12} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+                      {child.label}
+                    </Link>
+                  );
+                })}
             </div>
           );
         })}
