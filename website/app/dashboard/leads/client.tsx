@@ -33,6 +33,7 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
   });
   const [compareLeads, setCompareLeads] = useState<Lead[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 50);
@@ -94,7 +95,6 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
   const hot = leads.filter((l) => l.score >= 70).length;
   const warm = leads.filter((l) => l.score >= 45 && l.score < 70).length;
   const cold = leads.filter((l) => l.score < 45).length;
-  const avg = leads.length > 0 ? Math.round(leads.reduce((s, l) => s + l.score, 0) / leads.length) : 0;
 
   const statusTabs: { key: StatusFilter; label: string; count: number }[] = [
     { key: 'all', label: 'Alle', count: leads.length },
@@ -126,37 +126,69 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0a0a', fontFamily: 'var(--font-dm-sans)' }}>
+    <div className="min-h-screen" style={{ background: '#050505', fontFamily: 'var(--font-dm-sans)' }}>
       <div className="mx-auto max-w-[1400px] px-6 pb-6 pt-0">
-        {/* ── STICKY HEADER ── */}
-        <div className="sticky top-0 z-20 -mx-6 px-6 py-3 border-b border-white/5" style={{ background: '#0a0a0a' }}>
+        {/* -- STICKY HEADER -- Premium Command Bar -- */}
+        <div
+          className="sticky top-0 z-20 -mx-6 px-6"
+          style={{
+            background: 'rgba(5,5,5,0.8)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            paddingTop: 16,
+            paddingBottom: 14,
+          }}
+        >
           {/* Row 1: Title + Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <PageHeader
-              title="Leads"
-              badge={{ label: 'Live', variant: 'live' }}
-              subtitle={`${leads.length} Kontakte · ${hot} HOT · ${warm} WARM · ${cold} COLD`}
-            />
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              {/* Search */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div>
+              <h1
+                style={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  color: '#e8e8e8',
+                  letterSpacing: '-0.03em',
+                  margin: 0,
+                  lineHeight: 1.2,
+                }}
+              >
+                Leads
+              </h1>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.25)',
+                  margin: 0,
+                  marginTop: 2,
+                }}
+              >
+                {leads.length} Kontakte
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {/* Search -- Command style */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
-                  background: '#111',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 8,
-                  padding: '6px 12px',
-                  width: 200,
+                  gap: 8,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${searchFocused ? 'rgba(107,122,255,0.15)' : 'rgba(255,255,255,0.05)'}`,
+                  borderRadius: 12,
+                  padding: '0 14px',
+                  height: 34,
+                  width: 220,
+                  transition: 'border-color 0.2s ease',
+                  boxShadow: searchFocused ? '0 0 0 1px rgba(107,122,255,0.15)' : 'none',
                 }}
               >
                 <svg
-                  width="12"
-                  height="12"
+                  width="13"
+                  height="13"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="rgba(255,255,255,0.3)"
+                  stroke="rgba(255,255,255,0.25)"
                   strokeWidth="2"
                 >
                   <circle cx="11" cy="11" r="8" />
@@ -165,46 +197,48 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
                   placeholder="Suchen..."
                   style={{
                     background: 'none',
                     border: 'none',
                     outline: 'none',
-                    color: '#fff',
+                    color: '#e8e8e8',
                     fontSize: 12,
                     width: '100%',
                   }}
                 />
               </div>
-              {/* Export */}
+              {/* Export -- ghost */}
               <button
                 onClick={exportCsv}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 5,
                   background: 'transparent',
-                  color: 'rgba(255,255,255,0.4)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.3)',
+                  border: 'none',
                   borderRadius: 8,
                   padding: '6px 12px',
                   fontSize: 11,
                   cursor: 'pointer',
-                  transition: 'color 0.15s',
+                  transition: 'color 0.2s ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
               >
                 <Download size={12} /> Export
               </button>
-              {/* View toggle */}
+              {/* View toggle -- Segmented */}
               <div
                 style={{
                   display: 'flex',
-                  background: 'rgba(255,255,255,0.04)',
-                  borderRadius: 8,
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  overflow: 'hidden',
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: 12,
+                  padding: 3,
+                  gap: 2,
                 }}
               >
                 <button
@@ -213,16 +247,19 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                     localStorage.setItem('onvero_leads_view', 'table');
                   }}
                   style={{
-                    padding: '5px 8px',
+                    padding: '5px 10px',
                     background: viewMode === 'table' ? 'rgba(255,255,255,0.08)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
+                    borderRadius: 8,
+                    transition: 'all 0.2s ease',
+                    boxShadow: viewMode === 'table' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
                   }}
                   title="Tabelle"
                 >
-                  <List size={13} style={{ color: viewMode === 'table' ? '#fff' : 'rgba(255,255,255,0.3)' }} />
+                  <List size={13} style={{ color: viewMode === 'table' ? '#e8e8e8' : 'rgba(255,255,255,0.35)' }} />
                 </button>
                 <button
                   onClick={() => {
@@ -230,64 +267,76 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                     localStorage.setItem('onvero_leads_view', 'board');
                   }}
                   style={{
-                    padding: '5px 8px',
+                    padding: '5px 10px',
                     background: viewMode === 'board' ? 'rgba(255,255,255,0.08)' : 'transparent',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
+                    borderRadius: 8,
+                    transition: 'all 0.2s ease',
+                    boxShadow: viewMode === 'board' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none',
                   }}
                   title="Board"
                 >
-                  <LayoutGrid size={13} style={{ color: viewMode === 'board' ? '#fff' : 'rgba(255,255,255,0.3)' }} />
+                  <LayoutGrid
+                    size={13}
+                    style={{ color: viewMode === 'board' ? '#e8e8e8' : 'rgba(255,255,255,0.35)' }}
+                  />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Row 2: Tabs + KPIs */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: 4 }}>
+          {/* Row 2: Tabs -- Pill Segments */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 2,
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: 12,
+                padding: 4,
+              }}
+            >
               {statusTabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setStatusFilter(tab.key)}
                   style={{
-                    padding: '5px 12px',
-                    borderRadius: 20,
+                    padding: '6px 14px',
+                    borderRadius: 8,
                     fontSize: 12,
                     fontWeight: 500,
                     cursor: 'pointer',
                     fontFamily: 'inherit',
-                    background: statusFilter === tab.key ? '#fff' : 'transparent',
-                    color: statusFilter === tab.key ? '#0a0a0a' : 'rgba(255,255,255,0.3)',
-                    border: statusFilter === tab.key ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                    transition: 'all 0.15s',
+                    background: statusFilter === tab.key ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    color: statusFilter === tab.key ? '#e8e8e8' : 'rgba(255,255,255,0.35)',
+                    border: 'none',
+                    transition: 'all 0.2s cubic-bezier(0.32,0.72,0,1)',
+                    boxShadow: statusFilter === tab.key ? '0 1px 3px rgba(0,0,0,0.2)' : 'none',
                   }}
                 >
                   {tab.label}
-                  <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.6, fontFamily: 'var(--font-dm-mono)' }}>
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 10,
+                      color: 'rgba(255,255,255,0.2)',
+                      fontFamily: 'var(--font-dm-mono)',
+                    }}
+                  >
                     {tab.count}
                   </span>
                 </button>
               ))}
             </div>
-            {/* Compact KPIs */}
-            <div style={{ display: 'flex', gap: 16, fontSize: 11 }}>
-              <span style={{ color: '#FF5C2E', fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>
-                {hot} <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.2)' }}>HOT</span>
-              </span>
-              <span style={{ color: '#F59E0B', fontFamily: 'var(--font-dm-mono)', fontWeight: 600 }}>
-                {warm} <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.2)' }}>WARM</span>
-              </span>
-              <span style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-mono)' }}>Ø {avg}</span>
-            </div>
           </div>
         </div>
 
-        {/* ── ACTIVE FILTERS ── */}
+        {/* -- ACTIVE FILTERS -- */}
         {(industryFilter || tierFilter) && (
-          <div style={{ display: 'flex', gap: 6, paddingTop: 10, paddingBottom: 4 }}>
+          <div style={{ display: 'flex', gap: 6, paddingTop: 12, paddingBottom: 4 }}>
             {industryFilter && (
               <button
                 onClick={() => setIndustryFilter(null)}
@@ -297,12 +346,13 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                   gap: 4,
                   fontSize: 11,
                   color: 'rgba(255,255,255,0.5)',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 6,
-                  padding: '3px 8px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: 8,
+                  padding: '4px 10px',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 {industryFilter} <X size={10} />
@@ -317,12 +367,13 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                   gap: 4,
                   fontSize: 11,
                   color: tierFilter === 'hot' ? '#FF5C2E' : tierFilter === 'warm' ? '#F59E0B' : '#6B7AFF',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 6,
-                  padding: '3px 8px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: 8,
+                  padding: '4px 10px',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
+                  transition: 'all 0.2s ease',
                 }}
               >
                 {tierFilter.toUpperCase()} <X size={10} />
@@ -331,13 +382,13 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
           </div>
         )}
 
-        {/* ── CONTENT ── */}
+        {/* -- CONTENT -- */}
         <div
           style={{
-            paddingTop: 8,
+            paddingTop: 12,
             opacity: mounted ? 1 : 0,
-            transform: mounted ? 'translateY(0)' : 'translateY(8px)',
-            transition: 'opacity 0.3s ease, transform 0.3s ease',
+            transform: mounted ? 'translateY(0)' : 'translateY(12px)',
+            transition: 'opacity 0.5s cubic-bezier(0.32,0.72,0,1), transform 0.5s cubic-bezier(0.32,0.72,0,1)',
           }}
         >
           <style>{`@keyframes onvero-pulse{0%,100%{opacity:0.3}50%{opacity:0.8}}`}</style>
@@ -349,9 +400,9 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                 <div
                   key={i}
                   style={{
-                    height: 52,
-                    borderRadius: 8,
-                    background: 'rgba(255,255,255,0.03)',
+                    height: 56,
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.02)',
                     animation: 'onvero-pulse 1.5s ease-in-out infinite',
                     animationDelay: `${i * 0.1}s`,
                   }}
@@ -368,36 +419,41 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '100px 24px',
-                gap: 14,
+                padding: '120px 24px',
+                gap: 20,
               }}
             >
-              <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
-                <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
-                <circle cx="24" cy="24" r="12" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
-                <circle cx="24" cy="24" r="3" fill="rgba(255,255,255,0.15)" />
+              <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+                <circle cx="32" cy="32" r="18" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                <circle cx="32" cy="32" r="8" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+                <circle cx="32" cy="32" r="2.5" fill="rgba(107,122,255,0.4)" />
               </svg>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>
+                <div style={{ fontSize: 18, fontWeight: 600, color: '#e8e8e8', marginBottom: 8 }}>
                   Noch keine Kontakte
                 </div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', maxWidth: 260, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', maxWidth: 280, lineHeight: 1.6 }}>
                   Beschreibe welche Kunden du suchst — die KI findet passende Kontakte automatisch.
                 </div>
               </div>
               <button
                 onClick={() => router.push('/dashboard/generate')}
                 style={{
-                  marginTop: 6,
-                  padding: '8px 18px',
-                  background: '#fff',
-                  color: '#080808',
+                  marginTop: 4,
+                  padding: '0 24px',
+                  height: 44,
+                  background: '#6B7AFF',
+                  color: '#fff',
                   border: 'none',
-                  borderRadius: 8,
-                  fontSize: 12,
+                  borderRadius: 12,
+                  fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
+                  transition: 'transform 0.15s ease',
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
               >
                 Erste Kontakte generieren
               </button>

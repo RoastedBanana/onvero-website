@@ -7,35 +7,32 @@ import { updateLeadStatus } from '@/lib/leads-client';
 import LeadAvatar from '@/components/ui/LeadAvatar';
 
 const COLUMNS = [
-  { key: 'new', label: 'Neu', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)', border: 'rgba(167,139,250,0.15)' },
+  { key: 'new', label: 'Neu', color: '#a78bfa', bg: 'rgba(167,139,250,0.06)', border: 'rgba(167,139,250,0.1)' },
   {
     key: 'contacted',
     label: 'Kontaktiert',
     color: '#6B7AFF',
-    bg: 'rgba(107,122,255,0.08)',
-    border: 'rgba(107,122,255,0.15)',
+    bg: 'rgba(107,122,255,0.06)',
+    border: 'rgba(107,122,255,0.1)',
   },
   {
     key: 'qualified',
     label: 'Qualifiziert',
     color: '#22C55E',
-    bg: 'rgba(34,197,94,0.08)',
-    border: 'rgba(34,197,94,0.15)',
+    bg: 'rgba(34,197,94,0.06)',
+    border: 'rgba(34,197,94,0.1)',
   },
   {
     key: 'lost',
     label: 'Verloren',
-    color: 'rgba(255,255,255,0.35)',
-    bg: 'rgba(255,255,255,0.03)',
-    border: 'rgba(255,255,255,0.06)',
+    color: 'rgba(255,255,255,0.3)',
+    bg: 'rgba(255,255,255,0.02)',
+    border: 'rgba(255,255,255,0.04)',
   },
 ];
 
 function scoreColor(s: number) {
   return s >= 70 ? '#FF5C2E' : s >= 45 ? '#F59E0B' : '#6B7AFF';
-}
-function tierLabel(s: number) {
-  return s >= 70 ? 'HOT' : s >= 45 ? 'WARM' : 'COLD';
 }
 
 interface Props {
@@ -77,7 +74,16 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
 
   return (
     <div>
-      <style>{`div:hover > .kanban-delete-btn { opacity: 1 !important; }`}</style>
+      <style>{`
+        div:hover > .kanban-delete-btn { opacity: 1 !important; }
+        .kanban-card {
+          transition: all 0.3s cubic-bezier(0.32,0.72,0,1);
+        }
+        .kanban-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+      `}</style>
       <div
         style={{
           display: 'grid',
@@ -104,11 +110,11 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                 handleDrop(col.key);
               }}
               style={{
-                background: isOver ? col.bg : 'rgba(255,255,255,0.01)',
-                border: `1px solid ${isOver ? col.border : 'rgba(255,255,255,0.05)'}`,
-                borderRadius: 12,
+                background: isOver ? col.bg : 'rgba(255,255,255,0.015)',
+                border: `1px solid ${isOver ? col.border : 'rgba(255,255,255,0.03)'}`,
+                borderRadius: 16,
                 padding: 10,
-                transition: 'all 0.2s',
+                transition: 'all 0.3s cubic-bezier(0.32,0.72,0,1)',
                 display: 'flex',
                 flexDirection: 'column',
                 minHeight: 300,
@@ -121,15 +127,14 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '6px 6px 10px',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  marginBottom: 8,
+                  marginBottom: 6,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: col.color }} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: col.color }}>{col.label}</span>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: col.color }} />
+                  <span style={{ fontSize: 11, fontWeight: 500, color: col.color }}>{col.label}</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.15)', fontFamily: 'var(--font-dm-mono)' }}>
                   {colLeads.length}
                 </span>
               </div>
@@ -139,6 +144,7 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                 {colLeads.map((lead) => (
                   <div
                     key={lead.id}
+                    className="kanban-card"
                     draggable
                     onDragStart={() => handleDragStart(lead.id)}
                     onDragEnd={() => {
@@ -147,24 +153,23 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                     }}
                     onClick={() => router.push(`/dashboard/leads/${lead.id}`)}
                     style={{
-                      background: dragId === lead.id ? 'rgba(255,255,255,0.06)' : '#111',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      borderRadius: 10,
-                      padding: '10px 12px',
+                      background: dragId === lead.id ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      borderRadius: 12,
+                      padding: '12px 14px',
                       cursor: 'grab',
-                      transition: 'all 0.15s',
                       opacity: dragId === lead.id ? 0.5 : 1,
                     }}
                     onMouseEnter={(e) => {
                       if (dragId !== lead.id) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (dragId !== lead.id) {
-                        e.currentTarget.style.background = '#111';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
                       }
                     }}
                   >
@@ -176,7 +181,7 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                           style={{
                             fontSize: 12,
                             fontWeight: 500,
-                            color: '#fff',
+                            color: '#e8e8e8',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -187,7 +192,7 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                         <div
                           style={{
                             fontSize: 10,
-                            color: 'rgba(255,255,255,0.3)',
+                            color: 'rgba(255,255,255,0.25)',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -207,7 +212,7 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                         marginBottom: 4,
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3 }}>
                         <span
                           style={{
                             fontSize: 14,
@@ -218,23 +223,12 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                         >
                           {lead.score}
                         </span>
-                        <span
-                          style={{
-                            fontSize: 8,
-                            fontWeight: 600,
-                            color: scoreColor(lead.score),
-                            letterSpacing: '0.08em',
-                            opacity: 0.7,
-                          }}
-                        >
-                          {tierLabel(lead.score)}
-                        </span>
                       </div>
                       {lead.industry && (
                         <span
                           style={{
                             fontSize: 9,
-                            color: 'rgba(255,255,255,0.25)',
+                            color: 'rgba(255,255,255,0.2)',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -254,7 +248,7 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                             style={{
                               fontSize: 8,
                               color: '#8B5CF6',
-                              background: 'rgba(139,92,246,0.1)',
+                              background: 'rgba(139,92,246,0.08)',
                               padding: '1px 5px',
                               borderRadius: 4,
                               fontWeight: 500,
@@ -312,8 +306,8 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                             }}
                             style={{
                               fontSize: 9,
-                              background: 'rgba(255,255,255,0.06)',
-                              color: 'rgba(255,255,255,0.4)',
+                              background: 'rgba(255,255,255,0.04)',
+                              color: 'rgba(255,255,255,0.35)',
                               border: 'none',
                               borderRadius: 4,
                               padding: '2px 6px',
@@ -334,14 +328,14 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                             fontSize: 10,
                             background: 'none',
                             border: 'none',
-                            color: 'rgba(255,255,255,0.1)',
+                            color: 'rgba(255,255,255,0.08)',
                             cursor: 'pointer',
                             padding: '0 2px',
                             opacity: 0,
-                            transition: 'opacity 0.15s, color 0.15s',
+                            transition: 'opacity 0.2s ease, color 0.2s ease',
                           }}
                           onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
-                          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.1)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.08)')}
                           title="Löschen"
                         >
                           x
@@ -355,7 +349,7 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                   <div
                     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
                   >
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.12)' }}>Keine Leads</span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.1)' }}>Keine</span>
                   </div>
                 )}
               </div>

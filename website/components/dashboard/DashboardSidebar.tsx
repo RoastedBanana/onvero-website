@@ -53,6 +53,8 @@ const NAV_BOTTOM = [
   { href: '/dashboard/settings', icon: Settings, label: 'Einstellungen' },
 ];
 
+const TRANSITION = 'all 0.3s cubic-bezier(0.32,0.72,0,1)';
+
 export default function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -76,36 +78,56 @@ export default function DashboardSidebar() {
 
   const initials = user ? `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() : '?';
 
+  const gradientSeparator: React.CSSProperties = {
+    height: 1,
+    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)',
+  };
+
   return (
     <aside
       style={{
-        width: 180,
+        width: 220,
         flexShrink: 0,
         height: '100vh',
         position: 'sticky',
         top: 0,
-        background: '#0a0a0a',
-        borderRight: '1px solid rgba(255,255,255,0.07)',
+        background: 'rgba(255,255,255,0.02)',
+        borderRight: '1px solid rgba(255,255,255,0.04)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         fontFamily: 'var(--font-dm-sans)',
       }}
     >
+      {/* Subtle noise/gradient overlay at top */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 120,
+          background: 'linear-gradient(180deg, rgba(107,122,255,0.03) 0%, transparent 100%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
+
       {/* ── Logo ── */}
-      <div style={{ padding: '20px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ padding: '22px 18px 16px', position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <div
               style={{
                 width: 7,
                 height: 7,
                 borderRadius: '50%',
-                background: '#ffffff',
+                background: '#6B7AFF',
                 flexShrink: 0,
+                boxShadow: '0 0 6px rgba(107,122,255,0.4)',
               }}
             />
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em' }}>Onvero.</span>
+            <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.03em' }}>Onvero.</span>
           </div>
         </div>
         <div
@@ -115,30 +137,31 @@ export default function DashboardSidebar() {
             letterSpacing: '0.1em',
             color: 'rgba(255,255,255,0.25)',
             marginTop: 4,
-            marginLeft: 13,
+            marginLeft: 14,
           }}
         >
           BusinessOS
         </div>
+        <div style={{ ...gradientSeparator, marginTop: 14 }} />
       </div>
 
       {/* ── Search ── */}
-      <div style={{ margin: '10px 10px 6px' }}>
+      <div style={{ margin: '6px 12px 8px', position: 'relative', zIndex: 1 }}>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            background: '#181818',
-            border: `1px solid ${searchHover ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)'}`,
-            borderRadius: 8,
-            padding: '6px 10px',
-            transition: 'border-color 0.15s',
+            gap: 8,
+            background: 'rgba(255,255,255,0.03)',
+            border: `1px solid ${searchHover ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)'}`,
+            borderRadius: 14,
+            padding: '7px 12px',
+            transition: TRANSITION,
           }}
           onMouseEnter={() => setSearchHover(true)}
           onMouseLeave={() => setSearchHover(false)}
         >
-          <Search size={12} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+          <Search size={13} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -151,8 +174,8 @@ export default function DashboardSidebar() {
               background: 'none',
               border: 'none',
               outline: 'none',
-              color: 'rgba(255,255,255,0.6)',
-              fontSize: 11,
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 12,
               padding: 0,
               fontFamily: 'var(--font-dm-sans)',
               cursor: 'pointer',
@@ -163,19 +186,30 @@ export default function DashboardSidebar() {
               fontSize: 9,
               color: 'rgba(255,255,255,0.2)',
               background: 'rgba(255,255,255,0.06)',
-              borderRadius: 3,
-              padding: '1px 5px',
+              borderRadius: 4,
+              padding: '2px 6px',
               fontFamily: 'var(--font-dm-mono)',
               flexShrink: 0,
             }}
           >
-            ⌘K
+            K
           </span>
         </div>
       </div>
 
       {/* ── Nav Items ── */}
-      <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <nav
+        style={{
+          flex: 1,
+          padding: '6px 10px',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -189,44 +223,31 @@ export default function DashboardSidebar() {
                   position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
-                  padding: '7px 10px',
-                  borderRadius: 7,
-                  background: active ? 'rgba(255,255,255,0.06)' : 'transparent',
-                  color: active ? '#ffffff' : 'rgba(255,255,255,0.45)',
+                  gap: 10,
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  background: active ? 'rgba(107,122,255,0.08)' : 'transparent',
+                  color: active ? '#ffffff' : 'rgba(255,255,255,0.4)',
                   fontSize: 13,
                   fontWeight: active ? 500 : 400,
                   textDecoration: 'none',
-                  transition: 'background 0.15s, color 0.15s',
+                  transition: TRANSITION,
+                  borderLeft: active ? '2px solid #6B7AFF' : '2px solid transparent',
                 }}
                 onMouseEnter={(e) => {
                   if (!active) {
                     e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!active) {
                     e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.45)';
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
                   }
                 }}
               >
-                {active && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: 2,
-                      height: 16,
-                      background: '#fff',
-                      borderRadius: '0 2px 2px 0',
-                    }}
-                  />
-                )}
-                <Icon size={14} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+                <Icon size={15} strokeWidth={1.5} style={{ flexShrink: 0 }} />
                 {item.label}
               </Link>
               {showChildren &&
@@ -234,40 +255,48 @@ export default function DashboardSidebar() {
                   const ChildIcon = child.icon;
                   const childIsActive = isActive(child.href);
                   return (
-                    <Link
+                    <div
                       key={child.href}
-                      href={child.href}
                       style={{
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '6px 10px 6px 26px',
-                        marginTop: 1,
-                        borderRadius: 7,
-                        background: childIsActive ? 'rgba(255,255,255,0.06)' : 'transparent',
-                        color: childIsActive ? '#ffffff' : 'rgba(255,255,255,0.4)',
-                        fontSize: 12,
-                        fontWeight: childIsActive ? 500 : 400,
-                        textDecoration: 'none',
-                        transition: 'background 0.15s, color 0.15s',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!childIsActive) {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                          e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!childIsActive) {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
-                        }
+                        marginLeft: 18,
+                        borderLeft: '1px solid rgba(255,255,255,0.04)',
+                        paddingLeft: 0,
                       }}
                     >
-                      <ChildIcon size={12} strokeWidth={1.8} style={{ flexShrink: 0 }} />
-                      {child.label}
-                    </Link>
+                      <Link
+                        href={child.href}
+                        style={{
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: '7px 12px 7px 12px',
+                          marginTop: 2,
+                          borderRadius: 10,
+                          background: childIsActive ? 'rgba(107,122,255,0.08)' : 'transparent',
+                          color: childIsActive ? '#ffffff' : 'rgba(255,255,255,0.4)',
+                          fontSize: 12,
+                          fontWeight: childIsActive ? 500 : 400,
+                          textDecoration: 'none',
+                          transition: TRANSITION,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!childIsActive) {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!childIsActive) {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+                          }
+                        }}
+                      >
+                        <ChildIcon size={13} strokeWidth={1.5} style={{ flexShrink: 0 }} />
+                        {child.label}
+                      </Link>
+                    </div>
                   );
                 })}
             </div>
@@ -278,13 +307,16 @@ export default function DashboardSidebar() {
       {/* ── Bottom Section ── */}
       <div
         style={{
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          padding: '8px 8px 6px',
+          padding: '0 10px 8px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 1,
+          gap: 2,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
+        <div style={{ ...gradientSeparator, marginBottom: 8 }} />
+
         {NAV_BOTTOM.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -295,19 +327,21 @@ export default function DashboardSidebar() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                padding: '6px 10px',
-                borderRadius: 7,
-                background: active ? 'rgba(255,255,255,0.06)' : 'transparent',
+                gap: 10,
+                padding: '8px 12px',
+                borderRadius: 10,
+                background: active ? 'rgba(107,122,255,0.08)' : 'transparent',
                 color: active ? '#fff' : 'rgba(255,255,255,0.4)',
                 fontSize: 12,
+                fontWeight: active ? 500 : 400,
                 textDecoration: 'none',
-                transition: 'background 0.15s, color 0.15s',
+                transition: TRANSITION,
+                borderLeft: active ? '2px solid #6B7AFF' : '2px solid transparent',
               }}
               onMouseEnter={(e) => {
                 if (!active) {
                   e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
                 }
               }}
               onMouseLeave={(e) => {
@@ -317,7 +351,7 @@ export default function DashboardSidebar() {
                 }
               }}
             >
-              <Icon size={13} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+              <Icon size={15} strokeWidth={1.5} style={{ flexShrink: 0 }} />
               {item.label}
             </Link>
           );
@@ -329,7 +363,7 @@ export default function DashboardSidebar() {
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            padding: '5px 10px',
+            padding: '6px 12px',
             fontSize: 11,
             color: 'rgba(255,255,255,0.35)',
           }}
@@ -355,17 +389,17 @@ export default function DashboardSidebar() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '8px 10px',
-            marginTop: 2,
-            borderRadius: 8,
+            padding: '10px 12px',
+            marginTop: 4,
+            borderRadius: 10,
             background: 'rgba(255,255,255,0.03)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <div
               style={{
-                width: 26,
-                height: 26,
+                width: 28,
+                height: 28,
                 borderRadius: '50%',
                 background: 'rgba(107,122,255,0.2)',
                 display: 'flex',
@@ -404,12 +438,12 @@ export default function DashboardSidebar() {
               padding: 2,
               display: 'flex',
               flexShrink: 0,
-              transition: 'color 0.15s',
+              transition: TRANSITION,
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
             onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
           >
-            →
+            <LogOut size={14} strokeWidth={1.5} />
           </button>
         </div>
       </div>

@@ -9,13 +9,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       style={{
         display: 'flex',
         minHeight: '100vh',
-        backgroundColor: '#0a0a0a',
-        color: '#f5f5f5',
+        backgroundColor: '#050505',
+        color: '#e8e8e8',
         position: 'relative',
       }}
     >
       <DashboardSidebar />
-      <main style={{ flex: 1, overflowY: 'auto' }}>{children}</main>
+      <main style={{ flex: 1, overflowY: 'auto', paddingLeft: 8 }}>{children}</main>
       <div style={{ position: 'fixed', top: 16, right: 20, zIndex: 40 }}>
         <NotificationBell />
       </div>

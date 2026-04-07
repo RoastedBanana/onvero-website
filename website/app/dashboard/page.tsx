@@ -5,39 +5,17 @@ import { useRouter } from 'next/navigation';
 import { DottedSurface } from '@/components/ui/dotted-surface';
 import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
 import { TextShimmer } from '@/components/ui/text-shimmer';
-import { BentoGrid } from '@/components/ui/bento-grid';
-import type { BentoItem } from '@/components/ui/bento-grid';
-import { HowItWorks } from '@/components/ui/how-it-works';
 import { DashboardWidgets } from '@/components/ui/DashboardWidgets';
-import {
-  Users,
-  BarChart2,
-  Zap,
-  Target,
-  Mail,
-  TrendingUp,
-  Calendar,
-  Search,
-  PenLine,
-  Sparkles,
-  MessageCircle,
-  ArrowUp,
-} from 'lucide-react';
+import { Users, BarChart2, Zap, Calendar, Search, Sparkles, ArrowUp, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat';
 
-const modes = [
-  { key: 'search', label: 'Suchen', icon: <Search size={12} style={{ opacity: 0.7 }} /> },
-  { key: 'ask', label: 'Fragen', icon: <MessageCircle size={12} style={{ opacity: 0.7 }} /> },
-  { key: 'create', label: 'Erstellen', icon: <Sparkles size={12} style={{ opacity: 0.7 }} /> },
-];
-
 const quickActions = [
-  { label: 'Was steht diese Woche an?', lucide: Calendar },
-  { label: 'Zeig mir eine Übersicht', lucide: Search },
-  { label: 'Neue Kampagne starten', lucide: Zap },
-  { label: 'Meeting zusammenfassen', lucide: PenLine },
+  { label: 'Was steht an?', icon: Calendar },
+  { label: 'Übersicht zeigen', icon: BarChart2 },
+  { label: 'Kampagne starten', icon: Zap },
+  { label: 'Meeting vorbereiten', icon: FileText },
 ];
 
 interface LiveStats {
@@ -56,7 +34,6 @@ interface Message {
 }
 
 export default function DashboardPage() {
-  const [mode, setMode] = useState('ask');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,6 +48,7 @@ export default function DashboardPage() {
     weeklyData: [0, 0, 0, 0, 0, 0, 0],
   });
   const [mounted, setMounted] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -78,7 +56,7 @@ export default function DashboardPage() {
   const hasMessages = messages.length > 0;
 
   useEffect(() => {
-    setTimeout(() => setMounted(true), 100);
+    setTimeout(() => setMounted(true), 50);
   }, []);
 
   useEffect(() => {
@@ -143,57 +121,55 @@ export default function DashboardPage() {
     }
   };
 
-  const bentoItems: BentoItem[] = [
+  const cards = [
     {
       title: 'Leads',
-      meta: stats.total > 0 ? `${stats.total} Kontakte` : undefined,
-      description: 'Kontakte verwalten, KI-Bewertungen prüfen und personalisierte E-Mails versenden',
-      icon: <Users className="w-4 h-4 text-[#6B7AFF]" />,
-      status: 'Aktiv',
-      tags: ['Kontakte', 'Scoring', 'E-Mail'],
-      cta: 'Öffnen →',
+      icon: Users,
+      iconColor: '#6B7AFF',
+      stat: String(stats.hot),
+      statLabel: 'HOT Leads',
+      tags: [`${stats.total} Total`, `${stats.warm} Warm`, `${stats.avg} Avg`],
       colSpan: 2,
-      hasPersistentHover: true,
       onClick: () => router.push('/dashboard/leads'),
     },
     {
       title: 'Meetings',
-      meta: 'Aufnahmen',
-      description: 'Meetings aufnehmen, transkribieren und KI-Zusammenfassungen erstellen',
-      icon: <Calendar className="w-4 h-4 text-sky-400" />,
-      status: 'Bereit',
-      tags: ['Transkription', 'Zusammenfassung'],
-      cta: 'Öffnen →',
+      icon: Calendar,
+      iconColor: '#38bdf8',
+      stat: '--',
+      statLabel: 'Aufnahmen',
+      tags: ['Transkription', 'KI'],
+      colSpan: 1,
       onClick: () => router.push('/dashboard/meetings'),
     },
     {
       title: 'Analytics',
-      description: 'Kennzahlen, Trends und Performance deines gesamten BusinessOS auf einen Blick',
-      icon: <BarChart2 className="w-4 h-4 text-emerald-500" />,
-      status: 'Live',
-      tags: ['Kennzahlen', 'Trends', 'Reports'],
-      cta: 'Dashboard öffnen →',
+      icon: BarChart2,
+      iconColor: '#22C55E',
+      stat: String(stats.avg),
+      statLabel: 'Avg Score',
+      tags: ['Trends', 'Reports'],
+      colSpan: 1,
       onClick: () => router.push('/dashboard/analytics'),
     },
     {
       title: 'Generate',
-      meta: 'KI-Pipeline',
-      description: 'Beschreibe deine Zielgruppe — die KI recherchiert, analysiert und bewertet automatisch',
-      icon: <Zap className="w-4 h-4 text-amber-500" />,
-      status: 'Bereit',
-      tags: ['KI-Suche', 'Automatisierung'],
-      cta: 'Starten →',
+      icon: Zap,
+      iconColor: '#F59E0B',
+      stat: '\u2192',
+      statLabel: 'Jetzt starten',
+      tags: ['KI-Suche', 'Apollo'],
       colSpan: 2,
       onClick: () => router.push('/dashboard/generate'),
     },
     {
       title: 'Business AI',
-      meta: 'Assistent',
-      description: 'Dein persönlicher KI-Assistent für Geschäftsfragen, Analysen und Aufgaben',
-      icon: <Sparkles className="w-4 h-4 text-purple-400" />,
-      status: 'Live',
-      tags: ['Chat', 'Analyse', 'Automatisierung'],
-      cta: 'Chat starten →',
+      icon: Sparkles,
+      iconColor: '#a78bfa',
+      stat: 'Live',
+      statLabel: 'Assistent',
+      tags: ['Chat', 'Analyse'],
+      colSpan: 1,
       onClick: () => router.push('/dashboard/business-ai'),
     },
   ];
@@ -210,16 +186,55 @@ export default function DashboardPage() {
       }}
     >
       <style>{`
-        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes glowPulse{0%,100%{opacity:0.4}50%{opacity:0.8}}
-        @keyframes borderGlow{0%{border-color:rgba(255,255,255,0.08)}50%{border-color:rgba(107,122,255,0.2)}100%{border-color:rgba(255,255,255,0.08)}}
-        @keyframes chipSlide{from{opacity:0;transform:translateY(8px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes meshDrift {
+          0% { background-position: 20% 20%, 80% 80%, 50% 40%; }
+          33% { background-position: 30% 30%, 70% 70%, 45% 50%; }
+          66% { background-position: 15% 25%, 85% 75%, 55% 35%; }
+          100% { background-position: 20% 20%, 80% 80%, 50% 40%; }
+        }
+        @keyframes heroBlurIn {
+          from { opacity: 0; filter: blur(8px); transform: translateY(12px); }
+          to { opacity: 1; filter: blur(0px); transform: translateY(0); }
+        }
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pillEnter {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes cardEnter {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sendBtnIn {
+          from { opacity: 0; transform: scale(0.7); }
+          to { opacity: 1; transform: scale(1); }
+        }
       `}</style>
+
+      {/* Ambient Mesh Gradient Background */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 0,
+          background: [
+            'radial-gradient(ellipse 600px 400px at 20% 20%, rgba(107,122,255,0.07) 0%, transparent 70%)',
+            'radial-gradient(ellipse 500px 500px at 80% 80%, rgba(34,197,94,0.04) 0%, transparent 70%)',
+            'radial-gradient(ellipse 800px 300px at 50% 40%, rgba(255,255,255,0.02) 0%, transparent 60%)',
+          ].join(', '),
+          backgroundSize: '100% 100%, 100% 100%, 100% 100%',
+          animation: 'meshDrift 20s ease-in-out infinite',
+        }}
+      />
 
       {!hasMessages && <DottedSurface />}
 
       <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        {/* ── Chat Section ── */}
+        {/* Chat Section */}
         <div
           style={{
             flex: 1,
@@ -244,14 +259,14 @@ export default function DashboardPage() {
                 >
                   <div
                     style={{
-                      maxWidth: '80%',
-                      padding: '10px 16px',
+                      maxWidth: '75%',
+                      padding: '12px 18px',
                       borderRadius: 16,
                       fontSize: 14,
                       lineHeight: 1.6,
-                      background: msg.role === 'user' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
+                      background: msg.role === 'user' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
                       color: msg.role === 'user' ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.7)',
-                      border: msg.role === 'ai' ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                      border: msg.role === 'ai' ? '1px solid rgba(255,255,255,0.06)' : 'none',
                     }}
                   >
                     {msg.role === 'ai' ? (
@@ -268,14 +283,14 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
                   <div
                     style={{
-                      padding: '10px 16px',
+                      padding: '12px 18px',
                       borderRadius: 16,
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.07)',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
                     }}
                   >
                     <TextShimmer className="text-sm font-medium" duration={1}>
-                      Denkt nach…
+                      Denkt nach...
                     </TextShimmer>
                   </div>
                 </div>
@@ -288,19 +303,22 @@ export default function DashboardPage() {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                paddingTop: '12vh',
-                paddingBottom: 12,
+                paddingTop: '14vh',
+                paddingBottom: 16,
               }}
             >
-              {/* Animated heading */}
+              {/* Hero Title */}
               <h1
                 style={{
-                  fontSize: 34,
+                  fontSize: 48,
                   fontWeight: 700,
-                  marginBottom: 6,
-                  letterSpacing: '-0.03em',
-                  animation: mounted ? 'fadeUp 0.6s ease forwards' : 'none',
-                  opacity: mounted ? 1 : 0,
+                  letterSpacing: '-0.04em',
+                  marginBottom: 8,
+                  background: 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.5) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  animation: mounted ? 'heroBlurIn 0.8s cubic-bezier(0.32,0.72,0,1) 0ms both' : 'none',
                 }}
               >
                 Wie kann ich helfen?
@@ -309,160 +327,183 @@ export default function DashboardPage() {
               {/* Subtitle */}
               <p
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   color: 'rgba(255,255,255,0.25)',
-                  marginBottom: 14,
-                  animation: mounted ? 'fadeUp 0.6s ease 0.15s both' : 'none',
+                  letterSpacing: '0.02em',
+                  marginBottom: 28,
+                  animation: mounted ? 'heroBlurIn 0.8s cubic-bezier(0.32,0.72,0,1) 100ms both' : 'none',
                 }}
               >
                 Dein BusinessOS — alles an einem Ort
               </p>
-
-              {/* Mode pills */}
-              <div style={{ display: 'flex', gap: 6, animation: mounted ? 'fadeUp 0.6s ease 0.25s both' : 'none' }}>
-                {modes.map((m) => (
-                  <button
-                    key={m.key}
-                    onClick={() => setMode(m.key)}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: 20,
-                      fontSize: 12,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      border: mode === m.key ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.07)',
-                      background: mode === m.key ? 'rgba(255,255,255,0.08)' : 'transparent',
-                      color: mode === m.key ? '#fff' : 'rgba(255,255,255,0.35)',
-                      transition: 'all 0.2s',
-                      fontFamily: 'inherit',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5,
-                    }}
-                  >
-                    {m.icon} {m.label}
-                  </button>
-                ))}
-              </div>
             </div>
           )}
 
-          {/* Input */}
+          {/* Command-Style Input Bar */}
           <div
             style={{
-              paddingBottom: hasMessages ? 20 : 8,
+              paddingBottom: hasMessages ? 20 : 12,
               flexShrink: 0,
-              animation: !hasMessages && mounted ? 'fadeUp 0.6s ease 0.35s both' : 'none',
+              animation: !hasMessages && mounted ? 'fadeSlideUp 0.7s cubic-bezier(0.32,0.72,0,1) 200ms both' : 'none',
             }}
           >
             <div
               style={{
-                background: '#111',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 14,
-                overflow: 'hidden',
-                animation: !hasMessages ? 'borderGlow 4s ease-in-out infinite' : 'none',
+                background: 'rgba(255,255,255,0.04)',
+                border: `1px solid ${inputFocused ? 'rgba(107,122,255,0.15)' : 'rgba(255,255,255,0.08)'}`,
+                borderRadius: 16,
+                padding: 3,
+                transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+                boxShadow: inputFocused
+                  ? '0 0 0 1px rgba(107,122,255,0.1), 0 8px 40px rgba(0,0,0,0.3)'
+                  : '0 4px 20px rgba(0,0,0,0.2)',
               }}
             >
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  adjustHeight();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder={
-                  mode === 'search'
-                    ? 'Leads, Firmen, Kennzahlen suchen...'
-                    : mode === 'create'
-                      ? 'Neue Kampagne, Report oder Task...'
-                      : 'Stell eine Frage an dein BusinessOS…'
-                }
-                style={{
-                  width: '100%',
-                  padding: '16px 18px',
-                  resize: 'none',
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: '#fff',
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  lineHeight: 1.5,
-                  minHeight: 56,
-                  overflow: 'hidden',
-                }}
-              />
               <div
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 12px 12px' }}
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  borderRadius: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  minHeight: 56,
+                }}
               >
-                <button
-                  onClick={() => handleSend()}
+                {/* Left icon */}
+                <div
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    background: input.trim() ? '#fff' : 'rgba(255,255,255,0.06)',
-                    border: 'none',
-                    cursor: input.trim() ? 'pointer' : 'default',
+                    paddingLeft: 18,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    color: input.trim() ? '#080808' : 'rgba(255,255,255,0.2)',
-                    fontSize: 14,
-                    transition: 'all 0.2s',
+                    flexShrink: 0,
                   }}
                 >
-                  <ArrowUp size={16} />
-                </button>
+                  <Search size={16} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                </div>
+
+                {/* Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    adjustHeight();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Stell eine Frage an dein BusinessOS..."
+                  style={{
+                    flex: 1,
+                    padding: '16px 14px',
+                    resize: 'none',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontFamily: 'inherit',
+                    lineHeight: 1.5,
+                    minHeight: 56,
+                    overflow: 'hidden',
+                  }}
+                />
+
+                {/* Send button */}
+                <div style={{ paddingRight: 10, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {input.trim() ? (
+                    <button
+                      onClick={() => handleSend()}
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        background: '#fff',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#080808',
+                        transition: 'transform 0.15s ease',
+                        animation: 'sendBtnIn 0.2s cubic-bezier(0.32,0.72,0,1) both',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <ArrowUp size={16} />
+                    </button>
+                  ) : (
+                    <div style={{ width: 34, height: 34 }} />
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Quick action chips — only on welcome */}
+          {/* Quick Action Pills */}
           {!hasMessages && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, paddingBottom: 24 }}>
-              {quickActions.map((qa, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSend(qa.label)}
-                  style={{
-                    padding: '7px 14px',
-                    borderRadius: 20,
-                    fontSize: 11,
-                    cursor: 'pointer',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    background: 'rgba(255,255,255,0.02)',
-                    color: 'rgba(255,255,255,0.4)',
-                    transition: 'all 0.2s',
-                    fontFamily: 'inherit',
-                    animation: mounted ? `chipSlide 0.4s ease ${0.5 + i * 0.08}s both` : 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
-                  }}
-                >
-                  <qa.lucide size={12} style={{ opacity: 0.6 }} /> {qa.label}
-                </button>
-              ))}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: 8,
+                paddingBottom: 28,
+              }}
+            >
+              {quickActions.map((qa, i) => {
+                const Icon = qa.icon;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleSend(qa.label)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      background: 'rgba(255,255,255,0.03)',
+                      color: 'rgba(255,255,255,0.45)',
+                      transition: 'all 0.25s cubic-bezier(0.32,0.72,0,1)',
+                      fontFamily: 'inherit',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      animation: mounted ? `pillEnter 0.5s cubic-bezier(0.32,0.72,0,1) ${300 + i * 60}ms both` : 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.07)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+                      e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.color = 'rgba(255,255,255,0.45)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    <Icon size={13} style={{ opacity: 0.6 }} />
+                    {qa.label}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* ── Dashboard Widgets ── */}
+        {/* Dashboard Widgets */}
         {!hasMessages && (
           <div
             style={{
@@ -470,80 +511,159 @@ export default function DashboardPage() {
               maxWidth: 1100,
               margin: '0 auto',
               width: '100%',
-              animation: mounted ? 'fadeUp 0.6s ease 0.5s both' : 'none',
+              animation: mounted ? 'fadeSlideUp 0.7s cubic-bezier(0.32,0.72,0,1) 400ms both' : 'none',
             }}
           >
             <DashboardWidgets />
           </div>
         )}
 
-        {/* ── Onboarding + Feature Cards + Getting Started ── */}
+        {/* Onboarding Progress */}
         {!hasMessages && (
-          <>
+          <div
+            style={{
+              padding: '0 20px 16px',
+              maxWidth: 1100,
+              margin: '0 auto',
+              width: '100%',
+              animation: mounted ? 'fadeSlideUp 0.7s cubic-bezier(0.32,0.72,0,1) 450ms both' : 'none',
+            }}
+          >
+            <OnboardingProgress />
+          </div>
+        )}
+
+        {/* Asymmetric Bento Grid */}
+        {!hasMessages && (
+          <div
+            style={{
+              padding: '0 20px 48px',
+              maxWidth: 1100,
+              margin: '0 auto',
+              width: '100%',
+            }}
+          >
             <div
               style={{
-                padding: '0 20px 16px',
-                maxWidth: 1100,
-                margin: '0 auto',
-                width: '100%',
-                animation: mounted ? 'fadeUp 0.6s ease 0.55s both' : 'none',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 14,
               }}
             >
-              <OnboardingProgress />
+              {cards.map((card, i) => {
+                const Icon = card.icon;
+                return (
+                  <div
+                    key={card.title}
+                    onClick={card.onClick}
+                    style={{
+                      gridColumn: card.colSpan === 2 ? 'span 2' : 'span 1',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      borderRadius: 16,
+                      padding: 3,
+                      cursor: 'pointer',
+                      transition: 'all 0.6s cubic-bezier(0.32,0.72,0,1)',
+                      animation: mounted ? `cardEnter 0.7s cubic-bezier(0.32,0.72,0,1) ${500 + i * 80}ms both` : 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <div
+                      style={{
+                        background:
+                          card.colSpan === 2
+                            ? `linear-gradient(135deg, ${card.iconColor}08 0%, rgba(255,255,255,0.03) 60%)`
+                            : 'rgba(255,255,255,0.03)',
+                        borderRadius: 'calc(1rem - 3px)',
+                        padding: 24,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 20,
+                      }}
+                    >
+                      {/* Card Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: 20,
+                              background: 'rgba(255,255,255,0.06)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Icon size={18} style={{ color: card.iconColor }} />
+                          </div>
+                          <span style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
+                            {card.title}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: 'rgba(255,255,255,0.25)',
+                            transition: 'color 0.2s',
+                          }}
+                        >
+                          View All &rarr;
+                        </span>
+                      </div>
+
+                      {/* Big Stat */}
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 36,
+                            fontWeight: 600,
+                            fontFamily: 'var(--font-dm-mono, monospace)',
+                            color: card.iconColor,
+                            lineHeight: 1,
+                            marginBottom: 4,
+                          }}
+                        >
+                          {card.stat}
+                        </div>
+                        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>{card.statLabel}</div>
+                      </div>
+
+                      {/* Tags */}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 'auto' }}>
+                        {card.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            style={{
+                              fontSize: 11,
+                              padding: '4px 10px',
+                              borderRadius: 8,
+                              background: 'rgba(255,255,255,0.04)',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                              color: 'rgba(255,255,255,0.35)',
+                            }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div
-              style={{
-                padding: '0 20px 24px',
-                maxWidth: 1100,
-                margin: '0 auto',
-                width: '100%',
-                animation: mounted ? 'fadeUp 0.6s ease 0.6s both' : 'none',
-              }}
-            >
-              <BentoGrid items={bentoItems} />
-            </div>
-            <div
-              style={{
-                padding: '0 20px 48px',
-                maxWidth: 1100,
-                margin: '0 auto',
-                width: '100%',
-                animation: mounted ? 'fadeUp 0.6s ease 0.7s both' : 'none',
-              }}
-            >
-              <HowItWorks
-                storageKey="home"
-                title="Erste Schritte"
-                subtitle="So holst du das meiste aus deinem BusinessOS"
-                compact
-                steps={[
-                  {
-                    icon: <Target className="w-5 h-5 text-[#F59E0B]" />,
-                    title: 'Profil einrichten',
-                    description: 'Gehe zu Settings und beschreibe dein Unternehmen, deine Zielkunden und dein Angebot.',
-                    benefits: [
-                      'KI-Profil in den Einstellungen',
-                      'Beschreibt wer du bist',
-                      'Verbessert alle KI-Ergebnisse',
-                    ],
-                  },
-                  {
-                    icon: <Zap className="w-5 h-5 text-[#6B7AFF]" />,
-                    title: 'Tools erkunden',
-                    description: 'Nutze Generate, Meetings und Analytics um dein Business zu automatisieren.',
-                    benefits: ['KI-gestützte Kampagnen', 'Meeting-Zusammenfassungen', 'Echtzeit-Kennzahlen'],
-                  },
-                  {
-                    icon: <TrendingUp className="w-5 h-5 text-[#22C55E]" />,
-                    title: 'KI-Assistent fragen',
-                    description:
-                      'Nutze die Business AI auf dieser Seite um Fragen zu stellen oder Aufgaben zu erledigen.',
-                    benefits: ['Fragen in natürlicher Sprache', 'Zugriff auf alle Daten', 'Arbeitet mit deinem Profil'],
-                  },
-                ]}
-              />
-            </div>
-          </>
+          </div>
         )}
       </div>
     </div>

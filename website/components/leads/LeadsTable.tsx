@@ -8,43 +8,26 @@ import LeadAvatar from '@/components/ui/LeadAvatar';
 function ScoreBadge({ score }: { score: number | null }) {
   if (score === null || score === undefined) {
     return (
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          background: 'rgba(255,255,255,0.04)',
-          borderRadius: 20,
-          padding: '3px 10px',
-          border: '1px solid rgba(255,255,255,0.06)',
-        }}
-      >
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
         <style>{`@keyframes scorePulse{0%,100%{opacity:0.4}50%{opacity:1}}`}</style>
         <span
-          style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', animation: 'scorePulse 1.5s ease-in-out infinite' }}
+          style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', animation: 'scorePulse 1.5s ease-in-out infinite' }}
         >
-          Wird analysiert...
+          ...
         </span>
       </div>
     );
   }
   const isHot = score >= 70;
   const isWarm = score >= 45;
-  const label = isHot ? 'HOT' : isWarm ? 'WARM' : 'COLD';
+  const letter = isHot ? 'H' : isWarm ? 'W' : 'C';
   const color = isHot ? '#FF5C2E' : isWarm ? '#F59E0B' : '#6B7AFF';
-  const bg = isHot ? 'rgba(255,92,46,0.12)' : isWarm ? 'rgba(245,158,11,0.12)' : 'rgba(107,122,255,0.12)';
   return (
-    <div
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 5,
-        background: bg,
-        borderRadius: 20,
-        padding: '3px 10px',
-      }}
-    >
-      <span style={{ fontSize: 15, fontWeight: 700, color, fontFamily: 'var(--font-dm-mono)' }}>{score}</span>
-      <span style={{ fontSize: 9, fontWeight: 600, color, letterSpacing: '0.1em', opacity: 0.85 }}>{label}</span>
+    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3 }}>
+      <span style={{ fontSize: 16, fontWeight: 700, color, fontFamily: 'var(--font-dm-mono)' }}>{score}</span>
+      <span style={{ fontSize: 8, fontWeight: 600, color, opacity: 0.5, fontFamily: 'var(--font-dm-mono)' }}>
+        {letter}
+      </span>
     </div>
   );
 }
@@ -118,12 +101,13 @@ function InlineStatusDropdown({
               top: '100%',
               left: 0,
               marginTop: 4,
-              background: '#181818',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 8,
+              background: '#111',
+              border: '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 10,
               overflow: 'hidden',
               zIndex: 31,
               minWidth: 130,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
             }}
           >
             {STATUS_OPTIONS.map((opt) => (
@@ -138,7 +122,7 @@ function InlineStatusDropdown({
                   width: '100%',
                   padding: '7px 12px',
                   background: lead.status === opt.value ? 'rgba(255,255,255,0.06)' : 'transparent',
-                  color: lead.status === opt.value ? '#fff' : 'rgba(255,255,255,0.5)',
+                  color: lead.status === opt.value ? '#e8e8e8' : 'rgba(255,255,255,0.45)',
                   border: 'none',
                   fontSize: 11,
                   cursor: 'pointer',
@@ -176,17 +160,17 @@ function Checkbox({
         onChange();
       }}
       style={{
-        width: 18,
-        height: 18,
+        width: 16,
+        height: 16,
         borderRadius: 4,
-        border: `1.5px solid ${checked || indeterminate ? '#6B7AFF' : 'rgba(255,255,255,0.15)'}`,
+        border: `1.5px solid ${checked || indeterminate ? '#6B7AFF' : 'rgba(255,255,255,0.12)'}`,
         background: checked || indeterminate ? 'rgba(107,122,255,0.2)' : 'transparent',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        transition: 'all 0.15s',
+        transition: 'all 0.2s cubic-bezier(0.32,0.72,0,1)',
         padding: 0,
       }}
     >
@@ -324,21 +308,26 @@ export default function LeadsTable({
   const allSelected = sorted.length > 0 && selected.size === sorted.length;
   const someSelected = selected.size > 0 && !allSelected;
 
-  const gridCols = selectMode ? '36px 64px 1fr 200px 140px 120px 100px' : '64px 1fr 200px 140px 120px 100px 80px';
+  const gridCols = selectMode ? '36px 64px 1fr 200px 140px 120px 100px' : '64px 1fr 200px 140px 120px 100px 48px';
 
   return (
     <div
       style={{
-        background: '#111',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 12,
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.04)',
+        borderRadius: 16,
         overflow: 'hidden',
-        marginTop: 12,
         position: 'relative',
       }}
     >
-      <style>{`div:hover > .row-delete-btn { opacity: 1 !important; }`}</style>
-      {/* ── Bulk Action Bar ── */}
+      <style>{`
+        div:hover > .row-delete-btn { opacity: 1 !important; }
+        .leads-row { transition: background 0.3s cubic-bezier(0.32,0.72,0,1); }
+        .leads-select-btn { opacity: 0; transition: opacity 0.2s ease; }
+        .leads-row:hover .leads-select-btn { opacity: 1; }
+      `}</style>
+
+      {/* -- Bulk Action Bar -- */}
       {selectMode && selected.size > 0 && (
         <div
           style={{
@@ -349,10 +338,10 @@ export default function LeadsTable({
             alignItems: 'center',
             gap: 10,
             padding: '10px 20px',
-            background: 'rgba(107,122,255,0.08)',
-            borderBottom: '1px solid rgba(107,122,255,0.15)',
+            background: 'rgba(107,122,255,0.06)',
+            borderBottom: '1px solid rgba(107,122,255,0.1)',
             backdropFilter: 'blur(12px)',
-            animation: 'fadeSlideIn 0.2s ease',
+            animation: 'fadeSlideIn 0.3s cubic-bezier(0.32,0.72,0,1)',
           }}
         >
           <style>{`@keyframes fadeSlideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}`}</style>
@@ -376,26 +365,26 @@ export default function LeadsTable({
               onClick={() => setBulkStatusOpen(!bulkStatusOpen)}
               disabled={bulkActionLoading}
               style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.06)',
                 borderRadius: 8,
                 padding: '6px 14px',
                 fontSize: 11,
                 fontWeight: 500,
-                color: 'rgba(255,255,255,0.7)',
+                color: 'rgba(255,255,255,0.6)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                transition: 'all 0.15s',
+                transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.color = '#fff';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.color = '#e8e8e8';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
               }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -413,13 +402,13 @@ export default function LeadsTable({
                     top: '100%',
                     left: 0,
                     marginTop: 4,
-                    background: '#1a1a1a',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 8,
+                    background: '#111',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 10,
                     overflow: 'hidden',
                     zIndex: 31,
                     minWidth: 150,
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                   }}
                 >
                   {STATUS_OPTIONS.map((opt) => {
@@ -436,18 +425,18 @@ export default function LeadsTable({
                           width: '100%',
                           padding: '8px 14px',
                           background: 'transparent',
-                          color: 'rgba(255,255,255,0.6)',
+                          color: 'rgba(255,255,255,0.5)',
                           border: 'none',
                           fontSize: 11,
                           cursor: 'pointer',
                           textAlign: 'left',
                           transition: 'background 0.15s',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                       >
                         <div
-                          style={{ width: 8, height: 8, borderRadius: '50%', background: st.color, flexShrink: 0 }}
+                          style={{ width: 6, height: 6, borderRadius: '50%', background: st.color, flexShrink: 0 }}
                         />
                         {opt.label}
                       </button>
@@ -466,8 +455,8 @@ export default function LeadsTable({
                 onCompare(selectedLeads);
               }}
               style={{
-                background: 'rgba(107,122,255,0.1)',
-                border: '1px solid rgba(107,122,255,0.2)',
+                background: 'rgba(107,122,255,0.08)',
+                border: '1px solid rgba(107,122,255,0.12)',
                 borderRadius: 8,
                 padding: '6px 14px',
                 fontSize: 11,
@@ -477,15 +466,13 @@ export default function LeadsTable({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                transition: 'all 0.15s',
+                transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(107,122,255,0.18)';
-                e.currentTarget.style.color = '#8B9AFF';
+                e.currentTarget.style.background = 'rgba(107,122,255,0.15)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(107,122,255,0.1)';
-                e.currentTarget.style.color = '#6B7AFF';
+                e.currentTarget.style.background = 'rgba(107,122,255,0.08)';
               }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -500,26 +487,26 @@ export default function LeadsTable({
           <button
             onClick={exportSelected}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: 8,
               padding: '6px 14px',
               fontSize: 11,
               fontWeight: 500,
-              color: 'rgba(255,255,255,0.7)',
+              color: 'rgba(255,255,255,0.6)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              transition: 'all 0.15s',
+              transition: 'all 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.color = '#fff';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = '#e8e8e8';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-              e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
             }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -535,8 +522,8 @@ export default function LeadsTable({
             <button
               onClick={() => setDeleteConfirm(true)}
               style={{
-                background: 'rgba(239,68,68,0.08)',
-                border: '1px solid rgba(239,68,68,0.15)',
+                background: 'rgba(239,68,68,0.06)',
+                border: '1px solid rgba(239,68,68,0.1)',
                 borderRadius: 8,
                 padding: '6px 14px',
                 fontSize: 11,
@@ -546,13 +533,13 @@ export default function LeadsTable({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                transition: 'all 0.15s',
+                transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
+                e.currentTarget.style.background = 'rgba(239,68,68,0.12)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(239,68,68,0.08)';
+                e.currentTarget.style.background = 'rgba(239,68,68,0.06)';
               }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -584,12 +571,12 @@ export default function LeadsTable({
               <button
                 onClick={() => setDeleteConfirm(false)}
                 style={{
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.06)',
                   borderRadius: 6,
                   padding: '5px 12px',
                   fontSize: 11,
-                  color: 'rgba(255,255,255,0.5)',
+                  color: 'rgba(255,255,255,0.4)',
                   cursor: 'pointer',
                 }}
               >
@@ -598,37 +585,37 @@ export default function LeadsTable({
             </div>
           )}
 
-          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.08)', margin: '0 2px' }} />
+          <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.06)', margin: '0 2px' }} />
 
           <button
             onClick={exitSelectMode}
             style={{
               background: 'none',
               border: 'none',
-              color: 'rgba(255,255,255,0.35)',
+              color: 'rgba(255,255,255,0.3)',
               cursor: 'pointer',
               fontSize: 11,
               padding: '4px 8px',
               borderRadius: 6,
-              transition: 'color 0.15s',
+              transition: 'color 0.2s ease',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.3)')}
           >
             Abbrechen
           </button>
         </div>
       )}
 
-      {/* ── Table Header ── */}
+      {/* -- Table Header -- */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: gridCols,
-          padding: '10px 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          background: 'rgba(255,255,255,0.02)',
+          padding: '12px 20px',
+          background: 'rgba(255,255,255,0.03)',
           alignItems: 'center',
+          borderRadius: '16px 16px 0 0',
         }}
       >
         {selectMode && <Checkbox checked={allSelected} indeterminate={someSelected} onChange={toggleAll} />}
@@ -644,21 +631,21 @@ export default function LeadsTable({
             key={label}
             onClick={() => key && setSortBy(key as 'score' | 'date')}
             style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
-              letterSpacing: '0.08em',
+              fontSize: 9,
+              fontWeight: 500,
+              color: key && sortBy === key ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase' as const,
               cursor: key ? 'pointer' : 'default',
               userSelect: 'none',
-              transition: 'color 0.15s',
+              transition: 'color 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              if (key) e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+              if (key) e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
             }}
             onMouseLeave={(e) => {
               if (key)
-                e.currentTarget.style.color =
-                  key && sortBy === key ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
+                e.currentTarget.style.color = key && sortBy === key ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)';
             }}
           >
             {label}
@@ -670,49 +657,48 @@ export default function LeadsTable({
             {sorted.length > 0 && (
               <button
                 onClick={() => setSelectMode(true)}
+                className="leads-select-btn"
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'none',
+                  border: 'none',
                   borderRadius: 6,
-                  padding: '4px 10px',
+                  padding: '4px 6px',
                   fontSize: 10,
-                  color: 'rgba(255,255,255,0.35)',
+                  color: 'rgba(255,255,255,0.25)',
                   cursor: 'pointer',
-                  transition: 'all 0.15s',
+                  transition: 'all 0.2s ease',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
-                  whiteSpace: 'nowrap',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.35)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.25)';
                 }}
+                title="Auswählen"
               >
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                  <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                  <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                  <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-                  <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
                 </svg>
-                Auswählen
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* ── Rows ── */}
-      {sorted.map((lead, i) => {
+      {/* -- Rows -- */}
+      {sorted.map((lead) => {
         const isSelected = selected.has(lead.id);
         const isNewLead = Date.now() - new Date(lead.createdAt).getTime() < 24 * 60 * 60 * 1000;
+        const isActive = selectedId === lead.id;
         return (
           <div
             key={lead.id}
+            className="leads-row"
             onClick={() => {
               if (selectMode) {
                 toggleSelect(lead.id);
@@ -723,44 +709,54 @@ export default function LeadsTable({
             style={{
               display: 'grid',
               gridTemplateColumns: gridCols,
-              padding: '12px 20px',
-              borderBottom: i < sorted.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-              borderLeft: isNewLead ? '2px solid rgba(34,197,94,0.4)' : '2px solid transparent',
+              padding: '0 20px',
+              height: 56,
+              borderLeft: isActive ? '2px solid #6B7AFF' : '2px solid transparent',
               alignItems: 'center',
               cursor: 'pointer',
               background:
                 selectMode && isSelected
-                  ? 'rgba(107,122,255,0.08)'
-                  : selectedId === lead.id
-                    ? 'rgba(107,122,255,0.05)'
+                  ? 'rgba(107,122,255,0.06)'
+                  : isActive
+                    ? 'rgba(255,255,255,0.06)'
                     : 'transparent',
-              transition: 'background 0.15s',
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLElement;
               if (selectMode && isSelected) return;
-              if (selectedId !== lead.id)
-                el.style.background = selectMode ? 'rgba(107,122,255,0.04)' : 'rgba(255,255,255,0.02)';
+              if (!isActive) el.style.background = 'rgba(255,255,255,0.04)';
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLElement;
               if (selectMode && isSelected) {
-                el.style.background = 'rgba(107,122,255,0.08)';
+                el.style.background = 'rgba(107,122,255,0.06)';
                 return;
               }
-              if (selectedId !== lead.id) el.style.background = 'transparent';
+              if (!isActive) el.style.background = 'transparent';
             }}
           >
             {selectMode && <Checkbox checked={isSelected} onChange={() => toggleSelect(lead.id)} />}
             <ScoreBadge score={lead.score} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {isNewLead && (
+                <div
+                  style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: '50%',
+                    background: '#22C55E',
+                    flexShrink: 0,
+                    boxShadow: '0 0 6px rgba(34,197,94,0.4)',
+                  }}
+                />
+              )}
               <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} />
               <div style={{ minWidth: 0 }}>
                 <div
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: '#fff',
+                    color: '#e8e8e8',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
@@ -769,52 +765,34 @@ export default function LeadsTable({
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {lead.name}
                   </span>
-                  {isNewLead && (
-                    <span
-                      style={{
-                        fontSize: 8,
-                        fontWeight: 700,
-                        color: '#22C55E',
-                        background: 'rgba(34,197,94,0.15)',
-                        border: '1px solid rgba(34,197,94,0.3)',
-                        borderRadius: 4,
-                        padding: '2px 6px',
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase' as const,
-                        flexShrink: 0,
-                      }}
-                    >
-                      NEU
-                    </span>
-                  )}
                   {lead.source === 'apollo_outbound' && (
                     <span
                       style={{
                         fontSize: 9,
                         color: '#8B5CF6',
-                        background: 'rgba(139,92,246,0.1)',
+                        background: 'rgba(139,92,246,0.08)',
                         padding: '1px 5px',
                         borderRadius: 6,
                         flexShrink: 0,
                         fontWeight: 500,
                       }}
                     >
-                      ⚡ Apollo
+                      Apollo
                     </span>
                   )}
                   {(lead.source === 'Website-Formular' || lead.source === 'website') && (
                     <span
                       style={{
                         fontSize: 9,
-                        color: 'rgba(255,255,255,0.4)',
-                        background: 'rgba(255,255,255,0.06)',
+                        color: 'rgba(255,255,255,0.3)',
+                        background: 'rgba(255,255,255,0.04)',
                         padding: '1px 5px',
                         borderRadius: 6,
                         flexShrink: 0,
                         fontWeight: 500,
                       }}
                     >
-                      🌐 Website
+                      Website
                     </span>
                   )}
                 </div>
@@ -832,9 +810,9 @@ export default function LeadsTable({
             >
               {lead.email}
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{lead.industry?.split('/')[0] ?? '—'}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{lead.industry?.split('/')[0] ?? '—'}</div>
             <InlineStatusDropdown lead={lead} onStatusChange={onStatusChange} />
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-dm-mono)' }}>
               {new Date(lead.createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
             </div>
             {!selectMode && (
@@ -875,12 +853,12 @@ export default function LeadsTable({
                         setRowDeleteId(null);
                       }}
                       style={{
-                        background: 'rgba(255,255,255,0.06)',
+                        background: 'rgba(255,255,255,0.04)',
                         border: 'none',
                         borderRadius: 4,
                         padding: '2px 8px',
                         fontSize: 10,
-                        color: 'rgba(255,255,255,0.4)',
+                        color: 'rgba(255,255,255,0.35)',
                         cursor: 'pointer',
                       }}
                     >
@@ -897,18 +875,18 @@ export default function LeadsTable({
                     style={{
                       background: 'none',
                       border: 'none',
-                      fontSize: 12,
-                      color: 'rgba(255,255,255,0.15)',
+                      fontSize: 11,
+                      color: 'rgba(255,255,255,0.1)',
                       cursor: 'pointer',
                       padding: '2px 4px',
                       opacity: 0,
-                      transition: 'opacity 0.15s, color 0.15s',
+                      transition: 'opacity 0.2s ease, color 0.2s ease',
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.1)')}
                     title="Lead löschen"
                   >
-                    🗑
+                    x
                   </button>
                 )}
               </div>
