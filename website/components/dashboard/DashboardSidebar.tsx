@@ -17,7 +17,6 @@ import {
   LogOut,
   AlertCircle,
 } from 'lucide-react';
-import NotificationBell from '@/components/ui/NotificationBell';
 
 interface UserInfo {
   firstName: string;
@@ -105,7 +104,6 @@ export default function DashboardSidebar() {
             />
             <span style={{ fontSize: 15, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em' }}>Onvero.</span>
           </div>
-          <NotificationBell />
         </div>
         <div
           style={{

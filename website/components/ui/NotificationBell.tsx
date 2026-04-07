@@ -176,9 +176,10 @@ export default function NotificationBell() {
       {open && (
         <div
           style={{
-            position: 'fixed',
-            top: 48,
-            left: 210,
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            marginTop: 8,
             width: 340,
             maxHeight: 400,
             overflowY: 'auto',
@@ -188,7 +189,6 @@ export default function NotificationBell() {
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
             zIndex: 100,
             fontFamily: 'var(--font-dm-sans)',
-            marginTop: 4,
           }}
         >
           {/* Header */}
