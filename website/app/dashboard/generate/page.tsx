@@ -13,29 +13,7 @@ import GeneratingState from './components/GeneratingState';
 import LoadingState from './components/LoadingState';
 import { useTenant } from '@/hooks/useTenant';
 
-const HISTORY_KEY = 'onvero_generate_history';
 const LAST_INPUT_KEY = 'onvero_generate_last_input';
-
-interface HistoryEntry {
-  freetext: string;
-  date: string;
-}
-
-function loadHistory(): HistoryEntry[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveToHistory(freetext: string) {
-  if (!freetext.trim()) return;
-  const h = loadHistory().filter((e) => e.freetext !== freetext);
-  h.unshift({ freetext, date: new Date().toISOString() });
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 5)));
-}
 
 function loadLastInput(): string {
   if (typeof window === 'undefined') return '';
@@ -57,14 +35,12 @@ export default function GeneratePage() {
     leadSource: 'apollo',
   });
   const [result, setResult] = useState<ReasoningResult | null>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [missingProfileFields, setMissingProfileFields] = useState<string[] | null>(null);
 
-  // Load last input + history on mount
+  // Load last input on mount
   useEffect(() => {
     const last = loadLastInput();
     if (last) setFormData((prev) => ({ ...prev, freetext: last }));
-    setHistory(loadHistory());
   }, []);
 
   // Check profile completeness whenever tenant changes
@@ -105,8 +81,6 @@ export default function GeneratePage() {
     setState('loading');
     // Persist input
     localStorage.setItem(LAST_INPUT_KEY, data.freetext);
-    saveToHistory(data.freetext);
-    setHistory(loadHistory());
 
     try {
       const res = await fetch('/api/generate/reasoning', {
@@ -140,17 +114,6 @@ export default function GeneratePage() {
       });
       setState('reasoning');
     }
-  };
-
-  const handleHistoryClick = (entry: HistoryEntry) => {
-    setFormData((prev) => ({ ...prev, freetext: entry.freetext }));
-    localStorage.setItem(LAST_INPUT_KEY, entry.freetext);
-  };
-
-  const handleHistoryDelete = (entry: HistoryEntry) => {
-    const updated = loadHistory().filter((e) => e.freetext !== entry.freetext);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-    setHistory(updated);
   };
 
   return (
@@ -276,107 +239,6 @@ export default function GeneratePage() {
                 ]}
               />
             </div>
-
-            {/* History */}
-            {history.length > 0 && (
-              <div style={{ maxWidth: 560, margin: '0 auto 16px' }}>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'rgba(255,255,255,0.25)',
-                    marginBottom: 6,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Letzte Suchen
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {history.map((entry, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        borderRadius: 8,
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        background: 'rgba(255,255,255,0.02)',
-                        overflow: 'hidden',
-                        transition: 'all 0.15s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                      }}
-                    >
-                      <button
-                        onClick={() => handleHistoryClick(entry)}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          flex: 1,
-                          padding: '8px 12px',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          fontFamily: 'inherit',
-                          minWidth: 0,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 12,
-                            color: 'rgba(255,255,255,0.5)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            flex: 1,
-                            marginRight: 12,
-                          }}
-                        >
-                          {entry.freetext}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: 'rgba(255,255,255,0.2)',
-                            flexShrink: 0,
-                            fontFamily: 'var(--font-dm-mono)',
-                          }}
-                        >
-                          {new Date(entry.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => handleHistoryDelete(entry)}
-                        title="Löschen"
-                        style={{
-                          padding: '8px 10px',
-                          background: 'none',
-                          border: 'none',
-                          borderLeft: '1px solid rgba(255,255,255,0.05)',
-                          color: 'rgba(255,255,255,0.15)',
-                          cursor: 'pointer',
-                          fontSize: 12,
-                          flexShrink: 0,
-                          transition: 'color 0.15s',
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.color = '#ef4444')}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.15)')}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <GenerateForm initialData={formData} onSubmit={handleSubmit} />
           </>
