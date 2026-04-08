@@ -130,7 +130,7 @@ function LoginForm() {
               </label>
               <input
                 type="text"
-                placeholder="Jan"
+                placeholder="Vorname"
                 value={form.firstName}
                 onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
                 style={inputStyle}
@@ -145,7 +145,7 @@ function LoginForm() {
               </label>
               <input
                 type="text"
-                placeholder="Fahlbusch"
+                placeholder="Nachname"
                 value={form.lastName}
                 onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
                 style={inputStyle}
@@ -163,7 +163,7 @@ function LoginForm() {
             </label>
             <input
               type="email"
-              placeholder="info@onvero.de"
+              placeholder="name@firma.de"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
               style={inputStyle}
