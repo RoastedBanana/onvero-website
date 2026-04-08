@@ -233,6 +233,8 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
   const confColor = result.confidence >= 80 ? '#4ade80' : result.confidence >= 60 ? '#f59e0b' : '#444';
 
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [creatingProfile, setCreatingProfile] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [leadCount, setLeadCount] = useState<number>(LEAD_COUNT_DEFAULT);
@@ -252,10 +254,23 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
     fetch('/api/profile')
       .then((r) => r.json())
       .then((d) => {
-        if (d.profile) setProfile(d.profile);
+        setProfile(d.profile ?? null);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setProfileLoaded(true));
   }, []);
+
+  const createProfile = async () => {
+    setCreatingProfile(true);
+    try {
+      const r = await fetch('/api/profile', { method: 'POST' });
+      const d = await r.json();
+      if (d.profile) setProfile(d.profile);
+    } catch {
+      /* ignore */
+    }
+    setCreatingProfile(false);
+  };
 
   const updateProfile = (field: keyof Profile, value: string | number | null) => {
     if (!profile) return;
@@ -586,9 +601,47 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
             Unternehmensprofil
           </div>
 
-          {!profile ? (
+          {!profileLoaded ? (
             <div style={{ fontSize: 12, color: '#444', padding: '20px 0', textAlign: 'center' }}>
               Profil wird geladen...
+            </div>
+          ) : !profile ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 12,
+                padding: '24px 16px',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
+                Noch kein Unternehmensprofil angelegt.
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', maxWidth: 280, lineHeight: 1.55 }}>
+                Lege ein Profil an, damit die KI deine Lead-Suche und personalisierte E-Mails anhand deines
+                Unternehmens optimieren kann.
+              </div>
+              <button
+                onClick={createProfile}
+                disabled={creatingProfile}
+                style={{
+                  marginTop: 4,
+                  padding: '9px 18px',
+                  borderRadius: 8,
+                  border: '0.5px solid rgba(107,122,255,0.35)',
+                  background: 'rgba(107,122,255,0.12)',
+                  color: '#7c9cef',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: creatingProfile ? 'default' : 'pointer',
+                  fontFamily: 'var(--font-dm-sans)',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {creatingProfile ? 'Wird angelegt…' : '+ Profil erstellen'}
+              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

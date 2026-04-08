@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
   try {
@@ -39,6 +40,40 @@ export async function POST(request: Request) {
     if (profile) {
       profileFirstName = profile.first_name || firstName || '';
       profileLastName = profile.last_name || lastName || '';
+    }
+
+    // Ensure a tenant_integrations row exists for this user's tenant.
+    // Uses service role so RLS can't block first-time creation.
+    try {
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceKey) {
+        const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
+        const { data: membership } = await admin
+          .from('tenant_users')
+          .select('tenant_id')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        if (membership?.tenant_id) {
+          const { data: existing } = await admin
+            .from('tenant_integrations')
+            .select('id')
+            .eq('tenant_id', membership.tenant_id)
+            .maybeSingle();
+
+          if (!existing) {
+            await admin.from('tenant_integrations').insert({
+              tenant_id: membership.tenant_id,
+              provider: 'default',
+              platform: 'analytics',
+              config: {},
+              follow_up_email: false,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[login] tenant_integrations ensure failed:', e);
     }
 
     const isProduction = process.env.NODE_ENV === 'production';

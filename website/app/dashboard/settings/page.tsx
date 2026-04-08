@@ -152,6 +152,12 @@ export default function SettingsPage() {
       .update({ logo_url: url, updated_at: new Date().toISOString() })
       .eq('tenant_id', TENANT_ID);
 
+    // Mirror to tenant_integrations so other parts of the app (sidebar etc.) can read it
+    await supabase
+      .from('tenant_integrations')
+      .update({ logo_url: url, updated_at: new Date().toISOString() })
+      .eq('tenant_id', TENANT_ID);
+
     setLogoUrl(url);
     setLogoUploading(false);
   }
@@ -164,6 +170,10 @@ export default function SettingsPage() {
     }
     await supabase
       .from('tenant_preferences')
+      .update({ logo_url: null, updated_at: new Date().toISOString() })
+      .eq('tenant_id', TENANT_ID);
+    await supabase
+      .from('tenant_integrations')
       .update({ logo_url: null, updated_at: new Date().toISOString() })
       .eq('tenant_id', TENANT_ID);
     setLogoUrl(null);
