@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/ui/PageHeader';
 import { HowItWorks } from '@/components/ui/how-it-works';
-import { PenLine, Brain, Rocket } from 'lucide-react';
+import { PenLine, Brain, Rocket, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 import GenerateForm from './components/GenerateForm';
 import type { FormData } from './components/GenerateForm';
 import ReasoningDisplay from './components/ReasoningDisplay';
@@ -57,6 +58,7 @@ export default function GeneratePage() {
   });
   const [result, setResult] = useState<ReasoningResult | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [missingProfileFields, setMissingProfileFields] = useState<string[] | null>(null);
 
   // Load last input + history on mount
   useEffect(() => {
@@ -64,6 +66,39 @@ export default function GeneratePage() {
     if (last) setFormData((prev) => ({ ...prev, freetext: last }));
     setHistory(loadHistory());
   }, []);
+
+  // Check profile completeness whenever tenant changes
+  useEffect(() => {
+    if (!tenantId) return;
+    const REQUIRED: { key: string; label: string }[] = [
+      { key: 'company_name', label: 'Firmenname' },
+      { key: 'company_description', label: 'Was ihr macht' },
+      { key: 'target_customers', label: 'Zielkunden' },
+      { key: 'usp', label: 'USP' },
+      { key: 'sender_name', label: 'Absender Name' },
+      { key: 'sender_role', label: 'Absender Rolle' },
+      { key: 'services', label: 'Services' },
+    ];
+    fetch('/api/profile')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.profile) {
+          setMissingProfileFields(REQUIRED.map((f) => f.label));
+          return;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const p: any = d.profile;
+        const missing = REQUIRED.filter((f) => {
+          const v = p[f.key];
+          if (v == null) return true;
+          if (Array.isArray(v)) return v.length === 0;
+          if (typeof v === 'string') return v.trim() === '';
+          return false;
+        }).map((f) => f.label);
+        setMissingProfileFields(missing);
+      })
+      .catch(() => setMissingProfileFields(null));
+  }, [tenantId]);
 
   const handleSubmit = async (data: FormData) => {
     setFormData(data);
@@ -124,6 +159,85 @@ export default function GeneratePage() {
         <div style={{ marginBottom: 32 }}>
           <PageHeader title="Leads generieren" subtitle="KI-gestützte Lead-Recherche" />
         </div>
+
+        {state === 'form' && missingProfileFields && missingProfileFields.length > 0 && (
+          <div
+            style={{
+              maxWidth: 560,
+              margin: '0 auto 16px',
+              background: 'rgba(239,68,68,0.06)',
+              border: '1px solid rgba(239,68,68,0.25)',
+              borderRadius: 12,
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.25)',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <AlertTriangle size={14} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#ef4444', marginBottom: 4 }}>
+                Dein Profil ist noch nicht fertig eingerichtet
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 1.55, marginBottom: 8 }}>
+                Ohne ein vollständiges Unternehmensprofil kann die KI keine personalisierten Suchanfragen und
+                E-Mails erstellen. Folgende Felder fehlen noch:
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
+                {missingProfileFields.map((f) => (
+                  <span
+                    key={f}
+                    style={{
+                      fontSize: 11,
+                      background: 'rgba(239,68,68,0.08)',
+                      border: '1px solid rgba(239,68,68,0.2)',
+                      color: 'rgba(239,68,68,0.85)',
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                    }}
+                  >
+                    {f}
+                  </span>
+                ))}
+              </div>
+              <Link
+                href="/dashboard/settings"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  padding: '7px 14px',
+                  borderRadius: 7,
+                  background: '#ef4444',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#dc2626')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = '#ef4444')}
+              >
+                Profil vervollständigen →
+              </Link>
+            </div>
+          </div>
+        )}
 
         {state === 'form' && (
           <>
