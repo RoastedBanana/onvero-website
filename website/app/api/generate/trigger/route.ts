@@ -34,7 +34,17 @@ export async function POST(req: NextRequest) {
     const webhookUrl = process.env.N8N_WEBHOOK_LEAD_GENERATOR;
 
     if (!secret || !webhookUrl) {
-      return NextResponse.json({ error: 'Server-Konfiguration fehlt' }, { status: 500 });
+      const missing: string[] = [];
+      if (!secret) missing.push('N8N_LEAD_GENERATOR_SECRET');
+      if (!webhookUrl) missing.push('N8N_WEBHOOK_LEAD_GENERATOR');
+      console.error('[generate/trigger] missing env vars:', missing);
+      return NextResponse.json(
+        {
+          error: `Server-Konfiguration fehlt: ${missing.join(', ')}`,
+          missing,
+        },
+        { status: 500 },
+      );
     }
 
     const rawCount = Number(body.lead_count ?? body.on_demand?.lead_count);
