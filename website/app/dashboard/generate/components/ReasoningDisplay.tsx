@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Pencil, Check, X } from 'lucide-react';
+import TitlesMultiSelect from './TitlesMultiSelect';
+import LocationsMultiSelect from './LocationsMultiSelect';
 
 export interface ReasoningResult {
   success: boolean;
@@ -8,10 +11,13 @@ export interface ReasoningResult {
   strategy: string;
   apollo_keywords: string[];
   apollo_industries: string[];
+  person_titles?: string[];
+  person_locations?: string[];
   refined_employee_min: number;
   refined_employee_max: number;
   confidence: number;
   why_contact_even_if_low_score: string;
+  execution_id?: string;
 }
 
 interface Profile {
@@ -29,8 +35,186 @@ interface Profile {
 interface Props {
   result: ReasoningResult;
   onBack: () => void;
-  onConfirm: () => void;
+  onConfirm: (data: {
+    leadCount: number;
+    apolloKeywords: string[];
+    apolloIndustries: string[];
+    apolloTitles: string[];
+    apolloLocations: string[];
+    employeeMin: number;
+    employeeMax: number;
+  }) => void;
 }
+
+type Section = 'keywords' | 'industries' | 'titles' | 'locations' | 'employees';
+
+function EditableChips({
+  values,
+  onChange,
+  color,
+  bg,
+  border,
+  placeholder,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  color: string;
+  bg: string;
+  border: string;
+  placeholder: string;
+}) {
+  const [input, setInput] = useState('');
+  const ref = useRef<HTMLInputElement>(null);
+  const add = () => {
+    const v = input.trim();
+    if (v && !values.includes(v)) onChange([...values, v]);
+    setInput('');
+  };
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+  return (
+    <div
+      onClick={() => ref.current?.focus()}
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 4,
+        cursor: 'text',
+        flex: 1,
+        background: '#0a0a0a',
+        border: '0.5px solid #2a2a2a',
+        borderRadius: 6,
+        padding: '4px 6px',
+        minHeight: 28,
+      }}
+    >
+      {values.map((t) => (
+        <span
+          key={t}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 11,
+            background: bg,
+            border: `0.5px solid ${border}`,
+            color,
+            padding: '2px 4px 2px 8px',
+            borderRadius: 6,
+          }}
+        >
+          {t}
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onChange(values.filter((x) => x !== t));
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#555',
+              cursor: 'pointer',
+              fontSize: 11,
+              padding: '0 2px',
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      <input
+        ref={ref}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+            if (input.trim()) {
+              e.preventDefault();
+              add();
+            }
+          }
+          if (e.key === 'Backspace' && input === '' && values.length > 0) onChange(values.slice(0, -1));
+        }}
+        placeholder={values.length === 0 ? placeholder : 'Enter zum Hinzufügen…'}
+        style={{
+          flex: 1,
+          minWidth: 100,
+          background: 'transparent',
+          border: 'none',
+          fontSize: 11,
+          color: '#e0e0e0',
+          outline: 'none',
+          padding: '2px 4px',
+          fontFamily: 'var(--font-dm-sans)',
+        }}
+      />
+      {input.trim() && (
+        <button
+          onMouseDown={(e) => {
+            e.preventDefault();
+            add();
+          }}
+          title="Hinzufügen"
+          style={{
+            background: bg,
+            border: `0.5px solid ${border}`,
+            color,
+            cursor: 'pointer',
+            fontSize: 11,
+            padding: '2px 8px',
+            borderRadius: 6,
+            lineHeight: 1.4,
+          }}
+        >
+          + hinzufügen
+        </button>
+      )}
+    </div>
+  );
+}
+
+const SECTION_LABEL_STYLE = {
+  fontSize: 11,
+  color: '#555',
+  width: 80,
+  flexShrink: 0,
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase' as const,
+} as const;
+
+function EditButton({ onClick, active }: { onClick: () => void; active: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      title={active ? 'Fertig' : 'Bearbeiten'}
+      style={{
+        background: 'none',
+        border: 'none',
+        padding: 2,
+        marginLeft: 4,
+        cursor: 'pointer',
+        color: active ? '#4ade80' : '#444',
+        display: 'inline-flex',
+        alignItems: 'center',
+        flexShrink: 0,
+        transition: 'color 0.15s',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.color = active ? '#4ade80' : '#888')}
+      onMouseLeave={(e) => (e.currentTarget.style.color = active ? '#4ade80' : '#444')}
+    >
+      {active ? <Check size={12} /> : <Pencil size={11} />}
+    </button>
+  );
+}
+
+const LEAD_COUNT_MIN = 10;
+const LEAD_COUNT_MAX = 100;
+const LEAD_COUNT_STEP = 5;
+const LEAD_COUNT_DEFAULT = 50;
 
 const labelStyle = { fontSize: 11, color: '#555', display: 'block' as const, marginBottom: 4 };
 const inputStyle = {
@@ -51,6 +235,18 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [leadCount, setLeadCount] = useState<number>(LEAD_COUNT_DEFAULT);
+  const sliderPct = ((leadCount - LEAD_COUNT_MIN) / (LEAD_COUNT_MAX - LEAD_COUNT_MIN)) * 100;
+
+  // Editable refined-search state
+  const [keywords, setKeywords] = useState<string[]>(result.apollo_keywords ?? []);
+  const [industries, setIndustries] = useState<string[]>(result.apollo_industries ?? []);
+  const [titles, setTitles] = useState<string[]>(result.person_titles ?? []);
+  const [locations, setLocations] = useState<string[]>(result.person_locations ?? []);
+  const [empMin, setEmpMin] = useState<number>(result.refined_employee_min);
+  const [empMax, setEmpMax] = useState<number>(result.refined_employee_max);
+  const [editing, setEditing] = useState<Section | null>(null);
+  const toggleEdit = (s: Section) => setEditing((prev) => (prev === s ? null : s));
 
   useEffect(() => {
     fetch('/api/profile')
@@ -124,87 +320,186 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
             <p style={{ fontSize: 14, color: '#888', lineHeight: 1.65, margin: 0 }}>{result.strategy}</p>
           </div>
 
-          {/* Refined Search */}
+          {/* Refined Search (editable) */}
           <div style={{ borderTop: '0.5px solid #1a1a1a', paddingTop: 14, marginBottom: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: '#555',
-                    width: 80,
-                    flexShrink: 0,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase' as const,
-                  }}
-                >
-                  Keywords
-                </span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {result.apollo_keywords.map((k) => (
-                    <span
-                      key={k}
-                      style={{
-                        fontSize: 11,
-                        background: '#1a1a2a',
-                        border: '0.5px solid #2a2a3a',
-                        color: '#7c9cef',
-                        padding: '2px 8px',
-                        borderRadius: 6,
-                      }}
-                    >
-                      {k}
-                    </span>
-                  ))}
-                </div>
+              {/* Keywords */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ ...SECTION_LABEL_STYLE, paddingTop: 3 }}>Keywords</span>
+                {editing === 'keywords' ? (
+                  <EditableChips
+                    values={keywords}
+                    onChange={setKeywords}
+                    color="#7c9cef"
+                    bg="#1a1a2a"
+                    border="#2a2a3a"
+                    placeholder="Keyword hinzufügen…"
+                  />
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1 }}>
+                    {keywords.length === 0 ? (
+                      <span style={{ fontSize: 11, color: '#444', fontStyle: 'italic' }}>—</span>
+                    ) : (
+                      keywords.map((k) => (
+                        <span
+                          key={k}
+                          style={{
+                            fontSize: 11,
+                            background: '#1a1a2a',
+                            border: '0.5px solid #2a2a3a',
+                            color: '#7c9cef',
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                          }}
+                        >
+                          {k}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                )}
+                <EditButton onClick={() => toggleEdit('keywords')} active={editing === 'keywords'} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: '#555',
-                    width: 80,
-                    flexShrink: 0,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase' as const,
-                  }}
-                >
-                  Industrien
-                </span>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {result.apollo_industries.map((i) => (
-                    <span
-                      key={i}
-                      style={{
-                        fontSize: 11,
-                        background: '#1a2a1a',
-                        border: '0.5px solid #2a3a2a',
-                        color: '#6dbf8a',
-                        padding: '2px 8px',
-                        borderRadius: 6,
-                      }}
-                    >
-                      {i}
-                    </span>
-                  ))}
-                </div>
+
+              {/* Industries */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ ...SECTION_LABEL_STYLE, paddingTop: 3 }}>Industrien</span>
+                {editing === 'industries' ? (
+                  <EditableChips
+                    values={industries}
+                    onChange={setIndustries}
+                    color="#6dbf8a"
+                    bg="#1a2a1a"
+                    border="#2a3a2a"
+                    placeholder="Industrie hinzufügen…"
+                  />
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1 }}>
+                    {industries.length === 0 ? (
+                      <span style={{ fontSize: 11, color: '#444', fontStyle: 'italic' }}>—</span>
+                    ) : (
+                      industries.map((i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: 11,
+                            background: '#1a2a1a',
+                            border: '0.5px solid #2a3a2a',
+                            color: '#6dbf8a',
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                          }}
+                        >
+                          {i}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                )}
+                <EditButton onClick={() => toggleEdit('industries')} active={editing === 'industries'} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: '#555',
-                    width: 80,
-                    flexShrink: 0,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase' as const,
-                  }}
-                >
-                  Mitarbeiter
-                </span>
-                <span style={{ fontSize: 13, color: '#aaa', fontFamily: 'var(--font-dm-mono)' }}>
-                  {result.refined_employee_min} – {result.refined_employee_max}
-                </span>
+
+              {/* Titles */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ ...SECTION_LABEL_STYLE, paddingTop: 3 }}>Titles</span>
+                {editing === 'titles' ? (
+                  <TitlesMultiSelect values={titles} onChange={setTitles} />
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1 }}>
+                    {titles.length === 0 ? (
+                      <span style={{ fontSize: 11, color: '#444', fontStyle: 'italic' }}>—</span>
+                    ) : (
+                      titles.map((t) => (
+                        <span
+                          key={t}
+                          style={{
+                            fontSize: 11,
+                            background: '#2a1f10',
+                            border: '0.5px solid #3a2a14',
+                            color: '#f59e0b',
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                          }}
+                        >
+                          {t}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                )}
+                <EditButton onClick={() => toggleEdit('titles')} active={editing === 'titles'} />
+              </div>
+
+              {/* Locations */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <span style={{ ...SECTION_LABEL_STYLE, paddingTop: 3 }}>Standorte</span>
+                {editing === 'locations' ? (
+                  <LocationsMultiSelect values={locations} onChange={setLocations} />
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, flex: 1 }}>
+                    {locations.length === 0 ? (
+                      <span style={{ fontSize: 11, color: '#444', fontStyle: 'italic' }}>—</span>
+                    ) : (
+                      locations.map((l) => (
+                        <span
+                          key={l}
+                          style={{
+                            fontSize: 11,
+                            background: '#221a2a',
+                            border: '0.5px solid #332440',
+                            color: '#c084fc',
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                          }}
+                        >
+                          {l}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                )}
+                <EditButton onClick={() => toggleEdit('locations')} active={editing === 'locations'} />
+              </div>
+
+              {/* Employees */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={SECTION_LABEL_STYLE}>Mitarbeiter</span>
+                {editing === 'employees' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <input
+                      type="number"
+                      value={empMin}
+                      min={1}
+                      onChange={(e) => setEmpMin(Number(e.target.value))}
+                      style={{
+                        ...inputStyle,
+                        width: 70,
+                        padding: '4px 8px',
+                        fontFamily: 'var(--font-dm-mono)',
+                        textAlign: 'right' as const,
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: '#444' }}>–</span>
+                    <input
+                      type="number"
+                      value={empMax}
+                      min={1}
+                      onChange={(e) => setEmpMax(Number(e.target.value))}
+                      style={{
+                        ...inputStyle,
+                        width: 70,
+                        padding: '4px 8px',
+                        fontFamily: 'var(--font-dm-mono)',
+                        textAlign: 'right' as const,
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 13, color: '#aaa', fontFamily: 'var(--font-dm-mono)', flex: 1 }}>
+                    {empMin} – {empMax}
+                  </span>
+                )}
+                <EditButton onClick={() => toggleEdit('employees')} active={editing === 'employees'} />
               </div>
             </div>
 
@@ -401,8 +696,72 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
         </div>
       </div>
 
+      {/* Lead count slider */}
+      <style>{`
+        .onv-lead-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;border-radius:2px;outline:none;cursor:pointer;background:linear-gradient(to right,#e0e0e0 0%,#e0e0e0 var(--pct,50%),#1a1a1a var(--pct,50%),#1a1a1a 100%);}
+        .onv-lead-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:#e0e0e0;border:2px solid #080808;box-shadow:0 0 0 0.5px #333;cursor:pointer;transition:transform .15s;}
+        .onv-lead-slider::-webkit-slider-thumb:hover{transform:scale(1.15);}
+        .onv-lead-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#e0e0e0;border:2px solid #080808;box-shadow:0 0 0 0.5px #333;cursor:pointer;}
+      `}</style>
+      <div
+        style={{
+          marginTop: 20,
+          maxWidth: 500,
+          background: '#111',
+          border: '0.5px solid #1a1a1a',
+          borderRadius: 10,
+          padding: '16px 20px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: '#555',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase' as const,
+            }}
+          >
+            Anzahl Leads
+          </span>
+          <span
+            style={{
+              fontSize: 18,
+              fontWeight: 600,
+              color: '#e0e0e0',
+              fontFamily: 'var(--font-dm-mono)',
+            }}
+          >
+            {leadCount}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={LEAD_COUNT_MIN}
+          max={LEAD_COUNT_MAX}
+          step={LEAD_COUNT_STEP}
+          value={leadCount}
+          onChange={(e) => setLeadCount(Number(e.target.value))}
+          className="onv-lead-slider"
+          style={{ ['--pct' as string]: `${sliderPct}%` } as React.CSSProperties}
+        />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            marginTop: 6,
+            fontSize: 10,
+            color: '#444',
+            fontFamily: 'var(--font-dm-mono)',
+          }}
+        >
+          <span>{LEAD_COUNT_MIN}</span>
+          <span>{LEAD_COUNT_MAX}</span>
+        </div>
+      </div>
+
       {/* Actions */}
-      <div style={{ display: 'flex', gap: 10, marginTop: 20, maxWidth: 500 }}>
+      <div style={{ display: 'flex', gap: 10, marginTop: 12, maxWidth: 500 }}>
         <button
           onClick={onBack}
           style={{
@@ -421,7 +780,17 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
           Anpassen
         </button>
         <button
-          onClick={onConfirm}
+          onClick={() =>
+            onConfirm({
+              leadCount,
+              apolloKeywords: keywords,
+              apolloIndustries: industries,
+              apolloTitles: titles,
+              apolloLocations: locations,
+              employeeMin: empMin,
+              employeeMax: empMax,
+            })
+          }
           style={{
             flex: 2,
             padding: '10px',

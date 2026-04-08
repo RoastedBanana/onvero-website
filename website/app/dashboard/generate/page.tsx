@@ -10,6 +10,7 @@ import ReasoningDisplay from './components/ReasoningDisplay';
 import type { ReasoningResult } from './components/ReasoningDisplay';
 import GeneratingState from './components/GeneratingState';
 import LoadingState from './components/LoadingState';
+import { useTenant } from '@/hooks/useTenant';
 
 const HISTORY_KEY = 'onvero_generate_history';
 const LAST_INPUT_KEY = 'onvero_generate_last_input';
@@ -43,6 +44,7 @@ function loadLastInput(): string {
 type GenerateState = 'form' | 'loading' | 'reasoning' | 'generating';
 
 export default function GeneratePage() {
+  const { tenantId } = useTenant();
   const [state, setState] = useState<GenerateState>('form');
   const [formData, setFormData] = useState<FormData>({
     freetext: '',
@@ -83,7 +85,7 @@ export default function GeneratePage() {
           tags: data.tags.length > 0 ? data.tags : undefined,
           keywords: data.keywords.length > 0 ? data.keywords : undefined,
           lead_source: 'apollo',
-          tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90',
+          tenant_id: tenantId,
         }),
       });
       const json: ReasoningResult = await res.json();
@@ -270,20 +272,77 @@ export default function GeneratePage() {
           <ReasoningDisplay
             result={result}
             onBack={() => setState('form')}
-            onConfirm={() => {
-              fetch('/api/generate/trigger', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  on_demand: {
-                    apollo_industries: result.apollo_industries,
-                    apollo_keywords: result.apollo_keywords,
-                    refined_employee_min: result.refined_employee_min,
-                    refined_employee_max: result.refined_employee_max,
-                  },
-                }),
-              }).catch(() => {});
+            onConfirm={async ({
+              leadCount,
+              apolloKeywords,
+              apolloIndustries,
+              apolloTitles,
+              apolloLocations,
+              employeeMin,
+              employeeMax,
+            }) => {
+              if (!tenantId) {
+                alert('Kein Tenant gefunden. Bitte neu einloggen.');
+                return;
+              }
               setState('generating');
+              try {
+                // 1) Persist edits to lead_run_execution (if we have an ID)
+                if (result.execution_id) {
+                  const upd = await fetch(`/api/generate/execution/${result.execution_id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      apollo_keywords: apolloKeywords,
+                      apollo_industries: apolloIndustries,
+                      person_titles: apolloTitles,
+                      person_locations: apolloLocations,
+                      refined_employee_min: employeeMin,
+                      refined_employee_max: employeeMax,
+                      lead_count: leadCount,
+                    }),
+                  });
+                  if (!upd.ok) {
+                    const err = await upd.json().catch(() => ({}));
+                    console.error('Execution update failed:', err);
+                    alert(`Konnte Anpassungen nicht speichern: ${err.error ?? upd.status}`);
+                    setState('reasoning');
+                    return;
+                  }
+                }
+
+                // 2) Trigger workflow
+                const res = await fetch('/api/generate/trigger', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    tenant_id: tenantId,
+                    profile_id: 'default',
+                    execution_id: result.execution_id,
+                    lead_count: leadCount,
+                    on_demand: {
+                      execution_id: result.execution_id,
+                      apollo_industries: apolloIndustries,
+                      apollo_keywords: apolloKeywords,
+                      person_titles: apolloTitles,
+                      person_locations: apolloLocations,
+                      refined_employee_min: employeeMin,
+                      refined_employee_max: employeeMax,
+                      lead_count: leadCount,
+                    },
+                  }),
+                });
+                if (!res.ok) {
+                  const err = await res.json().catch(() => ({}));
+                  console.error('Trigger failed:', err);
+                  alert(`Workflow konnte nicht gestartet werden: ${err.error ?? res.status}`);
+                  setState('reasoning');
+                }
+              } catch (e) {
+                console.error('Trigger error:', e);
+                alert('Netzwerkfehler beim Starten des Workflows.');
+                setState('reasoning');
+              }
             }}
           />
         )}

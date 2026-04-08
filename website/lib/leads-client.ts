@@ -60,7 +60,41 @@ export type Lead = {
   tier?: string | null;
   googleMapsMatchScore?: number | null;
   source?: string | null;
+  employmentHistory?: EmploymentEntry[];
 };
+
+export type EmploymentEntry = {
+  name: string;
+  title: string;
+  startDate: string | null;
+  endDate: string | null;
+  current: boolean;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeEmployment(raw: any): EmploymentEntry[] {
+  if (!raw) return [];
+  let arr = raw;
+  if (typeof raw === 'string') {
+    try {
+      arr = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(arr)) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return arr.map((e: any) => {
+    const current = e.current === true || e.current === 'true' || !!e.is_current;
+    return {
+      name: e.name ?? e.organization_name ?? e.company ?? e.organization ?? '',
+      title: e.title ?? e.position ?? e.role ?? '',
+      startDate: e.start_date ?? e.startDate ?? e.from ?? null,
+      endDate: e.end_date ?? e.endDate ?? e.to ?? null,
+      current,
+    };
+  });
+}
 
 export type LeadStats = {
   total: number;
@@ -130,6 +164,7 @@ export function mapLead(raw: any): Lead {
     tier: cf.tier ?? (score >= 70 ? 'HOT' : score >= 45 ? 'WARM' : 'COLD'),
     googleMapsMatchScore: cf.google_maps?.match_score ?? null,
     source: raw.source ?? null,
+    employmentHistory: normalizeEmployment(raw.employment_history ?? cf.employment_history),
   };
 }
 

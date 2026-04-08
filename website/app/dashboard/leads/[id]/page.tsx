@@ -7,6 +7,7 @@ import type { Lead } from '@/lib/leads-client';
 import LeadAvatar from '@/components/ui/LeadAvatar';
 import PageHeader from '@/components/ui/PageHeader';
 import ScoreExplanation from '@/components/leads/ScoreExplanation';
+import EmploymentTimeline from '@/components/leads/EmploymentTimeline';
 
 interface Activity {
   id: string;
@@ -1242,6 +1243,11 @@ export default function LeadDetailPage() {
             </Card>
           </div>
         </div>
+
+        {/* Employment History Timeline */}
+        {lead.employmentHistory && lead.employmentHistory.length > 0 && (
+          <EmploymentTimeline entries={lead.employmentHistory} />
+        )}
       </div>
 
       {/* AI Rewrite Modal */}
