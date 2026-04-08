@@ -1,11 +1,14 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getSessionTenantId } from '@/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const TENANT = await getSessionTenantId();
+  if (!TENANT) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const supabase = await createServerSupabaseClient();
-  const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
 
   const [activitiesRes, statsRes] = await Promise.all([
     supabase

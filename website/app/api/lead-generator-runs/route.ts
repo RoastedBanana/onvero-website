@@ -1,11 +1,13 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getSessionTenantId } from '@/lib/tenant-server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
-
 export async function GET(req: NextRequest) {
+  const tenantId = await getSessionTenantId();
+  if (!tenantId) return NextResponse.json({ runs: [] }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const limit = parseInt(searchParams.get('limit') ?? '5', 10);
   const status = searchParams.get('status');
@@ -14,7 +16,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('lead_generator_runs')
     .select('*')
-    .eq('tenant_id', TENANT)
+    .eq('tenant_id', tenantId)
     .order('started_at', { ascending: false })
     .limit(limit);
 
@@ -26,13 +28,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const tenantId = await getSessionTenantId();
+  if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const supabase = await createServerSupabaseClient();
   const body = await req.json();
 
   const { data, error } = await supabase
     .from('lead_generator_runs')
     .insert({
-      tenant_id: TENANT,
+      tenant_id: tenantId,
       source: body.source ?? 'google_maps_apify',
       status: 'running',
       search_terms: body.search_terms ?? [],

@@ -1,10 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getSessionTenantId } from '@/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-
-const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
 
 function getAdmin() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -16,6 +15,10 @@ function getAdmin() {
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const tenantId = await getSessionTenantId();
+  if (!tenantId) {
+    return NextResponse.json({ lead: null, activities: [], error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
     const client = getAdmin() ?? (await createServerSupabaseClient());
@@ -33,13 +36,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
            strengths, concerns, is_excluded, exclusion_reason, website_data, follow_up_context`
         )
         .eq('id', id)
-        .eq('tenant_id', TENANT)
-        .single(),
+        .eq('tenant_id', tenantId)
+        .maybeSingle(),
       client
         .from('lead_activities')
         .select('id, type, title, content, content_full_title, content_full_content, interested, created_at, metadata')
         .eq('lead_id', id)
-        .eq('tenant_id', TENANT)
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
         .limit(20),
     ]);
@@ -63,15 +66,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const body = await req.json();
+  const tenantId = await getSessionTenantId();
+  if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const body = await req.json();
   const client = getAdmin() ?? (await createServerSupabaseClient());
 
   const { data, error } = await client
     .from('leads')
     .update({ ...body, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('tenant_id', TENANT)
+    .eq('tenant_id', tenantId)
     .select()
     .single();
 
@@ -79,7 +84,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   await client.from('lead_activities').insert({
     lead_id: id,
-    tenant_id: TENANT,
+    tenant_id: tenantId,
     type: 'status_change',
     title: `Status geandert zu: ${body.status}`,
     content: 'Manuell über Analytics Dashboard geaendert',
@@ -91,11 +96,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const tenantId = await getSessionTenantId();
+  if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const client = getAdmin() ?? (await createServerSupabaseClient());
 
-  await client.from('lead_activities').delete().eq('lead_id', id).eq('tenant_id', TENANT);
-  const { error } = await client.from('leads').delete().eq('id', id).eq('tenant_id', TENANT);
+  await client.from('lead_activities').delete().eq('lead_id', id).eq('tenant_id', tenantId);
+  const { error } = await client.from('leads').delete().eq('id', id).eq('tenant_id', tenantId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

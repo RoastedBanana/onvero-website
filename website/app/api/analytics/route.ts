@@ -1,14 +1,17 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getSessionTenantId } from '@/lib/tenant-server';
 import { plausibleStats, plausibleTimeseries, plausibleBreakdown } from '@/lib/plausible';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
+  const TENANT = await getSessionTenantId();
+  if (!TENANT) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const period = searchParams.get('period') || '30d';
   const supabase = await createServerSupabaseClient();
-  const TENANT = 'df763f85-c687-42d6-be66-a2b353b89c90';
 
   const plausibleKey = process.env.PLAUSIBLE_API_KEY || '';
 

@@ -1,9 +1,13 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getSessionTenantId } from '@/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const tenantId = await getSessionTenantId();
+  if (!tenantId) return NextResponse.json({ leads: [] }, { status: 401 });
+
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('leads')
@@ -18,10 +22,10 @@ export async function GET() {
       custom_fields, last_contacted_at, follow_up_at, created_at, apollo_id
     `
     )
-    .eq('tenant_id', 'df763f85-c687-42d6-be66-a2b353b89c90')
+    .eq('tenant_id', tenantId)
     .order('score', { ascending: false })
     .limit(200);
 
-  if (error) return NextResponse.json({ leads: [] }, { status: 500 });
+  if (error) return NextResponse.json({ leads: [], error: error.message }, { status: 500 });
   return NextResponse.json({ leads: data ?? [] });
 }
