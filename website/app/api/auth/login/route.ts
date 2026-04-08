@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       profileLastName = profile.last_name || lastName || '';
     }
 
-    // Ensure a tenant_integrations row exists for this user's tenant.
+    // Ensure tenant_integrations and tenant_ai_profile rows exist for this user's tenant.
     // Uses service role so RLS can't block first-time creation.
     try {
       const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -55,25 +55,78 @@ export async function POST(request: Request) {
           .maybeSingle();
 
         if (membership?.tenant_id) {
-          const { data: existing } = await admin
+          const tenantId = membership.tenant_id;
+
+          // tenant_integrations
+          const { data: existingIntegration } = await admin
             .from('tenant_integrations')
             .select('id')
-            .eq('tenant_id', membership.tenant_id)
+            .eq('tenant_id', tenantId)
             .maybeSingle();
 
-          if (!existing) {
+          if (!existingIntegration) {
             await admin.from('tenant_integrations').insert({
-              tenant_id: membership.tenant_id,
+              tenant_id: tenantId,
               provider: 'default',
               platform: 'analytics',
               config: {},
               follow_up_email: false,
             });
           }
+
+          // tenant_ai_profile — create empty row so all columns are present
+          const { data: existingProfile } = await admin
+            .from('tenant_ai_profile')
+            .select('id')
+            .eq('tenant_id', tenantId)
+            .maybeSingle();
+
+          if (!existingProfile) {
+            await admin.from('tenant_ai_profile').insert({
+              tenant_id: tenantId,
+              company_name: '',
+              company_description: '',
+              company_location: '',
+              website: '',
+              websites: [],
+              industry: '',
+              target_customers: '',
+              ideal_lead_profile: '',
+              excluded_profiles: '',
+              services: [],
+              usp: '',
+              deal_size_min: null,
+              deal_size_max: null,
+              sales_cycle_days: null,
+              tone_of_voice: '',
+              email_signature: '',
+              sender_name: '',
+              sender_role: '',
+              ai_search_prompt: '',
+              ai_scoring_prompt: '',
+              website_summary: '',
+              onboarding_completed: false,
+            });
+          }
+
+          // tenant_preferences — also ensure exists for logo / followup settings
+          const { data: existingPrefs } = await admin
+            .from('tenant_preferences')
+            .select('id')
+            .eq('tenant_id', tenantId)
+            .maybeSingle();
+
+          if (!existingPrefs) {
+            await admin.from('tenant_preferences').insert({
+              tenant_id: tenantId,
+              automatic_followup_emails: false,
+              logo_url: null,
+            });
+          }
         }
       }
     } catch (e) {
-      console.error('[login] tenant_integrations ensure failed:', e);
+      console.error('[login] tenant bootstrap failed:', e);
     }
 
     const isProduction = process.env.NODE_ENV === 'production';

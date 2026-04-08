@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase';
-
-const TENANT_ID = 'df763f85-c687-42d6-be66-a2b353b89c90';
+import { useTenant } from '@/hooks/useTenant';
 
 type Section = 'allgemein' | 'leads' | 'meetings' | 'analytics' | 'workflows' | 'support' | 'website' | 'business-ai';
 
@@ -84,6 +83,7 @@ function SkeletonField() {
 }
 
 export default function SettingsPage() {
+  const { tenantId } = useTenant();
   const [active, setActive] = useState<Section>('allgemein');
   const [autoFollowUp, setAutoFollowUp] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -92,21 +92,26 @@ export default function SettingsPage() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [creatingProfile, setCreatingProfile] = useState(false);
   const [servicesText, setServicesText] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
 
   useEffect(() => {
+    if (!tenantId) return;
     const supabase = createClient();
     supabase
       .from('tenant_preferences')
       .select('automatic_followup_emails, logo_url')
-      .eq('tenant_id', TENANT_ID)
-      .single()
+      .eq('tenant_id', tenantId)
+      .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setAutoFollowUp(data.automatic_followup_emails ?? false);
           setLogoUrl(data.logo_url ?? null);
+        } else {
+          setAutoFollowUp(false);
+          setLogoUrl(null);
         }
         setLoading(false);
       });
@@ -118,17 +123,21 @@ export default function SettingsPage() {
         if (d.profile) {
           setProfile(d.profile);
           setServicesText((d.profile.services ?? []).join(', '));
+        } else {
+          setProfile(null);
+          setServicesText('');
         }
       })
       .catch(() => {})
       .finally(() => setProfileLoading(false));
-  }, []);
+  }, [tenantId]);
 
   async function uploadLogo(file: File) {
+    if (!tenantId) return;
     setLogoUploading(true);
     const supabase = createClient();
     const ext = file.name.split('.').pop()?.toLowerCase() ?? 'png';
-    const fileName = `logos/${TENANT_ID}/${crypto.randomUUID()}.${ext}`;
+    const fileName = `logos/${tenantId}/${crypto.randomUUID()}.${ext}`;
 
     if (logoUrl) {
       const oldPath = logoUrl.split('/website-assets/')[1];
@@ -149,20 +158,23 @@ export default function SettingsPage() {
 
     await supabase
       .from('tenant_preferences')
-      .update({ logo_url: url, updated_at: new Date().toISOString() })
-      .eq('tenant_id', TENANT_ID);
+      .upsert(
+        { tenant_id: tenantId, logo_url: url, updated_at: new Date().toISOString() },
+        { onConflict: 'tenant_id' },
+      );
 
     // Mirror to tenant_integrations so other parts of the app (sidebar etc.) can read it
     await supabase
       .from('tenant_integrations')
       .update({ logo_url: url, updated_at: new Date().toISOString() })
-      .eq('tenant_id', TENANT_ID);
+      .eq('tenant_id', tenantId);
 
     setLogoUrl(url);
     setLogoUploading(false);
   }
 
   async function removeLogo() {
+    if (!tenantId) return;
     const supabase = createClient();
     if (logoUrl) {
       const oldPath = logoUrl.split('/website-assets/')[1];
@@ -171,28 +183,50 @@ export default function SettingsPage() {
     await supabase
       .from('tenant_preferences')
       .update({ logo_url: null, updated_at: new Date().toISOString() })
-      .eq('tenant_id', TENANT_ID);
+      .eq('tenant_id', tenantId);
     await supabase
       .from('tenant_integrations')
       .update({ logo_url: null, updated_at: new Date().toISOString() })
-      .eq('tenant_id', TENANT_ID);
+      .eq('tenant_id', tenantId);
     setLogoUrl(null);
   }
 
   async function toggleFollowUp() {
+    if (!tenantId) return;
     const next = !autoFollowUp;
     setAutoFollowUp(next);
     setSaving(true);
     const supabase = createClient();
     await supabase
       .from('tenant_preferences')
-      .update({ automatic_followup_emails: next, updated_at: new Date().toISOString() })
-      .eq('tenant_id', TENANT_ID);
+      .upsert(
+        {
+          tenant_id: tenantId,
+          automatic_followup_emails: next,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'tenant_id' },
+      );
     setSaving(false);
   }
 
   function updateProfile(field: keyof Profile, value: string | number | null) {
     if (profile) setProfile({ ...profile, [field]: value });
+  }
+
+  async function createProfile() {
+    setCreatingProfile(true);
+    try {
+      const r = await fetch('/api/profile', { method: 'POST' });
+      const d = await r.json();
+      if (d.profile) {
+        setProfile(d.profile);
+        setServicesText((d.profile.services ?? []).join(', '));
+      }
+    } catch {
+      /* ignore */
+    }
+    setCreatingProfile(false);
   }
 
   async function saveProfile() {
@@ -217,7 +251,7 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
           (() => {
-            const { websites, ...rest } = { action: 'vector-store', tenant_id: TENANT_ID, ...payload };
+            const { websites, ...rest } = { action: 'vector-store', tenant_id: tenantId, ...payload };
             return { ...rest, urls: (websites ?? []).join(', ') };
           })()
         ),
@@ -434,6 +468,47 @@ export default function SettingsPage() {
                 <SkeletonField />
                 <SkeletonField />
                 <SkeletonField />
+              </div>
+            ) : !profile ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: '40px 24px',
+                  textAlign: 'center',
+                  background: 'rgba(107,122,255,0.04)',
+                  border: '1px solid rgba(107,122,255,0.15)',
+                  borderRadius: 12,
+                  marginTop: 20,
+                }}
+              >
+                <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+                  Noch kein Unternehmensprofil
+                </div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', maxWidth: 360, lineHeight: 1.6 }}>
+                  Lege ein Profil an, damit die KI deine Lead-Suche und personalisierte E-Mails anhand deines
+                  Unternehmens optimieren kann.
+                </div>
+                <button
+                  onClick={createProfile}
+                  disabled={creatingProfile}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(107,122,255,0.35)',
+                    background: 'rgba(107,122,255,0.15)',
+                    color: '#7c9cef',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: creatingProfile ? 'default' : 'pointer',
+                    fontFamily: 'inherit',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  {creatingProfile ? 'Wird angelegt…' : '+ Profil erstellen'}
+                </button>
               </div>
             ) : (
               profile && (
