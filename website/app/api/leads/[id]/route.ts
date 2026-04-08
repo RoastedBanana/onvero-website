@@ -29,7 +29,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
            ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
            email_draft_subject, email_draft_body, email_subject, website_summary, website_title,
            google_rating, google_reviews, google_maps_url, google_place_id,
-           custom_fields, last_contacted_at, created_at, apollo_id, employment_history`
+           custom_fields, last_contacted_at, created_at, apollo_id, employment_history, organisation,
+           strengths, concerns, is_excluded, exclusion_reason, website_data, follow_up_context`
         )
         .eq('id', id)
         .eq('tenant_id', TENANT)
@@ -42,6 +43,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         .order('created_at', { ascending: false })
         .limit(20),
     ]);
+
+    if (leadRes.error) {
+      console.error('[leads/[id]] supabase error:', leadRes.error);
+      return NextResponse.json(
+        { lead: null, activities: [], error: leadRes.error.message },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       lead: leadRes.data ?? null,

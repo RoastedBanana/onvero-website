@@ -8,6 +8,9 @@ import LeadAvatar from '@/components/ui/LeadAvatar';
 import PageHeader from '@/components/ui/PageHeader';
 import ScoreExplanation from '@/components/leads/ScoreExplanation';
 import EmploymentTimeline from '@/components/leads/EmploymentTimeline';
+import CompanyInfo from '@/components/leads/CompanyInfo';
+import ResearchStatus from '@/components/leads/ResearchStatus';
+import { Pencil, Check, Sparkles } from 'lucide-react';
 
 interface Activity {
   id: string;
@@ -356,24 +359,6 @@ export default function LeadDetailPage() {
                 >
                   Warum?
                 </button>
-                <button
-                  onClick={handleRescore}
-                  disabled={isScoring}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: 11,
-                    fontWeight: 500,
-                    background: isScoring ? 'transparent' : 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 6,
-                    color: isScoring ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.6)',
-                    cursor: isScoring ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.15s',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {isScoring ? 'Wird analysiert...' : '↻ Neu scoren'}
-                </button>
               </div>
               <style>{`@keyframes onvero-pulse{0%,100%{opacity:0.3}50%{opacity:0.8}}`}</style>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
@@ -569,6 +554,9 @@ export default function LeadDetailPage() {
                 {lead.aiSummary ?? `${lead.company} — weitere KI-Analyse wird durchgeführt.`}
               </p>
             </Card>
+
+            {/* Company Info */}
+            {lead.organisation && <CompanyInfo organisation={lead.organisation} />}
 
             {/* Score Breakdown */}
             {bd && (
@@ -802,7 +790,7 @@ export default function LeadDetailPage() {
                       }}
                       title={editingEmail ? 'Speichern' : 'Bearbeiten'}
                     >
-                      {editingEmail ? '✓' : 'Bearbeiten'}
+                      {editingEmail ? <Check size={14} /> : <Pencil size={13} />}
                     </button>
                     <button
                       onClick={() => setAiModalOpen(true)}
@@ -817,11 +805,10 @@ export default function LeadDetailPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: 14,
                       }}
                       title="KI-Änderung"
                     >
-                      ✦
+                      <Sparkles size={13} />
                     </button>
                   </div>
                 </div>
@@ -1241,6 +1228,14 @@ export default function LeadDetailPage() {
               />
               {lead.apolloId && <InfoRow label="Apollo ID" value={lead.apolloId} mono />}
             </Card>
+
+            {/* Research status */}
+            <ResearchStatus
+              isExcluded={!!lead.isExcluded}
+              exclusionReason={lead.exclusionReason}
+              websiteData={lead.websiteData}
+              followUpContext={lead.followUpContext}
+            />
           </div>
         </div>
 

@@ -61,6 +61,51 @@ export type Lead = {
   googleMapsMatchScore?: number | null;
   source?: string | null;
   employmentHistory?: EmploymentEntry[];
+  organisation?: Organisation | null;
+  isExcluded?: boolean;
+  exclusionReason?: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  websiteData?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  followUpContext?: any;
+};
+
+export type Organisation = {
+  name?: string | null;
+  websiteUrl?: string | null;
+  primaryDomain?: string | null;
+  logoUrl?: string | null;
+  industry?: string | null;
+  estimatedNumEmployees?: number | null;
+  foundedYear?: number | null;
+  shortDescription?: string | null;
+  seoDescription?: string | null;
+  annualRevenue?: number | null;
+  annualRevenuePrinted?: string | null;
+  totalFunding?: number | null;
+  totalFundingPrinted?: string | null;
+  latestFundingStage?: string | null;
+  latestFundingRoundDate?: string | null;
+  publiclyTradedSymbol?: string | null;
+  publiclyTradedExchange?: string | null;
+  marketCap?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  street?: string | null;
+  postalCode?: string | null;
+  phone?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
+  facebookUrl?: string | null;
+  blogUrl?: string | null;
+  alexaRanking?: number | null;
+  technologies?: string[];
+  keywords?: string[];
+  industries?: string[];
+  secondaryIndustries?: string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  raw?: any;
 };
 
 export type EmploymentEntry = {
@@ -70,6 +115,63 @@ export type EmploymentEntry = {
   endDate: string | null;
   current: boolean;
 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeOrganisation(raw: any): Organisation | null {
+  if (!raw) return null;
+  let o = raw;
+  if (typeof raw === 'string') {
+    try {
+      o = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof o !== 'object') return null;
+  const tech = Array.isArray(o.technologies)
+    ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      o.technologies.map((t: any) => (typeof t === 'string' ? t : (t?.name ?? t?.uid ?? ''))).filter(Boolean)
+    : Array.isArray(o.current_technologies)
+      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        o.current_technologies.map((t: any) => t?.name ?? '').filter(Boolean)
+      : [];
+  return {
+    name: o.name ?? null,
+    websiteUrl: o.website_url ?? o.websiteUrl ?? null,
+    primaryDomain: o.primary_domain ?? o.domain ?? null,
+    logoUrl: o.logo_url ?? o.logoUrl ?? null,
+    industry: o.industry ?? null,
+    estimatedNumEmployees: o.estimated_num_employees ?? o.num_employees ?? null,
+    foundedYear: o.founded_year ?? null,
+    shortDescription: o.short_description ?? null,
+    seoDescription: o.seo_description ?? null,
+    annualRevenue: o.annual_revenue ?? null,
+    annualRevenuePrinted: o.annual_revenue_printed ?? null,
+    totalFunding: o.total_funding ?? null,
+    totalFundingPrinted: o.total_funding_printed ?? null,
+    latestFundingStage: o.latest_funding_stage ?? null,
+    latestFundingRoundDate: o.latest_funding_round_date ?? null,
+    publiclyTradedSymbol: o.publicly_traded_symbol ?? null,
+    publiclyTradedExchange: o.publicly_traded_exchange ?? null,
+    marketCap: o.market_cap ?? null,
+    city: o.city ?? null,
+    state: o.state ?? null,
+    country: o.country ?? null,
+    street: o.street_address ?? o.raw_address ?? null,
+    postalCode: o.postal_code ?? null,
+    phone: o.phone ?? o.sanitized_phone ?? null,
+    linkedinUrl: o.linkedin_url ?? null,
+    twitterUrl: o.twitter_url ?? null,
+    facebookUrl: o.facebook_url ?? null,
+    blogUrl: o.blog_url ?? null,
+    alexaRanking: o.alexa_ranking ?? null,
+    technologies: tech,
+    keywords: Array.isArray(o.keywords) ? o.keywords : [],
+    industries: Array.isArray(o.industries) ? o.industries : [],
+    secondaryIndustries: Array.isArray(o.secondary_industries) ? o.secondary_industries : [],
+    raw: o,
+  };
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeEmployment(raw: any): EmploymentEntry[] {
@@ -144,9 +246,9 @@ export function mapLead(raw: any): Lead {
     budgetEstimate: cf.budget_estimate,
     linkedinUrl: cf.linkedin_url,
     technologies: cf.technologies ?? [],
-    strengths: cf.strengths ?? [],
-    redFlags: cf.red_flags ?? [],
-    concerns: cf.concerns ?? [],
+    strengths: raw.strengths ?? cf.strengths ?? [],
+    redFlags: raw.red_flags ?? cf.red_flags ?? [],
+    concerns: raw.weaknesses ?? raw.concerns ?? cf.weaknesses ?? cf.concerns ?? [],
     scoreBreakdown: cf.score_breakdown,
     nextAction: raw.ai_next_action ?? cf.next_action,
     aiSources: raw.ai_sources ?? [],
@@ -165,6 +267,11 @@ export function mapLead(raw: any): Lead {
     googleMapsMatchScore: cf.google_maps?.match_score ?? null,
     source: raw.source ?? null,
     employmentHistory: normalizeEmployment(raw.employment_history ?? cf.employment_history),
+    organisation: normalizeOrganisation(raw.organisation ?? raw.organization ?? cf.organisation),
+    isExcluded: raw.is_excluded ?? false,
+    exclusionReason: raw.exclusion_reason ?? null,
+    websiteData: raw.website_data ?? null,
+    followUpContext: raw.follow_up_context ?? null,
   };
 }
 
