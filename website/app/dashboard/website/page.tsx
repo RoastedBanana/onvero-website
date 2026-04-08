@@ -79,23 +79,23 @@ function getImageUrl(url: string | null | undefined): string | null {
 
 const field: React.CSSProperties = {
   width: '100%',
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: 8,
-  color: '#fff',
+  background: 'rgba(255,255,255,0.02)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: 12,
+  color: '#e8e8e8',
   fontSize: '0.875rem',
   padding: '0.65rem 0.9rem',
   outline: 'none',
-  transition: 'border-color 0.2s',
+  transition: 'border-color 300ms cubic-bezier(0.32,0.72,0,1)',
   resize: 'vertical' as const,
 };
 const lbl: React.CSSProperties = {
   display: 'block',
-  color: 'rgba(255,255,255,0.4)',
+  color: 'rgba(255,255,255,0.2)',
   fontSize: '0.72rem',
   marginBottom: '0.3rem',
   fontWeight: 500,
-  letterSpacing: '0.04em',
+  letterSpacing: '0.08em',
   textTransform: 'uppercase' as const,
 };
 
@@ -121,11 +121,12 @@ function TagInput({ tags, onChange, shimmer }: { tags: string[]; onChange: (t: s
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.3rem',
-                  background: 'rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: 6,
                   padding: '0.2rem 0.6rem',
                   fontSize: '0.78rem',
-                  color: 'rgba(255,255,255,0.8)',
+                  color: 'rgba(255,255,255,0.6)',
                 }}
               >
                 {t}
@@ -179,8 +180,25 @@ function TagInput({ tags, onChange, shimmer }: { tags: string[]; onChange: (t: s
           </button>
         </div>
         {shimmer && (
-          <div style={{ position: 'absolute', inset: 0, borderRadius: 8, overflow: 'hidden', pointerEvents: 'none', zIndex: 2 }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)', animation: 'aiShimmer 1.5s ease-in-out infinite' }} />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: 8,
+              overflow: 'hidden',
+              pointerEvents: 'none',
+              zIndex: 2,
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)',
+                animation: 'aiShimmer 1.5s ease-in-out infinite',
+              }}
+            />
           </div>
         )}
       </div>
@@ -253,8 +271,9 @@ function ImageUpload({
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
           style={{
-            border: `1.5px dashed ${dragging ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.12)'}`,
-            borderRadius: 8,
+            border: `1px dashed ${dragging ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.02)',
             padding: '1.75rem',
             textAlign: 'center',
             cursor: 'pointer',
@@ -299,16 +318,16 @@ function SubmitButton({ state, label }: { state: SubmitState; label: string }) {
         gap: '0.5rem',
         marginTop: '0.25rem',
         width: '100%',
-        background: state === 'success' ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.95)',
-        color: state === 'success' ? '#4ade80' : '#0a0a0a',
+        background: state === 'success' ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.9)',
+        color: state === 'success' ? '#4ade80' : '#050505',
         fontWeight: 600,
         fontSize: '0.88rem',
         border: state === 'success' ? '1px solid rgba(74,222,128,0.4)' : 'none',
-        borderRadius: 8,
+        borderRadius: 12,
         padding: '0.75rem',
         cursor: state === 'loading' || state === 'success' ? 'default' : 'pointer',
         opacity: state === 'loading' ? 0.7 : 1,
-        transition: 'all 0.3s',
+        transition: 'all 300ms cubic-bezier(0.32,0.72,0,1)',
       }}
     >
       {state === 'loading' && <UniqueLoading size="sm" className="opacity-60" />}
@@ -338,7 +357,7 @@ function PostCard({ post, selected, onClick }: { post: BlogPost; selected: boole
       style={{
         cursor: 'pointer',
         position: 'relative',
-        transition: 'transform 0.15s',
+        transition: 'transform 500ms cubic-bezier(0.32,0.72,0,1)',
         transform: selected ? 'scale(0.97)' : 'scale(1)',
       }}
     >
@@ -499,7 +518,14 @@ function BlogForm({
       const result = await res.json();
       if (result.title) set('title', result.title);
       if (result.content) set('content', result.content);
-      if (result.tags) set('tags', result.tags.split(',').map((t: string) => t.trim()).filter(Boolean));
+      if (result.tags)
+        set(
+          'tags',
+          result.tags
+            .split(',')
+            .map((t: string) => t.trim())
+            .filter(Boolean)
+        );
     } catch (err) {
       console.error('AI polish error:', err);
     } finally {
@@ -523,8 +549,8 @@ function BlogForm({
             placeholder="Titel des Blogposts"
             required
             style={field}
-            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
           />
           {aiPolishing && (
             <div
@@ -541,7 +567,8 @@ function BlogForm({
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)',
+                  background:
+                    'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)',
                   animation: 'aiShimmer 1.5s ease-in-out infinite',
                 }}
               />
@@ -559,8 +586,8 @@ function BlogForm({
             required
             rows={9}
             style={{ ...field, paddingBottom: 36 }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
           />
           {/* AI shimmer overlay */}
           {aiPolishing && (
@@ -578,7 +605,8 @@ function BlogForm({
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)',
+                  background:
+                    'linear-gradient(90deg, transparent 0%, rgba(107,122,255,0.15) 40%, rgba(107,122,255,0.25) 50%, rgba(107,122,255,0.15) 60%, transparent 100%)',
                   animation: 'aiShimmer 1.5s ease-in-out infinite',
                 }}
               />
@@ -615,16 +643,45 @@ function BlogForm({
               zIndex: 3,
               padding: 0,
             }}
-            onMouseEnter={(e) => { if (!aiPolishing) { e.currentTarget.style.background = 'rgba(107,122,255,0.25)'; e.currentTarget.style.borderColor = 'rgba(107,122,255,0.5)'; }}}
-            onMouseLeave={(e) => { if (!aiPolishing) { e.currentTarget.style.background = 'rgba(107,122,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)'; }}}
+            onMouseEnter={(e) => {
+              if (!aiPolishing) {
+                e.currentTarget.style.background = 'rgba(107,122,255,0.25)';
+                e.currentTarget.style.borderColor = 'rgba(107,122,255,0.5)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!aiPolishing) {
+                e.currentTarget.style.background = 'rgba(107,122,255,0.1)';
+                e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)';
+              }
+            }}
           >
             {aiPolishing ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ animation: 'spin 1s linear infinite' }}
+              >
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               </svg>
             ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z" />
                 <path d="M20 16l1.04 3.13L24 20l-2.96.87L20 24l-1.04-3.13L16 20l2.96-.87L20 16z" />
               </svg>
@@ -641,8 +698,8 @@ function BlogForm({
           onChange={(e) => set('author', e.target.value)}
           required
           style={field}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+          onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+          onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
         />
       </div>
       <ImageUpload
@@ -691,8 +748,8 @@ function AutoResizeTextarea({
           el.style.height = `${el.scrollHeight}px`;
         }}
         style={{ ...field, resize: 'none' as const, overflow: 'hidden', minHeight: 56 }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-        onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+        onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+        onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
       />
     </div>
   );
@@ -921,8 +978,8 @@ function WebsiteTextsEditor() {
               onChange={(e) => updateField(fullPath, e.target.value)}
               placeholder="Bild-URL oder hochladen…"
               style={{ ...field, flex: 1 }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
             />
             <label
               style={{
@@ -973,8 +1030,8 @@ function WebsiteTextsEditor() {
             value={value}
             onChange={(e) => updateField(fullPath, e.target.value)}
             style={field}
-            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
           />
         </div>
       );
@@ -1000,8 +1057,8 @@ function WebsiteTextsEditor() {
             value={value}
             onChange={(e) => updateField(fullPath, Number(e.target.value))}
             style={field}
-            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+            onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
           />
         </div>
       );
@@ -1042,8 +1099,8 @@ function WebsiteTextsEditor() {
                     value={String(item)}
                     onChange={(e) => updateField([...fullPath, String(i)], e.target.value)}
                     style={field}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)')}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(107,122,255,0.3)')}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
                   />
                 </div>
               );
@@ -1188,7 +1245,7 @@ function WebsiteTextsEditor() {
               left: 0,
               right: 0,
               marginTop: 4,
-              background: '#1a1a1a',
+              background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 8,
               maxHeight: 260,
@@ -1268,7 +1325,7 @@ function WebsiteTextsEditor() {
             width: 240,
             flexShrink: 0,
             background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.05)',
             borderRadius: 12,
             padding: '0.75rem 0.5rem',
             overflowY: 'auto',
@@ -1383,7 +1440,7 @@ function WebsiteTextsEditor() {
           style={{
             flex: 1,
             background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            border: '1px solid rgba(255,255,255,0.05)',
             borderRadius: 12,
             padding: '1.5rem',
             overflowY: 'auto',
@@ -1415,15 +1472,15 @@ function WebsiteTextsEditor() {
                     alignItems: 'center',
                     gap: '0.4rem',
                     padding: '0.5rem 1rem',
-                    borderRadius: 8,
+                    borderRadius: 12,
                     border: saveOk ? '1px solid rgba(74,222,128,0.4)' : 'none',
-                    background: saveOk ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.95)',
-                    color: saveOk ? '#4ade80' : '#0a0a0a',
+                    background: saveOk ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.9)',
+                    color: saveOk ? '#4ade80' : '#050505',
                     fontWeight: 600,
                     fontSize: '0.8rem',
                     cursor: saving ? 'default' : 'pointer',
                     opacity: saving ? 0.7 : 1,
-                    transition: 'all 0.2s',
+                    transition: 'all 300ms cubic-bezier(0.32,0.72,0,1)',
                   }}
                 >
                   <Save size={13} />
@@ -1506,7 +1563,9 @@ export default function WebsitePage() {
   useEffect(() => {
     fetch('/api/analytics/pagespeed')
       .then((r) => r.json())
-      .then((d) => { if (!d.error) setPageSpeed(d); })
+      .then((d) => {
+        if (!d.error) setPageSpeed(d);
+      })
       .catch(() => {});
   }, []);
 
@@ -1672,7 +1731,7 @@ export default function WebsitePage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a', color: '#f5f5f5', padding: '28px 32px' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#050505', color: '#e8e8e8', padding: '28px 32px' }}>
       <style>{`* { box-sizing: border-box; }`}</style>
       <Confetti active={createConfetti} />
       <Confetti active={updateConfetti} />
@@ -1683,75 +1742,170 @@ export default function WebsitePage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
         {/* KPI Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-          {pageSpeed ? [
-            {
-              label: 'Status',
-              val: pageSpeed.ok ? 'Online' : 'Offline',
-              color: pageSpeed.ok ? '#22C55E' : '#FF5C2E',
-              sub: `HTTP ${pageSpeed.status || '—'}`,
-            },
-            {
-              label: 'Ladezeit',
-              val: pageSpeed.loadTimeFormatted || '—',
-              color: pageSpeed.speedScore >= 70 ? '#22C55E' : pageSpeed.speedScore >= 50 ? '#F59E0B' : '#FF5C2E',
-              sub: pageSpeed.speed || '—',
-            },
-            {
-              label: 'SEO Score',
-              val: `${pageSpeed.seoScore}%`,
-              color: pageSpeed.seoScore >= 80 ? '#22C55E' : '#F59E0B',
-              sub: `${Object.values(pageSpeed.checks || {}).filter(Boolean).length}/6 Checks`,
-            },
-            {
-              label: 'Blogposts',
-              val: String(posts.length),
-              color: '#6B7AFF',
-              sub: posts.length > 0 ? `${new Set(posts.map(p => p.author)).size} Autoren` : 'Keine Posts',
-            },
-          ].map((kpi) => (
-            <div key={kpi.label} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '14px 16px' }}>
-              <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>{kpi.label}</div>
-              <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1, marginBottom: 3, color: kpi.color }}>{kpi.val}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{kpi.sub}</div>
-            </div>
-          )) : (
-            [1,2,3,4].map((i) => (
-              <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '14px 16px', height: 80 }}>
-                <div style={{ width: 50, height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 4, marginBottom: 10 }} />
-                <div style={{ width: 40, height: 18, background: 'rgba(255,255,255,0.04)', borderRadius: 4 }} />
-              </div>
-            ))
-          )}
+          {pageSpeed
+            ? [
+                {
+                  label: 'Status',
+                  val: pageSpeed.ok ? 'Online' : 'Offline',
+                  color: pageSpeed.ok ? '#22C55E' : '#FF5C2E',
+                  sub: `HTTP ${pageSpeed.status || '—'}`,
+                },
+                {
+                  label: 'Ladezeit',
+                  val: pageSpeed.loadTimeFormatted || '—',
+                  color: pageSpeed.speedScore >= 70 ? '#22C55E' : pageSpeed.speedScore >= 50 ? '#F59E0B' : '#FF5C2E',
+                  sub: pageSpeed.speed || '—',
+                },
+                {
+                  label: 'SEO Score',
+                  val: `${pageSpeed.seoScore}%`,
+                  color: pageSpeed.seoScore >= 80 ? '#22C55E' : '#F59E0B',
+                  sub: `${Object.values(pageSpeed.checks || {}).filter(Boolean).length}/6 Checks`,
+                },
+                {
+                  label: 'Blogposts',
+                  val: String(posts.length),
+                  color: '#6B7AFF',
+                  sub: posts.length > 0 ? `${new Set(posts.map((p) => p.author)).size} Autoren` : 'Keine Posts',
+                },
+              ].map((kpi) => (
+                <div
+                  key={kpi.label}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: 14,
+                    padding: '14px 16px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 9,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      color: 'rgba(255,255,255,0.35)',
+                      fontWeight: 600,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {kpi.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-dm-mono)',
+                      lineHeight: 1,
+                      marginBottom: 3,
+                      color: kpi.color,
+                    }}
+                  >
+                    {kpi.val}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{kpi.sub}</div>
+                </div>
+              ))
+            : [1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: 14,
+                    padding: '14px 16px',
+                    height: 80,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 50,
+                      height: 8,
+                      background: 'rgba(255,255,255,0.05)',
+                      borderRadius: 4,
+                      marginBottom: 10,
+                    }}
+                  />
+                  <div style={{ width: 40, height: 18, background: 'rgba(255,255,255,0.04)', borderRadius: 4 }} />
+                </div>
+              ))}
         </div>
 
         {/* Tips Card */}
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '16px 18px' }}>
-          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 4 }}>Empfehlungen</div>
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderRadius: 14,
+            padding: '16px 18px',
+          }}
+        >
+          <div
+            style={{
+              fontSize: 9,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: 'rgba(255,255,255,0.35)',
+              fontWeight: 600,
+              marginBottom: 4,
+            }}
+          >
+            Empfehlungen
+          </div>
           <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 12 }}>Website-Tipps</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pageSpeed ? (() => {
-              const tips: { text: string; ok: boolean }[] = [];
-              if (pageSpeed.checks) {
-                if (!pageSpeed.checks.title) tips.push({ text: 'Seitentitel fehlt — wichtig fuer Google-Ergebnisse', ok: false });
-                if (!pageSpeed.checks.description) tips.push({ text: 'Meta-Beschreibung fehlt — verbessert Click-Through-Rate', ok: false });
-                if (!pageSpeed.checks.ogImage) tips.push({ text: 'Social-Media-Bild fehlt — Vorschau bei geteilten Links', ok: false });
-                if (!pageSpeed.checks.viewport) tips.push({ text: 'Viewport-Tag fehlt — Mobile-Optimierung noetig', ok: false });
-                if (pageSpeed.checks.title) tips.push({ text: 'Seitentitel vorhanden', ok: true });
-                if (pageSpeed.checks.description) tips.push({ text: 'Meta-Beschreibung gesetzt', ok: true });
-                if (pageSpeed.checks.https) tips.push({ text: 'HTTPS aktiv — Verbindung verschluesselt', ok: true });
-              }
-              if (pageSpeed.speedScore < 70) tips.push({ text: `Ladezeit optimieren (${pageSpeed.loadTimeFormatted}) — Bilder komprimieren, CSS minimieren`, ok: false });
-              if (pageSpeed.speedScore >= 70) tips.push({ text: `Gute Ladezeit (${pageSpeed.loadTimeFormatted})`, ok: true });
-              if (posts.length === 0) tips.push({ text: 'Ersten Blogpost erstellen — verbessert SEO und Sichtbarkeit', ok: false });
-              if (posts.length > 0) tips.push({ text: `${posts.length} Blogposts veroeffentlicht`, ok: true });
-              // Show max 5, problems first
-              return tips.sort((a, b) => Number(a.ok) - Number(b.ok)).slice(0, 5).map((tip, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 8px', borderRadius: 6, background: tip.ok ? 'rgba(34,197,94,0.05)' : 'rgba(255,92,46,0.05)', border: `1px solid ${tip.ok ? 'rgba(34,197,94,0.1)' : 'rgba(255,92,46,0.1)'}` }}>
-                  <span style={{ fontSize: 10, color: tip.ok ? '#22C55E' : '#FF5C2E', flexShrink: 0, marginTop: 1 }}>{tip.ok ? '✓' : '!'}</span>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{tip.text}</span>
-                </div>
-              ));
-            })() : (
+            {pageSpeed ? (
+              (() => {
+                const tips: { text: string; ok: boolean }[] = [];
+                if (pageSpeed.checks) {
+                  if (!pageSpeed.checks.title)
+                    tips.push({ text: 'Seitentitel fehlt — wichtig fuer Google-Ergebnisse', ok: false });
+                  if (!pageSpeed.checks.description)
+                    tips.push({ text: 'Meta-Beschreibung fehlt — verbessert Click-Through-Rate', ok: false });
+                  if (!pageSpeed.checks.ogImage)
+                    tips.push({ text: 'Social-Media-Bild fehlt — Vorschau bei geteilten Links', ok: false });
+                  if (!pageSpeed.checks.viewport)
+                    tips.push({ text: 'Viewport-Tag fehlt — Mobile-Optimierung noetig', ok: false });
+                  if (pageSpeed.checks.title) tips.push({ text: 'Seitentitel vorhanden', ok: true });
+                  if (pageSpeed.checks.description) tips.push({ text: 'Meta-Beschreibung gesetzt', ok: true });
+                  if (pageSpeed.checks.https) tips.push({ text: 'HTTPS aktiv — Verbindung verschluesselt', ok: true });
+                }
+                if (pageSpeed.speedScore < 70)
+                  tips.push({
+                    text: `Ladezeit optimieren (${pageSpeed.loadTimeFormatted}) — Bilder komprimieren, CSS minimieren`,
+                    ok: false,
+                  });
+                if (pageSpeed.speedScore >= 70)
+                  tips.push({ text: `Gute Ladezeit (${pageSpeed.loadTimeFormatted})`, ok: true });
+                if (posts.length === 0)
+                  tips.push({ text: 'Ersten Blogpost erstellen — verbessert SEO und Sichtbarkeit', ok: false });
+                if (posts.length > 0) tips.push({ text: `${posts.length} Blogposts veroeffentlicht`, ok: true });
+                // Show max 5, problems first
+                return tips
+                  .sort((a, b) => Number(a.ok) - Number(b.ok))
+                  .slice(0, 5)
+                  .map((tip, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 8,
+                        padding: '6px 8px',
+                        borderRadius: 6,
+                        background: tip.ok ? 'rgba(34,197,94,0.05)' : 'rgba(255,92,46,0.05)',
+                        border: `1px solid ${tip.ok ? 'rgba(34,197,94,0.1)' : 'rgba(255,92,46,0.1)'}`,
+                      }}
+                    >
+                      <span
+                        style={{ fontSize: 10, color: tip.ok ? '#22C55E' : '#FF5C2E', flexShrink: 0, marginTop: 1 }}
+                      >
+                        {tip.ok ? '✓' : '!'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{tip.text}</span>
+                    </div>
+                  ));
+              })()
+            ) : (
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Daten werden geladen...</div>
             )}
           </div>
@@ -1761,12 +1915,13 @@ export default function WebsitePage() {
       {/* Mode tabs */}
       <div
         style={{
-          display: 'flex',
+          display: 'inline-flex',
           gap: 0,
           marginTop: 20,
           marginBottom: 24,
-          borderBottom: '1px solid rgba(255,255,255,0.07)',
-          paddingBottom: 0,
+          background: 'rgba(255,255,255,0.03)',
+          borderRadius: 14,
+          padding: 4,
         }}
       >
         {(
@@ -1786,35 +1941,20 @@ export default function WebsitePage() {
                 setUpdateState('idle');
               }}
               style={{
-                padding: '10px 20px',
+                padding: '8px 20px',
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 13,
                 fontWeight: isActive ? 600 : 400,
-                background: 'transparent',
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.4)',
-                transition: 'all 0.2s',
+                background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+                color: isActive ? '#e8e8e8' : 'rgba(255,255,255,0.35)',
+                transition: 'all 300ms cubic-bezier(0.32,0.72,0,1)',
                 position: 'relative',
-                borderBottom: isActive ? '2px solid #6B7AFF' : '2px solid transparent',
-                marginBottom: -1,
+                borderRadius: 10,
                 fontFamily: 'inherit',
               }}
             >
               {label}
-              {isActive && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: -1,
-                    left: '10%',
-                    right: '10%',
-                    height: 2,
-                    background: '#6B7AFF',
-                    boxShadow: '0 0 10px rgba(107,122,255,0.5), 0 0 20px rgba(107,122,255,0.2)',
-                    borderRadius: 1,
-                  }}
-                />
-              )}
             </button>
           );
         })}
@@ -1825,58 +1965,165 @@ export default function WebsitePage() {
           {/* Form card */}
           <div
             style={{
-              background: '#111',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 10,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 14,
               padding: 24,
             }}
           >
-            <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+            <div
+              style={{
+                fontSize: 9,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'rgba(255,255,255,0.35)',
+                fontWeight: 600,
+                marginBottom: 6,
+              }}
+            >
               Neuer Blogpost
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 20 }}>
-              Erstellen
-            </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 20 }}>Erstellen</div>
             <BlogForm initial={emptyForm} onSubmit={handleCreate} submitLabel="Erstellen" submitState={createState} />
           </div>
 
           {/* Preview / stats card */}
           <div
             style={{
-              background: '#111',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 10,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 14,
               padding: 24,
               display: 'flex',
               flexDirection: 'column',
               gap: 16,
             }}
           >
-            <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+            <div
+              style={{
+                fontSize: 9,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'rgba(255,255,255,0.35)',
+                fontWeight: 600,
+                marginBottom: 6,
+              }}
+            >
               Uebersicht
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '14px 16px' }}>
-                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>Posts</div>
-                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>{posts.length}</div>
+              <div
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 8,
+                  padding: '14px 16px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 9,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'rgba(255,255,255,0.35)',
+                    fontWeight: 600,
+                    marginBottom: 6,
+                  }}
+                >
+                  Posts
+                </div>
+                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>
+                  {posts.length}
+                </div>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '14px 16px' }}>
-                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>Autoren</div>
-                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>{new Set(posts.map(p => p.author)).size}</div>
+              <div
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 8,
+                  padding: '14px 16px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 9,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'rgba(255,255,255,0.35)',
+                    fontWeight: 600,
+                    marginBottom: 6,
+                  }}
+                >
+                  Autoren
+                </div>
+                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>
+                  {new Set(posts.map((p) => p.author)).size}
+                </div>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '14px 16px' }}>
-                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>Tags</div>
-                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>{new Set(posts.flatMap(p => p.tags.split(',').filter(Boolean))).size}</div>
+              <div
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 8,
+                  padding: '14px 16px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 9,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'rgba(255,255,255,0.35)',
+                    fontWeight: 600,
+                    marginBottom: 6,
+                  }}
+                >
+                  Tags
+                </div>
+                <div style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-dm-mono)', lineHeight: 1 }}>
+                  {new Set(posts.flatMap((p) => p.tags.split(',').filter(Boolean))).size}
+                </div>
               </div>
             </div>
             {posts.length > 0 && (
               <div>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 10 }}>Letzte Posts</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {posts.slice(0, 5).map(p => (
-                    <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: 7, border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{p.title}</span>
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)', flexShrink: 0 }}>{new Date(p.createdAt).toLocaleDateString('de-DE')}</span>
+                  {posts.slice(0, 5).map((p) => (
+                    <div
+                      key={p.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 10px',
+                        background: 'rgba(255,255,255,0.02)',
+                        borderRadius: 7,
+                        border: '1px solid rgba(255,255,255,0.05)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: 'rgba(255,255,255,0.7)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '70%',
+                        }}
+                      >
+                        {p.title}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: 'rgba(255,255,255,0.25)',
+                          fontFamily: 'var(--font-dm-mono)',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {new Date(p.createdAt).toLocaleDateString('de-DE')}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1891,18 +2138,25 @@ export default function WebsitePage() {
           {gridOpen ? (
             <div
               style={{
-                background: '#111',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 10,
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: 14,
                 padding: 24,
               }}
             >
-              <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+              <div
+                style={{
+                  fontSize: 9,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'rgba(255,255,255,0.35)',
+                  fontWeight: 600,
+                  marginBottom: 6,
+                }}
+              >
                 Blogpost
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 20 }}>
-                Auswählen
-              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 20 }}>Auswählen</div>
               {postsLoading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '2.5rem' }}>
                   <UniqueLoading size="lg" />
@@ -1922,8 +2176,8 @@ export default function WebsitePage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                background: '#111',
-                border: '1px solid rgba(255,255,255,0.07)',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
                 color: 'rgba(255,255,255,0.6)',
                 fontSize: 12,
                 borderRadius: 8,
@@ -1941,18 +2195,25 @@ export default function WebsitePage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
               <div
                 style={{
-                  background: '#111',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: 14,
                   padding: 24,
                 }}
               >
-                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+                <div
+                  style={{
+                    fontSize: 9,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'rgba(255,255,255,0.35)',
+                    fontWeight: 600,
+                    marginBottom: 6,
+                  }}
+                >
                   Blogpost
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 4 }}>
-                  Bearbeiten
-                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 4 }}>Bearbeiten</div>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginBottom: 20 }}>
                   {selectedPost.title}
                 </div>
@@ -1967,13 +2228,22 @@ export default function WebsitePage() {
               {/* Preview card */}
               <div
                 style={{
-                  background: '#111',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: 10,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: 14,
                   padding: 24,
                 }}
               >
-                <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 6 }}>
+                <div
+                  style={{
+                    fontSize: 9,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'rgba(255,255,255,0.35)',
+                    fontWeight: 600,
+                    marginBottom: 6,
+                  }}
+                >
                   Vorschau
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 20 }}>
@@ -1983,21 +2253,58 @@ export default function WebsitePage() {
                   <img
                     src={getImageUrl(selectedPost.imageUrl) ?? ''}
                     alt=""
-                    style={{ width: '100%', borderRadius: 8, marginBottom: 16, objectFit: 'cover', maxHeight: 200, border: '1px solid rgba(255,255,255,0.06)' }}
+                    style={{
+                      width: '100%',
+                      borderRadius: 8,
+                      marginBottom: 16,
+                      objectFit: 'cover',
+                      maxHeight: 200,
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
                   />
                 )}
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto' }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: 'rgba(255,255,255,0.6)',
+                    lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap',
+                    maxHeight: 300,
+                    overflowY: 'auto',
+                  }}
+                >
                   {selectedPost.content}
                 </div>
                 <div style={{ marginTop: 16, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {selectedPost.tags.split(',').filter(Boolean).map(t => (
-                    <span key={t} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 5, background: 'rgba(107,122,255,0.12)', color: 'rgba(107,122,255,0.8)', border: '1px solid rgba(107,122,255,0.2)' }}>
-                      {t.trim()}
-                    </span>
-                  ))}
+                  {selectedPost.tags
+                    .split(',')
+                    .filter(Boolean)
+                    .map((t) => (
+                      <span
+                        key={t}
+                        style={{
+                          fontSize: 10,
+                          padding: '3px 8px',
+                          borderRadius: 5,
+                          background: 'rgba(107,122,255,0.12)',
+                          color: 'rgba(107,122,255,0.8)',
+                          border: '1px solid rgba(107,122,255,0.2)',
+                        }}
+                      >
+                        {t.trim()}
+                      </span>
+                    ))}
                 </div>
-                <div style={{ marginTop: 12, fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-mono)' }}>
-                  {selectedPost.author} · {new Date(selectedPost.createdAt).toLocaleDateString('de-DE')} · {calcReadTime(selectedPost.content)} Min. Lesezeit
+                <div
+                  style={{
+                    marginTop: 12,
+                    fontSize: 10,
+                    color: 'rgba(255,255,255,0.25)',
+                    fontFamily: 'var(--font-dm-mono)',
+                  }}
+                >
+                  {selectedPost.author} · {new Date(selectedPost.createdAt).toLocaleDateString('de-DE')} ·{' '}
+                  {calcReadTime(selectedPost.content)} Min. Lesezeit
                 </div>
               </div>
             </div>
