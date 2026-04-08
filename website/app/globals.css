@@ -51,3 +51,58 @@ html {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
 }
+
+/* ───────────────────────────────────────────────
+   Dashboard typography + input contrast overrides
+   Codebase uses inline styles heavily; we override
+   common pixel sizes via attribute selectors so we
+   don't have to touch every file.
+   ─────────────────────────────────────────────── */
+
+.onv-dashboard {
+  font-size: 15px;
+}
+
+/* Bump common inline font sizes by ~1-2px */
+.onv-dashboard [style*="font-size: 9px"],
+.onv-dashboard [style*="font-size:9px"] { font-size: 11px !important; }
+
+.onv-dashboard [style*="font-size: 10px"],
+.onv-dashboard [style*="font-size:10px"] { font-size: 12px !important; }
+
+.onv-dashboard [style*="font-size: 11px"],
+.onv-dashboard [style*="font-size:11px"] { font-size: 13px !important; }
+
+.onv-dashboard [style*="font-size: 12px"],
+.onv-dashboard [style*="font-size:12px"] { font-size: 14px !important; }
+
+.onv-dashboard [style*="font-size: 13px"],
+.onv-dashboard [style*="font-size:13px"] { font-size: 15px !important; }
+
+.onv-dashboard [style*="font-size: 14px"],
+.onv-dashboard [style*="font-size:14px"] { font-size: 16px !important; }
+
+.onv-dashboard [style*="font-size: 15px"],
+.onv-dashboard [style*="font-size:15px"] { font-size: 17px !important; }
+
+/* Stronger contrast for all inputs / textareas / selects */
+.onv-dashboard input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.onv-dashboard textarea,
+.onv-dashboard select {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+.onv-dashboard input::placeholder,
+.onv-dashboard textarea::placeholder {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.onv-dashboard input:focus:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.onv-dashboard textarea:focus,
+.onv-dashboard select:focus {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  outline: none;
+}

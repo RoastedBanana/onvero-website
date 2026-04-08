@@ -6,6 +6,7 @@ import NotificationBell from '@/components/ui/NotificationBell';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
+      className="onv-dashboard"
       style={{
         display: 'flex',
         minHeight: '100vh',
