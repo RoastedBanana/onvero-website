@@ -52,9 +52,3 @@ html {
   border-radius: 3px;
 }
 
-/* Dashboard: only lighten input/textarea backgrounds for visibility */
-.onv-dashboard input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-.onv-dashboard textarea,
-.onv-dashboard select {
-  background-color: rgba(255, 255, 255, 0.06) !important;
-}

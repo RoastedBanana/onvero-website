@@ -45,15 +45,15 @@ const sectionLabel = {
   marginTop: 20,
   fontWeight: 600,
 };
-const fieldLabel = { fontSize: 12, color: 'rgba(255,255,255,0.35)', display: 'block' as const, marginBottom: 4 };
+const fieldLabel = { fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block' as const, marginBottom: 4 };
 const fieldInput = {
   width: '100%',
-  background: 'rgba(255,255,255,0.03)',
-  border: '1px solid rgba(255,255,255,0.07)',
+  background: 'rgba(255,255,255,0.06)',
+  border: '1px solid rgba(255,255,255,0.14)',
   borderRadius: 8,
   padding: '8px 12px',
   fontSize: 13,
-  color: '#e0e0e0',
+  color: '#ffffff',
   outline: 'none',
   fontFamily: 'var(--font-dm-sans)',
 };
