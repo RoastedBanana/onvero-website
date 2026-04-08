@@ -232,34 +232,63 @@ export default function SettingsPage() {
   async function saveProfile() {
     if (!profile) return;
     setProfileSaving(true);
+
+    // Only send editable columns — never id/tenant_id/created_at/updated_at
     const payload = {
-      ...profile,
+      company_name: profile.company_name ?? '',
+      company_description: profile.company_description ?? '',
+      company_location: profile.company_location ?? '',
+      website: profile.website ?? '',
+      websites: profile.websites ?? [],
+      target_customers: profile.target_customers ?? '',
+      ideal_lead_profile: profile.ideal_lead_profile ?? '',
+      excluded_profiles: profile.excluded_profiles ?? '',
       services: servicesText
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean),
+      usp: profile.usp ?? '',
+      deal_size_min: profile.deal_size_min,
+      deal_size_max: profile.deal_size_max,
+      sender_name: profile.sender_name ?? '',
+      sender_role: profile.sender_role ?? '',
+      tone_of_voice: profile.tone_of_voice ?? '',
+      email_signature: profile.email_signature ?? '',
     };
+
     try {
-      await fetch('/api/profile', {
+      const res = await fetch('/api/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      // Send to vector store webhook
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Profil speichern fehlgeschlagen:', err);
+        alert(`Speichern fehlgeschlagen: ${err.error ?? res.status}`);
+        setProfileSaving(false);
+        return;
+      }
+      // Local state mirrors what we just persisted
+      setProfile((prev) => (prev ? { ...prev, ...payload } : prev));
+
+      // Send to vector store webhook (best-effort, non-blocking)
       fetch('/api/proxy/n8n', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          (() => {
-            const { websites, ...rest } = { action: 'vector-store', tenant_id: tenantId, ...payload };
-            return { ...rest, urls: (websites ?? []).join(', ') };
-          })()
-        ),
+        body: JSON.stringify({
+          action: 'vector-store',
+          tenant_id: tenantId,
+          ...payload,
+          urls: (payload.websites ?? []).join(', '),
+        }),
       }).catch(() => {});
+
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 1500);
-    } catch {
-      /* ignore */
+    } catch (e) {
+      console.error(e);
+      alert('Netzwerkfehler beim Speichern.');
     }
     setProfileSaving(false);
   }
