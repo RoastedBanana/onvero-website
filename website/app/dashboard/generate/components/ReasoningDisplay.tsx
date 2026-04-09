@@ -308,7 +308,7 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <style>{`@keyframes confBar{from{width:0%}}`}</style>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-        {/* ── Left: KI-Analyse ── */}
+        {/* ── Left: Analyse ── */}
         <div
           style={{
             background: 'rgba(255,255,255,0.03)',
@@ -326,7 +326,7 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
               marginBottom: 14,
             }}
           >
-            KI-Analyse
+            Such-Analyse
           </div>
 
           <p style={{ fontSize: 14, color: '#ccc', lineHeight: 1.65, margin: '0 0 16px' }}>{result.reasoning}</p>
@@ -620,8 +620,8 @@ export default function ReasoningDisplay({ result, onBack, onConfirm }: Props) {
                 Noch kein Unternehmensprofil angelegt.
               </div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', maxWidth: 280, lineHeight: 1.55 }}>
-                Lege ein Profil an, damit die KI deine Lead-Suche und personalisierte E-Mails anhand deines
-                Unternehmens optimieren kann.
+                Lege ein Profil an, damit Lead-Suche und personalisierte E-Mails anhand deines
+                Unternehmens optimiert werden können.
               </div>
               <button
                 onClick={createProfile}

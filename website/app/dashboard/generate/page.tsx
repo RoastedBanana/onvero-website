@@ -104,7 +104,7 @@ export default function GeneratePage() {
       setResult({
         success: true,
         reasoning: `Suche basierend auf: "${data.freetext.slice(0, 100)}"`,
-        strategy: 'Standard Apollo-Suche mit deinen Kriterien.',
+        strategy: 'Standard-Suche mit deinen Kriterien.',
         apollo_keywords: data.tags.concat(data.keywords),
         apollo_industries: data.industry ? [data.industry] : [],
         refined_employee_min: data.employeeMin,
@@ -120,7 +120,7 @@ export default function GeneratePage() {
     <div style={{ minHeight: '100vh', background: '#050505', fontFamily: 'var(--font-dm-sans)' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px' }}>
         <div style={{ marginBottom: 32 }}>
-          <PageHeader title="Leads generieren" subtitle="KI-gestützte Lead-Recherche" />
+          <PageHeader title="Leads generieren" subtitle="Automatisierte Lead-Recherche" />
         </div>
 
         {state === 'form' && missingProfileFields && missingProfileFields.length > 0 && (
@@ -158,8 +158,8 @@ export default function GeneratePage() {
                 Dein Profil ist noch nicht fertig eingerichtet
               </div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 1.55, marginBottom: 8 }}>
-                Ohne ein vollständiges Unternehmensprofil kann die KI keine personalisierten Suchanfragen und
-                E-Mails erstellen. Folgende Felder fehlen noch:
+                Ohne ein vollständiges Unternehmensprofil können keine personalisierten Suchanfragen und
+                E-Mails erstellt werden. Folgende Felder fehlen noch:
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
                 {missingProfileFields.map((f) => (
@@ -218,8 +218,8 @@ export default function GeneratePage() {
                   },
                   {
                     icon: <Brain className="w-5 h-5 text-[#6B7AFF]" />,
-                    title: 'KI analysiert',
-                    description: 'Die KI verfeinert deine Suche und zeigt dir die Strategie.',
+                    title: 'Suche wird verfeinert',
+                    description: 'Deine Eingaben werden ausgewertet und in eine Suchstrategie übersetzt.',
                     benefits: [
                       'Keywords & Industrien werden optimiert',
                       'Konfidenz-Score zeigt Qualität',
@@ -231,8 +231,8 @@ export default function GeneratePage() {
                     title: 'Leads erscheinen',
                     description: 'Die Pipeline läuft ~2 Min. im Hintergrund, Leads erscheinen automatisch.',
                     benefits: [
-                      'Apollo-Suche + Website-Analyse',
-                      'Jeder Lead wird KI-gescored',
+                      'Datenbank-Suche + Website-Analyse',
+                      'Jeder Lead wird automatisch bewertet',
                       'Personalisierte E-Mails werden erstellt',
                     ],
                   },

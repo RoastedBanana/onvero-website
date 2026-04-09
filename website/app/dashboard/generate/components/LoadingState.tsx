@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 
 const MESSAGES = [
-  'KI analysiert deine Suchkriterien...',
+  'Suchkriterien werden analysiert...',
   'Suchanfrage wird verfeinert...',
   'Strategie wird entwickelt...',
-  'Apollo-Query wird optimiert...',
+  'Suchanfrage wird optimiert...',
 ];
 
 export default function LoadingState() {

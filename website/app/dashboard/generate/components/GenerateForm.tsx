@@ -208,7 +208,7 @@ export default function GenerateForm({ initialData, onSubmit }: Props) {
             }}
           />
           <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>
-            Die KI analysiert deine Beschreibung und erstellt automatisch die optimale Suchanfrage.
+            Deine Beschreibung wird automatisch in eine optimale Suchanfrage übersetzt.
           </div>
         </div>
 
@@ -324,7 +324,7 @@ export default function GenerateForm({ initialData, onSubmit }: Props) {
             transition: 'background 0.2s',
           }}
         >
-          KI-Analyse starten →
+          Analyse starten →
         </button>
       </div>
     </div>

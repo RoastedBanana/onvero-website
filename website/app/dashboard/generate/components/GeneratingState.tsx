@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 const MESSAGES = [
-  { at: 0, text: 'Apollo durchsucht die Datenbank...' },
+  { at: 0, text: 'Datenbank wird durchsucht...' },
   { at: 15, text: 'Google Maps Daten werden abgerufen...' },
-  { at: 40, text: 'KI analysiert jeden Lead...' },
+  { at: 40, text: 'Leads werden analysiert...' },
   { at: 70, text: 'Fast fertig...' },
 ];
 
@@ -37,10 +37,10 @@ export default function GeneratingState() {
   const currentMsg = [...MESSAGES].reverse().find((m) => elapsed >= m.at)?.text ?? MESSAGES[0].text;
 
   const steps: Step[] = [
-    { icon: '🧠', label: 'KI-Analyse', status: 'done' },
-    { icon: '⚡', label: 'Apollo-Suche', status: elapsed < 15 ? 'active' : 'done' },
+    { icon: '🧠', label: 'Analyse', status: 'done' },
+    { icon: '⚡', label: 'Datenbank-Suche', status: elapsed < 15 ? 'active' : 'done' },
     { icon: '🌐', label: 'Website-Analyse', status: elapsed < 15 ? 'todo' : elapsed < 40 ? 'active' : 'done' },
-    { icon: '🤖', label: 'KI-Scoring', status: elapsed < 40 ? 'todo' : elapsed < 70 ? 'active' : 'done' },
+    { icon: '🤖', label: 'Scoring', status: elapsed < 40 ? 'todo' : elapsed < 70 ? 'active' : 'done' },
     { icon: '📊', label: 'Ergebnisse', status: elapsed < 70 ? 'todo' : elapsed < 90 ? 'active' : 'done' },
   ];
 
