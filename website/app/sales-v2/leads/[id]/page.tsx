@@ -15,8 +15,9 @@ import {
   showToast,
   PageHeader,
 } from '../../_shared';
-import { getLeadById } from '../../_lead-data';
+import { getLeadById, LEADS, getLeadStats, ACCOUNT } from '../../_lead-data';
 import type { Lead } from '../../_lead-data';
+import Link from 'next/link';
 
 // ─── STATUS OPTIONS ──────────────────────────────────────────────────────────
 
@@ -258,20 +259,30 @@ export default function LeadDetailPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          {/* Avatar */}
+          {/* Avatar — color reflects score tier */}
           <div
             style={{
               width: 56,
               height: 56,
               borderRadius: 14,
-              background: 'linear-gradient(135deg, #6366F1, #818CF8)',
+              background:
+                s >= 70
+                  ? 'linear-gradient(135deg, #6366F1, #818CF8)'
+                  : s >= 50
+                    ? 'linear-gradient(135deg, #D97706, #FBBF24)'
+                    : 'linear-gradient(135deg, #374151, #4B5563)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 18,
               fontWeight: 600,
               color: '#fff',
-              boxShadow: '0 4px 20px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+              boxShadow:
+                s >= 70
+                  ? '0 4px 20px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
+                  : s >= 50
+                    ? '0 4px 20px rgba(251,191,36,0.2), inset 0 1px 0 rgba(255,255,255,0.15)'
+                    : '0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)',
             }}
           >
             {lead.name
@@ -458,7 +469,7 @@ export default function LeadDetailPage() {
                 label={s > 0 ? `${s}` : '—'}
               />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: C.text3, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: C.text1, fontWeight: 500, marginBottom: 4 }}>
                   {s === 0
                     ? 'Score noch nicht berechnet'
                     : s >= 70
@@ -467,6 +478,16 @@ export default function LeadDetailPage() {
                         ? 'Warm Lead — Potenzial vorhanden'
                         : 'Cold Lead — Beobachten'}
                 </div>
+                {s > 0 &&
+                  (() => {
+                    const avg = getLeadStats(LEADS).avgScore;
+                    const diff = s - avg;
+                    return (
+                      <div style={{ fontSize: 11, color: diff > 0 ? C.success : C.danger, marginBottom: 8 }}>
+                        {diff > 0 ? `+${diff}` : diff} Punkte vs. Ø {avg} aller Leads
+                      </div>
+                    );
+                  })()}
                 {lead.scoreBreakdown.length > 0 && (
                   <Sparkline
                     data={lead.scoreBreakdown.map((sb) => sb.value)}
@@ -515,17 +536,19 @@ export default function LeadDetailPage() {
             </Section>
           )}
 
-          {/* E-Mail Draft */}
+          {/* E-Mail Draft — mail-style layout */}
           {lead.emailDraftBody && (
             <Section
-              title={lead.emailDraftSubject ? `E-Mail: ${lead.emailDraftSubject}` : 'E-Mail Draft'}
+              title="E-Mail Draft"
               icon={ICONS.mail}
               color="#34D399"
               actions={
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(lead.emailDraftBody!);
+                      navigator.clipboard.writeText(
+                        `Betreff: ${lead.emailDraftSubject ?? ''}\n\n${lead.emailDraftBody!}`
+                      );
                       showToast('E-Mail kopiert', 'success');
                     }}
                     style={{
@@ -559,6 +582,48 @@ export default function LeadDetailPage() {
                 </div>
               }
             >
+              {/* Mail header rows */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  padding: '12px 14px',
+                  borderRadius: 8,
+                  marginBottom: 14,
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                }}
+              >
+                <div style={{ display: 'flex', gap: 8, fontSize: 11.5 }}>
+                  <span style={{ color: C.text3, width: 48, flexShrink: 0 }}>Von</span>
+                  <span style={{ color: C.text2 }}>
+                    {ACCOUNT.senderName} &lt;{ACCOUNT.senderName.toLowerCase().replace(' ', '.')}
+                    @smartparcelsolutions.de&gt;
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 8, fontSize: 11.5 }}>
+                  <span style={{ color: C.text3, width: 48, flexShrink: 0 }}>An</span>
+                  <span style={{ color: C.text2 }}>
+                    {lead.name} {lead.email ? `<${lead.email}>` : '(keine E-Mail)'}
+                  </span>
+                </div>
+                {lead.emailDraftSubject && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 8,
+                      fontSize: 11.5,
+                      borderTop: '1px solid rgba(255,255,255,0.04)',
+                      paddingTop: 6,
+                    }}
+                  >
+                    <span style={{ color: C.text3, width: 48, flexShrink: 0 }}>Betreff</span>
+                    <span style={{ color: C.text1, fontWeight: 500 }}>{lead.emailDraftSubject}</span>
+                  </div>
+                )}
+              </div>
+              {/* Mail body */}
               <pre
                 style={{
                   fontSize: 12.5,
@@ -625,161 +690,237 @@ export default function LeadDetailPage() {
         {/* RIGHT COLUMN — Sidebar info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Contact Person Card */}
-          <div
-            style={{
-              background: C.surface,
-              border: `1px solid ${C.border}`,
-              borderRadius: 14,
-              overflow: 'hidden',
-              boxShadow: '0 2px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
-            }}
-          >
-            <div
-              style={{
-                padding: '16px 22px',
-                borderBottom: `1px solid ${C.border}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <SvgIcon d={ICONS.users} size={13} color={C.accent} />
-              <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>Kontaktperson</span>
-            </div>
-            <div style={{ padding: '16px 22px' }}>
-              {/* Name + Title */}
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
-                {lead.jobTitle && <div style={{ fontSize: 12, color: C.accent, marginTop: 3 }}>{lead.jobTitle}</div>}
-              </div>
-
-              {/* Contact channels */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-                {/* Email with status */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div
+          {(() => {
+            const fields = [lead.email, lead.phone, lead.linkedinUrl, lead.jobTitle];
+            const filled = fields.filter(Boolean).length;
+            const pct = Math.round((filled / fields.length) * 100);
+            const copyBtn = (text: string) => (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigator.clipboard.writeText(text);
+                  showToast('Kopiert', 'success');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 2,
+                  flexShrink: 0,
+                  opacity: 0.4,
+                }}
+                title="Kopieren"
+              >
+                <svg
+                  width={12}
+                  height={12}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={C.text3}
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+              </button>
+            );
+            return (
+              <div
+                style={{
+                  background: C.surface,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  boxShadow: '0 2px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '16px 22px',
+                    borderBottom: `1px solid ${C.border}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <SvgIcon d={ICONS.users} size={13} color={C.accent} />
+                    <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>Kontaktperson</span>
+                  </div>
+                  <span
                     style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 7,
-                      background: lead.email ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${lead.email ? 'rgba(52,211,153,0.15)' : C.border}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
+                      fontSize: 10,
+                      color: pct === 100 ? C.success : C.text3,
+                      fontFamily: 'ui-monospace, SFMono-Regular, monospace',
                     }}
                   >
-                    <SvgIcon d={ICONS.mail} size={12} color={lead.email ? '#34D399' : C.text3} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {lead.email ? (
-                      <a
-                        href={`mailto:${lead.email}`}
-                        style={{
-                          fontSize: 12,
-                          color: C.text1,
-                          textDecoration: 'none',
-                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          display: 'block',
-                        }}
-                      >
-                        {lead.email}
-                      </a>
-                    ) : (
-                      <span style={{ fontSize: 12, color: C.text3 }}>Keine E-Mail verfügbar</span>
-                    )}
-                    {lead.emailStatus && (
-                      <span
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 600,
-                          letterSpacing: '0.04em',
-                          color: lead.emailStatus === 'verified' ? '#34D399' : C.text3,
-                          marginTop: 2,
-                          display: 'block',
-                        }}
-                      >
-                        {lead.emailStatus === 'verified' ? '✓ VERIFIZIERT' : 'NICHT VERIFIZIERT'}
-                      </span>
+                    {pct}% vollständig
+                  </span>
+                </div>
+                <div style={{ padding: '16px 22px' }}>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
+                    {lead.jobTitle && (
+                      <div style={{ fontSize: 12, color: C.accent, marginTop: 3 }}>{lead.jobTitle}</div>
                     )}
                   </div>
-                </div>
 
-                {/* Phone */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* Completeness bar */}
                   <div
                     style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 7,
-                      background: lead.phone ? 'rgba(56,189,248,0.08)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${lead.phone ? 'rgba(56,189,248,0.15)' : C.border}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
+                      height: 3,
+                      borderRadius: 2,
+                      background: 'rgba(255,255,255,0.04)',
+                      marginBottom: 14,
+                      overflow: 'hidden',
                     }}
                   >
-                    <SvgIcon d={ICONS.mic} size={12} color={lead.phone ? '#38BDF8' : C.text3} />
-                  </div>
-                  {lead.phone ? (
-                    <a
-                      href={`tel:${lead.phone}`}
+                    <div
                       style={{
-                        fontSize: 12,
-                        color: C.text1,
-                        textDecoration: 'none',
-                        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                        width: `${pct}%`,
+                        height: '100%',
+                        borderRadius: 2,
+                        background: pct === 100 ? C.success : pct >= 50 ? C.accent : '#FBBF24',
+                        transition: 'width 0.8s ease',
                       }}
-                    >
-                      {lead.phone}
-                    </a>
-                  ) : (
-                    <span style={{ fontSize: 12, color: C.text3, fontStyle: 'italic' }}>Telefonnummer fehlt</span>
-                  )}
-                </div>
+                    />
+                  </div>
 
-                {/* LinkedIn */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 7,
-                      background: lead.linkedinUrl ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${lead.linkedinUrl ? 'rgba(99,102,241,0.15)' : C.border}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <SvgIcon d={ICONS.globe} size={12} color={lead.linkedinUrl ? C.accent : C.text3} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Email */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 7,
+                          flexShrink: 0,
+                          background: lead.email ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${lead.email ? 'rgba(52,211,153,0.15)' : C.border}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <SvgIcon d={ICONS.mail} size={12} color={lead.email ? '#34D399' : C.text3} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {lead.email ? (
+                          <a
+                            href={`mailto:${lead.email}`}
+                            style={{
+                              fontSize: 12,
+                              color: C.text1,
+                              textDecoration: 'none',
+                              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              display: 'block',
+                            }}
+                          >
+                            {lead.email}
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: 12, color: C.text3 }}>Keine E-Mail verfügbar</span>
+                        )}
+                        {lead.emailStatus && (
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 600,
+                              letterSpacing: '0.04em',
+                              color: lead.emailStatus === 'verified' ? '#34D399' : C.text3,
+                              marginTop: 1,
+                              display: 'block',
+                            }}
+                          >
+                            {lead.emailStatus === 'verified' ? '✓ VERIFIZIERT' : 'NICHT VERIFIZIERT'}
+                          </span>
+                        )}
+                      </div>
+                      {lead.email && copyBtn(lead.email)}
+                    </div>
+
+                    {/* Phone */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 7,
+                          flexShrink: 0,
+                          background: lead.phone ? 'rgba(56,189,248,0.08)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${lead.phone ? 'rgba(56,189,248,0.15)' : C.border}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <SvgIcon d={ICONS.mic} size={12} color={lead.phone ? '#38BDF8' : C.text3} />
+                      </div>
+                      {lead.phone ? (
+                        <a
+                          href={`tel:${lead.phone}`}
+                          style={{
+                            fontSize: 12,
+                            color: C.text1,
+                            textDecoration: 'none',
+                            flex: 1,
+                            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                          }}
+                        >
+                          {lead.phone}
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 12, color: C.text3, fontStyle: 'italic', flex: 1 }}>
+                          Telefonnummer fehlt
+                        </span>
+                      )}
+                      {lead.phone && copyBtn(lead.phone)}
+                    </div>
+
+                    {/* LinkedIn */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 7,
+                          flexShrink: 0,
+                          background: lead.linkedinUrl ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)',
+                          border: `1px solid ${lead.linkedinUrl ? 'rgba(99,102,241,0.15)' : C.border}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <SvgIcon d={ICONS.globe} size={12} color={lead.linkedinUrl ? C.accent : C.text3} />
+                      </div>
+                      {lead.linkedinUrl ? (
+                        <a
+                          href={lead.linkedinUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: 12,
+                            color: C.accent,
+                            textDecoration: 'none',
+                            flex: 1,
+                          }}
+                        >
+                          LinkedIn Profil ↗
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 12, color: C.text3, flex: 1 }}>Kein LinkedIn</span>
+                      )}
+                    </div>
                   </div>
-                  {lead.linkedinUrl ? (
-                    <a
-                      href={lead.linkedinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        fontSize: 12,
-                        color: C.accent,
-                        textDecoration: 'none',
-                      }}
-                    >
-                      LinkedIn Profil ↗
-                    </a>
-                  ) : (
-                    <span style={{ fontSize: 12, color: C.text3 }}>Kein LinkedIn</span>
-                  )}
                 </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Company Info Card */}
           <div
@@ -970,6 +1111,96 @@ export default function LeadDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ── SIMILAR LEADS ── */}
+      {(() => {
+        const similar = LEADS.filter((l) => l.id !== lead.id && l.industry === lead.industry)
+          .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+          .slice(0, 3);
+        if (similar.length === 0) return null;
+        return (
+          <div style={{ animation: 'fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both' }}>
+            <div style={{ fontSize: 10, color: C.text3, letterSpacing: '0.06em', fontWeight: 500, marginBottom: 10 }}>
+              ÄHNLICHE LEADS IN {lead.industry.toUpperCase()}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${similar.length}, 1fr)`, gap: 12 }}>
+              {similar.map((sl) => (
+                <Link
+                  key={sl.id}
+                  href={`/sales-v2/leads/${sl.id}`}
+                  className="s-card"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '14px 16px',
+                    borderRadius: 11,
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.03)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 9,
+                      flexShrink: 0,
+                      background:
+                        (sl.score ?? 0) >= 70
+                          ? 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05))'
+                          : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${(sl.score ?? 0) >= 70 ? 'rgba(99,102,241,0.2)' : C.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: (sl.score ?? 0) >= 70 ? C.accent : C.text3,
+                    }}
+                  >
+                    {sl.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        fontWeight: 500,
+                        color: C.text1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {sl.name}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: C.text3, marginTop: 2 }}>
+                      {sl.company} · {sl.city}
+                    </div>
+                  </div>
+                  {sl.score && (
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: sl.score >= 70 ? C.accent : C.text3,
+                        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                      }}
+                    >
+                      {sl.score}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
