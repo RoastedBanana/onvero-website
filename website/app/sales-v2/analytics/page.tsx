@@ -13,7 +13,6 @@ import {
   ProgressRing,
   Sparkline,
 } from '../_shared';
-import { Chart3DBubble, Chart3DArea } from '../_3d-charts';
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -775,54 +774,9 @@ function OverviewTab() {
         ))}
       </div>
 
-      {/* 3D Visualization Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
-        <Panel title="Lead-Verteilung 3D" icon={ICONS.chart} color="#818CF8" delay={0.15}>
-          <Chart3DBubble />
-          <div style={{ display: 'flex', gap: 14, marginTop: 10, justifyContent: 'center' }}>
-            {[
-              { color: '#818CF8', label: 'Qualifiziert' },
-              { color: '#34D399', label: 'In Kontakt' },
-              { color: '#FBBF24', label: 'Warm' },
-              { color: '#F87171', label: 'Cold' },
-            ].map((l) => (
-              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    background: l.color,
-                    boxShadow: `0 0 6px ${l.color}50`,
-                  }}
-                />
-                <span style={{ fontSize: 10, color: C.text3 }}>{l.label}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel title="Pipeline 3D Trend" icon={ICONS.trending} color="#6366F1" delay={0.2}>
-          <Chart3DArea />
-          <div style={{ display: 'flex', gap: 14, marginTop: 10, justifyContent: 'center' }}>
-            {[
-              { color: '#6366F1', label: 'Pipeline' },
-              { color: '#818CF8', label: 'Qualifiziert' },
-              { color: '#A5B4FC', label: 'In Kontakt' },
-              { color: '#38BDF8', label: 'Neu' },
-            ].map((l) => (
-              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{ width: 12, height: 3, borderRadius: 1, background: l.color }} />
-                <span style={{ fontSize: 10, color: C.text3 }}>{l.label}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
         {/* Pipeline trend — 2D area chart */}
-        <Panel title="Pipeline-Entwicklung" icon={ICONS.trending} color="#34D399" delay={0.25}>
+        <Panel title="Pipeline-Entwicklung" icon={ICONS.trending} color="#34D399" delay={0.15}>
           <AreaChart
             data={PIPELINE_MONTHS.map((d) => ({ x: d.m, y: d.v }))}
             color="#34D399"
