@@ -4,26 +4,37 @@
 export interface Lead {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   company: string;
   email: string | null;
+  phone: string | null;
   city: string;
+  country: string | null;
   score: number | null;
   status: 'Neu' | 'In Kontakt' | 'Qualifiziert' | 'Verloren';
   pipeline: string | null;
   lastActivity: string;
   industry: string;
+  industryApollo: string | null;
   employees: string;
+  employeeCount: number | null;
   website: string | null;
-  phone: string | null;
+  jobTitle: string | null;
+  linkedinUrl: string | null;
+  emailStatus: string | null;
   aiSummary: string | null;
   aiTags: string[];
   emailDraftSubject: string | null;
   emailDraftBody: string | null;
   nextAction: string | null;
   createdAt: string;
+  lastContactedAt: string | null;
+  followUpAt: string | null;
   source: string;
   googleRating: number | null;
   googleReviews: number;
+  googleMapsUrl: string | null;
   scoreBreakdown: { label: string; value: number; max: number }[];
   notes: string[];
   timeline: { action: string; time: string; color: string }[];
@@ -92,6 +103,204 @@ function guessEmployees(summary: string | null): string {
 }
 
 // ─── ALL 35 LEADS FROM SUPABASE ──────────────────────────────────────────────
+
+// Apollo custom_fields enrichment — keyed by lead id
+const ENRICHMENT: Record<
+  string,
+  {
+    job_title?: string;
+    linkedin_url?: string;
+    employee_count?: number;
+    industry_apollo?: string;
+    email_status?: string;
+    country?: string;
+    last_contacted_at?: string;
+  }
+> = {
+  '3a1667de-cef8-48ae-9051-e9a69d42ef2e': {
+    job_title: 'CEO',
+    linkedin_url: 'https://www.linkedin.com/in/michael-solomun-62b50514a',
+    employee_count: 76,
+    industry_apollo: 'apparel & fashion',
+    email_status: 'verified',
+    country: 'Schweiz',
+    last_contacted_at: '11. April 2026',
+  },
+  '397276af-7c06-4411-8a20-610582c076db': {
+    job_title: 'CEO & Founder',
+    linkedin_url: 'https://www.linkedin.com/in/kamil-sulek-8240a8195',
+    employee_count: 53,
+    industry_apollo: 'retail',
+    email_status: 'none',
+    country: 'Polen',
+  },
+  'c862ebe3-514b-4793-92d9-a3a9f0a168d7': {
+    job_title: 'CEO',
+    linkedin_url: 'https://www.linkedin.com/in/michael-simon-68009a6a',
+    employee_count: 55,
+    industry_apollo: 'textiles',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  'f3ff3326-af98-4395-83db-55897886b525': {
+    job_title: 'Leiter Versand',
+    linkedin_url: 'https://www.linkedin.com/in/thayalan-ratnasingam-2b65b4b1',
+    employee_count: 1500,
+    industry_apollo: 'retail',
+    email_status: 'verified',
+    country: 'Schweiz',
+  },
+  '07a981b3-2aed-4510-9acf-a87c465cc122': {
+    job_title: 'Managing Director',
+    linkedin_url: 'https://www.linkedin.com/in/imteag-nasud-722719163',
+    employee_count: 47,
+    country: 'Bangladesch',
+  },
+  '6cf4c9f4-1492-4ca2-8699-1fb5d006981d': {
+    job_title: 'Managing Director',
+    linkedin_url: 'https://www.linkedin.com/in/md-imteag-uddin-talukder-24a813133',
+    employee_count: 47,
+    country: 'Bangladesch',
+  },
+  '1b08c7c0-6723-4247-80f8-69a5e1c3b267': {
+    job_title: 'Geschäftsführer',
+    linkedin_url: 'https://www.linkedin.com/in/jens-rothberger-501470b5',
+    employee_count: 39,
+    industry_apollo: 'textiles',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  'a9ba730c-6be8-40b3-94f4-250b0aa5ed3c': {
+    job_title: 'Managing Director',
+    linkedin_url: 'https://www.linkedin.com/in/nils-buecker-820899185',
+    employee_count: 41,
+    industry_apollo: 'apparel & fashion',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  '1ae1f5a3-3c9d-45aa-84c1-9a1055882dea': {
+    job_title: 'Managing Director',
+    linkedin_url: 'https://www.linkedin.com/in/niels-karlowsky-b5925481',
+    employee_count: 16,
+    industry_apollo: 'apparel & fashion',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  '0311cdd0-31d0-4a6a-a9a4-95beb933032a': {
+    job_title: 'CEO',
+    linkedin_url: 'https://www.linkedin.com/in/katrin-raberg-84275a41',
+    employee_count: 16,
+    industry_apollo: 'apparel & fashion',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  '6118e920-2c60-4d4c-8595-c4a05002a76f': {
+    job_title: 'Managing Director',
+    linkedin_url: 'https://www.linkedin.com/in/mona-tschirdewahn-007228143',
+    employee_count: 60,
+    industry_apollo: 'apparel & fashion',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  'b9069007-d655-44a7-a3e7-e6ef18130382': {
+    job_title: 'CEO',
+    linkedin_url: 'https://www.linkedin.com/in/rolf-boje-02166b157',
+    employee_count: 42,
+    industry_apollo: 'apparel & fashion',
+    country: 'Deutschland',
+  },
+  '15f087ce-3357-4bd9-b4df-34fb15bd01d5': {
+    job_title: 'CEO',
+    linkedin_url: 'https://www.linkedin.com/in/lecomtealexandre',
+    employee_count: 21,
+    industry_apollo: 'machinery',
+    email_status: 'verified',
+    country: 'Schweiz',
+  },
+  '4166ffc3-5cc5-4389-83c0-64dc4041b4f5': {
+    job_title: 'CEO',
+    employee_count: 120,
+    industry_apollo: 'textiles',
+    country: 'China',
+  },
+  '8ee23deb-eb47-48f7-b4e7-afc43cf5ff83': {
+    job_title: 'Leiter Versand',
+    linkedin_url: 'https://www.linkedin.com/in/steffen-wippermann-a7b698173',
+    employee_count: 130,
+    industry_apollo: 'electrical manufacturing',
+    country: 'Deutschland',
+  },
+  'b15e2226-4500-4468-993f-a27394c0750a': {
+    job_title: 'Leiter Versand',
+    linkedin_url: 'https://www.linkedin.com/in/marco-lude-38a545312',
+    employee_count: 2000,
+    industry_apollo: 'machinery',
+    country: 'Deutschland',
+  },
+  'e34729c2-a9c0-4c51-975f-59055b9afa3f': {
+    job_title: 'Leiter Versand/Logistik',
+    linkedin_url: 'https://www.linkedin.com/in/hofbauer-josef-a65a3711a',
+    employee_count: 130,
+    industry_apollo: 'construction',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  '0c935fed-35f4-44fe-8441-3dd63f202e0c': {
+    job_title: 'Leiter Versand',
+    linkedin_url: 'https://www.linkedin.com/in/alexander-brechter-031730145',
+    employee_count: 520,
+    industry_apollo: 'IT & services',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  '5b499198-3657-4b4f-854d-256cb13c65bd': {
+    job_title: 'Leiter Versand',
+    linkedin_url: 'https://www.linkedin.com/in/michael-cebulsky-268666248',
+    employee_count: 1300,
+    industry_apollo: 'food & beverages',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  'f6d48023-3ccb-4cc7-bf75-6be3cbc74022': {
+    job_title: 'Leiter Versand/Logistik',
+    linkedin_url: 'https://www.linkedin.com/in/joerg-steinheimer-36880898',
+    employee_count: 400,
+    industry_apollo: 'wholesale',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  'd3faa0e9-b9f2-4806-806b-7945e5454484': {
+    job_title: 'Leiter Versand',
+    linkedin_url: 'https://www.linkedin.com/in/marcel-armanski-17095b273',
+    employee_count: 420,
+    industry_apollo: 'security',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  '53caf81c-0528-498f-88c0-ec61d1eef5a1': {
+    job_title: 'CEO',
+    linkedin_url: 'https://www.linkedin.com/in/slipinski',
+    employee_count: 37,
+    industry_apollo: 'nonprofit',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+  '5232477e-2d31-43b9-94ed-545f0718bbc9': {
+    job_title: 'Managing Director',
+    linkedin_url: 'https://www.linkedin.com/in/sehul-shah-221120165',
+    employee_count: 35,
+    industry_apollo: 'retail',
+    country: 'Indien',
+  },
+  '737a600e-5d9b-42af-88e2-64608ada32ad': {
+    job_title: 'Managing Director',
+    linkedin_url: 'https://www.linkedin.com/in/andrea-kipf-a0780a194',
+    employee_count: 31,
+    industry_apollo: 'plastics',
+    email_status: 'verified',
+    country: 'Deutschland',
+  },
+};
 
 const RAW_LEADS: {
   id: string;
@@ -679,64 +888,92 @@ const RAW_LEADS: {
 
 // ─── TRANSFORM TO LEAD TYPE ──────────────────────────────────────────────────
 
-export const LEADS: Lead[] = RAW_LEADS.map((r) => ({
-  id: r.id,
-  name: `${r.first_name} ${r.last_name}`,
-  company: r.company_name,
-  email: r.email,
-  city: r.city,
-  score: r.score,
-  status: mapStatus(r.status),
-  pipeline: null,
-  lastActivity: timeAgo(r.created_at),
-  industry: guessIndustry(r.ai_tags, r.ai_summary, r.company_name),
-  employees: guessEmployees(r.ai_summary),
-  website: r.website,
-  phone: r.phone,
-  aiSummary: r.ai_summary,
-  aiTags: r.ai_tags ?? [],
-  emailDraftSubject: r.email_draft_subject,
-  emailDraftBody: r.email_draft_body,
-  nextAction: r.ai_next_action,
-  createdAt: new Date(r.created_at).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }),
-  source: r.source,
-  googleRating: r.google_rating,
-  googleReviews: r.google_reviews,
-  scoreBreakdown: r.score
-    ? [
-        { label: 'Firmenprofil', value: Math.round(r.score * 0.3), max: 30 },
-        { label: 'Entscheider-Level', value: Math.round(r.score * 0.2), max: 20 },
-        { label: 'Branchenfit', value: Math.round(r.score * 0.25), max: 25 },
-        { label: 'Versand-Signale', value: Math.round(r.score * 0.25), max: 25 },
-      ]
-    : [],
-  notes: [],
-  timeline: [
-    {
-      action: `Lead erstellt via ${r.source}`,
-      time: new Date(r.created_at).toLocaleDateString('de-DE'),
-      color: '#818CF8',
-    },
-    ...(r.score
+export const LEADS: Lead[] = RAW_LEADS.map((r) => {
+  const e = ENRICHMENT[r.id] ?? {};
+  const empCount = e.employee_count ?? null;
+  return {
+    id: r.id,
+    name: `${r.first_name} ${r.last_name}`,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    company: r.company_name,
+    email: r.email,
+    phone: r.phone,
+    city: r.city,
+    country: e.country ?? null,
+    score: r.score,
+    status: mapStatus(r.status),
+    pipeline: null,
+    lastActivity: e.last_contacted_at ? `Kontaktiert ${e.last_contacted_at}` : timeAgo(r.created_at),
+    industry: guessIndustry(r.ai_tags, r.ai_summary, r.company_name),
+    industryApollo: e.industry_apollo ?? null,
+    employees: empCount
+      ? empCount < 20
+        ? '1–20'
+        : empCount < 50
+          ? '20–50'
+          : empCount < 200
+            ? '50–200'
+            : empCount < 500
+              ? '200–500'
+              : empCount < 1000
+                ? '500–1.000'
+                : '1.000+'
+      : guessEmployees(r.ai_summary),
+    employeeCount: empCount,
+    website: r.website,
+    jobTitle: e.job_title ?? null,
+    linkedinUrl: e.linkedin_url ?? null,
+    emailStatus: e.email_status ?? null,
+    aiSummary: r.ai_summary,
+    aiTags: r.ai_tags ?? [],
+    emailDraftSubject: r.email_draft_subject,
+    emailDraftBody: r.email_draft_body,
+    nextAction: r.ai_next_action,
+    createdAt: new Date(r.created_at).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }),
+    lastContactedAt: e.last_contacted_at ?? null,
+    followUpAt: null,
+    source: r.source,
+    googleRating: r.google_rating,
+    googleReviews: r.google_reviews,
+    googleMapsUrl: null,
+    scoreBreakdown: r.score
       ? [
-          {
-            action: `KI-Score berechnet: ${r.score}`,
-            time: new Date(r.created_at).toLocaleDateString('de-DE'),
-            color: '#38BDF8',
-          },
+          { label: 'Firmenprofil', value: Math.round(r.score * 0.3), max: 30 },
+          { label: 'Entscheider-Level', value: Math.round(r.score * 0.2), max: 20 },
+          { label: 'Branchenfit', value: Math.round(r.score * 0.25), max: 25 },
+          { label: 'Versand-Signale', value: Math.round(r.score * 0.25), max: 25 },
         ]
-      : []),
-    ...(r.email_draft_body
-      ? [
-          {
-            action: 'E-Mail-Draft generiert',
-            time: new Date(r.created_at).toLocaleDateString('de-DE'),
-            color: '#A78BFA',
-          },
-        ]
-      : []),
-  ],
-}));
+      : [],
+    notes: [],
+    timeline: [
+      {
+        action: `Lead erstellt via ${r.source}`,
+        time: new Date(r.created_at).toLocaleDateString('de-DE'),
+        color: '#818CF8',
+      },
+      ...(r.score
+        ? [
+            {
+              action: `KI-Score berechnet: ${r.score}`,
+              time: new Date(r.created_at).toLocaleDateString('de-DE'),
+              color: '#38BDF8',
+            },
+          ]
+        : []),
+      ...(r.email_draft_body
+        ? [
+            {
+              action: 'E-Mail-Draft generiert',
+              time: new Date(r.created_at).toLocaleDateString('de-DE'),
+              color: '#A78BFA',
+            },
+          ]
+        : []),
+      ...(e.last_contacted_at ? [{ action: 'E-Mail versendet', time: e.last_contacted_at, color: '#34D399' }] : []),
+    ],
+  };
+});
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 

@@ -283,12 +283,22 @@ export default function LeadDetailPage() {
             <h1 style={{ fontSize: 22, fontWeight: 600, color: C.text1, margin: 0, letterSpacing: '-0.02em' }}>
               {lead.name}
             </h1>
-            <div style={{ fontSize: 13, color: C.text3, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            {lead.jobTitle && (
+              <div style={{ fontSize: 12, color: C.accent, marginTop: 3, fontWeight: 500 }}>{lead.jobTitle}</div>
+            )}
+            <div style={{ fontSize: 12, color: C.text3, marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>{lead.company}</span>
               <span style={{ opacity: 0.25 }}>·</span>
-              <span>{lead.city}</span>
-              <span style={{ opacity: 0.25 }}>·</span>
-              <span>{lead.industry}</span>
+              <span>
+                {lead.city}
+                {lead.country ? `, ${lead.country}` : ''}
+              </span>
+              {lead.employeeCount && (
+                <>
+                  <span style={{ opacity: 0.25 }}>·</span>
+                  <span>~{lead.employeeCount.toLocaleString('de-DE')} MA</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -381,6 +391,49 @@ export default function LeadDetailPage() {
           <GlowButton onClick={() => showToast('Outreach wird generiert...', 'info')}>Outreach generieren</GlowButton>
         </div>
       </div>
+
+      {/* ── NEXT ACTION BANNER ── */}
+      {lead.nextAction && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 20px',
+            borderRadius: 12,
+            background:
+              s >= 70
+                ? 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02))'
+                : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${s >= 70 ? 'rgba(99,102,241,0.15)' : C.border}`,
+            animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: s >= 70 ? 'rgba(99,102,241,0.1)' : 'rgba(251,191,36,0.08)',
+                border: `1px solid ${s >= 70 ? 'rgba(99,102,241,0.2)' : 'rgba(251,191,36,0.15)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SvgIcon d={ICONS.zap} size={14} color={s >= 70 ? C.accent : '#FBBF24'} />
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: C.text3, letterSpacing: '0.06em', fontWeight: 500 }}>
+                EMPFOHLENE AKTION
+              </div>
+              <div style={{ fontSize: 13, color: C.text1, fontWeight: 500, marginTop: 2 }}>{lead.nextAction}</div>
+            </div>
+          </div>
+          <GlowButton onClick={() => showToast('Aktion wird ausgeführt...', 'info')}>Jetzt ausführen</GlowButton>
+        </div>
+      )}
 
       {/* ── MAIN CONTENT — 2 columns ── */}
       <div
@@ -571,7 +624,164 @@ export default function LeadDetailPage() {
 
         {/* RIGHT COLUMN — Sidebar info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Quick Info Card */}
+          {/* Contact Person Card */}
+          <div
+            style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 14,
+              overflow: 'hidden',
+              boxShadow: '0 2px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
+            }}
+          >
+            <div
+              style={{
+                padding: '16px 22px',
+                borderBottom: `1px solid ${C.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <SvgIcon d={ICONS.users} size={13} color={C.accent} />
+              <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>Kontaktperson</span>
+            </div>
+            <div style={{ padding: '16px 22px' }}>
+              {/* Name + Title */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
+                {lead.jobTitle && <div style={{ fontSize: 12, color: C.accent, marginTop: 3 }}>{lead.jobTitle}</div>}
+              </div>
+
+              {/* Contact channels */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                {/* Email with status */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 7,
+                      background: lead.email ? 'rgba(52,211,153,0.08)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${lead.email ? 'rgba(52,211,153,0.15)' : C.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <SvgIcon d={ICONS.mail} size={12} color={lead.email ? '#34D399' : C.text3} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {lead.email ? (
+                      <a
+                        href={`mailto:${lead.email}`}
+                        style={{
+                          fontSize: 12,
+                          color: C.text1,
+                          textDecoration: 'none',
+                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          display: 'block',
+                        }}
+                      >
+                        {lead.email}
+                      </a>
+                    ) : (
+                      <span style={{ fontSize: 12, color: C.text3 }}>Keine E-Mail verfügbar</span>
+                    )}
+                    {lead.emailStatus && (
+                      <span
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 600,
+                          letterSpacing: '0.04em',
+                          color: lead.emailStatus === 'verified' ? '#34D399' : C.text3,
+                          marginTop: 2,
+                          display: 'block',
+                        }}
+                      >
+                        {lead.emailStatus === 'verified' ? '✓ VERIFIZIERT' : 'NICHT VERIFIZIERT'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 7,
+                      background: lead.phone ? 'rgba(56,189,248,0.08)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${lead.phone ? 'rgba(56,189,248,0.15)' : C.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <SvgIcon d={ICONS.mic} size={12} color={lead.phone ? '#38BDF8' : C.text3} />
+                  </div>
+                  {lead.phone ? (
+                    <a
+                      href={`tel:${lead.phone}`}
+                      style={{
+                        fontSize: 12,
+                        color: C.text1,
+                        textDecoration: 'none',
+                        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                      }}
+                    >
+                      {lead.phone}
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: 12, color: C.text3, fontStyle: 'italic' }}>Telefonnummer fehlt</span>
+                  )}
+                </div>
+
+                {/* LinkedIn */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 7,
+                      background: lead.linkedinUrl ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${lead.linkedinUrl ? 'rgba(99,102,241,0.15)' : C.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <SvgIcon d={ICONS.globe} size={12} color={lead.linkedinUrl ? C.accent : C.text3} />
+                  </div>
+                  {lead.linkedinUrl ? (
+                    <a
+                      href={lead.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: 12,
+                        color: C.accent,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      LinkedIn Profil ↗
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: 12, color: C.text3 }}>Kein LinkedIn</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Company Info Card */}
           <div
             style={{
               background: C.surface,
@@ -581,17 +791,26 @@ export default function LeadDetailPage() {
               boxShadow: '0 2px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
             }}
           >
-            <InfoRow label="E-Mail" value={lead.email} href={`mailto:${lead.email}`} mono />
-            <InfoRow label="Telefon" value={lead.phone} href={lead.phone ? `tel:${lead.phone}` : undefined} mono />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <SvgIcon d={ICONS.globe} size={13} color="#38BDF8" />
+              <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>Unternehmen</span>
+            </div>
+            <InfoRow label="Firma" value={lead.company} />
             <InfoRow
               label="Website"
               value={lead.website?.replace('https://', '') ?? null}
               href={lead.website ?? undefined}
             />
             <InfoRow label="Branche" value={lead.industry} />
-            <InfoRow label="Mitarbeiter" value={lead.employees} />
+            {lead.industryApollo && <InfoRow label="Apollo Kategorie" value={lead.industryApollo} />}
+            <InfoRow
+              label="Mitarbeiter"
+              value={lead.employeeCount ? `~${lead.employeeCount.toLocaleString('de-DE')}` : lead.employees}
+            />
+            <InfoRow label="Standort" value={[lead.city, lead.country].filter(Boolean).join(', ')} />
+            <InfoRow label="Quelle" value={lead.source} />
             <InfoRow label="Erstellt am" value={lead.createdAt} />
-            <InfoRow label="Nächste Aktion" value={lead.nextAction} />
+            {lead.lastContactedAt && <InfoRow label="Zuletzt kontaktiert" value={lead.lastContactedAt} />}
             {lead.pipeline && <InfoRow label="Pipeline" value={lead.pipeline} mono />}
           </div>
 
