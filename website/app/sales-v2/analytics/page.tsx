@@ -765,6 +765,329 @@ function Panel({
   );
 }
 
+// ─── 3D CHARTS ───────────────────────────────────────────────────────────────
+
+// Isometric projection helpers
+function iso(x: number, y: number, z: number): [number, number] {
+  const angle = Math.PI / 6; // 30 degrees
+  const px = (x - z) * Math.cos(angle);
+  const py = (x + z) * Math.sin(angle) - y;
+  return [px, py];
+}
+
+// 3D Scatter/Bubble Chart — isometric view with glowing spheres
+function Chart3DBubble() {
+  const W = 400;
+  const H = 280;
+  const cx = W / 2;
+  const cy = H * 0.65;
+  const scale = 1.8;
+
+  // Data points: [x, y, z, size, color]
+  const bubbles: [number, number, number, number, string][] = [
+    [30, 80, 40, 18, '#818CF8'],
+    [70, 120, 20, 24, '#6366F1'],
+    [50, 200, 60, 14, '#38BDF8'],
+    [20, 60, 70, 20, '#34D399'],
+    [80, 300, 30, 28, '#A78BFA'],
+    [60, 150, 50, 16, '#818CF8'],
+    [40, 250, 80, 22, '#F87171'],
+    [90, 180, 10, 12, '#FBBF24'],
+    [35, 350, 45, 26, '#34D399'],
+    [75, 100, 65, 15, '#38BDF8'],
+    [55, 280, 35, 20, '#818CF8'],
+    [25, 400, 55, 30, '#6366F1'],
+    [85, 220, 75, 17, '#A78BFA'],
+    [45, 320, 25, 13, '#FBBF24'],
+    [65, 450, 15, 22, '#34D399'],
+  ];
+
+  // Axis lines
+  const axisLen = 90;
+  const origin = iso(0, 0, 0);
+  const xEnd = iso(axisLen, 0, 0);
+  const yEnd = iso(0, axisLen * 5, 0);
+  const zEnd = iso(0, 0, axisLen);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: H }}>
+      <defs>
+        {/* Radial glow for bubbles */}
+        {['818CF8', '6366F1', '38BDF8', '34D399', 'A78BFA', 'F87171', 'FBBF24'].map((c) => (
+          <radialGradient key={c} id={`bubble-${c}`} cx="35%" cy="35%">
+            <stop offset="0%" stopColor={`#${c}`} stopOpacity="0.9" />
+            <stop offset="50%" stopColor={`#${c}`} stopOpacity="0.5" />
+            <stop offset="100%" stopColor={`#${c}`} stopOpacity="0.1" />
+          </radialGradient>
+        ))}
+        <filter id="bubble-glow">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <g transform={`translate(${cx - 40}, ${cy})`}>
+        {/* Floor grid */}
+        {[0, 1, 2, 3, 4].map((i) => {
+          const t = (i / 4) * axisLen;
+          const [x1, y1] = iso(t, 0, 0).map((v) => v * scale) as [number, number];
+          const [x2, y2] = iso(t, 0, axisLen).map((v) => v * scale) as [number, number];
+          const [x3, y3] = iso(0, 0, t).map((v) => v * scale) as [number, number];
+          const [x4, y4] = iso(axisLen, 0, t).map((v) => v * scale) as [number, number];
+          return (
+            <g key={i}>
+              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(99,102,241,0.08)" strokeWidth="0.5" />
+              <line x1={x3} y1={y3} x2={x4} y2={y4} stroke="rgba(99,102,241,0.08)" strokeWidth="0.5" />
+            </g>
+          );
+        })}
+
+        {/* Axes */}
+        {(() => {
+          const [ox, oy] = origin.map((v) => v * scale);
+          const [xx, xy] = xEnd.map((v) => v * scale);
+          const [yx, yy] = yEnd.map((v) => v * scale);
+          const [zx, zy] = zEnd.map((v) => v * scale);
+          return (
+            <>
+              <line x1={ox} y1={oy} x2={xx} y2={xy} stroke="rgba(99,102,241,0.25)" strokeWidth="1" />
+              <line x1={ox} y1={oy} x2={ox} y2={yy} stroke="rgba(99,102,241,0.25)" strokeWidth="1" />
+              <line x1={ox} y1={oy} x2={zx} y2={zy} stroke="rgba(99,102,241,0.25)" strokeWidth="1" />
+              {/* Axis labels */}
+              <text x={xx + 8} y={xy + 4} fill={C.text3} fontSize="8" fontFamily="system-ui">
+                Score
+              </text>
+              <text x={ox - 4} y={yy - 8} fill={C.text3} fontSize="8" fontFamily="system-ui" textAnchor="end">
+                Pipeline
+              </text>
+              <text x={zx - 8} y={zy + 4} fill={C.text3} fontSize="8" fontFamily="system-ui" textAnchor="end">
+                Aktivität
+              </text>
+            </>
+          );
+        })()}
+
+        {/* Bubbles — sorted by depth for proper overlap */}
+        {[...bubbles]
+          .sort((a, b) => a[0] + a[2] - (b[0] + b[2]))
+          .map(([x, y, z, size, color], i) => {
+            const [px, py] = iso(x, y / 5, z).map((v) => v * scale);
+            const colorHex = color.replace('#', '');
+            return (
+              <g
+                key={i}
+                style={{
+                  animation: 'scaleIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
+                  animationDelay: `${0.1 + i * 0.04}s`,
+                }}
+              >
+                {/* Shadow on floor */}
+                <ellipse cx={px} cy={iso(x, 0, z)[1] * scale} rx={size * 0.5} ry={size * 0.2} fill={`${color}15`} />
+                {/* Vertical line to floor */}
+                <line
+                  x1={px}
+                  y1={py}
+                  x2={px}
+                  y2={iso(x, 0, z)[1] * scale}
+                  stroke={`${color}20`}
+                  strokeWidth="0.5"
+                  strokeDasharray="2,2"
+                />
+                {/* Bubble */}
+                <circle
+                  cx={px}
+                  cy={py}
+                  r={size * 0.5}
+                  fill={`url(#bubble-${colorHex})`}
+                  filter="url(#bubble-glow)"
+                  style={{ cursor: 'pointer' }}
+                />
+                {/* Highlight spot */}
+                <circle cx={px - size * 0.12} cy={py - size * 0.12} r={size * 0.12} fill="rgba(255,255,255,0.3)" />
+              </g>
+            );
+          })}
+      </g>
+
+      {/* Y-axis scale */}
+      {[100, 200, 300, 400, 500].map((v, i) => {
+        const [, py] = iso(0, v / 5, 0).map((vv) => vv * scale);
+        return (
+          <text
+            key={v}
+            x={cx - 85}
+            y={cy + py + 3}
+            fill={C.text3}
+            fontSize="8"
+            fontFamily="ui-monospace, SFMono-Regular, monospace"
+            textAnchor="end"
+          >
+            {v}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
+// 3D Area/Surface Chart — layered waves with glow
+function Chart3DArea() {
+  const W = 400;
+  const H = 260;
+  const cx = W / 2;
+  const cy = H * 0.55;
+
+  // Multiple data layers (like stacked area in 3D)
+  const layers = [
+    { color: '#6366F1', opacity: 0.6, data: [120, 180, 250, 320, 280, 350, 400] },
+    { color: '#818CF8', opacity: 0.5, data: [80, 140, 190, 240, 200, 260, 310] },
+    { color: '#A5B4FC', opacity: 0.4, data: [50, 90, 130, 170, 140, 180, 220] },
+    { color: '#38BDF8', opacity: 0.35, data: [30, 60, 90, 120, 100, 130, 160] },
+  ];
+
+  const scale = 1.6;
+  const xSpan = 90;
+  const zSpan = 60;
+  const yScale = 0.18;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: H }}>
+      <defs>
+        {layers.map((l, i) => (
+          <linearGradient key={i} id={`layer3d-${i}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={l.color} stopOpacity={l.opacity} />
+            <stop offset="100%" stopColor={l.color} stopOpacity={l.opacity * 0.2} />
+          </linearGradient>
+        ))}
+        <filter id="area-glow3d">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <g transform={`translate(${cx - 30}, ${cy})`}>
+        {/* Floor grid */}
+        {[0, 1, 2, 3, 4].map((i) => {
+          const t = (i / 4) * xSpan;
+          const [x1, y1] = iso(t, 0, 0).map((v) => v * scale) as [number, number];
+          const [x2, y2] = iso(t, 0, zSpan).map((v) => v * scale) as [number, number];
+          return (
+            <line key={`gx${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(99,102,241,0.06)" strokeWidth="0.5" />
+          );
+        })}
+        {[0, 1, 2, 3].map((i) => {
+          const t = (i / 3) * zSpan;
+          const [x1, y1] = iso(0, 0, t).map((v) => v * scale) as [number, number];
+          const [x2, y2] = iso(xSpan, 0, t).map((v) => v * scale) as [number, number];
+          return (
+            <line key={`gz${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(99,102,241,0.06)" strokeWidth="0.5" />
+          );
+        })}
+
+        {/* Layers — back to front */}
+        {[...layers].reverse().map((layer, li) => {
+          const zPos = (li / (layers.length - 1)) * zSpan;
+          const pts = layer.data.map((v, i) => {
+            const x = (i / (layer.data.length - 1)) * xSpan;
+            return iso(x, v * yScale, zPos).map((p) => p * scale);
+          });
+          const basePts = layer.data.map((_, i) => {
+            const x = (i / (layer.data.length - 1)) * xSpan;
+            return iso(x, 0, zPos).map((p) => p * scale);
+          });
+
+          const topPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ');
+          const bottomPath = [...basePts]
+            .reverse()
+            .map((p, i) => `L${p[0]},${p[1]}`)
+            .join(' ');
+          const areaPath = `${topPath} ${bottomPath} Z`;
+
+          return (
+            <g
+              key={li}
+              style={{
+                animation: 'fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+                animationDelay: `${0.15 + li * 0.08}s`,
+              }}
+            >
+              {/* Area fill */}
+              <path d={areaPath} fill={`url(#layer3d-${layers.length - 1 - li})`} />
+              {/* Top line with glow */}
+              <path
+                d={topPath}
+                fill="none"
+                stroke={layer.color}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                filter="url(#area-glow3d)"
+                opacity={0.8}
+              />
+            </g>
+          );
+        })}
+
+        {/* Axes */}
+        {(() => {
+          const [ox, oy] = iso(0, 0, 0).map((v) => v * scale);
+          const [xx, xy] = iso(xSpan, 0, 0).map((v) => v * scale);
+          const [zx, zy] = iso(0, 0, zSpan).map((v) => v * scale);
+          return (
+            <>
+              <line x1={ox} y1={oy} x2={xx} y2={xy} stroke="rgba(99,102,241,0.2)" strokeWidth="1" />
+              <line x1={ox} y1={oy} x2={ox} y2={oy - 120} stroke="rgba(99,102,241,0.2)" strokeWidth="1" />
+              <line x1={ox} y1={oy} x2={zx} y2={zy} stroke="rgba(99,102,241,0.2)" strokeWidth="1" />
+            </>
+          );
+        })()}
+      </g>
+
+      {/* Y scale */}
+      {[100, 200, 300, 400, 500].map((v) => {
+        const [, py] = iso(0, v * yScale, 0).map((vv) => vv * scale);
+        return (
+          <text
+            key={v}
+            x={cx - 80}
+            y={cy + py + 3}
+            fill={C.text3}
+            fontSize="8"
+            fontFamily="ui-monospace, SFMono-Regular, monospace"
+            textAnchor="end"
+          >
+            {v}
+          </text>
+        );
+      })}
+
+      {/* X scale */}
+      {['Okt', 'Nov', 'Dez', 'Jan', 'Feb', 'Mär', 'Apr'].map((m, i) => {
+        const x = (i / 6) * xSpan;
+        const [px, py] = iso(x, 0, 0).map((v) => v * scale);
+        return (
+          <text
+            key={m}
+            x={cx - 30 + px}
+            y={cy + py + 14}
+            fill={C.text3}
+            fontSize="7"
+            fontFamily="system-ui"
+            textAnchor="middle"
+          >
+            {m}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
 // ─── TAB VIEWS ───────────────────────────────────────────────────────────────
 
 function OverviewTab() {
@@ -776,9 +1099,54 @@ function OverviewTab() {
         ))}
       </div>
 
+      {/* 3D Visualization Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+        <Panel title="Lead-Verteilung 3D" icon={ICONS.chart} color="#818CF8" delay={0.15}>
+          <Chart3DBubble />
+          <div style={{ display: 'flex', gap: 14, marginTop: 10, justifyContent: 'center' }}>
+            {[
+              { color: '#818CF8', label: 'Qualifiziert' },
+              { color: '#34D399', label: 'In Kontakt' },
+              { color: '#FBBF24', label: 'Warm' },
+              { color: '#F87171', label: 'Cold' },
+            ].map((l) => (
+              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: l.color,
+                    boxShadow: `0 0 6px ${l.color}50`,
+                  }}
+                />
+                <span style={{ fontSize: 10, color: C.text3 }}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Pipeline 3D Trend" icon={ICONS.trending} color="#6366F1" delay={0.2}>
+          <Chart3DArea />
+          <div style={{ display: 'flex', gap: 14, marginTop: 10, justifyContent: 'center' }}>
+            {[
+              { color: '#6366F1', label: 'Pipeline' },
+              { color: '#818CF8', label: 'Qualifiziert' },
+              { color: '#A5B4FC', label: 'In Kontakt' },
+              { color: '#38BDF8', label: 'Neu' },
+            ].map((l) => (
+              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 12, height: 3, borderRadius: 1, background: l.color }} />
+                <span style={{ fontSize: 10, color: C.text3 }}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
-        {/* Pipeline trend — area chart */}
-        <Panel title="Pipeline-Entwicklung" icon={ICONS.trending} color="#34D399" delay={0.15}>
+        {/* Pipeline trend — 2D area chart */}
+        <Panel title="Pipeline-Entwicklung" icon={ICONS.trending} color="#34D399" delay={0.25}>
           <AreaChart
             data={PIPELINE_MONTHS.map((d) => ({ x: d.m, y: d.v }))}
             color="#34D399"
@@ -789,7 +1157,7 @@ function OverviewTab() {
         </Panel>
 
         {/* Conversion funnel — sankey */}
-        <Panel title="Conversion Funnel" icon={ICONS.chart} color="#818CF8" delay={0.2}>
+        <Panel title="Conversion Funnel" icon={ICONS.chart} color="#818CF8" delay={0.3}>
           <SankeyFlow />
         </Panel>
       </div>
