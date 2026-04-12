@@ -1,18 +1,19 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { C, SvgIcon, ICONS } from './_shared';
+import { useLeads } from './_use-leads';
 
-type CommandItem = {
-  id: string;
-  label: string;
-  description?: string;
-  icon: string;
-  color: string;
-  action: () => void;
-  section: string;
-};
+// ─── GLOBAL OPEN TRIGGER ─────────────────────────────────────────────────────
+
+let _openFn: (() => void) | null = null;
+
+export function openCommandPalette() {
+  _openFn?.();
+}
+
+// ─── COMMAND PALETTE ─────────────────────────────────────────────────────────
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -20,137 +21,21 @@ export function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { leads } = useLeads();
 
-  const items: CommandItem[] = [
-    {
-      id: 'home',
-      label: 'Home',
-      description: 'Dashboard Übersicht',
-      icon: ICONS.home,
-      color: '#818CF8',
-      action: () => router.push('/sales-v2'),
-      section: 'Navigation',
-    },
-    {
-      id: 'leads',
-      label: 'Alle Leads',
-      description: '2.847 Einträge',
-      icon: ICONS.list,
-      color: '#818CF8',
-      action: () => router.push('/sales-v2/leads'),
-      section: 'Navigation',
-    },
-    {
-      id: 'prospects',
-      label: 'Market Intent',
-      description: '18 neue Signale',
-      icon: ICONS.zap,
-      color: '#34D399',
-      action: () => router.push('/sales-v2/prospects'),
-      section: 'Navigation',
-    },
-    {
-      id: 'outreach',
-      label: 'Outreach-Ideen',
-      description: 'KI-generierte Nachrichten',
-      icon: ICONS.mail,
-      color: '#38BDF8',
-      action: () => router.push('/sales-v2/outreach'),
-      section: 'Navigation',
-    },
-    {
-      id: 'monitoring',
-      label: 'Monitoring',
-      description: 'Firmen beobachten',
-      icon: ICONS.eye,
-      color: '#A78BFA',
-      action: () => router.push('/sales-v2/monitoring'),
-      section: 'Navigation',
-    },
-    {
-      id: 'meetings',
-      label: 'Meetings',
-      description: 'Aufnehmen & Analysieren',
-      icon: ICONS.calendar,
-      color: '#38BDF8',
-      action: () => router.push('/sales-v2/meetings'),
-      section: 'Navigation',
-    },
-    {
-      id: 'analytics',
-      label: 'Analytics',
-      description: 'Performance-Daten',
-      icon: ICONS.chart,
-      color: '#FBBF24',
-      action: () => router.push('/sales-v2/analytics'),
-      section: 'Navigation',
-    },
-    {
-      id: 'gen',
-      label: 'Lead generieren',
-      description: 'KI-basierte Lead-Suche starten',
-      icon: ICONS.spark,
-      color: '#818CF8',
-      action: () => router.push('/sales-v2/leads'),
-      section: 'Aktionen',
-    },
-    {
-      id: 'scan',
-      label: 'Intent-Scan starten',
-      description: 'Markt nach Kaufsignalen durchsuchen',
-      icon: ICONS.zap,
-      color: '#34D399',
-      action: () => router.push('/sales-v2/prospects'),
-      section: 'Aktionen',
-    },
-    {
-      id: 'meeting',
-      label: 'Meeting aufnehmen',
-      description: 'Aufnahme + Transkription starten',
-      icon: ICONS.mic,
-      color: '#F87171',
-      action: () => router.push('/sales-v2/meetings'),
-      section: 'Aktionen',
-    },
-    {
-      id: 'marcus',
-      label: 'Marcus Weber',
-      description: 'Stackbase GmbH · Score 94',
-      icon: ICONS.users,
-      color: '#818CF8',
-      action: () => router.push('/sales-v2/leads'),
-      section: 'Leads',
-    },
-    {
-      id: 'tom',
-      label: 'Tom Schreiber',
-      description: 'Axflow AG · Score 92',
-      icon: ICONS.users,
-      color: '#818CF8',
-      action: () => router.push('/sales-v2/leads'),
-      section: 'Leads',
-    },
-    {
-      id: 'clara',
-      label: 'Clara Wolff',
-      description: 'Silo Labs · Score 91',
-      icon: ICONS.users,
-      color: '#818CF8',
-      action: () => router.push('/sales-v2/leads'),
-      section: 'Leads',
-    },
-  ];
+  // Register global open function
+  useEffect(() => {
+    _openFn = () => {
+      setOpen(true);
+      setQuery('');
+      setSelectedIndex(0);
+    };
+    return () => {
+      _openFn = null;
+    };
+  }, []);
 
-  const filtered = query
-    ? items.filter(
-        (i) =>
-          i.label.toLowerCase().includes(query.toLowerCase()) ||
-          i.description?.toLowerCase().includes(query.toLowerCase())
-      )
-    : items;
-
-  const sections = Array.from(new Set(filtered.map((i) => i.section)));
-
+  // ⌘K + Escape keyboard shortcuts
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -165,25 +50,140 @@ export function CommandPalette() {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
+  // Focus input when opening
   useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+    if (open) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
 
+  // Reset selection on query change
   useEffect(() => {
     setSelectedIndex(0);
   }, [query]);
 
+  // ─── Build items from live data ────────────────────────────────────
+
+  type Item = {
+    id: string;
+    label: string;
+    description?: string;
+    icon: string;
+    color: string;
+    action: () => void;
+    section: string;
+  };
+
+  const navItems: Item[] = [
+    {
+      id: 'home',
+      label: 'Home',
+      description: 'Dashboard Übersicht',
+      icon: ICONS.home,
+      color: '#818CF8',
+      action: () => router.push('/sales-v2'),
+      section: 'Navigation',
+    },
+    {
+      id: 'leads',
+      label: 'Alle Leads',
+      description: `${leads.length} Einträge`,
+      icon: ICONS.list,
+      color: '#818CF8',
+      action: () => router.push('/sales-v2/leads'),
+      section: 'Navigation',
+    },
+    {
+      id: 'prospects',
+      label: 'Market Intent',
+      icon: ICONS.zap,
+      color: '#34D399',
+      action: () => router.push('/sales-v2/prospects'),
+      section: 'Navigation',
+    },
+    {
+      id: 'outreach',
+      label: 'Outreach-Ideen',
+      icon: ICONS.mail,
+      color: '#38BDF8',
+      action: () => router.push('/sales-v2/outreach'),
+      section: 'Navigation',
+    },
+    {
+      id: 'monitoring',
+      label: 'Monitoring',
+      icon: ICONS.eye,
+      color: '#A78BFA',
+      action: () => router.push('/sales-v2/monitoring'),
+      section: 'Navigation',
+    },
+    {
+      id: 'meetings',
+      label: 'Meetings',
+      icon: ICONS.calendar,
+      color: '#38BDF8',
+      action: () => router.push('/sales-v2/meetings'),
+      section: 'Navigation',
+    },
+    {
+      id: 'analytics',
+      label: 'Analytics',
+      icon: ICONS.chart,
+      color: '#FBBF24',
+      action: () => router.push('/sales-v2/analytics'),
+      section: 'Navigation',
+    },
+    {
+      id: 'settings',
+      label: 'Einstellungen',
+      icon: ICONS.settings,
+      color: '#4E5170',
+      action: () => router.push('/sales-v2/settings'),
+      section: 'Navigation',
+    },
+  ];
+
+  // Real leads — only show when searching or show top 5 by default
+  const leadItems: Item[] = leads
+    .filter((l) => {
+      if (!query) return (l.score ?? 0) >= 50; // show top leads by default
+      const q = query.toLowerCase();
+      return (
+        l.name.toLowerCase().includes(q) ||
+        l.company.toLowerCase().includes(q) ||
+        l.city.toLowerCase().includes(q) ||
+        (l.jobTitle?.toLowerCase().includes(q) ?? false) ||
+        (l.industry?.toLowerCase().includes(q) ?? false)
+      );
+    })
+    .slice(0, query ? 10 : 5)
+    .map((l) => ({
+      id: l.id,
+      label: l.name,
+      description: `${l.company} · ${l.city}${l.score ? ` · Score ${l.score}` : ''}`,
+      icon: ICONS.users,
+      color: (l.score ?? 0) >= 70 ? '#818CF8' : (l.score ?? 0) >= 50 ? '#FBBF24' : '#4E5170',
+      action: () => router.push(`/sales-v2/leads/${l.id}`),
+      section: 'Leads',
+    }));
+
+  const allItems = query
+    ? [...navItems, ...leadItems].filter(
+        (i) =>
+          i.label.toLowerCase().includes(query.toLowerCase()) ||
+          (i.description?.toLowerCase().includes(query.toLowerCase()) ?? false)
+      )
+    : [...navItems, ...leadItems];
+
+  const sections = Array.from(new Set(allItems.map((i) => i.section)));
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
+      setSelectedIndex((i) => Math.min(i + 1, allItems.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter' && filtered[selectedIndex]) {
-      filtered[selectedIndex].action();
+    } else if (e.key === 'Enter' && allItems[selectedIndex]) {
+      allItems[selectedIndex].action();
       setOpen(false);
     }
   }
@@ -200,7 +200,7 @@ export function CommandPalette() {
           inset: 0,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(8px)',
-          zIndex: 2000,
+          zIndex: 99992,
           animation: 'fadeIn 0.15s ease both',
         }}
       />
@@ -209,17 +209,17 @@ export function CommandPalette() {
       <div
         style={{
           position: 'fixed',
-          top: '18%',
+          top: '16%',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: 560,
-          maxHeight: '60vh',
-          background: C.surface,
+          width: 580,
+          maxHeight: '62vh',
+          background: '#131530',
           border: `1px solid ${C.borderLight}`,
           borderRadius: 14,
           overflow: 'hidden',
-          zIndex: 2001,
-          boxShadow: '0 16px 80px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.04), 0 0 40px rgba(99,102,241,0.08)',
+          zIndex: 99993,
+          boxShadow: '0 16px 80px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04), 0 0 40px rgba(99,102,241,0.08)',
           animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
         }}
       >
@@ -240,7 +240,7 @@ export function CommandPalette() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Suche nach Leads, Seiten, Aktionen..."
+            placeholder="Leads, Seiten, Aktionen suchen..."
             style={{
               flex: 1,
               background: 'transparent',
@@ -267,10 +267,10 @@ export function CommandPalette() {
         </div>
 
         {/* Results */}
-        <div style={{ maxHeight: 'calc(60vh - 54px)', overflowY: 'auto', padding: '8px' }}>
-          {filtered.length === 0 ? (
+        <div style={{ maxHeight: 'calc(62vh - 54px)', overflowY: 'auto', padding: 8 }}>
+          {allItems.length === 0 ? (
             <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 13, color: C.text3 }}>Keine Ergebnisse für "{query}"</div>
+              <div style={{ fontSize: 13, color: C.text3 }}>Keine Ergebnisse für &quot;{query}&quot;</div>
             </div>
           ) : (
             sections.map((section) => (
@@ -287,10 +287,10 @@ export function CommandPalette() {
                 >
                   {section.toUpperCase()}
                 </div>
-                {filtered
+                {allItems
                   .filter((i) => i.section === section)
                   .map((item) => {
-                    const globalIdx = filtered.indexOf(item);
+                    const globalIdx = allItems.indexOf(item);
                     const isSelected = globalIdx === selectedIndex;
                     return (
                       <div

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, StatusBar } from './_shared';
-import { CommandPalette } from './_command-palette';
+import { CommandPalette, openCommandPalette } from './_command-palette';
 import { AIChatWidget } from './_ai-chat';
 import { OnboardingTour } from './_onboarding';
 import { useLeads } from './_use-leads';
@@ -609,8 +609,9 @@ function Topbar() {
         </div>
       </Link>
 
-      {/* ─── Center: Command bar ─── */}
-      <div
+      {/* ─── Center: Command bar — click to open ─── */}
+      <button
+        onClick={openCommandPalette}
         className="s-ghost"
         style={{
           display: 'flex',
@@ -623,6 +624,7 @@ function Topbar() {
           cursor: 'pointer',
           minWidth: 260,
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+          fontFamily: 'inherit',
         }}
       >
         <SvgIcon d={ICONS.search} size={13} color={C.text3} />
@@ -646,7 +648,7 @@ function Topbar() {
             </kbd>
           ))}
         </div>
-      </div>
+      </button>
 
       {/* ─── Right: Status, Notifications, Profile ─── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
