@@ -14,72 +14,78 @@ import {
   showToast,
   ProgressRing,
 } from './_shared';
+import { LEADS, getLeadStats, ACCOUNT } from './_lead-data';
 
-// ─── SPARKLINE DATA PER METRIC ───────────────────────────────────────────────
+// ─── DERIVE REAL DATA ────────────────────────────────────────────────────────
 
+const stats = getLeadStats(LEADS);
+
+const scoredLeads = LEADS.filter((l) => l.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+const topLeads = scoredLeads.slice(0, 5);
+
+// Build activity feed from real lead timelines
+const allTimelineEvents = LEADS.flatMap((l) =>
+  l.timeline.map((t) => ({ ...t, leadName: l.name, company: l.company, leadId: l.id }))
+)
+  .sort((a, b) => {
+    // Simple sort: "vor" events first, then by date string
+    if (a.time.includes('vor') && !b.time.includes('vor')) return -1;
+    if (!a.time.includes('vor') && b.time.includes('vor')) return 1;
+    return b.time.localeCompare(a.time);
+  })
+  .slice(0, 6);
+
+// Metric cards derived from real data
 const METRIC_CARDS = [
   {
     label: 'LEADS GESAMT',
-    value: '2.847',
-    delta: '+124 diese Woche',
+    value: `${stats.total}`,
+    delta: `${stats.scored} gescored`,
     deltaType: 'up' as const,
     gradient: 'radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)',
     accentColor: '#818CF8',
     glowColor: 'rgba(99,102,241,0.25)',
-    sparkline: [18, 24, 22, 31, 28, 35, 42],
+    sparkline: scoredLeads.slice(0, 7).map((l) => l.score ?? 0),
   },
   {
     label: 'KI-SCORE Ø',
-    value: '84.2',
-    delta: '+2.1',
+    value: `${stats.avgScore}`,
+    delta: `${stats.hot} Hot Leads`,
     deltaType: 'up' as const,
     gradient: 'radial-gradient(ellipse at 80% 0%, rgba(56,189,248,0.12) 0%, transparent 60%)',
     accentColor: '#38BDF8',
     glowColor: 'rgba(56,189,248,0.2)',
-    sparkline: [76, 78, 79, 81, 80, 83, 84],
+    sparkline: scoredLeads
+      .slice(0, 7)
+      .map((l) => l.score ?? 0)
+      .reverse(),
   },
   {
-    label: 'PIPELINE',
-    value: '€128.4k',
-    delta: '+12% MoM',
-    deltaType: 'up' as const,
+    label: 'HOT LEADS',
+    value: `${stats.hot}`,
+    delta: `${stats.warm} warm, ${stats.cold} cold`,
+    deltaType: null,
     gradient: 'radial-gradient(ellipse at 50% 0%, rgba(52,211,153,0.12) 0%, transparent 60%)',
     accentColor: '#34D399',
     glowColor: 'rgba(52,211,153,0.2)',
-    sparkline: [62, 78, 95, 88, 112, 118, 128],
+    sparkline: [stats.cold, stats.cold, stats.warm, stats.warm, stats.hot, stats.hot, stats.hot],
   },
   {
-    label: 'CONVERSION',
-    value: '8.4%',
-    delta: null,
-    deltaType: null,
+    label: 'MIT E-MAIL',
+    value: `${LEADS.filter((l) => l.email).length}`,
+    delta: `${LEADS.filter((l) => l.emailStatus === 'verified').length} verifiziert`,
+    deltaType: 'up' as const,
     gradient: 'radial-gradient(ellipse at 30% 0%, rgba(251,191,36,0.10) 0%, transparent 60%)',
     accentColor: '#FBBF24',
     glowColor: 'rgba(251,191,36,0.15)',
-    sparkline: [6.2, 7.1, 6.8, 7.5, 8.0, 7.9, 8.4],
+    sparkline: LEADS.slice(0, 7).map((l) => (l.email ? 1 : 0)),
   },
 ];
 
-const ACTIVITIES = [
-  { text: 'Marcus Weber auf Qualifiziert gesetzt', time: 'vor 2h', color: '#34D399' },
-  { text: 'Neuer Lead: Sophie Richter, Fenris Labs', time: 'vor 4h', color: '#818CF8' },
-  { text: 'KI-Score Update: 23 Leads neu bewertet', time: 'vor 6h', color: '#38BDF8' },
-  { text: 'Meeting mit Axflow AG transkribiert', time: 'vor 8h', color: '#A78BFA' },
-  { text: 'Pipeline +€18.000 durch Tom Schreiber', time: 'vor 12h', color: '#34D399' },
-];
-
-const TOP_LEADS = [
-  { name: 'Marcus Weber', company: 'Stackbase GmbH', score: 94, status: 'Qualifiziert' },
-  { name: 'Tom Schreiber', company: 'Axflow AG', score: 92, status: 'In Kontakt' },
-  { name: 'Clara Wolff', company: 'Silo Labs', score: 91, status: 'Qualifiziert' },
-  { name: 'Sophie Richter', company: 'Fenris Labs', score: 88, status: 'In Kontakt' },
-];
-
-const UPCOMING_MEETINGS = [
-  { title: 'Discovery Call', company: 'Stackbase GmbH', time: 'Heute, 14:00', type: 'Video' },
-  { title: 'Demo Präsentation', company: 'Axflow AG', time: 'Morgen, 10:30', type: 'Vor Ort' },
-  { title: 'Follow-Up', company: 'Vaulted GmbH', time: 'Mi, 16:00', type: 'Telefon' },
-];
+// AI suggestions from real lead data
+const topUnanswered = LEADS.filter((l) => (l.score ?? 0) >= 60 && l.status === 'Neu' && l.emailDraftBody)
+  .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  .slice(0, 3);
 
 // ─── ENHANCED METRIC CARD WITH SPARKLINE ─────────────────────────────────────
 
@@ -114,7 +120,6 @@ function MetricCardWithSparkline({ m, index }: { m: (typeof METRIC_CARDS)[number
       <div style={{ position: 'relative' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
           <div style={{ fontSize: 10, letterSpacing: '0.08em', color: C.text3, fontWeight: 500 }}>{m.label}</div>
-          {/* Sparkline in top-right */}
           <Sparkline data={m.sparkline} width={56} height={18} color={m.accentColor} />
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -135,13 +140,13 @@ function MetricCardWithSparkline({ m, index }: { m: (typeof METRIC_CARDS)[number
               style={{
                 fontSize: 11,
                 fontWeight: 500,
-                color: m.deltaType === 'up' ? C.success : C.danger,
+                color: m.deltaType === 'up' ? C.success : C.text3,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 3,
               }}
             >
-              <span style={{ fontSize: 13 }}>{m.deltaType === 'up' ? '↑' : '↓'}</span>
+              {m.deltaType === 'up' && <span style={{ fontSize: 13 }}>↑</span>}
               {m.delta}
             </span>
           )}
@@ -218,7 +223,7 @@ function SectionLabel({ icon, label, color }: { icon: string; label: string; col
   );
 }
 
-// ─── QUICK ACTIONS WITH GLOW BUTTON ──────────────────────────────────────────
+// ─── QUICK ACTIONS ───────────────────────────────────────────────────────────
 
 function QuickActions() {
   const actions = [
@@ -227,7 +232,6 @@ function QuickActions() {
     { label: 'Prospects checken', icon: ICONS.target, color: '#34D399', href: '/sales-v2/prospects' },
     { label: 'Analytics', icon: ICONS.chart, color: '#FBBF24', href: '/sales-v2/analytics' },
   ];
-
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
       {actions.map((a, i) => (
@@ -275,26 +279,43 @@ function QuickActions() {
 // ─── PAGE ────────────────────────────────────────────────────────────────────
 
 export default function SalesV2HomePage() {
-  // Smart notifications — contextual, not generic
+  // Smart notifications based on real data
   useEffect(() => {
+    const top = topLeads[0];
     const timers = [
-      setTimeout(
-        () => showToast('Nexlayer CEO hat deinen LinkedIn-Post geliked → Outreach jetzt senden?', 'info'),
-        4000
-      ),
-      setTimeout(() => showToast('Marcus Weber wartet seit 3 Tagen auf Follow-up', 'warning'), 8000),
-      setTimeout(() => showToast('KI-Score für 23 Leads aktualisiert — 3 neue Hot Leads', 'success'), 12000),
+      ...(top
+        ? [setTimeout(() => showToast(`Top Lead: ${top.name} (${top.company}) — Score ${top.score}`, 'info'), 3000)]
+        : []),
+      setTimeout(() => showToast(`${stats.hot} Hot Leads warten auf Outreach`, 'warning'), 7000),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
+
+  const today = new Date();
+  const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  const monthNames = [
+    'Januar',
+    'Februar',
+    'März',
+    'April',
+    'Mai',
+    'Juni',
+    'Juli',
+    'August',
+    'September',
+    'Oktober',
+    'November',
+    'Dezember',
+  ];
+  const dateStr = `${dayNames[today.getDay()]}, ${today.getDate()}. ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
 
   return (
     <>
       <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Home' }]} />
 
       <PageHeader
-        title="Willkommen zurück"
-        subtitle="Dein Sales-Überblick für heute — Mittwoch, 9. April 2026"
+        title={`Willkommen zurück, ${ACCOUNT.senderName.split(' ')[0]}`}
+        subtitle={`${ACCOUNT.companyName} · ${dateStr}`}
         actions={
           <GlowButton onClick={() => showToast('Lead-Generator wird gestartet...', 'info')}>
             + Lead generieren
@@ -302,30 +323,29 @@ export default function SalesV2HomePage() {
         }
       />
 
-      {/* KPI Metric Cards with Sparklines */}
+      {/* KPI Metric Cards — real data */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
         {METRIC_CARDS.map((m, i) => (
           <MetricCardWithSparkline key={m.label} m={m} index={i} />
         ))}
       </div>
 
-      {/* Quick Actions */}
       <QuickActions />
 
-      {/* Bento Grid — 3 columns */}
+      {/* Bento Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-        {/* ── Top Leads with Progress Rings — 2 cols ── */}
+        {/* ── Top Leads — real data, 2 cols ── */}
         <BentoCard
           span={2}
           delay={0.15}
           href="/sales-v2/leads"
           gradient="radial-gradient(ellipse at 10% 0%, rgba(99,102,241,0.06) 0%, transparent 50%)"
         >
-          <SectionLabel icon={ICONS.users} label="Top Leads" color="#818CF8" />
+          <SectionLabel icon={ICONS.users} label={`Top ${topLeads.length} Leads`} color="#818CF8" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {TOP_LEADS.map((lead, i) => (
+            {topLeads.map((lead, i) => (
               <div
-                key={lead.name}
+                key={lead.id}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -370,16 +390,17 @@ export default function SalesV2HomePage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
-                  <div style={{ fontSize: 11, color: C.text3, marginTop: 1 }}>{lead.company}</div>
+                  <div style={{ fontSize: 11, color: C.text3, marginTop: 1 }}>
+                    {lead.company} {lead.jobTitle ? `· ${lead.jobTitle}` : ''}
+                  </div>
                 </div>
-                {/* Progress Ring instead of just number */}
                 <ProgressRing
-                  value={lead.score}
+                  value={lead.score ?? 0}
                   max={100}
                   size={36}
                   strokeWidth={3}
-                  color={lead.score >= 92 ? '#818CF8' : '#6366F1'}
-                  label={`${lead.score}`}
+                  color={(lead.score ?? 0) >= 70 ? '#818CF8' : '#FBBF24'}
+                  label={lead.score ? `${lead.score}` : '—'}
                 />
                 <StatusBadge status={lead.status} />
               </div>
@@ -387,22 +408,22 @@ export default function SalesV2HomePage() {
           </div>
         </BentoCard>
 
-        {/* ── Activity Feed — 1 col ─── */}
+        {/* ── Activity Feed — from real timelines, 1 col ── */}
         <BentoCard
           span={1}
           delay={0.2}
           gradient="radial-gradient(ellipse at 90% 0%, rgba(167,139,250,0.05) 0%, transparent 50%)"
         >
-          <SectionLabel icon={ICONS.clock} label="Aktivität" color="#A78BFA" />
+          <SectionLabel icon={ICONS.clock} label="Letzte Aktivität" color="#A78BFA" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {ACTIVITIES.map((a, i) => (
+            {allTimelineEvents.map((a, i) => (
               <div
                 key={i}
                 style={{
                   display: 'flex',
                   gap: 12,
                   padding: '10px 0',
-                  borderBottom: i < ACTIVITIES.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+                  borderBottom: i < allTimelineEvents.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
                   animation: 'fadeIn 0.3s ease both',
                   animationDelay: `${0.3 + i * 0.06}s`,
                 }}
@@ -419,7 +440,9 @@ export default function SalesV2HomePage() {
                   }}
                 />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.5 }}>{a.text}</div>
+                  <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.5 }}>
+                    {a.action} <span style={{ color: C.text3 }}>— {a.company}</span>
+                  </div>
                   <div style={{ fontSize: 10, color: C.text3, marginTop: 3 }}>{a.time}</div>
                 </div>
               </div>
@@ -427,196 +450,202 @@ export default function SalesV2HomePage() {
           </div>
         </BentoCard>
 
-        {/* ── Meetings — 1 col ─── */}
+        {/* ── Score Distribution — 1 col ── */}
         <BentoCard
           span={1}
           delay={0.25}
-          href="/sales-v2/meetings"
           gradient="radial-gradient(ellipse at 0% 100%, rgba(56,189,248,0.05) 0%, transparent 50%)"
         >
-          <SectionLabel icon={ICONS.calendar} label="Nächste Meetings" color="#38BDF8" />
+          <SectionLabel icon={ICONS.chart} label="Score-Verteilung" color="#38BDF8" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {UPCOMING_MEETINGS.map((m, i) => (
-              <div
-                key={m.title}
-                style={{
-                  padding: '12px 14px',
-                  borderRadius: 9,
-                  background: i === 0 ? 'rgba(56,189,248,0.04)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${i === 0 ? 'rgba(56,189,248,0.1)' : C.border}`,
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 500, color: C.text1 }}>{m.title}</span>
+            {[
+              { label: 'Hot (70+)', count: stats.hot, color: '#818CF8', pct: (stats.hot / stats.total) * 100 },
+              { label: 'Warm (50–69)', count: stats.warm, color: '#FBBF24', pct: (stats.warm / stats.total) * 100 },
+              { label: 'Cold (<50)', count: stats.cold, color: '#4E5170', pct: (stats.cold / stats.total) * 100 },
+            ].map((d) => (
+              <div key={d.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, color: C.text2 }}>{d.label}</span>
                   <span
                     style={{
-                      fontSize: 9,
-                      color: C.text3,
-                      padding: '2px 7px',
-                      borderRadius: 4,
-                      background: 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${C.border}`,
-                      letterSpacing: '0.04em',
-                      fontWeight: 500,
+                      fontSize: 11,
+                      color: d.color,
+                      fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                      fontWeight: 600,
                     }}
                   >
-                    {m.type.toUpperCase()}
+                    {d.count}
                   </span>
                 </div>
-                <div style={{ fontSize: 11, color: C.text3, marginTop: 4 }}>
-                  {m.company} · {m.time}
+                <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      width: `${d.pct}%`,
+                      height: '100%',
+                      borderRadius: 3,
+                      background: `linear-gradient(90deg, ${d.color}80, ${d.color})`,
+                      boxShadow: `0 0 6px ${d.color}20`,
+                    }}
+                  />
                 </div>
               </div>
             ))}
+            <div style={{ fontSize: 10, color: C.text3, marginTop: 4 }}>
+              Ø Score:{' '}
+              <span style={{ color: C.text2, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
+                {stats.avgScore}
+              </span>{' '}
+              · {stats.total} Leads gesamt
+            </div>
           </div>
         </BentoCard>
 
-        {/* ── Market Intent — 2 cols ─── */}
+        {/* ── Leads ohne E-Mail — 2 cols ── */}
         <BentoCard
           span={2}
           delay={0.3}
-          href="/sales-v2/prospects"
-          gradient="radial-gradient(ellipse at 80% 100%, rgba(52,211,153,0.05) 0%, transparent 50%)"
+          href="/sales-v2/leads"
+          gradient="radial-gradient(ellipse at 80% 100%, rgba(248,113,113,0.04) 0%, transparent 50%)"
         >
-          <SectionLabel icon={ICONS.zap} label="Market Intent — Neue Signale" color="#34D399" />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          <SectionLabel icon={ICONS.mail} label="Kontaktdaten-Übersicht" color="#FBBF24" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {[
-              { company: 'Nexlayer GmbH', signal: 'Sucht CRM-Lösung', score: 'Hoch', city: 'Berlin' },
-              { company: 'Greenfield AG', signal: 'Sales-Team wächst', score: 'Mittel', city: 'Hamburg' },
-              { company: 'Dataweave', signal: 'Budget genehmigt', score: 'Hoch', city: 'München' },
-            ].map((p) => (
+              { label: 'Mit E-Mail', value: LEADS.filter((l) => l.email).length, total: stats.total, color: '#34D399' },
+              {
+                label: 'Verifiziert',
+                value: LEADS.filter((l) => l.emailStatus === 'verified').length,
+                total: stats.total,
+                color: '#818CF8',
+              },
+              {
+                label: 'Mit LinkedIn',
+                value: LEADS.filter((l) => l.linkedinUrl).length,
+                total: stats.total,
+                color: '#38BDF8',
+              },
+              {
+                label: 'Mit Telefon',
+                value: LEADS.filter((l) => l.phone).length,
+                total: stats.total,
+                color: '#FBBF24',
+              },
+            ].map((d) => (
               <div
-                key={p.company}
+                key={d.label}
                 style={{
-                  padding: '14px 16px',
+                  padding: '12px 14px',
                   borderRadius: 9,
                   background: 'rgba(255,255,255,0.02)',
                   border: `1px solid ${C.border}`,
+                  textAlign: 'center',
                 }}
               >
-                <div style={{ fontSize: 12.5, fontWeight: 500, color: C.text1 }}>{p.company}</div>
-                <div style={{ fontSize: 11, color: C.text3, marginTop: 4 }}>{p.city}</div>
                 <div
                   style={{
-                    fontSize: 11,
-                    color: C.text2,
-                    marginTop: 8,
-                    padding: '4px 0',
-                    borderTop: '1px solid rgba(255,255,255,0.04)',
+                    fontSize: 20,
+                    fontWeight: 600,
+                    color: d.color,
+                    fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                    textShadow: `0 0 20px ${d.color}30`,
                   }}
                 >
-                  {p.signal}
+                  {d.value}
                 </div>
-                <div style={{ marginTop: 8 }}>
-                  <StatusBadge status={p.score} />
-                </div>
+                <div style={{ fontSize: 10, color: C.text3, marginTop: 4 }}>{d.label}</div>
+                <div style={{ fontSize: 9, color: C.text3, marginTop: 2 }}>von {d.total}</div>
               </div>
             ))}
           </div>
         </BentoCard>
       </div>
 
-      {/* AI Suggested Actions */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-          animation: 'fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 7,
-              background: 'rgba(167,139,250,0.12)',
-              border: '1px solid rgba(167,139,250,0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <SvgIcon d={ICONS.spark} size={13} color="#A78BFA" />
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 500, color: C.text2 }}>KI-Empfehlungen</span>
-        </div>
-        {[
-          {
-            text: 'Marcus Weber wartet seit 3 Tagen auf Follow-up',
-            action: 'Outreach senden',
-            color: '#F87171',
-            icon: ICONS.mail,
-          },
-          {
-            text: 'Nexlayer GmbH hat ein starkes Intent-Signal — jetzt kontaktieren',
-            action: 'Lead anlegen',
-            color: '#34D399',
-            icon: ICONS.zap,
-          },
-          {
-            text: 'Dein Meeting mit Axflow morgen — Vorbereitung starten?',
-            action: 'Vorbereiten',
-            color: '#38BDF8',
-            icon: ICONS.calendar,
-          },
-        ].map((s, i) => (
-          <div
-            key={i}
-            className="s-bento"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              padding: '14px 18px',
-              borderRadius: 11,
-              background: C.surface,
-              border: `1px solid ${C.border}`,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)',
-              animation: 'fadeInUp 0.35s ease both',
-              animationDelay: `${0.4 + i * 0.06}s`,
-              cursor: 'pointer',
-            }}
-          >
+      {/* AI Suggested Actions — from real lead data */}
+      {topUnanswered.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            animation: 'fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: `${s.color}08`,
-                border: `1px solid ${s.color}15`,
+                width: 28,
+                height: 28,
+                borderRadius: 7,
+                background: 'rgba(167,139,250,0.12)',
+                border: '1px solid rgba(167,139,250,0.2)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexShrink: 0,
               }}
             >
-              <SvgIcon d={s.icon} size={14} color={s.color} />
+              <SvgIcon d={ICONS.spark} size={13} color="#A78BFA" />
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12.5, color: C.text1 }}>{s.text}</div>
-            </div>
-            <button
-              onClick={() => showToast(`${s.action}...`, 'info')}
-              className="s-primary-glow"
-              style={{
-                background: `${s.color}12`,
-                border: `1px solid ${s.color}20`,
-                color: s.color,
-                borderRadius: 7,
-                padding: '6px 14px',
-                fontSize: 11,
-                fontWeight: 500,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              {s.action}
-            </button>
+            <span style={{ fontSize: 12, fontWeight: 500, color: C.text2 }}>KI-Empfehlungen</span>
           </div>
-        ))}
-      </div>
+          {topUnanswered.map((lead, i) => (
+            <Link
+              key={lead.id}
+              href={`/sales-v2/leads/${lead.id}`}
+              className="s-bento"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                padding: '14px 18px',
+                borderRadius: 11,
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                boxShadow: '0 2px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)',
+                animation: 'fadeInUp 0.35s ease both',
+                animationDelay: `${0.4 + i * 0.06}s`,
+                cursor: 'pointer',
+                textDecoration: 'none',
+                color: 'inherit',
+              }}
+            >
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: 'rgba(99,102,241,0.08)',
+                  border: '1px solid rgba(99,102,241,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <SvgIcon d={ICONS.mail} size={14} color={C.accent} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12.5, color: C.text1 }}>
+                  {lead.name} ({lead.company}) — Score {lead.score}, E-Mail bereit
+                </div>
+                <div style={{ fontSize: 10.5, color: C.text3, marginTop: 2 }}>{lead.emailDraftSubject}</div>
+              </div>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: C.accent,
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  background: 'rgba(99,102,241,0.08)',
+                  border: '1px solid rgba(99,102,241,0.12)',
+                  fontWeight: 500,
+                  flexShrink: 0,
+                }}
+              >
+                Outreach senden →
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
     </>
   );
 }
