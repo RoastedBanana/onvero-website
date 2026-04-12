@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   C,
@@ -374,23 +374,26 @@ export default function SalesV2HomePage() {
     return () => timers.forEach(clearTimeout);
   }, [loading]);
 
-  const today = new Date();
-  const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-  const monthNames = [
-    'Januar',
-    'Februar',
-    'März',
-    'April',
-    'Mai',
-    'Juni',
-    'Juli',
-    'August',
-    'September',
-    'Oktober',
-    'November',
-    'Dezember',
-  ];
-  const dateStr = `${dayNames[today.getDay()]}, ${today.getDate()}. ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+  const [dateStr, setDateStr] = useState('');
+  useEffect(() => {
+    const d = new Date();
+    const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+    const months = [
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember',
+    ];
+    setDateStr(`${days[d.getDay()]}, ${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`);
+  }, []);
 
   return (
     <>
@@ -398,7 +401,7 @@ export default function SalesV2HomePage() {
 
       <PageHeader
         title={`Willkommen zurück, ${ACCOUNT.senderName.split(' ')[0]}`}
-        subtitle={`${ACCOUNT.companyName} · ${dateStr}`}
+        subtitle={dateStr ? `${ACCOUNT.companyName} · ${dateStr}` : ACCOUNT.companyName}
       />
 
       {/* KPI Metric Cards — real data */}
