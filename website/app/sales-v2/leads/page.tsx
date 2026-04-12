@@ -18,6 +18,7 @@ import {
   ProgressRing,
 } from '../_shared';
 import { LEADS, getLeadStats } from '../_lead-data';
+import { updateLeadStatus } from '../_activities';
 import type { Lead } from '../_lead-data';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -188,18 +189,124 @@ function FilterBar({
 
 // ─── TABLE ───────────────────────────────────────────────────────────────────
 
+const STATUS_OPTIONS: Lead['status'][] = ['Neu', 'In Kontakt', 'Qualifiziert', 'Verloren'];
+const STATUS_COLORS: Record<string, string> = {
+  Neu: 'rgba(255,255,255,0.3)',
+  'In Kontakt': '#A5B4FC',
+  Qualifiziert: '#34D399',
+  Verloren: '#F87171',
+};
+
+function InlineStatusDropdown({ status, onChange }: { status: Lead['status']; onChange: (s: Lead['status']) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '3px 10px',
+          borderRadius: 6,
+          border: 'none',
+          fontSize: 11,
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          background:
+            status === 'Qualifiziert'
+              ? 'rgba(52,211,153,0.06)'
+              : status === 'In Kontakt'
+                ? 'rgba(99,102,241,0.06)'
+                : status === 'Verloren'
+                  ? 'rgba(248,113,113,0.06)'
+                  : 'rgba(255,255,255,0.03)',
+          color: STATUS_COLORS[status],
+          transition: 'all 0.15s ease',
+        }}
+      >
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: STATUS_COLORS[status] }} />
+        {status}
+        <svg
+          width={8}
+          height={8}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              marginTop: 4,
+              zIndex: 100,
+              background: C.surface,
+              border: `1px solid ${C.borderLight}`,
+              borderRadius: 8,
+              padding: 3,
+              minWidth: 140,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              animation: 'scaleIn 0.12s ease both',
+            }}
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => {
+                  onChange(opt);
+                  setOpen(false);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  width: '100%',
+                  padding: '6px 10px',
+                  borderRadius: 5,
+                  border: 'none',
+                  background: status === opt ? 'rgba(99,102,241,0.06)' : 'transparent',
+                  color: C.text1,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  textAlign: 'left',
+                }}
+              >
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: STATUS_COLORS[opt] }} />
+                {opt}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function LeadTable({
   leads,
   selected,
   onToggle,
   onToggleAll,
   onLeadClick,
+  onStatusChange,
 }: {
   leads: Lead[];
   selected: Set<string>;
   onToggle: (id: string) => void;
   onToggleAll: () => void;
   onLeadClick: (lead: Lead) => void;
+  onStatusChange: (leadId: string, oldStatus: string, newStatus: Lead['status']) => void;
 }) {
   const headers = ['', 'Kontakt & Firma', 'KI-Score', 'Status', 'Branche', 'Aktivität'];
   const allSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
@@ -399,7 +506,10 @@ function LeadTable({
                     <ScoreBar score={lead.score ?? 0} />
                   </td>
                   <td style={{ padding: '14px 18px' }}>
-                    <StatusBadge status={lead.status} />
+                    <InlineStatusDropdown
+                      status={lead.status}
+                      onChange={(s) => onStatusChange(lead.id, lead.status, s)}
+                    />
                   </td>
                   <td style={{ padding: '14px 18px' }}>
                     <span style={{ fontSize: 11.5, color: C.text2 }}>{lead.industry}</span>
@@ -433,103 +543,169 @@ function LeadTable({
   );
 }
 
-// ─── KANBAN BOARD ────────────────────────────────────────────────────────────
+// ─── KANBAN BOARD — Drag & Drop ──────────────────────────────────────────────
 
-const KANBAN_COLUMNS: { status: Lead['status']; color: string }[] = [
-  { status: 'Neu', color: '#4E5170' },
-  { status: 'In Kontakt', color: '#818CF8' },
-  { status: 'Qualifiziert', color: '#34D399' },
-  { status: 'Verloren', color: '#F87171' },
+const KANBAN_COLS: { status: Lead['status']; color: string; label: string }[] = [
+  { status: 'Neu', color: '#4E5170', label: 'Neu' },
+  { status: 'In Kontakt', color: '#818CF8', label: 'In Kontakt' },
+  { status: 'Qualifiziert', color: '#34D399', label: 'Qualifiziert' },
+  { status: 'Verloren', color: '#F87171', label: 'Verloren' },
 ];
 
-function KanbanBoard({ leads, onLeadClick }: { leads: Lead[]; onLeadClick: (l: Lead) => void }) {
+function KanbanBoard({
+  leads,
+  onLeadClick,
+  onStatusChange,
+}: {
+  leads: Lead[];
+  onLeadClick: (l: Lead) => void;
+  onStatusChange: (leadId: string, oldStatus: string, newStatus: Lead['status']) => void;
+}) {
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+
+  function handleDragStart(e: React.DragEvent, leadId: string) {
+    setDragId(leadId);
+    e.dataTransfer.effectAllowed = 'move';
+    // Make drag image slightly transparent
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.4';
+    }
+  }
+
+  function handleDragEnd(e: React.DragEvent) {
+    setDragId(null);
+    setDragOver(null);
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1';
+    }
+  }
+
+  function handleDrop(targetStatus: Lead['status']) {
+    if (!dragId) return;
+    const lead = leads.find((l) => l.id === dragId);
+    if (!lead || lead.status === targetStatus) {
+      setDragId(null);
+      setDragOver(null);
+      return;
+    }
+    onStatusChange(lead.id, lead.status, targetStatus);
+    setDragId(null);
+    setDragOver(null);
+  }
+
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: `repeat(${KANBAN_COLUMNS.length}, 1fr)`,
-        gap: 12,
-        animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 10,
+        animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both',
       }}
     >
-      {KANBAN_COLUMNS.map((col) => {
+      {KANBAN_COLS.map((col) => {
         const colLeads = leads.filter((l) => l.status === col.status);
+        const isOver = dragOver === col.status && dragId !== null;
+        const dragLead = dragId ? leads.find((l) => l.id === dragId) : null;
+        const isDragSource = dragLead?.status === col.status;
+
         return (
           <div
             key={col.status}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              setDragOver(col.status);
+            }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleDrop(col.status);
+            }}
             style={{
-              background: 'rgba(255,255,255,0.01)',
-              border: `1px solid ${C.border}`,
+              background: isOver && !isDragSource ? `${col.color}06` : C.surface,
+              border: `1px solid ${isOver && !isDragSource ? `${col.color}25` : C.border}`,
               borderRadius: 12,
-              padding: 14,
-              minHeight: 300,
+              padding: '0',
+              minHeight: 340,
+              transition: 'border-color 0.2s ease, background 0.2s ease',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
+            {/* Column header */}
             <div
               style={{
+                padding: '14px 16px',
+                borderBottom: `1px solid ${C.border}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: 12,
-                padding: '0 4px',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div
                   style={{
-                    width: 8,
-                    height: 8,
+                    width: 3,
+                    height: 16,
                     borderRadius: 2,
                     background: col.color,
-                    boxShadow: `0 0 6px ${col.color}40`,
+                    boxShadow: `0 0 6px ${col.color}30`,
                   }}
                 />
-                <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{col.status}</span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{col.label}</span>
               </div>
               <span
                 style={{
-                  fontSize: 10,
-                  color: C.text3,
-                  padding: '2px 7px',
-                  borderRadius: 8,
-                  background: 'rgba(255,255,255,0.04)',
+                  fontSize: 11,
+                  color: col.color,
+                  fontWeight: 600,
                   fontFamily: 'ui-monospace, SFMono-Regular, monospace',
                 }}
               >
                 {colLeads.length}
               </span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {colLeads.map((lead, i) => (
+
+            {/* Cards */}
+            <div style={{ padding: 10, flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {colLeads.map((lead) => (
                 <div
                   key={lead.id}
-                  className="s-card"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, lead.id)}
+                  onDragEnd={handleDragEnd}
                   onClick={() => onLeadClick(lead)}
+                  className="s-card"
                   style={{
-                    padding: 14,
+                    padding: '14px 16px',
                     borderRadius: 10,
-                    background: C.surface,
+                    background: C.bg,
                     border: `1px solid ${C.border}`,
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)',
-                    animation: 'fadeInUp 0.3s ease both',
-                    animationDelay: `${0.1 + i * 0.04}s`,
+                    cursor: 'grab',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                    transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  {/* Top: Avatar + Name */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                     <div
                       style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 7,
-                        background: `linear-gradient(135deg, ${C.surface2}, ${C.surface3})`,
-                        border: `1px solid ${C.border}`,
+                        width: 30,
+                        height: 30,
+                        borderRadius: 8,
+                        background:
+                          (lead.score ?? 0) >= 70
+                            ? 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05))'
+                            : `linear-gradient(135deg, ${C.surface2}, ${C.surface3})`,
+                        border: `1px solid ${(lead.score ?? 0) >= 70 ? 'rgba(99,102,241,0.2)' : C.border}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: 9,
+                        fontSize: 10,
                         fontWeight: 500,
-                        color: C.text2,
+                        color: (lead.score ?? 0) >= 70 ? C.accent : C.text3,
+                        flexShrink: 0,
                       }}
                     >
                       {lead.name
@@ -537,26 +713,113 @@ function KanbanBoard({ leads, onLeadClick }: { leads: Lead[]; onLeadClick: (l: L
                         .map((n) => n[0])
                         .join('')}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
-                      <div style={{ fontSize: 10, color: C.text3 }}>{lead.company}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: C.text1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {lead.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: C.text3,
+                          marginTop: 1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {lead.company}
+                      </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <ScoreBar score={lead.score ?? 0} />
+
+                  {/* Middle: Job title + City */}
+                  {lead.jobTitle && (
+                    <div style={{ fontSize: 10, color: C.accent, marginBottom: 8 }}>{lead.jobTitle}</div>
+                  )}
+
+                  {/* Bottom: Score + Industry */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingTop: 8,
+                      borderTop: `1px solid rgba(255,255,255,0.04)`,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {lead.score !== null && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                            color: (lead.score ?? 0) >= 70 ? C.accent : (lead.score ?? 0) >= 50 ? '#FBBF24' : C.text3,
+                          }}
+                        >
+                          {lead.score}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 10, color: C.text3 }}>{lead.city}</span>
+                    </div>
+                    {lead.email && (
+                      <div
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 4,
+                          background: 'rgba(52,211,153,0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <SvgIcon d={ICONS.mail} size={9} color="#34D399" />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
-              {colLeads.length === 0 && (
+
+              {/* Drop zone indicator */}
+              {isOver && !isDragSource && (
                 <div
                   style={{
-                    padding: 20,
+                    padding: 16,
+                    borderRadius: 10,
                     textAlign: 'center',
-                    borderRadius: 8,
-                    border: '1px dashed rgba(255,255,255,0.06)',
+                    border: `1.5px dashed ${col.color}40`,
+                    background: `${col.color}04`,
+                    animation: 'fadeIn 0.15s ease both',
                   }}
                 >
-                  <div style={{ fontSize: 11, color: C.text3 }}>Keine Leads</div>
+                  <span style={{ fontSize: 11, color: col.color }}>Hierher verschieben</span>
+                </div>
+              )}
+
+              {colLeads.length === 0 && !isOver && (
+                <div
+                  style={{
+                    padding: 24,
+                    textAlign: 'center',
+                    borderRadius: 10,
+                    border: '1px dashed rgba(255,255,255,0.05)',
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <span style={{ fontSize: 11, color: C.text3 }}>Keine Leads</span>
                 </div>
               )}
             </div>
@@ -597,6 +860,20 @@ function LeadsPage() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
+  // Local status overrides — so UI updates instantly before DB roundtrip
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, Lead['status']>>({});
+
+  function changeStatus(leadId: string, oldStatus: string, newStatus: Lead['status']) {
+    setStatusOverrides((prev) => ({ ...prev, [leadId]: newStatus }));
+    showToast(`Status → ${newStatus}`, 'success');
+    updateLeadStatus(leadId, oldStatus, newStatus);
+  }
+
+  // Apply status overrides to leads
+  const leadsWithOverrides = LEADS.map((l) => ({
+    ...l,
+    status: statusOverrides[l.id] ?? l.status,
+  }));
 
   // Update filter when URL changes
   useEffect(() => {
@@ -611,7 +888,7 @@ function LeadsPage() {
 
   const isNeuHeute = filterParam === 'neu-heute';
 
-  const filteredLeads = LEADS.filter((lead) => {
+  const filteredLeads = leadsWithOverrides.filter((lead) => {
     // "Neu heute" filter — check created_at is today
     if (isNeuHeute) {
       const today = new Date().toDateString();
@@ -756,9 +1033,10 @@ function LeadsPage() {
           onToggle={toggleSelect}
           onToggleAll={toggleAll}
           onLeadClick={openLead}
+          onStatusChange={changeStatus}
         />
       ) : (
-        <KanbanBoard leads={filteredLeads} onLeadClick={openLead} />
+        <KanbanBoard leads={filteredLeads} onLeadClick={openLead} onStatusChange={changeStatus} />
       )}
     </>
   );

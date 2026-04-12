@@ -178,6 +178,28 @@ export async function writeActivity(leadId: string, type: string, title: string,
   });
 }
 
+// ─── UPDATE LEAD STATUS (DB + Activity) ──────────────────────────────────────
+
+const STATUS_MAP: Record<string, string> = {
+  Neu: 'new',
+  'In Kontakt': 'contacted',
+  Qualifiziert: 'qualified',
+  Verloren: 'lost',
+};
+
+export async function updateLeadStatus(leadId: string, oldStatus: string, newStatus: string) {
+  const supabase = getSupabase();
+  const tid = await getTenantId();
+  if (!tid) return;
+
+  // Update lead status in DB
+  const dbStatus = STATUS_MAP[newStatus] ?? 'new';
+  await supabase.from('leads').update({ status: dbStatus }).eq('id', leadId).eq('tenant_id', tid);
+
+  // Write activity
+  await writeActivity(leadId, 'status_change', `Status geändert: ${oldStatus} → ${newStatus}`);
+}
+
 // ─── ACTIVITY TYPE STYLING ───────────────────────────────────────────────────
 
 export function getActivityStyle(type: string): { color: string; icon: string } {
