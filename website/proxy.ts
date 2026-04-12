@@ -30,15 +30,16 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Logged-in user visiting /login → send to dashboard
+  // Logged-in user visiting /login → send to sales-v2
   if (pathname === '/login' && session) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/sales-v2', request.url));
   }
 
-  // Unauthenticated user visiting /dashboard/* → send to login
+  // Unauthenticated user visiting /dashboard/* or /sales-v2/* → send to login
   // Accept either Supabase session OR onvero_user cookie
   const hasOnveroSession = !!request.cookies.get('onvero_user')?.value;
-  if (pathname.startsWith('/dashboard') && !session && !hasOnveroSession) {
+  const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/sales-v2');
+  if (isProtected && !session && !hasOnveroSession) {
     const url = new URL('/login', request.url);
     url.searchParams.set('from', pathname);
     return NextResponse.redirect(url);
@@ -78,5 +79,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/login', '/dashboard/:path*', '/api/:path*'],
+  matcher: ['/login', '/dashboard/:path*', '/sales-v2/:path*', '/api/:path*'],
 };

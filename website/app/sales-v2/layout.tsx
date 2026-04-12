@@ -39,7 +39,16 @@ function buildNav(
       items: [{ label: 'Home', href: '/sales-v2', icon: ICONS.home }],
     },
     {
-      title: 'LEADS',
+      title: 'PROSPECTS',
+      items: [
+        { label: 'Market Intent', href: '/sales-v2/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
+        { label: 'Outreach-Ideen', href: '/sales-v2/outreach', icon: ICONS.mail },
+        { label: 'Monitoring', href: '/sales-v2/monitoring', icon: ICONS.eye },
+        { label: 'Network', href: '/sales-v2/network', icon: ICONS.network },
+      ],
+    },
+    {
+      title: 'LEADS & KUNDEN',
       items: [
         {
           label: 'Alle Leads',
@@ -52,14 +61,7 @@ function buildNav(
             { label: `In Kontakt (${inKontakt})`, href: '/sales-v2/leads?filter=kontakt' },
           ],
         },
-      ],
-    },
-    {
-      title: 'PROSPECTS',
-      items: [
-        { label: 'Market Intent', href: '/sales-v2/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
-        { label: 'Outreach-Ideen', href: '/sales-v2/outreach', icon: ICONS.mail },
-        { label: 'Monitoring', href: '/sales-v2/monitoring', icon: ICONS.eye },
+        { label: 'Kunden', href: '/sales-v2/kunden', icon: ICONS.users },
       ],
     },
     {

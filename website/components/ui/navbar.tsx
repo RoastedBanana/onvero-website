@@ -162,7 +162,7 @@ export function Navbar() {
 
           {/* Anmelden / Profil-Avatar */}
           {loggedInUser ? (
-            <Link href="/dashboard">
+            <Link href="/sales-v2">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-opacity hover:opacity-80"
                 style={{

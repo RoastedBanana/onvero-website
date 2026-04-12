@@ -45,8 +45,8 @@ function LoginForm() {
       }
 
       // Validate redirect target — only allow relative paths to prevent open redirect
-      const raw = searchParams.get('from') || '/dashboard';
-      const dest = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/dashboard';
+      const raw = searchParams.get('from') || '/sales-v2';
+      const dest = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/sales-v2';
       // Hard navigation: forces a fresh HTTP request so the proxy sees
       // the newly set onvero_jwt cookie correctly.
       // Do NOT reset loading state — keep spinner until the page unloads.
