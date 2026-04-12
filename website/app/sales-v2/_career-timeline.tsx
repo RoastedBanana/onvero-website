@@ -12,15 +12,17 @@ function Collapsible({
   icon,
   color,
   count,
+  defaultOpen = false,
   children,
 }: {
   title: string;
   icon: string;
   color: string;
   count?: number;
+  defaultOpen?: boolean;
   children: (animKey: number) => React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [animKey, setAnimKey] = useState(0);
 
   function toggle() {
@@ -135,7 +137,7 @@ export function CareerSection({ entries }: { entries: Lead['employmentHistory'] 
   const total = sorted.length;
 
   return (
-    <Collapsible title="Berufsverlauf" icon={ICONS.trending} color="#A78BFA" count={total}>
+    <Collapsible title="Berufsverlauf" icon={ICONS.trending} color="#A78BFA" count={total} defaultOpen>
       {(animKey) => (
         <div key={animKey} style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
           {/* Vertical connector — glows from top, animated */}
