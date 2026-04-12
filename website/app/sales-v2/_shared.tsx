@@ -147,6 +147,31 @@ export const GLOBAL_STYLES = `
     animation: tab-content-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  /* Career card hover */
+  .career-card {
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .career-card:hover {
+    background: rgba(99,102,241,0.06) !important;
+    border-color: rgba(99,102,241,0.18) !important;
+    box-shadow: 0 2px 12px rgba(99,102,241,0.08);
+  }
+  .career-card-current {
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .career-card-current:hover {
+    background: rgba(99,102,241,0.1) !important;
+    border-color: rgba(99,102,241,0.3) !important;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.12);
+  }
+
+  /* Career dot pulse animation — runs once on mount */
+  @keyframes dotPulseUp {
+    0% { opacity: 0.3; transform: scale(0.5); }
+    60% { opacity: 1; transform: scale(1.3); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
   .s-row { transition: background 0.2s ease, box-shadow 0.2s ease; }
   .s-row:hover {
     background: rgba(99,102,241,0.03) !important;
@@ -1012,7 +1037,12 @@ export function HoverCard({ children, content }: { children: React.ReactNode; co
 // ─── ACTIVITY HEATMAP ────────────────────────────────────────────────────────
 
 export function ActivityHeatmap({ data, weeks = 12 }: { data?: number[]; weeks?: number }) {
-  const cells = data ?? Array.from({ length: weeks * 7 }, () => Math.random());
+  const cells =
+    data ??
+    Array.from({ length: weeks * 7 }, (_, i) => {
+      const x = Math.sin(i * 9301 + 49297) * 49979;
+      return x - Math.floor(x);
+    });
 
   function getColor(v: number) {
     if (v > 0.8) return C.accent;
