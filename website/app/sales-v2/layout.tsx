@@ -8,6 +8,7 @@ import { CommandPalette } from './_command-palette';
 import { AIChatWidget } from './_ai-chat';
 import { OnboardingTour } from './_onboarding';
 import { useLeads } from './_use-leads';
+import { useActivities, formatActivityTime, getActivityStyle } from './_activities';
 
 // ─── NAV CONFIG ──────────────────────────────────────────────────────────────
 
@@ -111,59 +112,15 @@ function OnveroIconMark({ size = 20, color = '#fff' }: { size?: number; color?: 
   );
 }
 
-// ─── NOTIFICATION BELL ───────────────────────────────────────────────────────
+// ─── NOTIFICATION BELL — live from Supabase ─────────────────────────────────
 
-const NOTIFICATIONS = [
-  {
-    id: 1,
-    text: 'Nexlayer CEO hat deinen LinkedIn-Post geliked',
-    time: 'vor 12 min',
-    color: '#818CF8',
-    icon: ICONS.globe,
-    read: false,
-  },
-  {
-    id: 2,
-    text: 'Marcus Weber wartet auf Follow-up (3 Tage)',
-    time: 'vor 2h',
-    color: '#F87171',
-    icon: ICONS.clock,
-    read: false,
-  },
-  {
-    id: 3,
-    text: 'KI-Score für 23 Leads aktualisiert',
-    time: 'vor 6h',
-    color: '#34D399',
-    icon: ICONS.spark,
-    read: false,
-  },
-  {
-    id: 4,
-    text: 'Meeting mit Axflow AG morgen um 10:30',
-    time: 'vor 8h',
-    color: '#38BDF8',
-    icon: ICONS.calendar,
-    read: true,
-  },
-  {
-    id: 5,
-    text: 'Neues Intent-Signal: Greenfield AG',
-    time: 'vor 1 Tag',
-    color: '#FBBF24',
-    icon: ICONS.zap,
-    read: true,
-  },
-];
-
-function NotifBell({ count = 3 }: { count?: number }) {
+function NotifBell() {
   const [open, setOpen] = useState(false);
-  const [notifs, setNotifs] = useState(NOTIFICATIONS);
-  const unread = notifs.filter((n) => !n.read).length;
+  const { activities, loading } = useActivities();
 
-  function markAllRead() {
-    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
-  }
+  // Recent activities are our "notifications"
+  const recent = activities.slice(0, 8);
+  const count = recent.length;
 
   return (
     <div style={{ position: 'relative' }}>
@@ -193,7 +150,7 @@ function NotifBell({ count = 3 }: { count?: number }) {
         >
           <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
         </svg>
-        {unread > 0 && (
+        {count > 0 && (
           <div
             style={{
               position: 'absolute',
@@ -213,25 +170,23 @@ function NotifBell({ count = 3 }: { count?: number }) {
               border: `2px solid ${C.topbar}`,
             }}
           >
-            {unread}
+            {count > 9 ? '9+' : count}
           </div>
         )}
       </button>
 
-      {/* Dropdown */}
       {open && (
         <>
-          {/* Backdrop */}
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
+          {/* Backdrop — closes on click anywhere */}
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1100 }} />
 
           <div
             style={{
-              position: 'absolute',
-              top: '100%',
-              right: -8,
-              marginTop: 8,
-              width: 360,
-              zIndex: 1000,
+              position: 'fixed',
+              top: 60,
+              right: 20,
+              width: 370,
+              zIndex: 1101,
               background: C.surface,
               border: `1px solid ${C.borderLight}`,
               borderRadius: 14,
@@ -251,98 +206,86 @@ function NotifBell({ count = 3 }: { count?: number }) {
               }}
             >
               <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Benachrichtigungen</span>
-              {unread > 0 && (
-                <button
-                  onClick={markAllRead}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: 11,
-                    color: C.accent,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: C.success,
+                    boxShadow: `0 0 4px ${C.success}`,
+                    animation: 'pulse-live 2.5s ease-in-out infinite',
                   }}
-                >
-                  Alle gelesen
-                </button>
-              )}
+                />
+                <span style={{ fontSize: 10, color: C.text3 }}>Live</span>
+              </div>
             </div>
 
-            {/* Notifications list */}
-            <div style={{ maxHeight: 340, overflowY: 'auto' }}>
-              {notifs.map((n) => (
-                <div
-                  key={n.id}
-                  style={{
-                    display: 'flex',
-                    gap: 12,
-                    padding: '12px 18px',
-                    borderBottom: `1px solid rgba(255,255,255,0.03)`,
-                    background: n.read ? 'transparent' : 'rgba(99,102,241,0.03)',
-                    cursor: 'pointer',
-                    transition: 'background 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(99,102,241,0.05)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = n.read ? 'transparent' : 'rgba(99,102,241,0.03)';
-                  }}
-                >
+            {/* List */}
+            <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+              {loading && (
+                <div style={{ padding: '24px 18px', textAlign: 'center' }}>
+                  <span style={{ fontSize: 11, color: C.text3 }}>Laden...</span>
+                </div>
+              )}
+
+              {!loading && recent.length === 0 && (
+                <div style={{ padding: '32px 18px', textAlign: 'center' }}>
+                  <span style={{ fontSize: 12, color: C.text3 }}>Keine Aktivitäten</span>
+                  <div style={{ fontSize: 10, color: C.text3, marginTop: 4 }}>Aktionen werden hier live angezeigt</div>
+                </div>
+              )}
+
+              {recent.map((a) => {
+                const st = getActivityStyle(a.type);
+                return (
                   <div
+                    key={a.id}
                     style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 7,
-                      flexShrink: 0,
-                      background: `${n.color}10`,
-                      border: `1px solid ${n.color}18`,
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      gap: 12,
+                      padding: '12px 18px',
+                      borderBottom: '1px solid rgba(255,255,255,0.03)',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s ease',
+                    }}
+                    onClick={() => setOpen(false)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(99,102,241,0.04)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
                     }}
                   >
-                    <SvgIcon d={n.icon} size={12} color={n.color} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: 12,
-                        color: n.read ? C.text2 : C.text1,
-                        lineHeight: 1.4,
-                        fontWeight: n.read ? 400 : 500,
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        flexShrink: 0,
+                        background: `${st.color}10`,
+                        border: `1px solid ${st.color}18`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      {n.text}
+                      <SvgIcon d={st.icon} size={12} color={st.color} />
                     </div>
-                    <div style={{ fontSize: 10, color: C.text3, marginTop: 3 }}>{n.time}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, color: C.text1, lineHeight: 1.4, fontWeight: 500 }}>{a.title}</div>
+                      {a.company_name && (
+                        <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>
+                          {a.first_name} {a.last_name} · {a.company_name}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>
+                        {formatActivityTime(a.created_at)}
+                      </div>
+                    </div>
                   </div>
-                  {!n.read && (
-                    <div
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        background: C.accent,
-                        boxShadow: `0 0 6px ${C.accent}60`,
-                        flexShrink: 0,
-                        marginTop: 8,
-                      }}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Footer */}
-            <div
-              style={{
-                padding: '10px 18px',
-                borderTop: `1px solid ${C.border}`,
-                textAlign: 'center',
-              }}
-            >
-              <span style={{ fontSize: 11, color: C.accent, cursor: 'pointer' }}>Alle Benachrichtigungen anzeigen</span>
+                );
+              })}
             </div>
           </div>
         </>
@@ -721,7 +664,7 @@ function Topbar() {
         <div style={{ width: 1, height: 24, background: C.border, margin: '0 6px' }} />
 
         {/* Notification bell */}
-        <NotifBell count={3} />
+        <NotifBell />
 
         <div style={{ width: 1, height: 24, background: C.border, margin: '0 6px' }} />
 
