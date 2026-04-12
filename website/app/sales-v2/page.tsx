@@ -403,11 +403,36 @@ export default function SalesV2HomePage() {
       />
 
       {/* KPI Metric Cards — real data */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-        {METRIC_CARDS.map((m, i) => (
-          <MetricCardWithSparkline key={m.label} m={m} index={i} />
-        ))}
-      </div>
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              style={{
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 12,
+                padding: '18px 20px',
+                height: 90,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                animation: 'fadeIn 0.3s ease both',
+                animationDelay: `${i * 0.08}s`,
+              }}
+            >
+              <div style={{ height: 10, width: '50%', borderRadius: 4, background: 'rgba(255,255,255,0.04)' }} />
+              <div style={{ height: 20, width: '60%', borderRadius: 4, background: 'rgba(255,255,255,0.06)' }} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {METRIC_CARDS.map((m, i) => (
+            <MetricCardWithSparkline key={m.label} m={m} index={i} />
+          ))}
+        </div>
+      )}
 
       <QuickActions />
 

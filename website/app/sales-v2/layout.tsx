@@ -177,8 +177,17 @@ function NotifBell() {
 
       {open && (
         <>
-          {/* Backdrop — closes on click anywhere */}
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1100 }} />
+          {/* Backdrop — full screen transparent overlay, closes on any click outside */}
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9998,
+              background: 'transparent',
+              cursor: 'default',
+            }}
+          />
 
           <div
             style={{
@@ -186,7 +195,7 @@ function NotifBell() {
               top: 60,
               right: 20,
               width: 370,
-              zIndex: 1101,
+              zIndex: 9999,
               background: C.surface,
               border: `1px solid ${C.borderLight}`,
               borderRadius: 14,

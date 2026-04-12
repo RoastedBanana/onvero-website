@@ -1018,7 +1018,63 @@ function LeadsPage() {
         ))}
       </div>
 
-      {viewMode === 'table' ? (
+      {leadsLoading ? (
+        <div
+          style={{
+            borderRadius: 12,
+            border: `1px solid ${C.border}`,
+            overflow: 'hidden',
+            background: C.surface,
+            padding: '20px',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
+            animation: 'fadeIn 0.3s ease both',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                border: `2px solid ${C.border}`,
+                borderTopColor: C.accent,
+                animation: 'gradient-spin 0.8s linear infinite',
+              }}
+            />
+            <span style={{ fontSize: 13, color: C.text2 }}>Leads werden geladen...</span>
+          </div>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                padding: '14px 0',
+                borderBottom: `1px solid rgba(255,255,255,0.03)`,
+                animation: 'fadeIn 0.3s ease both',
+                animationDelay: `${i * 0.05}s`,
+              }}
+            >
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.04)' }} />
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    height: 12,
+                    width: '40%',
+                    borderRadius: 4,
+                    background: 'rgba(255,255,255,0.05)',
+                    marginBottom: 6,
+                  }}
+                />
+                <div style={{ height: 10, width: '25%', borderRadius: 4, background: 'rgba(255,255,255,0.03)' }} />
+              </div>
+              <div style={{ height: 10, width: 50, borderRadius: 4, background: 'rgba(255,255,255,0.04)' }} />
+              <div style={{ height: 20, width: 70, borderRadius: 6, background: 'rgba(255,255,255,0.03)' }} />
+            </div>
+          ))}
+        </div>
+      ) : viewMode === 'table' ? (
         <LeadTable
           leads={filteredLeads}
           selected={selected}
