@@ -15,6 +15,7 @@ import {
   ProgressRing,
 } from './_shared';
 import { LEADS, getLeadStats, ACCOUNT } from './_lead-data';
+import { useActivities, formatActivityTime, getActivityStyle } from './_activities';
 
 // ─── DERIVE REAL DATA ────────────────────────────────────────────────────────
 
@@ -22,18 +23,6 @@ const stats = getLeadStats(LEADS);
 
 const scoredLeads = LEADS.filter((l) => l.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 const topLeads = scoredLeads.slice(0, 5);
-
-// Build activity feed from real lead timelines
-const allTimelineEvents = LEADS.flatMap((l) =>
-  l.timeline.map((t) => ({ ...t, leadName: l.name, company: l.company, leadId: l.id }))
-)
-  .sort((a, b) => {
-    // Simple sort: "vor" events first, then by date string
-    if (a.time.includes('vor') && !b.time.includes('vor')) return -1;
-    if (!a.time.includes('vor') && b.time.includes('vor')) return 1;
-    return b.time.localeCompare(a.time);
-  })
-  .slice(0, 6);
 
 // Metric cards derived from real data
 const METRIC_CARDS = [
@@ -225,6 +214,87 @@ function SectionLabel({ icon, label, color }: { icon: string; label: string; col
 
 // ─── QUICK ACTIONS ───────────────────────────────────────────────────────────
 
+// ─── LIVE ACTIVITY FEED (Supabase Realtime) ──────────────────────────────────
+
+function LiveActivityFeed() {
+  const { activities, loading } = useActivities();
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '8px 0' }}>
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  height: 12,
+                  borderRadius: 4,
+                  background: 'rgba(255,255,255,0.04)',
+                  width: '80%',
+                  marginBottom: 6,
+                }}
+              />
+              <div style={{ height: 10, borderRadius: 4, background: 'rgba(255,255,255,0.03)', width: '40%' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div style={{ padding: '16px 0', textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: C.text3 }}>Noch keine Aktivität</div>
+        <div style={{ fontSize: 10, color: C.text3, marginTop: 4 }}>Aktionen werden hier live angezeigt</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      {activities.slice(0, 6).map((a, i) => {
+        const style = getActivityStyle(a.type);
+        return (
+          <div
+            key={a.id}
+            style={{
+              display: 'flex',
+              gap: 12,
+              padding: '10px 0',
+              borderBottom: i < Math.min(activities.length, 6) - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+              animation: 'fadeIn 0.3s ease both',
+              animationDelay: `${0.1 + i * 0.05}s`,
+            }}
+          >
+            <div
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: style.color,
+                marginTop: 6,
+                flexShrink: 0,
+                boxShadow: `0 0 6px ${style.color}60`,
+              }}
+            />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.5 }}>
+                {a.title}
+                {a.company_name && <span style={{ color: C.text3 }}> — {a.company_name}</span>}
+              </div>
+              <div style={{ fontSize: 10, color: C.text3, marginTop: 3 }}>{formatActivityTime(a.created_at)}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── QUICK ACTIONS ───────────────────────────────────────────────────────────
+
 function QuickActions() {
   const actions = [
     { label: 'Lead generieren', icon: ICONS.zap, color: '#818CF8', href: '/sales-v2/leads' },
@@ -408,46 +478,14 @@ export default function SalesV2HomePage() {
           </div>
         </BentoCard>
 
-        {/* ── Activity Feed — from real timelines, 1 col ── */}
+        {/* ── Activity Feed — LIVE from Supabase Realtime ── */}
         <BentoCard
           span={1}
           delay={0.2}
           gradient="radial-gradient(ellipse at 90% 0%, rgba(167,139,250,0.05) 0%, transparent 50%)"
         >
           <SectionLabel icon={ICONS.clock} label="Letzte Aktivität" color="#A78BFA" />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {allTimelineEvents.map((a, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  gap: 12,
-                  padding: '10px 0',
-                  borderBottom: i < allTimelineEvents.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
-                  animation: 'fadeIn 0.3s ease both',
-                  animationDelay: `${0.3 + i * 0.06}s`,
-                }}
-              >
-                <div
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: a.color,
-                    marginTop: 6,
-                    flexShrink: 0,
-                    boxShadow: `0 0 6px ${a.color}60`,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.5 }}>
-                    {a.action} <span style={{ color: C.text3 }}>— {a.company}</span>
-                  </div>
-                  <div style={{ fontSize: 10, color: C.text3, marginTop: 3 }}>{a.time}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <LiveActivityFeed />
         </BentoCard>
 
         {/* ── Score Distribution — 1 col ── */}

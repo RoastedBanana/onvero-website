@@ -17,6 +17,7 @@ import {
 } from '../../_shared';
 import { getLeadById, LEADS, getLeadStats, ACCOUNT } from '../../_lead-data';
 import type { Lead } from '../../_lead-data';
+import { useActivities, writeActivity, formatActivityTime, getActivityStyle } from '../../_activities';
 import Link from 'next/link';
 
 // ─── STATUS OPTIONS ──────────────────────────────────────────────────────────
@@ -178,6 +179,94 @@ function ScoreBreakdownBar({ label, value, max, color }: { label: string; value:
 
 // ─── PAGE ────────────────────────────────────────────────────────────────────
 
+// ─── LIVE TIMELINE ───────────────────────────────────────────────────────────
+
+function LeadTimeline({ leadId }: { leadId: string }) {
+  const { activities, loading } = useActivities(leadId);
+
+  return (
+    <Section
+      title="Aktivitäts-Timeline"
+      icon={ICONS.clock}
+      color="#38BDF8"
+      actions={
+        <span style={{ fontSize: 10, color: C.text3 }}>
+          {loading ? 'Laden...' : `${activities.length} Events`}
+          <span
+            style={{
+              display: 'inline-block',
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: '#34D399',
+              marginLeft: 6,
+              boxShadow: '0 0 4px rgba(52,211,153,0.6)',
+              animation: 'pulse-live 2.5s ease-in-out infinite',
+            }}
+          />
+        </span>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
+        <div
+          style={{
+            position: 'absolute',
+            left: 5,
+            top: 8,
+            bottom: 8,
+            width: 1,
+            background: `linear-gradient(180deg, ${C.border}, transparent)`,
+          }}
+        />
+
+        {activities.length === 0 && !loading && (
+          <div style={{ padding: '16px 0', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: C.text3 }}>Noch keine Aktivität für diesen Lead</div>
+            <div style={{ fontSize: 10, color: C.text3, marginTop: 4 }}>Aktionen werden hier live angezeigt</div>
+          </div>
+        )}
+
+        {activities.map((a, i) => {
+          const st = getActivityStyle(a.type);
+          return (
+            <div
+              key={a.id}
+              style={{
+                display: 'flex',
+                gap: 14,
+                padding: '10px 0',
+                animation: 'fadeIn 0.3s ease both',
+                animationDelay: `${0.1 + i * 0.03}s`,
+              }}
+            >
+              <div
+                style={{
+                  width: 11,
+                  height: 11,
+                  borderRadius: '50%',
+                  background: C.bg,
+                  border: `2px solid ${st.color}`,
+                  boxShadow: `0 0 6px ${st.color}40`,
+                  flexShrink: 0,
+                  marginTop: 3,
+                  zIndex: 1,
+                }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12.5, color: C.text1, lineHeight: 1.4 }}>{a.title}</div>
+                {a.content && <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{a.content}</div>}
+                <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{formatActivityTime(a.created_at)}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+// ─── PAGE ────────────────────────────────────────────────────────────────────
+
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -234,9 +323,11 @@ export default function LeadDetailPage() {
 
   function addNote() {
     if (!newNote.trim()) return;
-    setNotes((prev) => [newNote.trim(), ...prev]);
+    const text = newNote.trim();
+    setNotes((prev) => [text, ...prev]);
     setNewNote('');
     showToast('Notiz hinzugefügt', 'success');
+    if (lead) writeActivity(lead.id, 'note_added', `Notiz hinzugefügt`, text);
   }
 
   return (
@@ -372,6 +463,7 @@ export default function LeadDetailPage() {
                         setStatus(opt.value);
                         setStatusOpen(false);
                         showToast(`Status → ${opt.value}`, 'success');
+                        writeActivity(lead.id, 'status_change', `Status geändert: ${status} → ${opt.value}`);
                       }}
                       style={{
                         display: 'flex',
@@ -550,6 +642,7 @@ export default function LeadDetailPage() {
                         `Betreff: ${lead.emailDraftSubject ?? ''}\n\n${lead.emailDraftBody!}`
                       );
                       showToast('E-Mail kopiert', 'success');
+                      writeActivity(lead.id, 'email_draft', 'E-Mail-Draft kopiert', lead.emailDraftSubject);
                     }}
                     style={{
                       fontSize: 11,
@@ -565,7 +658,10 @@ export default function LeadDetailPage() {
                     Kopieren
                   </button>
                   <button
-                    onClick={() => showToast('E-Mail wird gesendet...', 'info')}
+                    onClick={() => {
+                      showToast('E-Mail wird gesendet...', 'info');
+                      writeActivity(lead.id, 'email_sent', 'E-Mail versendet', lead.emailDraftSubject);
+                    }}
                     style={{
                       fontSize: 11,
                       color: '#34D399',
@@ -639,52 +735,8 @@ export default function LeadDetailPage() {
             </Section>
           )}
 
-          {/* Timeline */}
-          <Section title="Aktivitäts-Timeline" icon={ICONS.clock} color="#38BDF8">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 5,
-                  top: 8,
-                  bottom: 8,
-                  width: 1,
-                  background: `linear-gradient(180deg, ${C.border}, transparent)`,
-                }}
-              />
-              {lead.timeline.map((t, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    gap: 14,
-                    padding: '10px 0',
-                    paddingLeft: 0,
-                    animation: 'fadeIn 0.3s ease both',
-                    animationDelay: `${0.15 + i * 0.04}s`,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 11,
-                      height: 11,
-                      borderRadius: '50%',
-                      background: C.bg,
-                      border: `2px solid ${t.color}`,
-                      boxShadow: `0 0 6px ${t.color}40`,
-                      flexShrink: 0,
-                      marginTop: 3,
-                      zIndex: 1,
-                    }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12.5, color: C.text1, lineHeight: 1.4 }}>{t.action}</div>
-                    <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{t.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
+          {/* Timeline — LIVE from Supabase Realtime */}
+          <LeadTimeline leadId={lead.id} />
         </div>
 
         {/* RIGHT COLUMN — Sidebar info */}
@@ -976,25 +1028,37 @@ export default function LeadDetailPage() {
                 label: 'E-Mail senden',
                 icon: ICONS.mail,
                 color: '#34D399',
-                action: () => showToast('E-Mail wird gesendet...', 'info'),
+                action: () => {
+                  showToast('E-Mail wird gesendet...', 'info');
+                  writeActivity(lead.id, 'email_sent', 'E-Mail versendet');
+                },
               },
               {
                 label: 'Meeting planen',
                 icon: ICONS.calendar,
                 color: '#38BDF8',
-                action: () => showToast('Meeting-Planer öffnet...', 'info'),
+                action: () => {
+                  showToast('Meeting-Planer öffnet...', 'info');
+                  writeActivity(lead.id, 'meeting_scheduled', 'Meeting geplant');
+                },
               },
               {
                 label: 'KI-Rescore',
                 icon: ICONS.spark,
                 color: '#818CF8',
-                action: () => showToast('Rescore wird gestartet...', 'info'),
+                action: () => {
+                  showToast('Rescore wird gestartet...', 'info');
+                  writeActivity(lead.id, 'score_update', 'KI-Rescore angefordert');
+                },
               },
               {
                 label: 'Outreach generieren',
                 icon: ICONS.zap,
                 color: '#FBBF24',
-                action: () => showToast('Outreach wird generiert...', 'info'),
+                action: () => {
+                  showToast('Outreach wird generiert...', 'info');
+                  writeActivity(lead.id, 'outreach_generated', 'Outreach generiert');
+                },
               },
             ].map((a) => (
               <button
