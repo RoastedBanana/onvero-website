@@ -17,7 +17,7 @@ import {
 } from '../../_shared';
 import { getLeadStats, ACCOUNT } from '../../_lead-data';
 import type { Lead } from '../../_lead-data';
-import { writeActivity } from '../../_activities';
+import { writeActivity, updateLeadStatus } from '../../_activities';
 import { useLeads } from '../../_use-leads';
 import { CareerSection, CollapsibleTimeline } from '../../_career-timeline';
 import Link from 'next/link';
@@ -390,7 +390,7 @@ export default function LeadDetailPage() {
                     right: 0,
                     marginTop: 4,
                     zIndex: 100,
-                    background: C.surface,
+                    background: '#131530',
                     border: `1px solid ${C.borderLight}`,
                     borderRadius: 10,
                     padding: 4,
@@ -403,10 +403,11 @@ export default function LeadDetailPage() {
                     <button
                       key={opt.value}
                       onClick={() => {
+                        const oldStatus = status;
                         setStatus(opt.value);
                         setStatusOpen(false);
                         showToast(`Status → ${opt.value}`, 'success');
-                        writeActivity(lead.id, 'status_change', `Status geändert: ${status} → ${opt.value}`);
+                        updateLeadStatus(lead.id, oldStatus, opt.value);
                       }}
                       style={{
                         display: 'flex',

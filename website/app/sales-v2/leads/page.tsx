@@ -252,12 +252,12 @@ function InlineStatusDropdown({ status, onChange }: { status: Lead['status']; on
               left: 0,
               marginTop: 4,
               zIndex: 100,
-              background: C.surface,
+              background: '#131530',
               border: `1px solid ${C.borderLight}`,
               borderRadius: 8,
               padding: 3,
               minWidth: 140,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
               animation: 'scaleIn 0.12s ease both',
             }}
           >
