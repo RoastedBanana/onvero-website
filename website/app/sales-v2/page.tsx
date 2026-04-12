@@ -437,14 +437,14 @@ export default function SalesV2HomePage() {
         <BentoCard
           span={2}
           delay={0.15}
-          href="/sales-v2/leads"
           gradient="radial-gradient(ellipse at 10% 0%, rgba(99,102,241,0.06) 0%, transparent 50%)"
         >
           <SectionLabel icon={ICONS.users} label={`Top ${topLeads.length} Leads`} color="#818CF8" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {topLeads.map((lead, i) => (
-              <div
+              <Link
                 key={lead.id}
+                href={`/sales-v2/leads/${lead.id}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -453,6 +453,15 @@ export default function SalesV2HomePage() {
                   borderRadius: 8,
                   background: i === 0 ? 'rgba(99,102,241,0.04)' : 'transparent',
                   border: i === 0 ? '1px solid rgba(99,102,241,0.08)' : '1px solid transparent',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(99,102,241,0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = i === 0 ? 'rgba(99,102,241,0.04)' : 'transparent';
                 }}
               >
                 <span
@@ -502,7 +511,7 @@ export default function SalesV2HomePage() {
                   label={lead.score ? `${lead.score}` : '—'}
                 />
                 <StatusBadge status={lead.status} />
-              </div>
+              </Link>
             ))}
           </div>
         </BentoCard>
