@@ -763,6 +763,99 @@ export default function LeadDetailPage() {
             </Section>
           )}
 
+          {/* Career History — above timeline */}
+          {lead.employmentHistory && lead.employmentHistory.length > 0 && (
+            <Section title="Berufsverlauf" icon={ICONS.trending} color="#A78BFA">
+              <div style={{ position: 'relative' }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 4,
+                    top: 14,
+                    bottom: 14,
+                    width: 1,
+                    background: `linear-gradient(180deg, ${C.border}, transparent)`,
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {lead.employmentHistory
+                    .sort((a, b) => {
+                      if (a.current && !b.current) return -1;
+                      if (!a.current && b.current) return 1;
+                      if (!a.startDate && !b.startDate) return 0;
+                      if (!a.startDate) return 1;
+                      if (!b.startDate) return -1;
+                      return b.startDate.localeCompare(a.startDate);
+                    })
+                    .map((entry, i) => {
+                      const startStr = entry.startDate
+                        ? new Date(entry.startDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
+                        : null;
+                      const endStr = entry.current
+                        ? 'Heute'
+                        : entry.endDate
+                          ? new Date(entry.endDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
+                          : null;
+                      let duration = '';
+                      if (entry.startDate) {
+                        const start = new Date(entry.startDate);
+                        const end = entry.current ? new Date() : entry.endDate ? new Date(entry.endDate) : null;
+                        if (end) {
+                          const months = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30));
+                          const years = Math.floor(months / 12);
+                          const rm = months % 12;
+                          duration = years > 0 ? `${years} J.${rm > 0 ? ` ${rm} M.` : ''}` : `${rm} M.`;
+                        }
+                      }
+                      return (
+                        <div key={i} style={{ display: 'flex', gap: 14, padding: '10px 0' }}>
+                          <div
+                            style={{
+                              width: 9,
+                              height: 9,
+                              borderRadius: '50%',
+                              flexShrink: 0,
+                              marginTop: 4,
+                              background: entry.current ? C.accent : C.bg,
+                              border: `2px solid ${entry.current ? C.accent : C.text3}`,
+                              boxShadow: entry.current ? `0 0 8px ${C.accent}50` : 'none',
+                              zIndex: 1,
+                            }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 500, color: entry.current ? C.text1 : C.text2 }}>
+                              {entry.title}
+                            </div>
+                            <div style={{ fontSize: 11.5, color: C.text3, marginTop: 2 }}>{entry.company}</div>
+                            <div
+                              style={{
+                                fontSize: 10,
+                                color: C.text3,
+                                marginTop: 3,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
+                              <span>
+                                {startStr ?? '—'} – {endStr ?? '—'}
+                              </span>
+                              {duration && (
+                                <>
+                                  <span style={{ opacity: 0.3 }}>·</span>
+                                  <span>{duration}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </Section>
+          )}
+
           {/* Timeline — LIVE from Supabase Realtime */}
           <LeadTimeline leadId={lead.id} />
         </div>
@@ -1200,141 +1293,6 @@ export default function LeadDetailPage() {
               </div>
             )}
           </div>
-
-          {/* Career History */}
-          {lead.employmentHistory && lead.employmentHistory.length > 0 && (
-            <div
-              style={{
-                background: C.surface,
-                border: `1px solid ${C.border}`,
-                borderRadius: 14,
-                overflow: 'hidden',
-                boxShadow: '0 2px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
-              }}
-            >
-              <div
-                style={{
-                  padding: '16px 22px',
-                  borderBottom: `1px solid ${C.border}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <SvgIcon d={ICONS.trending} size={13} color="#A78BFA" />
-                <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>Berufsverlauf</span>
-              </div>
-              <div style={{ padding: '16px 22px', position: 'relative' }}>
-                {/* Vertical line */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 30,
-                    top: 24,
-                    bottom: 24,
-                    width: 1,
-                    background: `linear-gradient(180deg, ${C.border}, transparent)`,
-                  }}
-                />
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  {lead.employmentHistory
-                    .sort((a, b) => {
-                      if (a.current && !b.current) return -1;
-                      if (!a.current && b.current) return 1;
-                      if (!a.startDate && !b.startDate) return 0;
-                      if (!a.startDate) return 1;
-                      if (!b.startDate) return -1;
-                      return b.startDate.localeCompare(a.startDate);
-                    })
-                    .map((entry, i) => {
-                      const startStr = entry.startDate
-                        ? new Date(entry.startDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
-                        : null;
-                      const endStr = entry.current
-                        ? 'Heute'
-                        : entry.endDate
-                          ? new Date(entry.endDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
-                          : null;
-                      // Calculate duration
-                      let duration = '';
-                      if (entry.startDate) {
-                        const start = new Date(entry.startDate);
-                        const end = entry.current ? new Date() : entry.endDate ? new Date(entry.endDate) : null;
-                        if (end) {
-                          const months = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30));
-                          const years = Math.floor(months / 12);
-                          const remainMonths = months % 12;
-                          duration =
-                            years > 0
-                              ? `${years} J.${remainMonths > 0 ? ` ${remainMonths} M.` : ''}`
-                              : `${remainMonths} M.`;
-                        }
-                      }
-
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            display: 'flex',
-                            gap: 12,
-                            padding: '10px 0',
-                          }}
-                        >
-                          {/* Dot */}
-                          <div
-                            style={{
-                              width: 9,
-                              height: 9,
-                              borderRadius: '50%',
-                              flexShrink: 0,
-                              marginTop: 4,
-                              background: entry.current ? C.accent : C.surface,
-                              border: `2px solid ${entry.current ? C.accent : C.text3}`,
-                              boxShadow: entry.current ? `0 0 8px ${C.accent}50` : 'none',
-                              zIndex: 1,
-                            }}
-                          />
-                          {/* Content */}
-                          <div style={{ flex: 1 }}>
-                            <div
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 500,
-                                color: entry.current ? C.text1 : C.text2,
-                              }}
-                            >
-                              {entry.title}
-                            </div>
-                            <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{entry.company}</div>
-                            <div
-                              style={{
-                                fontSize: 10,
-                                color: C.text3,
-                                marginTop: 3,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                              }}
-                            >
-                              <span>
-                                {startStr ?? '—'} – {endStr ?? '—'}
-                              </span>
-                              {duration && (
-                                <>
-                                  <span style={{ opacity: 0.3 }}>·</span>
-                                  <span>{duration}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

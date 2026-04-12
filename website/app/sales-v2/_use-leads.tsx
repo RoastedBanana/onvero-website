@@ -166,7 +166,18 @@ export function useLeads() {
 
       const { data } = await supabase
         .from('leads')
-        .select('*')
+        .select(
+          `
+          id, company_name, first_name, last_name, email, phone,
+          website, street, city, zip, country,
+          status, score, source, notes, estimated_value,
+          ai_summary, ai_tags, ai_next_action, ai_scored_at,
+          email_draft_subject, email_draft_body,
+          google_rating, google_reviews, google_maps_url,
+          custom_fields, last_contacted_at, follow_up_at, created_at,
+          employment_history, tenant_id
+        `
+        )
         .eq('tenant_id', tid)
         .order('score', { ascending: false, nullsFirst: false })
         .limit(200);
