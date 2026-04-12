@@ -109,6 +109,16 @@ function dbToLead(r: DbLead): Lead {
       : [],
     notes: [],
     timeline: [],
+    employmentHistory: ((r.employment_history as unknown[] | null) ?? []).map((e: unknown) => {
+      const entry = e as Record<string, unknown>;
+      return {
+        title: (entry.title as string) ?? '',
+        company: (entry.organization_name ?? entry.name ?? entry.company ?? '') as string,
+        startDate: (entry.start_date ?? entry.startDate ?? null) as string | null,
+        endDate: (entry.end_date ?? entry.endDate ?? null) as string | null,
+        current: entry.current === true,
+      };
+    }),
   };
 }
 

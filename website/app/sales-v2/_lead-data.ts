@@ -37,6 +37,13 @@ export interface Lead {
   scoreBreakdown: { label: string; value: number; max: number }[];
   notes: string[];
   timeline: { action: string; time: string; color: string }[];
+  employmentHistory: {
+    title: string;
+    company: string;
+    startDate: string | null;
+    endDate: string | null;
+    current: boolean;
+  }[];
 }
 
 // ─── ACCOUNT PROFILE ─────────────────────────────────────────────────────────
@@ -944,6 +951,7 @@ export const LEADS: Lead[] = RAW_LEADS.map((r) => {
         ]
       : [],
     notes: [],
+    employmentHistory: [],
     timeline: [
       {
         action: `Lead erstellt via ${r.source}`,
