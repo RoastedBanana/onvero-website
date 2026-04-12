@@ -15,9 +15,10 @@ import {
   showToast,
   PageHeader,
 } from '../../_shared';
-import { getLeadById, LEADS, getLeadStats, ACCOUNT } from '../../_lead-data';
+import { getLeadStats, ACCOUNT } from '../../_lead-data';
 import type { Lead } from '../../_lead-data';
 import { useActivities, writeActivity, formatActivityTime, getActivityStyle } from '../../_activities';
+import { useLeads } from '../../_use-leads';
 import Link from 'next/link';
 
 // ─── STATUS OPTIONS ──────────────────────────────────────────────────────────
@@ -270,13 +271,40 @@ function LeadTimeline({ leadId }: { leadId: string }) {
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const lead = getLeadById(id);
+  const { leads: liveLeads, loading: leadsLoading } = useLeads();
+  const lead = liveLeads.find((l) => l.id === id) ?? null;
 
-  const [status, setStatus] = useState(lead?.status ?? 'Neu');
+  const [status, setStatus] = useState<Lead['status']>('Neu');
   const [statusOpen, setStatusOpen] = useState(false);
-  const [notes, setNotes] = useState(lead?.notes ?? []);
+  const [notes, setNotes] = useState<string[]>([]);
   const [newNote, setNewNote] = useState('');
   const [emailExpanded, setEmailExpanded] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // Sync state when lead loads
+  if (lead && !initialized) {
+    setStatus(lead.status);
+    setNotes(lead.notes ?? []);
+    setInitialized(true);
+  }
+
+  if (leadsLoading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '40px 0' }}>
+        <div
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: '50%',
+            border: `2px solid ${C.border}`,
+            borderTopColor: C.accent,
+            animation: 'gradient-spin 0.8s linear infinite',
+          }}
+        />
+        <span style={{ fontSize: 13, color: C.text2 }}>Lead wird geladen...</span>
+      </div>
+    );
+  }
 
   if (!lead) {
     return (
@@ -572,7 +600,7 @@ export default function LeadDetailPage() {
                 </div>
                 {s > 0 &&
                   (() => {
-                    const avg = getLeadStats(LEADS).avgScore;
+                    const avg = getLeadStats(liveLeads).avgScore;
                     const diff = s - avg;
                     return (
                       <div style={{ fontSize: 11, color: diff > 0 ? C.success : C.danger, marginBottom: 8 }}>
@@ -1312,7 +1340,8 @@ export default function LeadDetailPage() {
 
       {/* ── SIMILAR LEADS ── */}
       {(() => {
-        const similar = LEADS.filter((l) => l.id !== lead.id && l.industry === lead.industry)
+        const similar = liveLeads
+          .filter((l) => l.id !== lead.id && l.industry === lead.industry)
           .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
           .slice(0, 3);
         if (similar.length === 0) return null;
