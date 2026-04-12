@@ -395,11 +395,6 @@ export default function SalesV2HomePage() {
       <PageHeader
         title={`Willkommen zurück, ${ACCOUNT.senderName.split(' ')[0]}`}
         subtitle={`${ACCOUNT.companyName} · ${dateStr}`}
-        actions={
-          <GlowButton onClick={() => showToast('Lead-Generator wird gestartet...', 'info')}>
-            + Lead generieren
-          </GlowButton>
-        }
       />
 
       {/* KPI Metric Cards — real data */}
