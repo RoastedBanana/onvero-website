@@ -861,14 +861,35 @@ function LeadsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
 
+  // Optimistic status overrides — instant UI update before DB roundtrip
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, Lead['status']>>({});
+
   function changeStatus(leadId: string, oldStatus: string, newStatus: Lead['status']) {
+    // Instant local update
+    setStatusOverrides((prev) => ({ ...prev, [leadId]: newStatus }));
     showToast(`Status → ${newStatus}`, 'success');
+    // Persist to DB + write activity
     updateLeadStatus(leadId, oldStatus, newStatus);
-    // Realtime subscription will update the UI automatically
   }
 
-  // Dynamic city filters from live data
-  const cityFilters = ['Alle Städte', ...Array.from(new Set(liveLeads.map((l) => l.city).filter(Boolean)))];
+  // Merge live leads with optimistic overrides
+  const mergedLeads = liveLeads.map((l) => (statusOverrides[l.id] ? { ...l, status: statusOverrides[l.id] } : l));
+
+  // Clear overrides when realtime catches up
+  useEffect(() => {
+    if (Object.keys(statusOverrides).length === 0) return;
+    const updated: Record<string, Lead['status']> = {};
+    for (const [id, overrideStatus] of Object.entries(statusOverrides)) {
+      const live = liveLeads.find((l) => l.id === id);
+      // Keep override only if live hasn't caught up yet
+      if (live && live.status !== overrideStatus) updated[id] = overrideStatus;
+    }
+    if (Object.keys(updated).length !== Object.keys(statusOverrides).length) {
+      setStatusOverrides(updated);
+    }
+  }, [liveLeads]);
+
+  const cityFilters = ['Alle Städte', ...Array.from(new Set(mergedLeads.map((l) => l.city).filter(Boolean)))];
 
   useEffect(() => {
     const f = searchParams.get('filter');
@@ -879,7 +900,7 @@ function LeadsPage() {
 
   const isNeuHeute = filterParam === 'neu-heute';
 
-  const filteredLeads = liveLeads.filter((lead) => {
+  const filteredLeads = mergedLeads.filter((lead) => {
     // "Neu heute" filter — check created_at is today
     if (isNeuHeute) {
       const today = new Date().toDateString();
@@ -939,7 +960,7 @@ function LeadsPage() {
       <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Leads' }]} />
       <PageHeader
         title="Alle Leads"
-        subtitle={leadsLoading ? 'Laden...' : `${liveLeads.length} Einträge · live aus Supabase`}
+        subtitle={leadsLoading ? 'Laden...' : `${mergedLeads.length} Einträge · live aus Supabase`}
         actions={
           <>
             <div
@@ -979,7 +1000,7 @@ function LeadsPage() {
           </>
         }
       />
-      <LeadStats leads={liveLeads} />
+      <LeadStats leads={mergedLeads} />
       <FilterBar
         activeStatus={statusFilter}
         activeCity={cityFilter}
