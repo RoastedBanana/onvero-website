@@ -7,6 +7,7 @@ import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, S
 import { CommandPalette } from './_command-palette';
 import { AIChatWidget } from './_ai-chat';
 import { OnboardingTour } from './_onboarding';
+import { LEADS } from './_lead-data';
 
 // ─── NAV CONFIG ──────────────────────────────────────────────────────────────
 
@@ -23,6 +24,16 @@ type NavSection = {
   items: NavItem[];
 };
 
+// Derive real counts from lead data
+const neuHeute = LEADS.filter((l) => {
+  const d = new Date(l.createdAt.replace(/(\d+)\. (\w+) (\d+)/, '$2 $1, $3'));
+  const today = new Date();
+  return d.toDateString() === today.toDateString();
+}).length;
+const qualifiziert = LEADS.filter((l) => l.status === 'Qualifiziert').length;
+const inKontakt = LEADS.filter((l) => l.status === 'In Kontakt').length;
+const mitEmail = LEADS.filter((l) => l.emailDraftBody).length;
+
 const NAV: NavSection[] = [
   {
     title: 'ÜBERSICHT',
@@ -35,11 +46,11 @@ const NAV: NavSection[] = [
         label: 'Alle Leads',
         href: '/sales-v2/leads',
         icon: ICONS.list,
-        badge: '2.8k',
+        badge: `${LEADS.length}`,
         children: [
-          { label: 'Neu heute', href: '/sales-v2/leads?filter=neu' },
-          { label: 'Qualifiziert', href: '/sales-v2/leads?filter=qualifiziert' },
-          { label: 'In Kontakt', href: '/sales-v2/leads?filter=kontakt' },
+          { label: `Neu heute (${neuHeute})`, href: '/sales-v2/leads?filter=neu-heute' },
+          { label: `Qualifiziert (${qualifiziert})`, href: '/sales-v2/leads?filter=qualifiziert' },
+          { label: `In Kontakt (${inKontakt})`, href: '/sales-v2/leads?filter=kontakt' },
         ],
       },
     ],
@@ -47,7 +58,7 @@ const NAV: NavSection[] = [
   {
     title: 'PROSPECTS',
     items: [
-      { label: 'Market Intent', href: '/sales-v2/prospects', icon: ICONS.zap, badge: '18' },
+      { label: 'Market Intent', href: '/sales-v2/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
       { label: 'Outreach-Ideen', href: '/sales-v2/outreach', icon: ICONS.mail },
       { label: 'Monitoring', href: '/sales-v2/monitoring', icon: ICONS.eye },
     ],

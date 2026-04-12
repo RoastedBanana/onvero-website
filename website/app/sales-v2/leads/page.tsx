@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   C,
   SvgIcon,
@@ -596,16 +596,58 @@ function KanbanBoard({ leads, onLeadClick }: { leads: Lead[]; onLeadClick: (l: L
 
 // ─── PAGE ────────────────────────────────────────────────────────────────────
 
-export default function LeadsPage() {
+export default function LeadsPageWrapper() {
+  return (
+    <Suspense>
+      <LeadsPage />
+    </Suspense>
+  );
+}
+
+function LeadsPage() {
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState('Alle');
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get('filter');
+
+  // Map URL filter params to status filter
+  const initialFilter =
+    filterParam === 'qualifiziert'
+      ? 'Qualifiziert'
+      : filterParam === 'kontakt'
+        ? 'In Kontakt'
+        : filterParam === 'neu-heute'
+          ? 'Neu'
+          : 'Alle';
+
+  const [statusFilter, setStatusFilter] = useState(initialFilter);
   const [cityFilter, setCityFilter] = useState('Alle Städte');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
 
+  // Update filter when URL changes
+  useEffect(() => {
+    const f = searchParams.get('filter');
+    if (f === 'qualifiziert') setStatusFilter('Qualifiziert');
+    else if (f === 'kontakt') setStatusFilter('In Kontakt');
+    else if (f === 'neu-heute') setStatusFilter('Neu');
+    else if (f === null && statusFilter !== 'Alle') {
+      /* keep current */
+    }
+  }, [searchParams]);
+
+  const isNeuHeute = filterParam === 'neu-heute';
+
   const filteredLeads = LEADS.filter((lead) => {
-    if (statusFilter !== 'Alle' && lead.status !== statusFilter) return false;
+    // "Neu heute" filter — check created_at is today
+    if (isNeuHeute) {
+      const today = new Date().toDateString();
+      // createdAt is like "11. April 2026"
+      const leadDate = new Date(lead.createdAt.replace(/(\d+)\. (\w+) (\d+)/, '$2 $1, $3'));
+      if (leadDate.toDateString() !== today) return false;
+    } else if (statusFilter !== 'Alle' && lead.status !== statusFilter) {
+      return false;
+    }
     if (cityFilter !== 'Alle Städte' && lead.city !== cityFilter) return false;
     if (search) {
       const q = search.toLowerCase();
