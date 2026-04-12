@@ -21,7 +21,6 @@ type LeadDetail = {
   city: string;
   score: number;
   status: string;
-  pipeline: string | null;
   industry: string;
   employees: string;
   email?: string;
@@ -177,18 +176,6 @@ export function SlideOver({ lead, onClose }: { lead: LeadDetail | null; onClose:
               }}
             >
               <StatusBadge status={lead.status} />
-              {lead.pipeline && (
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: C.text1,
-                    fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                  }}
-                >
-                  {lead.pipeline}
-                </span>
-              )}
             </div>
           </div>
 

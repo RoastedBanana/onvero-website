@@ -13,7 +13,6 @@ export interface Lead {
   country: string | null;
   score: number | null;
   status: 'Neu' | 'In Kontakt' | 'Qualifiziert' | 'Verloren';
-  pipeline: string | null;
   lastActivity: string;
   industry: string;
   industryApollo: string | null;
@@ -903,7 +902,6 @@ export const LEADS: Lead[] = RAW_LEADS.map((r) => {
     country: e.country ?? null,
     score: r.score,
     status: mapStatus(r.status),
-    pipeline: null,
     lastActivity: e.last_contacted_at ? `Kontaktiert ${e.last_contacted_at}` : timeAgo(r.created_at),
     industry: guessIndustry(r.ai_tags, r.ai_summary, r.company_name),
     industryApollo: e.industry_apollo ?? null,
@@ -985,11 +983,7 @@ export function getLeadStats(leads: Lead[]) {
   const cold = leads.filter((l) => (l.score ?? 0) < 50).length;
   const avgScore =
     scored > 0 ? Math.round(leads.filter((l) => l.score !== null).reduce((a, l) => a + (l.score ?? 0), 0) / scored) : 0;
-  const totalPipeline = leads.reduce((a, l) => {
-    if (!l.pipeline) return a;
-    return a + parseInt(l.pipeline.replace(/[€.]/g, '').trim());
-  }, 0);
-  return { total, scored, hot, warm, cold, avgScore, totalPipeline };
+  return { total, scored, hot, warm, cold, avgScore };
 }
 
 export function getLeadById(id: string): Lead | undefined {

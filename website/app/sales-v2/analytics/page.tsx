@@ -16,13 +16,13 @@ import {
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'leads' | 'pipeline' | 'activity';
+type Tab = 'overview' | 'leads' | 'activity';
 
 // ─── MOCK DATA ───────────────────────────────────────────────────────────────
 
 const OVERVIEW_METRICS = [
   {
-    label: 'REVENUE PIPELINE',
+    label: 'REVENUE',
     value: '€128.4k',
     delta: '+12% MoM',
     deltaType: 'up' as const,
@@ -59,7 +59,7 @@ const OVERVIEW_METRICS = [
   },
 ];
 
-const PIPELINE_MONTHS = [
+const LEADS_MONTHS = [
   { m: 'Okt', v: 62 },
   { m: 'Nov', v: 78 },
   { m: 'Dez', v: 95 },
@@ -104,17 +104,10 @@ const FUNNEL = [
   { stage: 'Abschluss', count: 34, color: '#34D399' },
 ];
 
-const DEALS = [
-  { stage: 'Discovery', count: 12, value: 42000, color: '#818CF8' },
-  { stage: 'Demo', count: 8, value: 38400, color: '#38BDF8' },
-  { stage: 'Verhandlung', count: 5, value: 31000, color: '#FBBF24' },
-  { stage: 'Abschluss nah', count: 3, value: 17000, color: '#34D399' },
-];
-
 const ACTIVITY = [
   { action: 'Lead Marcus Weber → Qualifiziert', time: 'vor 2h', color: '#34D399' },
   { action: 'KI-Score Batch: 23 Leads bewertet', time: 'vor 6h', color: '#818CF8' },
-  { action: 'Pipeline +€18.000 (Axflow AG)', time: 'vor 8h', color: '#34D399' },
+  { action: 'Lead Axflow AG → Qualifiziert', time: 'vor 8h', color: '#34D399' },
   { action: 'Outreach: 12 E-Mails versendet', time: 'vor 12h', color: '#38BDF8' },
   { action: 'Meeting transkribiert: Silo Labs', time: 'vor 1 Tag', color: '#A78BFA' },
   { action: 'Neuer Intent-Signal: Nexlayer GmbH', time: 'vor 1 Tag', color: '#FBBF24' },
@@ -579,137 +572,6 @@ function SankeyFlow() {
   );
 }
 
-// ─── FORECAST CHART ──────────────────────────────────────────────────────────
-
-function ForecastChart() {
-  const months = ['Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt'];
-  const forecast = [128, 142, 158, 170, 185, 198];
-  const low = [128, 130, 138, 145, 152, 160];
-  const high = [128, 155, 178, 198, 218, 240];
-  const maxV = 260;
-  const W = 400;
-  const H = 160;
-  const padL = 40;
-  const padR = 16;
-  const padT = 16;
-  const padB = 28;
-  const cW = W - padL - padR;
-  const cH = H - padT - padB;
-
-  function toP(v: number, i: number): [number, number] {
-    return [padL + (i / (months.length - 1)) * cW, padT + (1 - v / maxV) * cH];
-  }
-
-  const fPts = forecast.map((v, i) => toP(v, i));
-  const lPts = low.map((v, i) => toP(v, i));
-  const hPts = high.map((v, i) => toP(v, i));
-
-  const fLine = smoothPath(fPts);
-  const lLine = smoothPath(lPts);
-  const hLine = smoothPath(hPts);
-
-  // Band: low path forward + high path reversed
-  const lFwd = lPts.map((p) => `${p[0]},${p[1]}`).join(' L');
-  const hRev = [...hPts]
-    .reverse()
-    .map((p) => `${p[0]},${p[1]}`)
-    .join(' L');
-  const band = `M${lFwd} L${hRev} Z`;
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: H }}>
-      <defs>
-        <linearGradient id="fc-band" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#34D399" stopOpacity="0.08" />
-          <stop offset="100%" stopColor="#34D399" stopOpacity="0.01" />
-        </linearGradient>
-      </defs>
-
-      {/* Grid */}
-      {[0.25, 0.5, 0.75].map((f) => {
-        const y = padT + cH * (1 - f);
-        return <line key={f} x1={padL} y1={y} x2={W - padR} y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />;
-      })}
-      <line x1={padL} y1={padT + cH} x2={W - padR} y2={padT + cH} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-
-      {/* Confidence band */}
-      <path d={band} fill="url(#fc-band)" />
-
-      {/* Low / high dashed */}
-      <path d={lLine} fill="none" stroke="rgba(52,211,153,0.15)" strokeWidth="1" strokeDasharray="4,4" />
-      <path d={hLine} fill="none" stroke="rgba(52,211,153,0.15)" strokeWidth="1" strokeDasharray="4,4" />
-
-      {/* Forecast line */}
-      <path
-        d={fLine}
-        fill="none"
-        stroke="#34D399"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeDasharray="6,4"
-        style={{ filter: 'drop-shadow(0 0 4px rgba(52,211,153,0.3))' }}
-      />
-
-      {/* Actual point (first) */}
-      <circle
-        cx={fPts[0][0]}
-        cy={fPts[0][1]}
-        r="4"
-        fill="#34D399"
-        style={{ filter: 'drop-shadow(0 0 8px rgba(52,211,153,0.6))' }}
-      />
-      <text
-        x={fPts[0][0]}
-        y={fPts[0][1] - 10}
-        textAnchor="middle"
-        fill="#34D399"
-        fontSize="10"
-        fontWeight="600"
-        fontFamily="ui-monospace, monospace"
-      >
-        €128k
-      </text>
-
-      {/* End projection */}
-      <circle
-        cx={fPts[5][0]}
-        cy={fPts[5][1]}
-        r="3"
-        fill="none"
-        stroke="#34D399"
-        strokeWidth="1.5"
-        strokeDasharray="3,2"
-      />
-      <text
-        x={fPts[5][0]}
-        y={fPts[5][1] - 10}
-        textAnchor="middle"
-        fill="rgba(52,211,153,0.6)"
-        fontSize="10"
-        fontWeight="600"
-        fontFamily="ui-monospace, monospace"
-      >
-        €198k
-      </text>
-
-      {/* X labels */}
-      {months.map((m, i) => (
-        <text
-          key={m}
-          x={padL + (i / (months.length - 1)) * cW}
-          y={H - 4}
-          textAnchor="middle"
-          fill={C.text3}
-          fontSize="9"
-          fontFamily="system-ui"
-        >
-          {m}
-        </text>
-      ))}
-    </svg>
-  );
-}
-
 // ─── PANEL ───────────────────────────────────────────────────────────────────
 
 function Panel({
@@ -775,14 +637,14 @@ function OverviewTab() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
-        {/* Pipeline trend — 2D area chart */}
-        <Panel title="Pipeline-Entwicklung" icon={ICONS.trending} color="#34D399" delay={0.15}>
+        {/* Leads trend — 2D area chart */}
+        <Panel title="Leads-Entwicklung" icon={ICONS.trending} color="#34D399" delay={0.15}>
           <AreaChart
-            data={PIPELINE_MONTHS.map((d) => ({ x: d.m, y: d.v }))}
+            data={LEADS_MONTHS.map((d) => ({ x: d.m, y: d.v }))}
             color="#34D399"
             height={180}
-            label="Pipeline"
-            formatY={(v) => `€${Math.round(v)}k`}
+            label="Leads"
+            formatY={(v) => `${Math.round(v)}`}
           />
         </Panel>
 
@@ -964,111 +826,6 @@ function LeadsTab() {
   );
 }
 
-function PipelineTab() {
-  return (
-    <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
-        <Panel title="Pipeline-Entwicklung (7 Monate)" icon={ICONS.trending} color="#34D399" delay={0.1}>
-          <ModernBarChart
-            data={PIPELINE_MONTHS.map((d) => ({ x: d.m, y: d.v }))}
-            color="#34D399"
-            height={180}
-            formatY={(v) => `€${Math.round(v)}k`}
-          />
-        </Panel>
-
-        <Panel title="Deals nach Phase" icon={ICONS.folder} color="#FBBF24" delay={0.15}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {DEALS.map((d, i) => {
-              const maxVal = DEALS[0].value;
-              return (
-                <div
-                  key={d.stage}
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: 10,
-                    background: 'rgba(255,255,255,0.015)',
-                    border: `1px solid ${C.border}`,
-                    animation: 'fadeIn 0.3s ease both',
-                    animationDelay: `${0.2 + i * 0.06}s`,
-                  }}
-                >
-                  <div
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: 2,
-                          background: d.color,
-                          boxShadow: `0 0 6px ${d.color}40`,
-                        }}
-                      />
-                      <span style={{ fontSize: 12.5, color: C.text1 }}>{d.stage}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 10, color: C.text3, fontFamily: 'ui-monospace, monospace' }}>
-                        {d.count} Deals
-                      </span>
-                      <span
-                        style={{ fontSize: 13, fontWeight: 600, color: d.color, fontFamily: 'ui-monospace, monospace' }}
-                      >
-                        €{(d.value / 1000).toFixed(1)}k
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.04)' }}>
-                    <div
-                      style={{
-                        width: `${(d.value / maxVal) * 100}%`,
-                        height: '100%',
-                        borderRadius: 2,
-                        background: `linear-gradient(90deg, ${d.color}60, ${d.color})`,
-                        boxShadow: `0 0 6px ${d.color}20`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Panel>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
-        <Panel title="Revenue Forecast (6 Monate)" icon={ICONS.trending} color="#34D399" delay={0.2}>
-          <ForecastChart />
-          <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
-            {[
-              { color: '#34D399', style: 'solid', label: 'Prognose' },
-              { color: 'rgba(52,211,153,0.15)', style: 'dashed', label: 'Konfidenz' },
-            ].map((l) => (
-              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div
-                  style={{
-                    width: 16,
-                    height: 2,
-                    background: l.color,
-                    borderRadius: 1,
-                    borderStyle: l.style === 'dashed' ? 'dashed' : 'solid',
-                  }}
-                />
-                <span style={{ fontSize: 10, color: C.text3 }}>{l.label}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel title="Lead-Flow (Sankey)" icon={ICONS.chart} color="#818CF8" delay={0.25}>
-          <SankeyFlow />
-        </Panel>
-      </div>
-    </>
-  );
-}
-
 function ActivityTab() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14 }}>
@@ -1141,7 +898,6 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'overview', label: 'Übersicht', icon: ICONS.home },
     { id: 'leads', label: 'Leads', icon: ICONS.users },
-    { id: 'pipeline', label: 'Pipeline', icon: ICONS.trending },
     { id: 'activity', label: 'Aktivität', icon: ICONS.clock },
   ];
 
@@ -1213,7 +969,6 @@ export default function AnalyticsPage() {
       <div key={tab} className="tab-content-enter">
         {tab === 'overview' && <OverviewTab />}
         {tab === 'leads' && <LeadsTab />}
-        {tab === 'pipeline' && <PipelineTab />}
         {tab === 'activity' && <ActivityTab />}
       </div>
     </>

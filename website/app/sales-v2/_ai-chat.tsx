@@ -11,13 +11,13 @@ type Message = {
 };
 
 const DEMO_RESPONSES: Record<string, string> = {
-  default: 'Ich kann dir bei Leads, Pipeline, Meetings und Analytics helfen. Was möchtest du wissen?',
+  default: 'Ich kann dir bei Leads, Meetings und Analytics helfen. Was möchtest du wissen?',
   leads:
     'Du hast aktuell 2.847 Leads. Davon sind 6 "Hot" (Score ≥85), 4 "Warm" und 2 "Cold". Die Top-Leads sind Marcus Weber (94), Tom Schreiber (92) und Clara Wolff (91).',
   hamburg:
     '3 Leads aus Hamburg: Marcus Weber (Stackbase, Score 94), Clara Wolff (Silo Labs, Score 91) und Lena Fischer (Greenvolt, Score 58).',
-  pipeline:
-    'Deine Pipeline steht bei €128.400 (+12% MoM). Größter Deal: Tom Schreiber / Axflow AG mit €18.000. Win Rate liegt bei 24.6%.',
+  umsatz:
+    'Dein aktueller Umsatz liegt bei €128.400 (+12% MoM). Größter Deal: Tom Schreiber / Axflow AG mit €18.000. Win Rate liegt bei 24.6%.',
   meeting:
     'Dein nächstes Meeting: Discovery Call mit Stackbase GmbH heute um 14:00 (Video). Morgen: Demo mit Axflow AG um 10:30.',
   score:
@@ -30,7 +30,7 @@ function getAIResponse(input: string): string {
   const q = input.toLowerCase();
   if (q.includes('lead')) return DEMO_RESPONSES.leads;
   if (q.includes('hamburg') || q.includes('stadt')) return DEMO_RESPONSES.hamburg;
-  if (q.includes('pipeline') || q.includes('revenue') || q.includes('umsatz')) return DEMO_RESPONSES.pipeline;
+  if (q.includes('revenue') || q.includes('umsatz')) return DEMO_RESPONSES.umsatz;
   if (q.includes('meeting') || q.includes('termin')) return DEMO_RESPONSES.meeting;
   if (q.includes('score') || q.includes('ki')) return DEMO_RESPONSES.score;
   if (q.includes('outreach') || q.includes('email') || q.includes('nachricht')) return DEMO_RESPONSES.outreach;
@@ -43,7 +43,7 @@ export function AIChatWidget() {
     {
       id: 0,
       role: 'ai',
-      text: 'Hey! Ich bin dein Sales-Assistent. Frag mich zu Leads, Pipeline, Meetings oder Analytics.',
+      text: 'Hey! Ich bin dein Sales-Assistent. Frag mich zu Leads, Meetings oder Analytics.',
       time: 'jetzt',
     },
   ]);
@@ -276,7 +276,7 @@ export function AIChatWidget() {
           flexWrap: 'wrap',
         }}
       >
-        {['Zeig mir meine Leads', 'Pipeline Status', 'Nächstes Meeting'].map((s) => (
+        {['Zeig mir meine Leads', 'KI-Score Analyse', 'Nächstes Meeting'].map((s) => (
           <button
             key={s}
             onClick={() => {

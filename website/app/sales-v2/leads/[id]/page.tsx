@@ -1004,7 +1004,6 @@ export default function LeadDetailPage() {
             <InfoRow label="Quelle" value={lead.source} />
             <InfoRow label="Erstellt am" value={lead.createdAt} />
             {lead.lastContactedAt && <InfoRow label="Zuletzt kontaktiert" value={lead.lastContactedAt} />}
-            {lead.pipeline && <InfoRow label="Pipeline" value={lead.pipeline} mono />}
           </div>
 
           {/* Quick Actions */}

@@ -201,7 +201,7 @@ function LeadTable({
   onToggleAll: () => void;
   onLeadClick: (lead: Lead) => void;
 }) {
-  const headers = ['', 'Kontakt & Firma', 'KI-Score', 'Status', 'Branche', 'Pipeline', 'Aktivität'];
+  const headers = ['', 'Kontakt & Firma', 'KI-Score', 'Status', 'Branche', 'Aktivität'];
   const allSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
 
   return (
@@ -348,10 +348,6 @@ function LeadTable({
                               <span style={{ color: C.text3 }}>Größe:</span>{' '}
                               <span style={{ color: C.text2 }}>{lead.employees}</span>
                             </div>
-                            <div>
-                              <span style={{ color: C.text3 }}>Pipeline:</span>{' '}
-                              <span style={{ color: C.text2 }}>{lead.pipeline ?? '—'}</span>
-                            </div>
                           </div>
                         </div>
                       }
@@ -408,17 +404,6 @@ function LeadTable({
                   <td style={{ padding: '14px 18px' }}>
                     <span style={{ fontSize: 11.5, color: C.text2 }}>{lead.industry}</span>
                     <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{lead.employees} MA</div>
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 18px',
-                      fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                      fontSize: 12.5,
-                      fontWeight: lead.pipeline ? 500 : 400,
-                      color: lead.pipeline ? C.text1 : C.text3,
-                    }}
-                  >
-                    {lead.pipeline ?? '—'}
                   </td>
                   <td style={{ padding: '14px 18px', fontSize: 11, color: C.text3 }}>{lead.lastActivity}</td>
                 </tr>
@@ -559,18 +544,6 @@ function KanbanBoard({ leads, onLeadClick }: { leads: Lead[]; onLeadClick: (l: L
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <ScoreBar score={lead.score ?? 0} />
-                    {lead.pipeline && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 500,
-                          color: C.text1,
-                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                        }}
-                      >
-                        {lead.pipeline}
-                      </span>
-                    )}
                   </div>
                 </div>
               ))}
