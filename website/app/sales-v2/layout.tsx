@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, StatusBar } from './_shared';
@@ -353,6 +353,198 @@ function NotifBell({ count = 3 }: { count?: number }) {
 
 // ─── TOPBAR ──────────────────────────────────────────────────────────────────
 
+// ─── PROFILE DROPDOWN ────────────────────────────────────────────────────────
+
+function ProfileDropdown() {
+  const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<{ email: string; initials: string; name: string } | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const { createBrowserClient } = await import('@supabase/ssr');
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const {
+        data: { user: u },
+      } = await supabase.auth.getUser();
+      if (u?.email) {
+        const parts = u.email.split('@')[0].split('.');
+        const name = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        const initials = parts.map((p) => p.charAt(0).toUpperCase()).join('');
+        setUser({ email: u.email, initials, name });
+      }
+    }
+    load();
+  }, []);
+
+  async function handleLogout() {
+    const { createBrowserClient } = await import('@supabase/ssr');
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="s-ghost"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 9,
+          padding: '4px 10px 4px 4px',
+          borderRadius: 9,
+          border: `1px solid ${C.border}`,
+          cursor: 'pointer',
+          background: 'rgba(255,255,255,0.02)',
+        }}
+      >
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 7,
+            background: 'linear-gradient(135deg, #6366F1, #818CF8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 10,
+            fontWeight: 600,
+            color: '#fff',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)',
+          }}
+        >
+          {user?.initials ?? '..'}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: 11.5, fontWeight: 500, color: C.text1, lineHeight: 1.2 }}>
+            {user?.name ?? 'Laden...'}
+          </span>
+          <span style={{ fontSize: 9.5, color: C.text3, lineHeight: 1.2 }}>
+            {user?.email ? user.email.split('@')[1] : ''}
+          </span>
+        </div>
+        <svg
+          width={10}
+          height={10}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={C.text3}
+          strokeWidth={2}
+          strokeLinecap="round"
+          style={{ marginLeft: 2 }}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              marginTop: 6,
+              zIndex: 1000,
+              background: C.surface,
+              border: `1px solid ${C.borderLight}`,
+              borderRadius: 10,
+              padding: 4,
+              minWidth: 200,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.04)',
+              animation: 'scaleIn 0.15s ease both',
+            }}
+          >
+            {/* User info */}
+            <div style={{ padding: '10px 12px', borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{user?.name}</div>
+              <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{user?.email}</div>
+            </div>
+
+            {/* Settings link */}
+            <Link
+              href="/sales-v2/settings"
+              onClick={() => setOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                borderRadius: 6,
+                margin: '4px 0',
+                textDecoration: 'none',
+                color: C.text2,
+                fontSize: 12,
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <SvgIcon d={ICONS.settings} size={13} color={C.text3} />
+              Einstellungen
+            </Link>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: 'none',
+                background: 'transparent',
+                color: '#F87171',
+                fontSize: 12,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                textAlign: 'left',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(248,113,113,0.06)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <svg
+                width={13}
+                height={13}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#F87171"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
+              Abmelden
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── TOPBAR ──────────────────────────────────────────────────────────────────
+
 function Topbar() {
   return (
     <div
@@ -527,55 +719,8 @@ function Topbar() {
 
         <div style={{ width: 1, height: 24, background: C.border, margin: '0 6px' }} />
 
-        {/* Profile */}
-        <div
-          className="s-ghost"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 9,
-            padding: '4px 10px 4px 4px',
-            borderRadius: 9,
-            border: `1px solid ${C.border}`,
-            cursor: 'pointer',
-            background: 'rgba(255,255,255,0.02)',
-          }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 7,
-              background: 'linear-gradient(135deg, #6366F1, #818CF8)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 10,
-              fontWeight: 600,
-              color: '#fff',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)',
-            }}
-          >
-            HL
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: 11.5, fontWeight: 500, color: C.text1, lineHeight: 1.2 }}>Hans L.</span>
-            <span style={{ fontSize: 9.5, color: C.text3, lineHeight: 1.2 }}>Admin</span>
-          </div>
-          <svg
-            width={10}
-            height={10}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={C.text3}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ marginLeft: 2 }}
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </div>
+        {/* Profile with Dropdown */}
+        <ProfileDropdown />
       </div>
     </div>
   );
