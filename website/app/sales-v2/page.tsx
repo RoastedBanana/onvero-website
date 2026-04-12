@@ -161,6 +161,7 @@ function BentoCard({
       className="s-bento"
       style={{
         gridColumn: `span ${span}`,
+        flex: 1,
         background: C.surface,
         border: `1px solid ${C.border}`,
         borderRadius: 14,
@@ -179,7 +180,10 @@ function BentoCard({
   );
   if (href)
     return (
-      <Link href={href} style={{ textDecoration: 'none', color: 'inherit', gridColumn: `span ${span}` }}>
+      <Link
+        href={href}
+        style={{ textDecoration: 'none', color: 'inherit', gridColumn: `span ${span}`, display: 'flex' }}
+      >
         {card}
       </Link>
     );
@@ -527,8 +531,8 @@ export default function SalesV2HomePage() {
         </BentoCard>
       </div>
 
-      {/* Score + Contact — equal width row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+      {/* Score + Contact — equal width, equal height */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, alignItems: 'stretch' }}>
         <BentoCard
           span={1}
           delay={0.25}
