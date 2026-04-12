@@ -763,31 +763,42 @@ export default function LeadDetailPage() {
             </Section>
           )}
 
-          {/* Career History — above timeline */}
-          {lead.employmentHistory && lead.employmentHistory.length > 0 && (
-            <Section title="Berufsverlauf" icon={ICONS.trending} color="#A78BFA">
-              <div style={{ position: 'relative' }}>
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 4,
-                    top: 14,
-                    bottom: 14,
-                    width: 1,
-                    background: `linear-gradient(180deg, ${C.border}, transparent)`,
-                  }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  {lead.employmentHistory
-                    .sort((a, b) => {
-                      if (a.current && !b.current) return -1;
-                      if (!a.current && b.current) return 1;
-                      if (!a.startDate && !b.startDate) return 0;
-                      if (!a.startDate) return 1;
-                      if (!b.startDate) return -1;
-                      return b.startDate.localeCompare(a.startDate);
-                    })
-                    .map((entry, i) => {
+          {/* Career History — redesigned */}
+          {lead.employmentHistory &&
+            lead.employmentHistory.length > 0 &&
+            (() => {
+              const sorted = [...lead.employmentHistory].sort((a, b) => {
+                if (a.current && !b.current) return -1;
+                if (!a.current && b.current) return 1;
+                if (!a.startDate && !b.startDate) return 0;
+                if (!a.startDate) return 1;
+                if (!b.startDate) return -1;
+                return b.startDate.localeCompare(a.startDate);
+              });
+              // Calculate max duration for relative bar widths
+              const durations = sorted.map((e) => {
+                if (!e.startDate) return 0;
+                const start = new Date(e.startDate);
+                const end = e.current ? new Date() : e.endDate ? new Date(e.endDate) : new Date();
+                return Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+              });
+              const maxDuration = Math.max(...durations, 1);
+
+              return (
+                <Section
+                  title="Berufsverlauf"
+                  icon={ICONS.trending}
+                  color="#A78BFA"
+                  actions={
+                    <span
+                      style={{ fontSize: 10, color: C.text3, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}
+                    >
+                      {sorted.length} {sorted.length === 1 ? 'Station' : 'Stationen'}
+                    </span>
+                  }
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {sorted.map((entry, i) => {
                       const startStr = entry.startDate
                         ? new Date(entry.startDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
                         : null;
@@ -796,65 +807,107 @@ export default function LeadDetailPage() {
                         : entry.endDate
                           ? new Date(entry.endDate).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' })
                           : null;
-                      let duration = '';
-                      if (entry.startDate) {
-                        const start = new Date(entry.startDate);
-                        const end = entry.current ? new Date() : entry.endDate ? new Date(entry.endDate) : null;
-                        if (end) {
-                          const months = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30));
-                          const years = Math.floor(months / 12);
-                          const rm = months % 12;
-                          duration = years > 0 ? `${years} J.${rm > 0 ? ` ${rm} M.` : ''}` : `${rm} M.`;
-                        }
-                      }
+                      const months = durations[i];
+                      const years = Math.floor(months / 12);
+                      const rm = months % 12;
+                      const durationStr =
+                        months > 0 ? (years > 0 ? `${years} J.${rm > 0 ? ` ${rm} M.` : ''}` : `${rm} M.`) : '';
+                      const barPct = (months / maxDuration) * 100;
+
                       return (
-                        <div key={i} style={{ display: 'flex', gap: 14, padding: '10px 0' }}>
+                        <div
+                          key={i}
+                          style={{
+                            padding: '14px 16px',
+                            borderRadius: 10,
+                            background: entry.current ? 'rgba(99,102,241,0.04)' : 'rgba(255,255,255,0.015)',
+                            border: `1px solid ${entry.current ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.04)'}`,
+                            position: 'relative',
+                            overflow: 'hidden',
+                            animation: 'fadeIn 0.3s ease both',
+                            animationDelay: `${0.1 + i * 0.05}s`,
+                          }}
+                        >
+                          {/* Duration bar — subtle background indicator */}
                           <div
                             style={{
-                              width: 9,
-                              height: 9,
-                              borderRadius: '50%',
-                              flexShrink: 0,
-                              marginTop: 4,
-                              background: entry.current ? C.accent : C.bg,
-                              border: `2px solid ${entry.current ? C.accent : C.text3}`,
-                              boxShadow: entry.current ? `0 0 8px ${C.accent}50` : 'none',
-                              zIndex: 1,
+                              position: 'absolute',
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              width: `${barPct}%`,
+                              background: entry.current
+                                ? 'linear-gradient(90deg, rgba(99,102,241,0.06), transparent)'
+                                : 'linear-gradient(90deg, rgba(255,255,255,0.02), transparent)',
+                              pointerEvents: 'none',
                             }}
                           />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12.5, fontWeight: 500, color: entry.current ? C.text1 : C.text2 }}>
-                              {entry.title}
+
+                          <div style={{ position: 'relative' }}>
+                            {/* Title + Current badge */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <span
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: entry.current ? 600 : 500,
+                                  color: entry.current ? C.text1 : C.text2,
+                                  letterSpacing: '-0.01em',
+                                }}
+                              >
+                                {entry.title}
+                              </span>
+                              {entry.current && (
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    fontWeight: 600,
+                                    letterSpacing: '0.04em',
+                                    color: C.accent,
+                                    padding: '1px 7px',
+                                    borderRadius: 4,
+                                    background: 'rgba(99,102,241,0.1)',
+                                    border: '1px solid rgba(99,102,241,0.15)',
+                                  }}
+                                >
+                                  AKTUELL
+                                </span>
+                              )}
                             </div>
-                            <div style={{ fontSize: 11.5, color: C.text3, marginTop: 2 }}>{entry.company}</div>
-                            <div
-                              style={{
-                                fontSize: 10,
-                                color: C.text3,
-                                marginTop: 3,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
-                              }}
-                            >
-                              <span>
+
+                            {/* Company */}
+                            <div style={{ fontSize: 12, color: C.text3, marginBottom: 6 }}>{entry.company}</div>
+
+                            {/* Date + Duration */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span
+                                style={{
+                                  fontSize: 10.5,
+                                  color: C.text3,
+                                  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                                }}
+                              >
                                 {startStr ?? '—'} – {endStr ?? '—'}
                               </span>
-                              {duration && (
-                                <>
-                                  <span style={{ opacity: 0.3 }}>·</span>
-                                  <span>{duration}</span>
-                                </>
+                              {durationStr && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    color: entry.current ? C.accent : C.text3,
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  {durationStr}
+                                </span>
                               )}
                             </div>
                           </div>
                         </div>
                       );
                     })}
-                </div>
-              </div>
-            </Section>
-          )}
+                  </div>
+                </Section>
+              );
+            })()}
 
           {/* Timeline — LIVE from Supabase Realtime */}
           <LeadTimeline leadId={lead.id} />
