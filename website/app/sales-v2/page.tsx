@@ -14,71 +14,67 @@ import {
   showToast,
   ProgressRing,
 } from './_shared';
-import { LEADS, getLeadStats, ACCOUNT } from './_lead-data';
+import { getLeadStats, ACCOUNT } from './_lead-data';
 import { useActivities, formatActivityTime, getActivityStyle } from './_activities';
+import { useLeads } from './_use-leads';
 
-// ─── DERIVE REAL DATA ────────────────────────────────────────────────────────
+// ─── HELPER: build metric cards from live data ──────────────────────────────
 
-const stats = getLeadStats(LEADS);
+function buildMetrics(leads: import('./_lead-data').Lead[]) {
+  const stats = getLeadStats(leads);
+  const scoredLeads = leads.filter((l) => l.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  return [
+    {
+      label: 'LEADS GESAMT',
+      value: `${stats.total}`,
+      delta: `${stats.scored} gescored`,
+      deltaType: 'up' as const,
+      gradient: 'radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)',
+      accentColor: '#818CF8',
+      glowColor: 'rgba(99,102,241,0.25)',
+      sparkline: scoredLeads.slice(0, 7).map((l) => l.score ?? 0),
+    },
+    {
+      label: 'KI-SCORE Ø',
+      value: `${stats.avgScore}`,
+      delta: `${stats.hot} Hot Leads`,
+      deltaType: 'up' as const,
+      gradient: 'radial-gradient(ellipse at 80% 0%, rgba(56,189,248,0.12) 0%, transparent 60%)',
+      accentColor: '#38BDF8',
+      glowColor: 'rgba(56,189,248,0.2)',
+      sparkline: scoredLeads
+        .slice(0, 7)
+        .map((l) => l.score ?? 0)
+        .reverse(),
+    },
+    {
+      label: 'HOT LEADS',
+      value: `${stats.hot}`,
+      delta: `${stats.warm} warm, ${stats.cold} cold`,
+      deltaType: null,
+      gradient: 'radial-gradient(ellipse at 50% 0%, rgba(52,211,153,0.12) 0%, transparent 60%)',
+      accentColor: '#34D399',
+      glowColor: 'rgba(52,211,153,0.2)',
+      sparkline: [stats.cold, stats.cold, stats.warm, stats.warm, stats.hot, stats.hot, stats.hot],
+    },
+    {
+      label: 'MIT E-MAIL',
+      value: `${leads.filter((l) => l.email).length}`,
+      delta: `${leads.filter((l) => l.emailStatus === 'verified').length} verifiziert`,
+      deltaType: 'up' as const,
+      gradient: 'radial-gradient(ellipse at 30% 0%, rgba(251,191,36,0.10) 0%, transparent 60%)',
+      accentColor: '#FBBF24',
+      glowColor: 'rgba(251,191,36,0.15)',
+      sparkline: leads.slice(0, 7).map((l) => (l.email ? 1 : 0)),
+    },
+  ];
+}
 
-const scoredLeads = LEADS.filter((l) => l.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-const topLeads = scoredLeads.slice(0, 5);
-
-// Metric cards derived from real data
-const METRIC_CARDS = [
-  {
-    label: 'LEADS GESAMT',
-    value: `${stats.total}`,
-    delta: `${stats.scored} gescored`,
-    deltaType: 'up' as const,
-    gradient: 'radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)',
-    accentColor: '#818CF8',
-    glowColor: 'rgba(99,102,241,0.25)',
-    sparkline: scoredLeads.slice(0, 7).map((l) => l.score ?? 0),
-  },
-  {
-    label: 'KI-SCORE Ø',
-    value: `${stats.avgScore}`,
-    delta: `${stats.hot} Hot Leads`,
-    deltaType: 'up' as const,
-    gradient: 'radial-gradient(ellipse at 80% 0%, rgba(56,189,248,0.12) 0%, transparent 60%)',
-    accentColor: '#38BDF8',
-    glowColor: 'rgba(56,189,248,0.2)',
-    sparkline: scoredLeads
-      .slice(0, 7)
-      .map((l) => l.score ?? 0)
-      .reverse(),
-  },
-  {
-    label: 'HOT LEADS',
-    value: `${stats.hot}`,
-    delta: `${stats.warm} warm, ${stats.cold} cold`,
-    deltaType: null,
-    gradient: 'radial-gradient(ellipse at 50% 0%, rgba(52,211,153,0.12) 0%, transparent 60%)',
-    accentColor: '#34D399',
-    glowColor: 'rgba(52,211,153,0.2)',
-    sparkline: [stats.cold, stats.cold, stats.warm, stats.warm, stats.hot, stats.hot, stats.hot],
-  },
-  {
-    label: 'MIT E-MAIL',
-    value: `${LEADS.filter((l) => l.email).length}`,
-    delta: `${LEADS.filter((l) => l.emailStatus === 'verified').length} verifiziert`,
-    deltaType: 'up' as const,
-    gradient: 'radial-gradient(ellipse at 30% 0%, rgba(251,191,36,0.10) 0%, transparent 60%)',
-    accentColor: '#FBBF24',
-    glowColor: 'rgba(251,191,36,0.15)',
-    sparkline: LEADS.slice(0, 7).map((l) => (l.email ? 1 : 0)),
-  },
-];
-
-// AI suggestions from real lead data
-const topUnanswered = LEADS.filter((l) => (l.score ?? 0) >= 60 && l.status === 'Neu' && l.emailDraftBody)
-  .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-  .slice(0, 3);
+// (all derived data is computed inside the component via useLeads)
 
 // ─── ENHANCED METRIC CARD WITH SPARKLINE ─────────────────────────────────────
 
-function MetricCardWithSparkline({ m, index }: { m: (typeof METRIC_CARDS)[number]; index: number }) {
+function MetricCardWithSparkline({ m, index }: { m: ReturnType<typeof buildMetrics>[number]; index: number }) {
   return (
     <div
       className="s-card"
@@ -349,8 +345,21 @@ function QuickActions() {
 // ─── PAGE ────────────────────────────────────────────────────────────────────
 
 export default function SalesV2HomePage() {
+  const { leads: liveLeads, loading } = useLeads();
+
+  // Derive all data from live leads
+  const stats = getLeadStats(liveLeads);
+  const scoredLeads = liveLeads.filter((l) => l.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const topLeads = scoredLeads.slice(0, 5);
+  const METRIC_CARDS = buildMetrics(liveLeads);
+  const topUnanswered = liveLeads
+    .filter((l) => (l.score ?? 0) >= 60 && l.status === 'Neu' && l.emailDraftBody)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .slice(0, 3);
+
   // Smart notifications based on real data
   useEffect(() => {
+    if (loading || liveLeads.length === 0) return;
     const top = topLeads[0];
     const timers = [
       ...(top
@@ -359,7 +368,7 @@ export default function SalesV2HomePage() {
       setTimeout(() => showToast(`${stats.hot} Hot Leads warten auf Outreach`, 'warning'), 7000),
     ];
     return () => timers.forEach(clearTimeout);
-  }, []);
+  }, [loading]);
 
   const today = new Date();
   const dayNames = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
@@ -548,22 +557,27 @@ export default function SalesV2HomePage() {
           <SectionLabel icon={ICONS.mail} label="Kontaktdaten-Übersicht" color="#FBBF24" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {[
-              { label: 'Mit E-Mail', value: LEADS.filter((l) => l.email).length, total: stats.total, color: '#34D399' },
+              {
+                label: 'Mit E-Mail',
+                value: liveLeads.filter((l) => l.email).length,
+                total: stats.total,
+                color: '#34D399',
+              },
               {
                 label: 'Verifiziert',
-                value: LEADS.filter((l) => l.emailStatus === 'verified').length,
+                value: liveLeads.filter((l) => l.emailStatus === 'verified').length,
                 total: stats.total,
                 color: '#818CF8',
               },
               {
                 label: 'Mit LinkedIn',
-                value: LEADS.filter((l) => l.linkedinUrl).length,
+                value: liveLeads.filter((l) => l.linkedinUrl).length,
                 total: stats.total,
                 color: '#38BDF8',
               },
               {
                 label: 'Mit Telefon',
-                value: LEADS.filter((l) => l.phone).length,
+                value: liveLeads.filter((l) => l.phone).length,
                 total: stats.total,
                 color: '#FBBF24',
               },

@@ -7,7 +7,7 @@ import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, S
 import { CommandPalette } from './_command-palette';
 import { AIChatWidget } from './_ai-chat';
 import { OnboardingTour } from './_onboarding';
-import { LEADS } from './_lead-data';
+import { useLeads } from './_use-leads';
 
 // ─── NAV CONFIG ──────────────────────────────────────────────────────────────
 
@@ -24,53 +24,52 @@ type NavSection = {
   items: NavItem[];
 };
 
-// Derive real counts from lead data
-const neuHeute = LEADS.filter((l) => {
-  const d = new Date(l.createdAt.replace(/(\d+)\. (\w+) (\d+)/, '$2 $1, $3'));
-  const today = new Date();
-  return d.toDateString() === today.toDateString();
-}).length;
-const qualifiziert = LEADS.filter((l) => l.status === 'Qualifiziert').length;
-const inKontakt = LEADS.filter((l) => l.status === 'In Kontakt').length;
-const mitEmail = LEADS.filter((l) => l.emailDraftBody).length;
-
-const NAV: NavSection[] = [
-  {
-    title: 'ÜBERSICHT',
-    items: [{ label: 'Home', href: '/sales-v2', icon: ICONS.home }],
-  },
-  {
-    title: 'LEADS',
-    items: [
-      {
-        label: 'Alle Leads',
-        href: '/sales-v2/leads',
-        icon: ICONS.list,
-        badge: `${LEADS.length}`,
-        children: [
-          { label: `Neu heute (${neuHeute})`, href: '/sales-v2/leads?filter=neu-heute' },
-          { label: `Qualifiziert (${qualifiziert})`, href: '/sales-v2/leads?filter=qualifiziert' },
-          { label: `In Kontakt (${inKontakt})`, href: '/sales-v2/leads?filter=kontakt' },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'PROSPECTS',
-    items: [
-      { label: 'Market Intent', href: '/sales-v2/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
-      { label: 'Outreach-Ideen', href: '/sales-v2/outreach', icon: ICONS.mail },
-      { label: 'Monitoring', href: '/sales-v2/monitoring', icon: ICONS.eye },
-    ],
-  },
-  {
-    title: 'PRODUKT',
-    items: [
-      { label: 'Meetings', href: '/sales-v2/meetings', icon: ICONS.calendar },
-      { label: 'Analytics', href: '/sales-v2/analytics', icon: ICONS.chart },
-    ],
-  },
-];
+// Nav structure — counts are computed dynamically in Sidebar via useLeads()
+function buildNav(
+  leadCount: number,
+  neuHeute: number,
+  qualifiziert: number,
+  inKontakt: number,
+  mitEmail: number
+): NavSection[] {
+  return [
+    {
+      title: 'ÜBERSICHT',
+      items: [{ label: 'Home', href: '/sales-v2', icon: ICONS.home }],
+    },
+    {
+      title: 'LEADS',
+      items: [
+        {
+          label: 'Alle Leads',
+          href: '/sales-v2/leads',
+          icon: ICONS.list,
+          badge: `${leadCount}`,
+          children: [
+            { label: `Neu heute (${neuHeute})`, href: '/sales-v2/leads?filter=neu-heute' },
+            { label: `Qualifiziert (${qualifiziert})`, href: '/sales-v2/leads?filter=qualifiziert' },
+            { label: `In Kontakt (${inKontakt})`, href: '/sales-v2/leads?filter=kontakt' },
+          ],
+        },
+      ],
+    },
+    {
+      title: 'PROSPECTS',
+      items: [
+        { label: 'Market Intent', href: '/sales-v2/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
+        { label: 'Outreach-Ideen', href: '/sales-v2/outreach', icon: ICONS.mail },
+        { label: 'Monitoring', href: '/sales-v2/monitoring', icon: ICONS.eye },
+      ],
+    },
+    {
+      title: 'PRODUKT',
+      items: [
+        { label: 'Meetings', href: '/sales-v2/meetings', icon: ICONS.calendar },
+        { label: 'Analytics', href: '/sales-v2/analytics', icon: ICONS.chart },
+      ],
+    },
+  ];
+}
 
 // ─── ONVERO ICON (real brand mark) ───────────────────────────────────────────
 
@@ -586,6 +585,17 @@ function Topbar() {
 
 function Sidebar() {
   const pathname = usePathname();
+  const { leads } = useLeads();
+
+  // Compute counts from live data
+  const neuHeute = leads.filter((l) => {
+    const created = new Date(l.createdAt.replace(/(\d+)\. (\w+) (\d+)/, '$2 $1, $3'));
+    return created.toDateString() === new Date().toDateString();
+  }).length;
+  const qualifiziert = leads.filter((l) => l.status === 'Qualifiziert').length;
+  const inKontakt = leads.filter((l) => l.status === 'In Kontakt').length;
+  const mitEmail = leads.filter((l) => l.emailDraftBody).length;
+  const NAV = buildNav(leads.length, neuHeute, qualifiziert, inKontakt, mitEmail);
 
   function isActive(href: string) {
     if (href === '/sales-v2') return pathname === '/sales-v2';

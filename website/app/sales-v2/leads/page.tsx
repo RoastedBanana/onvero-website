@@ -17,19 +17,19 @@ import {
   showToast,
   ProgressRing,
 } from '../_shared';
-import { LEADS, getLeadStats } from '../_lead-data';
-import { updateLeadStatus } from '../_activities';
+import { getLeadStats } from '../_lead-data';
 import type { Lead } from '../_lead-data';
+import { updateLeadStatus } from '../_activities';
+import { useLeads } from '../_use-leads';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
 const FILTERS = ['Alle', 'Neu', 'Qualifiziert', 'In Kontakt', 'Verloren'];
-const CITY_FILTERS = ['Alle Städte', ...Array.from(new Set(LEADS.map((l) => l.city)))];
 
 // ─── STATS BAR ───────────────────────────────────────────────────────────────
 
-function LeadStats() {
-  const s = getLeadStats(LEADS);
+function LeadStats({ leads }: { leads: Lead[] }) {
+  const s = getLeadStats(leads);
   const stats = [
     { label: 'Hot Leads', value: `${s.hot}`, sub: 'Score ≥ 70', color: '#F87171', bg: 'rgba(248,113,113,0.06)' },
     { label: 'Warm', value: `${s.warm}`, sub: 'Score 50–69', color: '#FBBF24', bg: 'rgba(251,191,36,0.06)' },
@@ -83,6 +83,7 @@ function FilterBar({
   onCityChange,
   search,
   onSearchChange,
+  cityFilters,
 }: {
   activeStatus: string;
   activeCity: string;
@@ -90,6 +91,7 @@ function FilterBar({
   onCityChange: (c: string) => void;
   search: string;
   onSearchChange: (s: string) => void;
+  cityFilters: string[];
 }) {
   return (
     <div
@@ -177,7 +179,7 @@ function FilterBar({
           backgroundPosition: 'right 10px center',
         }}
       >
-        {CITY_FILTERS.map((c) => (
+        {cityFilters.map((c) => (
           <option key={c} value={c}>
             {c}
           </option>
@@ -534,9 +536,7 @@ function LeadTable({
             background: 'rgba(255,255,255,0.01)',
           }}
         >
-          <span style={{ fontSize: 11, color: C.text3 }}>
-            {leads.length} von {LEADS.length} Leads
-          </span>
+          <span style={{ fontSize: 11, color: C.text3 }}>{leads.length} Leads</span>
         </div>
       )}
     </div>
@@ -844,8 +844,8 @@ function LeadsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterParam = searchParams.get('filter');
+  const { leads: liveLeads, loading: leadsLoading } = useLeads();
 
-  // Map URL filter params to status filter
   const initialFilter =
     filterParam === 'qualifiziert'
       ? 'Qualifiziert'
@@ -860,35 +860,26 @@ function LeadsPage() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
-  // Local status overrides — so UI updates instantly before DB roundtrip
-  const [statusOverrides, setStatusOverrides] = useState<Record<string, Lead['status']>>({});
 
   function changeStatus(leadId: string, oldStatus: string, newStatus: Lead['status']) {
-    setStatusOverrides((prev) => ({ ...prev, [leadId]: newStatus }));
     showToast(`Status → ${newStatus}`, 'success');
     updateLeadStatus(leadId, oldStatus, newStatus);
+    // Realtime subscription will update the UI automatically
   }
 
-  // Apply status overrides to leads
-  const leadsWithOverrides = LEADS.map((l) => ({
-    ...l,
-    status: statusOverrides[l.id] ?? l.status,
-  }));
+  // Dynamic city filters from live data
+  const cityFilters = ['Alle Städte', ...Array.from(new Set(liveLeads.map((l) => l.city).filter(Boolean)))];
 
-  // Update filter when URL changes
   useEffect(() => {
     const f = searchParams.get('filter');
     if (f === 'qualifiziert') setStatusFilter('Qualifiziert');
     else if (f === 'kontakt') setStatusFilter('In Kontakt');
     else if (f === 'neu-heute') setStatusFilter('Neu');
-    else if (f === null && statusFilter !== 'Alle') {
-      /* keep current */
-    }
   }, [searchParams]);
 
   const isNeuHeute = filterParam === 'neu-heute';
 
-  const filteredLeads = leadsWithOverrides.filter((lead) => {
+  const filteredLeads = liveLeads.filter((lead) => {
     // "Neu heute" filter — check created_at is today
     if (isNeuHeute) {
       const today = new Date().toDateString();
@@ -948,7 +939,7 @@ function LeadsPage() {
       <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Leads' }]} />
       <PageHeader
         title="Alle Leads"
-        subtitle={`${LEADS.length} Einträge · zuletzt aktualisiert vor 4 min`}
+        subtitle={leadsLoading ? 'Laden...' : `${liveLeads.length} Einträge · live aus Supabase`}
         actions={
           <>
             <div
@@ -988,7 +979,7 @@ function LeadsPage() {
           </>
         }
       />
-      <LeadStats />
+      <LeadStats leads={liveLeads} />
       <FilterBar
         activeStatus={statusFilter}
         activeCity={cityFilter}
@@ -996,6 +987,7 @@ function LeadsPage() {
         onCityChange={setCityFilter}
         search={search}
         onSearchChange={setSearch}
+        cityFilters={cityFilters}
       />
 
       {/* Keyboard hints */}
