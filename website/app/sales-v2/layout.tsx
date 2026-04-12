@@ -380,12 +380,18 @@ function ProfileDropdown() {
   }, []);
 
   async function handleLogout() {
-    const { createBrowserClient } = await import('@supabase/ssr');
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    await supabase.auth.signOut();
+    try {
+      // Use the same logout API as the old dashboard
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Fallback: sign out via Supabase client directly
+      const { createBrowserClient } = await import('@supabase/ssr');
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      await supabase.auth.signOut();
+    }
     window.location.href = '/login';
   }
 
