@@ -450,7 +450,16 @@ export default function NetworkPage() {
   // Network state
   const { networks, loading: netsLoading, createNetwork, renameNetwork, deleteNetwork } = useNetworks();
   const [activeNetworkId, setActiveNetworkId] = useState<string | null>(null);
-  const { nodes, edges, loading: canvasLoading, addNode, removeNode, updateNodePosition, updateNodeCategory, addEdge, flushPositions } = useNetworkCanvas(activeNetworkId);
+  const { nodes, edges, loading: canvasLoading, addNode, removeNode, updateNodePosition, updateNodeCategory, addEdge, flushPositions, setExpandingNode } = useNetworkCanvas(activeNetworkId);
+
+  // Stop loading spinners when new nodes arrive
+  const prevNodeCount = useRef(nodes.length);
+  useEffect(() => {
+    if (nodes.length > prevNodeCount.current && loadingNodeIds.size > 0) {
+      setLoadingNodeIds(new Set());
+    }
+    prevNodeCount.current = nodes.length;
+  }, [nodes.length, loadingNodeIds.size]);
 
   // Auto-select first network
   useEffect(() => {
@@ -638,6 +647,9 @@ export default function NetworkPage() {
     // Start loading animation
     setLoadingNodeIds((prev) => new Set(prev).add(nodeId));
 
+    // Tell the hook which node is expanding so new arrivals get positioned relative to it
+    setExpandingNode(nodeId);
+
     // Send website_data to n8n webhook only for "Ähnliche Unternehmen"
     if (cat === 'similar' && activeNetworkId) {
       try {
@@ -647,10 +659,13 @@ export default function NetworkPage() {
           body: JSON.stringify({ node_id: nodeId, category: cat }),
         });
       } catch {}
+    } else {
+      // For non-webhook categories, stop loading after a short delay
+      setTimeout(() => {
+        setLoadingNodeIds((prev) => { const next = new Set(prev); next.delete(nodeId); return next; });
+        setExpandingNode(null);
+      }, 600);
     }
-
-    // Stop loading after webhook or a minimum visual duration
-    setLoadingNodeIds((prev) => { const next = new Set(prev); next.delete(nodeId); return next; });
   }
 
   async function handleDeleteNetwork(id: string) {

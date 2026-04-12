@@ -16,10 +16,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const supabase = await createServerSupabaseClient();
 
-  // Get the node's lead_id
+  // Get the node with lead_id and position
   const { data: node } = await supabase
     .from('network_nodes')
-    .select('lead_id')
+    .select('lead_id, x, y')
     .eq('id', node_id)
     .eq('network_id', networkId)
     .eq('tenant_id', tenantId)
@@ -47,7 +47,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     freetext = JSON.stringify(websiteData, null, 2);
   }
 
-  // Fallback: include summary fields if website_data is empty
   if (!freetext && lead.website_summary) {
     freetext = lead.website_summary;
   }
@@ -55,7 +54,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     freetext = lead.ai_summary;
   }
 
-  // Send to n8n webhook
+  // Send to n8n webhook with full context for node insertion
   try {
     const webhookRes = await fetch(WEBHOOK_URL, {
       method: 'POST',
@@ -65,7 +64,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         company_name: lead.company_name,
         category,
         network_id: networkId,
-        node_id,
+        tenant_id: tenantId,
+        source_node_id: node_id,
+        source_x: node.x,
+        source_y: node.y,
         website_data: freetext,
       }),
     });

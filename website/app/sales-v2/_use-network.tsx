@@ -32,7 +32,6 @@ export type NetworkNode = {
   x: number;
   y: number;
   expand_category: string | null;
-  // joined lead data
   name: string;
   company: string;
   city: string;
@@ -81,6 +80,14 @@ function rawToNode(r: RawNode): NetworkNode {
     score: Math.round(lead?.score ?? 0),
   };
 }
+
+// ─── LAYOUT CONSTANTS ────────────────────────────────────────────────────────
+
+const NODE_OFFSET_X = 340;   // horizontal distance from source to new nodes
+const NODE_SPACING_Y = 120;  // vertical spacing between new nodes
+const GRID_SNAP = 20;
+
+function snap(v: number) { return Math.round(v / GRID_SNAP) * GRID_SNAP; }
 
 // ─── useNetworks: list all networks ──────────────────────────────────────────
 
@@ -140,9 +147,14 @@ export function useNetworkCanvas(networkId: string | null) {
   const dirtyPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load network data
+  // Track expanding node so we know where to position incoming nodes
+  const expandingNodeId = useRef<string | null>(null);
+  const knownNodeIds = useRef<Set<string>>(new Set());
+
+  // ── Load network data ───────────────────────────────────────────────────
+
   useEffect(() => {
-    if (!networkId) { setNodes([]); setEdges([]); return; }
+    if (!networkId) { setNodes([]); setEdges([]); knownNodeIds.current.clear(); return; }
     let cancelled = false;
     setLoading(true);
 
@@ -152,8 +164,10 @@ export function useNetworkCanvas(networkId: string | null) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const { nodes: rawNodes, edges: rawEdges } = await res.json();
         if (!cancelled) {
-          setNodes((rawNodes ?? []).map((n: RawNode) => rawToNode(n)));
+          const mapped = (rawNodes ?? []).map((n: RawNode) => rawToNode(n));
+          setNodes(mapped);
           setEdges(rawEdges ?? []);
+          knownNodeIds.current = new Set(mapped.map((n: NetworkNode) => n.id));
         }
       } catch {
         if (!cancelled) { setNodes([]); setEdges([]); }
@@ -165,7 +179,71 @@ export function useNetworkCanvas(networkId: string | null) {
     return () => { cancelled = true; };
   }, [networkId]);
 
-  // Realtime subscriptions
+  // ── Auto-position new nodes from n8n ────────────────────────────────────
+
+  const autoPositionNewNodes = useCallback(async (
+    incomingNodes: NetworkNode[],
+    existingNodes: NetworkNode[],
+    sourceNodeId: string | null,
+  ) => {
+    if (incomingNodes.length === 0) return;
+
+    // Find the source node
+    const source = sourceNodeId
+      ? existingNodes.find((n) => n.id === sourceNodeId)
+      : null;
+
+    const baseX = source ? source.x + NODE_OFFSET_X : 0;
+    const baseY = source ? source.y : 0;
+
+    // Center the new nodes vertically around the source
+    const totalHeight = (incomingNodes.length - 1) * NODE_SPACING_Y;
+    const startY = baseY - totalHeight / 2;
+
+    const positionUpdates: { id: string; x: number; y: number }[] = [];
+    const newEdges: { sourceId: string; targetId: string }[] = [];
+
+    incomingNodes.forEach((node, i) => {
+      const x = snap(baseX);
+      const y = snap(startY + i * NODE_SPACING_Y);
+      positionUpdates.push({ id: node.id, x, y });
+
+      if (sourceNodeId) {
+        newEdges.push({ sourceId: sourceNodeId, targetId: node.id });
+      }
+    });
+
+    // Update positions in local state immediately
+    setNodes((prev) => prev.map((n) => {
+      const update = positionUpdates.find((u) => u.id === n.id);
+      return update ? { ...n, x: update.x, y: update.y } : n;
+    }));
+
+    // Persist positions to DB
+    if (networkId && positionUpdates.length > 0) {
+      fetch(`/api/networks/${networkId}/nodes`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates: positionUpdates }),
+      });
+    }
+
+    // Create edges
+    for (const { sourceId, targetId } of newEdges) {
+      if (networkId) {
+        const res = await fetch(`/api/networks/${networkId}/edges`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source_node_id: sourceId, target_node_id: targetId, edge_type: 'expand' }),
+        });
+        const { edge } = await res.json();
+        if (edge) setEdges((prev) => [...prev, edge]);
+      }
+    }
+  }, [networkId]);
+
+  // ── Realtime subscriptions ──────────────────────────────────────────────
+
   useEffect(() => {
     if (!networkId) return;
     const supabase = getSupabase();
@@ -179,34 +257,86 @@ export function useNetworkCanvas(networkId: string | null) {
 
       channel = supabase
         .channel(`network-${networkId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'network_nodes', filter: `network_id=eq.${networkId}` },
-          () => {
-            // Re-fetch nodes on any change (simpler than partial updates with joins)
-            fetch(`/api/networks/${networkId}`, { cache: 'no-store' })
-              .then((r) => r.json())
-              .then(({ nodes: rawNodes }) => { if (rawNodes) setNodes(rawNodes.map((n: RawNode) => rawToNode(n))); });
-          })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'network_edges', filter: `network_id=eq.${networkId}` },
-          () => {
-            fetch(`/api/networks/${networkId}`, { cache: 'no-store' })
-              .then((r) => r.json())
-              .then(({ edges: rawEdges }) => { if (rawEdges) setEdges(rawEdges); });
-          })
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'network_nodes',
+          filter: `network_id=eq.${networkId}`,
+        }, () => {
+          // Fetch all nodes, detect new ones, auto-position them
+          fetch(`/api/networks/${networkId}`, { cache: 'no-store' })
+            .then((r) => r.json())
+            .then(({ nodes: rawNodes }) => {
+              if (!rawNodes) return;
+              const allMapped: NetworkNode[] = rawNodes.map((n: RawNode) => rawToNode(n));
+              const newNodes = allMapped.filter((n) => !knownNodeIds.current.has(n.id));
+
+              // Update known IDs
+              allMapped.forEach((n: NetworkNode) => knownNodeIds.current.add(n.id));
+
+              // Set all nodes
+              setNodes(allMapped);
+
+              // Auto-position new nodes that arrived at (0,0) from n8n
+              const unpositioned = newNodes.filter((n) => n.x === 0 && n.y === 0);
+              if (unpositioned.length > 0) {
+                const sourceId = expandingNodeId.current;
+                autoPositionNewNodes(unpositioned, allMapped, sourceId);
+              }
+            });
+        })
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'network_nodes',
+          filter: `network_id=eq.${networkId}`,
+        }, () => {
+          fetch(`/api/networks/${networkId}`, { cache: 'no-store' })
+            .then((r) => r.json())
+            .then(({ nodes: rawNodes }) => {
+              if (rawNodes) setNodes(rawNodes.map((n: RawNode) => rawToNode(n)));
+            });
+        })
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'network_nodes',
+          filter: `network_id=eq.${networkId}`,
+        }, () => {
+          fetch(`/api/networks/${networkId}`, { cache: 'no-store' })
+            .then((r) => r.json())
+            .then(({ nodes: rawNodes }) => {
+              if (rawNodes) {
+                const mapped = rawNodes.map((n: RawNode) => rawToNode(n));
+                setNodes(mapped);
+                knownNodeIds.current = new Set(mapped.map((n: NetworkNode) => n.id));
+              }
+            });
+        })
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'network_edges',
+          filter: `network_id=eq.${networkId}`,
+        }, () => {
+          fetch(`/api/networks/${networkId}`, { cache: 'no-store' })
+            .then((r) => r.json())
+            .then(({ edges: rawEdges }) => { if (rawEdges) setEdges(rawEdges); });
+        })
         .subscribe();
     })();
 
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [networkId]);
+  }, [networkId, autoPositionNewNodes]);
 
-  // ── Flush dirty positions ────────────────────────────────────────────────
+  // ── Flush dirty positions ───────────────────────────────────────────────
 
   const flushPositions = useCallback(() => {
     if (!networkId || dirtyPositions.current.size === 0) return;
     const updates = Array.from(dirtyPositions.current.entries()).map(([id, pos]) => ({ id, ...pos }));
     dirtyPositions.current.clear();
-
     fetch(`/api/networks/${networkId}/nodes`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -219,7 +349,7 @@ export function useNetworkCanvas(networkId: string | null) {
     saveTimer.current = setTimeout(flushPositions, 500);
   }, [flushPositions]);
 
-  // ── Public mutations ─────────────────────────────────────────────────────
+  // ── Public mutations ────────────────────────────────────────────────────
 
   const updateNodePosition = useCallback((nodeId: string, x: number, y: number) => {
     setNodes((prev) => prev.map((n) => (n.id === nodeId ? { ...n, x, y } : n)));
@@ -238,6 +368,7 @@ export function useNetworkCanvas(networkId: string | null) {
     if (node) {
       const mapped = rawToNode(node);
       setNodes((prev) => [...prev, mapped]);
+      knownNodeIds.current.add(mapped.id);
       return mapped;
     }
     return null;
@@ -247,6 +378,7 @@ export function useNetworkCanvas(networkId: string | null) {
     if (!networkId) return;
     setNodes((prev) => prev.filter((n) => n.id !== nodeId));
     setEdges((prev) => prev.filter((e) => e.source_node_id !== nodeId && e.target_node_id !== nodeId));
+    knownNodeIds.current.delete(nodeId);
     await fetch(`/api/networks/${networkId}/nodes/${nodeId}`, { method: 'DELETE' });
   }, [networkId]);
 
@@ -259,6 +391,11 @@ export function useNetworkCanvas(networkId: string | null) {
       body: JSON.stringify({ expand_category: category }),
     });
   }, [networkId]);
+
+  /** Call this before triggering the webhook so we know which node is the source */
+  const setExpandingNode = useCallback((nodeId: string | null) => {
+    expandingNodeId.current = nodeId;
+  }, []);
 
   const addEdge = useCallback(async (sourceNodeId: string, targetNodeId: string, edgeType?: string) => {
     if (!networkId) return null;
@@ -281,6 +418,6 @@ export function useNetworkCanvas(networkId: string | null) {
   return {
     nodes, edges, loading,
     addNode, removeNode, updateNodePosition, updateNodeCategory,
-    addEdge, removeEdge, flushPositions,
+    addEdge, removeEdge, flushPositions, setExpandingNode,
   };
 }
