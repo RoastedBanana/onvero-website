@@ -399,10 +399,7 @@ export default function SalesV2HomePage() {
     <>
       <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Home' }]} />
 
-      <PageHeader
-        title={`Willkommen zurück, ${ACCOUNT.senderName.split(' ')[0]}`}
-        subtitle={dateStr ? `${ACCOUNT.companyName} · ${dateStr}` : ACCOUNT.companyName}
-      />
+      <PageHeader title={`Willkommen zurück, ${ACCOUNT.senderName.split(' ')[0]}`} subtitle={ACCOUNT.companyName} />
 
       {/* KPI Metric Cards — real data */}
       {loading ? (
