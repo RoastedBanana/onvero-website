@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, StatusBar } from './_shared';
@@ -114,19 +115,83 @@ function OnveroIconMark({ size = 20, color = '#fff' }: { size?: number; color?: 
   );
 }
 
+// ─── PORTAL DROPDOWN — renders outside topbar stacking context ───────────────
+
+function PortalDropdown({
+  open,
+  onClose,
+  anchorRef,
+  width = 370,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  anchorRef: React.RefObject<HTMLElement | null>;
+  width?: number;
+  children: React.ReactNode;
+}) {
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+
+  useEffect(() => {
+    if (open && anchorRef.current) {
+      const rect = anchorRef.current.getBoundingClientRect();
+      setPos({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [open, anchorRef]);
+
+  if (!open || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <>
+      {/* Full-screen invisible backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 99990,
+          background: 'transparent',
+        }}
+      />
+      {/* Dropdown panel */}
+      <div
+        style={{
+          position: 'fixed',
+          top: pos.top,
+          right: pos.right,
+          width,
+          zIndex: 99991,
+          background: C.surface,
+          border: `1px solid ${C.borderLight}`,
+          borderRadius: 14,
+          overflow: 'hidden',
+          boxShadow: '0 16px 64px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.04)',
+          animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
+        }}
+      >
+        {children}
+      </div>
+    </>,
+    document.body
+  );
+}
+
 // ─── NOTIFICATION BELL — live from Supabase ─────────────────────────────────
 
 function NotifBell() {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
   const { activities, loading } = useActivities();
-
-  // Recent activities are our "notifications"
   const recent = activities.slice(0, 8);
   const count = recent.length;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <>
       <button
+        ref={ref}
         onClick={() => setOpen(!open)}
         style={{
           position: 'relative',
@@ -177,131 +242,97 @@ function NotifBell() {
         )}
       </button>
 
-      {open && (
-        <>
-          {/* Backdrop — full screen transparent overlay, closes on any click outside */}
-          <div
-            onClick={() => setOpen(false)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 9998,
-              background: 'transparent',
-              cursor: 'default',
-            }}
-          />
-
-          <div
-            style={{
-              position: 'fixed',
-              top: 60,
-              right: 20,
-              width: 370,
-              zIndex: 9999,
-              background: C.surface,
-              border: `1px solid ${C.borderLight}`,
-              borderRadius: 14,
-              overflow: 'hidden',
-              boxShadow: '0 16px 64px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.04)',
-              animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
-            }}
-          >
-            {/* Header */}
+      <PortalDropdown open={open} onClose={() => setOpen(false)} anchorRef={ref} width={370}>
+        {/* Header */}
+        <div
+          style={{
+            padding: '14px 18px',
+            borderBottom: `1px solid ${C.border}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Benachrichtigungen</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div
               style={{
-                padding: '14px 18px',
-                borderBottom: `1px solid ${C.border}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                background: C.success,
+                boxShadow: `0 0 4px ${C.success}`,
+                animation: 'pulse-live 2.5s ease-in-out infinite',
               }}
-            >
-              <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Benachrichtigungen</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            />
+            <span style={{ fontSize: 10, color: C.text3 }}>Live</span>
+          </div>
+        </div>
+
+        {/* List */}
+        <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+          {loading && (
+            <div style={{ padding: '24px 18px', textAlign: 'center' }}>
+              <span style={{ fontSize: 11, color: C.text3 }}>Laden...</span>
+            </div>
+          )}
+          {!loading && recent.length === 0 && (
+            <div style={{ padding: '32px 18px', textAlign: 'center' }}>
+              <span style={{ fontSize: 12, color: C.text3 }}>Keine Aktivitäten</span>
+              <div style={{ fontSize: 10, color: C.text3, marginTop: 4 }}>Aktionen werden hier live angezeigt</div>
+            </div>
+          )}
+          {recent.map((a) => {
+            const st = getActivityStyle(a.type);
+            return (
+              <div
+                key={a.id}
+                onClick={() => setOpen(false)}
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  padding: '12px 18px',
+                  borderBottom: '1px solid rgba(255,255,255,0.03)',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(99,102,241,0.04)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
                 <div
                   style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: '50%',
-                    background: C.success,
-                    boxShadow: `0 0 4px ${C.success}`,
-                    animation: 'pulse-live 2.5s ease-in-out infinite',
+                    width: 28,
+                    height: 28,
+                    borderRadius: 7,
+                    flexShrink: 0,
+                    background: `${st.color}10`,
+                    border: `1px solid ${st.color}18`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
-                />
-                <span style={{ fontSize: 10, color: C.text3 }}>Live</span>
+                >
+                  <SvgIcon d={st.icon} size={12} color={st.color} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: C.text1, lineHeight: 1.4, fontWeight: 500 }}>{a.title}</div>
+                  {a.company_name && (
+                    <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>
+                      {a.first_name} {a.last_name} · {a.company_name}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{formatActivityTime(a.created_at)}</div>
+                </div>
               </div>
-            </div>
-
-            {/* List */}
-            <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-              {loading && (
-                <div style={{ padding: '24px 18px', textAlign: 'center' }}>
-                  <span style={{ fontSize: 11, color: C.text3 }}>Laden...</span>
-                </div>
-              )}
-
-              {!loading && recent.length === 0 && (
-                <div style={{ padding: '32px 18px', textAlign: 'center' }}>
-                  <span style={{ fontSize: 12, color: C.text3 }}>Keine Aktivitäten</span>
-                  <div style={{ fontSize: 10, color: C.text3, marginTop: 4 }}>Aktionen werden hier live angezeigt</div>
-                </div>
-              )}
-
-              {recent.map((a) => {
-                const st = getActivityStyle(a.type);
-                return (
-                  <div
-                    key={a.id}
-                    style={{
-                      display: 'flex',
-                      gap: 12,
-                      padding: '12px 18px',
-                      borderBottom: '1px solid rgba(255,255,255,0.03)',
-                      cursor: 'pointer',
-                      transition: 'background 0.15s ease',
-                    }}
-                    onClick={() => setOpen(false)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(99,102,241,0.04)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 7,
-                        flexShrink: 0,
-                        background: `${st.color}10`,
-                        border: `1px solid ${st.color}18`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <SvgIcon d={st.icon} size={12} color={st.color} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, color: C.text1, lineHeight: 1.4, fontWeight: 500 }}>{a.title}</div>
-                      {a.company_name && (
-                        <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>
-                          {a.first_name} {a.last_name} · {a.company_name}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>
-                        {formatActivityTime(a.created_at)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+            );
+          })}
+        </div>
+      </PortalDropdown>
+    </>
   );
 }
 
@@ -311,6 +342,7 @@ function NotifBell() {
 
 function ProfileDropdown() {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLButtonElement>(null);
   const [user, setUser] = useState<{ email: string; initials: string; name: string } | null>(null);
 
   useEffect(() => {
@@ -335,10 +367,8 @@ function ProfileDropdown() {
 
   async function handleLogout() {
     try {
-      // Use the same logout API as the old dashboard
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
-      // Fallback: sign out via Supabase client directly
       const { createBrowserClient } = await import('@supabase/ssr');
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -350,8 +380,9 @@ function ProfileDropdown() {
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <>
       <button
+        ref={ref}
         onClick={() => setOpen(!open)}
         className="s-ghost"
         style={{
@@ -404,102 +435,84 @@ function ProfileDropdown() {
         </svg>
       </button>
 
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
-          <div
+      <PortalDropdown open={open} onClose={() => setOpen(false)} anchorRef={ref} width={220}>
+        <div style={{ padding: 4 }}>
+          {/* User info */}
+          <div style={{ padding: '10px 12px', borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{user?.name}</div>
+            <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{user?.email}</div>
+          </div>
+
+          {/* Settings */}
+          <Link
+            href="/sales-v2/settings"
+            onClick={() => setOpen(false)}
             style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              marginTop: 6,
-              zIndex: 1000,
-              background: C.surface,
-              border: `1px solid ${C.borderLight}`,
-              borderRadius: 10,
-              padding: 4,
-              minWidth: 200,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.04)',
-              animation: 'scaleIn 0.15s ease both',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              borderRadius: 6,
+              margin: '4px 0',
+              textDecoration: 'none',
+              color: C.text2,
+              fontSize: 12,
+              transition: 'background 0.1s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
             }}
           >
-            {/* User info */}
-            <div style={{ padding: '10px 12px', borderBottom: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{user?.name}</div>
-              <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{user?.email}</div>
-            </div>
+            <SvgIcon d={ICONS.settings} size={13} color={C.text3} />
+            Einstellungen
+          </Link>
 
-            {/* Settings link */}
-            <Link
-              href="/sales-v2/settings"
-              onClick={() => setOpen(false)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 12px',
-                borderRadius: 6,
-                margin: '4px 0',
-                textDecoration: 'none',
-                color: C.text2,
-                fontSize: 12,
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: 6,
+              border: 'none',
+              background: 'transparent',
+              color: '#F87171',
+              fontSize: 12,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              textAlign: 'left',
+              transition: 'background 0.1s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(248,113,113,0.06)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <svg
+              width={13}
+              height={13}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#F87171"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <SvgIcon d={ICONS.settings} size={13} color={C.text3} />
-              Einstellungen
-            </Link>
-
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: 6,
-                border: 'none',
-                background: 'transparent',
-                color: '#F87171',
-                fontSize: 12,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                textAlign: 'left',
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(248,113,113,0.06)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              <svg
-                width={13}
-                height={13}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#F87171"
-                strokeWidth={1.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
-              </svg>
-              Abmelden
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
+            Abmelden
+          </button>
+        </div>
+      </PortalDropdown>
+    </>
   );
 }
 
