@@ -525,8 +525,10 @@ export default function SalesV2HomePage() {
           <SectionLabel icon={ICONS.clock} label="Letzte Aktivität" color="#A78BFA" />
           <LiveActivityFeed />
         </BentoCard>
+      </div>
 
-        {/* ── Score Distribution — 1 col ── */}
+      {/* Score + Contact — equal width row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
         <BentoCard
           span={1}
           delay={0.25}
@@ -576,9 +578,8 @@ export default function SalesV2HomePage() {
           </div>
         </BentoCard>
 
-        {/* ── Leads ohne E-Mail — 2 cols ── */}
         <BentoCard
-          span={2}
+          span={1}
           delay={0.3}
           href="/sales-v2/leads"
           gradient="radial-gradient(ellipse at 80% 100%, rgba(248,113,113,0.04) 0%, transparent 50%)"
