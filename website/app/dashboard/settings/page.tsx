@@ -160,7 +160,7 @@ export default function SettingsPage() {
       .from('tenant_preferences')
       .upsert(
         { tenant_id: tenantId, logo_url: url, updated_at: new Date().toISOString() },
-        { onConflict: 'tenant_id' },
+        { onConflict: 'tenant_id' }
       );
 
     // Mirror to tenant_integrations so other parts of the app (sidebar etc.) can read it
@@ -197,16 +197,14 @@ export default function SettingsPage() {
     setAutoFollowUp(next);
     setSaving(true);
     const supabase = createClient();
-    await supabase
-      .from('tenant_preferences')
-      .upsert(
-        {
-          tenant_id: tenantId,
-          automatic_followup_emails: next,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'tenant_id' },
-      );
+    await supabase.from('tenant_preferences').upsert(
+      {
+        tenant_id: tenantId,
+        automatic_followup_emails: next,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'tenant_id' }
+    );
     setSaving(false);
   }
 

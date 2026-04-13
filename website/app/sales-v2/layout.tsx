@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, StatusBar } from './_shared';
 import { openCommandPalette } from './_command-palette';
-import { useLeads } from './_use-leads';
+import { useLeads, getSupabase, readSessionFromStorage } from './_use-leads';
 import { useActivities, formatActivityTime, getActivityStyle } from './_activities';
 
 const CommandPalette = dynamic(() => import('./_command-palette').then((m) => m.CommandPalette), { ssr: false });
@@ -65,7 +65,9 @@ function buildNav(
             { label: `In Kontakt (${inKontakt})`, href: '/sales-v2/leads?filter=kontakt' },
           ],
         },
-        { label: 'Kunden', href: '/sales-v2/kunden', icon: ICONS.users },
+        { label: 'Lead Generator', href: '/sales-v2/generate', icon: ICONS.zap },
+        // Kunden-Seite kommt als eigenes Projekt
+        // { label: 'Kunden', href: '/sales-v2/kunden', icon: ICONS.users },
       ],
     },
     {
@@ -349,23 +351,45 @@ function ProfileDropdown() {
   const [user, setUser] = useState<{ email: string; initials: string; name: string } | null>(null);
 
   useEffect(() => {
-    async function load() {
-      const { createBrowserClient } = await import('@supabase/ssr');
-      const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      const {
-        data: { user: u },
-      } = await supabase.auth.getUser();
-      if (u?.email) {
-        const parts = u.email.split('@')[0].split('.');
-        const name = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-        const initials = parts.map((p) => p.charAt(0).toUpperCase()).join('');
-        setUser({ email: u.email, initials, name });
+    // 1) Try onvero_user cookie first (set by login API)
+    try {
+      const match = document.cookie.match(/onvero_user=([^;]+)/);
+      if (match) {
+        const parsed = JSON.parse(decodeURIComponent(match[1]));
+        if (parsed.firstName || parsed.email) {
+          const name =
+            [parsed.firstName, parsed.lastName].filter(Boolean).join(' ') || parsed.email?.split('@')[0] || '';
+          const initials = [parsed.firstName?.[0], parsed.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?';
+          setUser({ email: parsed.email ?? '', initials, name });
+          return;
+        }
       }
-    }
-    load();
+    } catch {}
+
+    // 2) Fallback: read Supabase session from localStorage
+    try {
+      const stored = readSessionFromStorage();
+      if (stored?.email) {
+        const parts = stored.email.split('@')[0].split('.');
+        const name = parts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        const initials = parts.map((p: string) => p.charAt(0).toUpperCase()).join('');
+        setUser({ email: stored.email, initials, name });
+        return;
+      }
+    } catch {}
+
+    // 3) Last resort: call /api/auth/me
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.user) {
+          const u = data.user;
+          const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email?.split('@')[0] || '';
+          const initials = [u.firstName?.[0], u.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?';
+          setUser({ email: u.email ?? '', initials, name });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   async function handleLogout() {
@@ -713,7 +737,10 @@ function Sidebar() {
   // Compute counts from live data — memoized to avoid re-filtering on every render
   const { neuHeute, qualifiziert, inKontakt, mitEmail } = useMemo(() => {
     const todayStr = new Date().toDateString();
-    let neu = 0, qual = 0, kontakt = 0, email = 0;
+    let neu = 0,
+      qual = 0,
+      kontakt = 0,
+      email = 0;
     for (const l of leads) {
       if (l.status === 'Qualifiziert') qual++;
       if (l.status === 'In Kontakt') kontakt++;
@@ -721,11 +748,16 @@ function Sidebar() {
       try {
         const created = new Date(l.createdAt.replace(/(\d+)\. (\w+) (\d+)/, '$2 $1, $3'));
         if (created.toDateString() === todayStr) neu++;
-      } catch { /* skip invalid dates */ }
+      } catch {
+        /* skip invalid dates */
+      }
     }
     return { neuHeute: neu, qualifiziert: qual, inKontakt: kontakt, mitEmail: email };
   }, [leads]);
-  const NAV = useMemo(() => buildNav(leads.length, neuHeute, qualifiziert, inKontakt, mitEmail), [leads.length, neuHeute, qualifiziert, inKontakt, mitEmail]);
+  const NAV = useMemo(
+    () => buildNav(leads.length, neuHeute, qualifiziert, inKontakt, mitEmail),
+    [leads.length, neuHeute, qualifiziert, inKontakt, mitEmail]
+  );
 
   function isActive(href: string) {
     if (href === '/sales-v2') return pathname === '/sales-v2';
@@ -904,7 +936,7 @@ export default function SalesV2Layout({ children }: { children: React.ReactNode 
         style={{
           background: C.bg,
           color: C.text1,
-          minHeight: '100vh',
+          height: '100vh',
           fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
           display: 'flex',
           flexDirection: 'column',
@@ -916,7 +948,7 @@ export default function SalesV2Layout({ children }: { children: React.ReactNode 
         <ParallaxBackground />
         <ToastContainer />
         <CommandPalette />
-        <AIChatWidget />
+        {/* <AIChatWidget /> */}
         <OnboardingTour />
         <Topbar />
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', zIndex: 1 }}>

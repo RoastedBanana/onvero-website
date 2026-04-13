@@ -17,7 +17,10 @@ const LS_STEP4 = 'onvero_onboarding_step4';
 
 export function OnboardingProgress() {
   const router = useRouter();
-  const [dismissed, setDismissed] = useState(true);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem(LS_DISMISSED) === 'true';
+  });
   const [fadingOut, setFadingOut] = useState(false);
   const [steps, setSteps] = useState<StepData[]>([
     {
@@ -52,12 +55,7 @@ export function OnboardingProgress() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (localStorage.getItem(LS_DISMISSED) === 'true') {
-      setDismissed(true);
-      return;
-    }
-    setDismissed(false);
+    if (typeof window === 'undefined' || dismissed) return;
 
     const s3 = localStorage.getItem(LS_STEP3) === 'true';
     const s4 = localStorage.getItem(LS_STEP4) === 'true';
@@ -83,7 +81,7 @@ export function OnboardingProgress() {
       );
       setLoaded(true);
     });
-  }, []);
+  }, [dismissed]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -265,8 +263,9 @@ export function OnboardingProgress() {
                     fontWeight: 500,
                     color: step.done ? 'rgba(255,255,255,0.35)' : '#fff',
                     marginBottom: 2,
-                    textDecoration: step.done ? 'line-through' : 'none',
+                    textDecorationLine: step.done ? 'line-through' : 'none',
                     textDecorationColor: 'rgba(255,255,255,0.15)',
+                    textDecorationStyle: 'solid',
                   }}
                 >
                   {step.title}

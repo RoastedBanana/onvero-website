@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
+import LeadAvatar from '@/components/ui/LeadAvatar';
 import {
   C,
   SvgIcon,
@@ -30,6 +32,111 @@ const STATUS_OPTIONS: { value: Lead['status']; color: string }[] = [
   { value: 'Qualifiziert', color: '#34D399' },
   { value: 'Verloren', color: '#F87171' },
 ];
+
+function DetailStatusDropdown({
+  status,
+  statusOpen,
+  setStatusOpen,
+  onChangeStatus,
+}: {
+  status: Lead['status'];
+  statusOpen: boolean;
+  setStatusOpen: (v: boolean) => void;
+  onChangeStatus: (opt: (typeof STATUS_OPTIONS)[number]) => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setStatusOpen(!statusOpen);
+  };
+
+  return (
+    <div>
+      <button
+        ref={btnRef}
+        onClick={handleOpen}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '8px 14px',
+          borderRadius: 8,
+          background: 'rgba(255,255,255,0.03)',
+          border: `1px solid ${C.border}`,
+          color: C.text2,
+          fontSize: 12,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        <StatusBadge status={status} />
+        <svg
+          width={10}
+          height={10}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={C.text3}
+          strokeWidth={2}
+          strokeLinecap="round"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {statusOpen &&
+        createPortal(
+          <>
+            <div onClick={() => setStatusOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99998 }} />
+            <div
+              style={{
+                position: 'fixed',
+                top: pos.top,
+                right: pos.right,
+                zIndex: 99999,
+                background: '#131530',
+                border: `1px solid ${C.borderLight}`,
+                borderRadius: 10,
+                padding: 4,
+                minWidth: 160,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                animation: 'scaleIn 0.15s ease both',
+              }}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => onChangeStatus(opt)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 7,
+                    border: 'none',
+                    background: status === opt.value ? 'rgba(99,102,241,0.08)' : 'transparent',
+                    color: C.text1,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ width: 6, height: 6, borderRadius: 2, background: opt.color }} />
+                  {opt.value}
+                </button>
+              ))}
+            </div>
+          </>,
+          document.body
+        )}
+    </div>
+  );
+}
 
 // ─── SECTION CARD ────────────────────────────────────────────────────────────
 
@@ -293,37 +400,8 @@ export default function LeadDetailPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          {/* Avatar — color reflects score tier */}
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 14,
-              background:
-                s >= 70
-                  ? 'linear-gradient(135deg, #6366F1, #818CF8)'
-                  : s >= 50
-                    ? 'linear-gradient(135deg, #D97706, #FBBF24)'
-                    : 'linear-gradient(135deg, #374151, #4B5563)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 18,
-              fontWeight: 600,
-              color: '#fff',
-              boxShadow:
-                s >= 70
-                  ? '0 4px 20px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)'
-                  : s >= 50
-                    ? '0 4px 20px rgba(251,191,36,0.2), inset 0 1px 0 rgba(255,255,255,0.15)'
-                    : '0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)',
-            }}
-          >
-            {lead.name
-              .split(' ')
-              .map((n) => n[0])
-              .join('')}
-          </div>
+          {/* Avatar */}
+          <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score ?? undefined} size="lg" />
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 600, color: C.text1, margin: 0, letterSpacing: '-0.02em' }}>
               {lead.name}
@@ -350,92 +428,20 @@ export default function LeadDetailPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Status dropdown */}
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setStatusOpen(!statusOpen)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 14px',
-                borderRadius: 8,
-                background: 'rgba(255,255,255,0.03)',
-                border: `1px solid ${C.border}`,
-                color: C.text2,
-                fontSize: 12,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              <StatusBadge status={status} />
-              <svg
-                width={10}
-                height={10}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={C.text3}
-                strokeWidth={2}
-                strokeLinecap="round"
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
-            {statusOpen && (
-              <>
-                <div onClick={() => setStatusOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    right: 0,
-                    marginTop: 4,
-                    zIndex: 100,
-                    background: '#131530',
-                    border: `1px solid ${C.borderLight}`,
-                    borderRadius: 10,
-                    padding: 4,
-                    minWidth: 160,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                    animation: 'scaleIn 0.15s ease both',
-                  }}
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        const oldStatus = status;
-                        setStatus(opt.value);
-                        setStatusOpen(false);
-                        showToast(`Status → ${opt.value}`, 'success');
-                        updateLeadStatus(lead.id, oldStatus, opt.value);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        width: '100%',
-                        padding: '8px 12px',
-                        borderRadius: 7,
-                        border: 'none',
-                        background: status === opt.value ? 'rgba(99,102,241,0.08)' : 'transparent',
-                        color: C.text1,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                        fontFamily: 'inherit',
-                        textAlign: 'left',
-                      }}
-                    >
-                      <div style={{ width: 6, height: 6, borderRadius: 2, background: opt.color }} />
-                      {opt.value}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <DetailStatusDropdown
+            status={status}
+            statusOpen={statusOpen}
+            setStatusOpen={setStatusOpen}
+            onChangeStatus={(opt) => {
+              const oldStatus = status;
+              setStatus(opt.value);
+              setStatusOpen(false);
+              showToast(`Status → ${opt.value}`, 'success');
+              updateLeadStatus(lead.id, oldStatus, opt.value);
+            }}
+          />
 
           <GhostButton onClick={() => router.push('/sales-v2/leads')}>← Zurück</GhostButton>
-          <GlowButton onClick={() => showToast('Outreach wird generiert...', 'info')}>Outreach generieren</GlowButton>
         </div>
       </div>
 
@@ -445,7 +451,7 @@ export default function LeadDetailPage() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            gap: 12,
             padding: '14px 20px',
             borderRadius: 12,
             background:
@@ -456,29 +462,27 @@ export default function LeadDetailPage() {
             animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: s >= 70 ? 'rgba(99,102,241,0.1)' : 'rgba(251,191,36,0.08)',
-                border: `1px solid ${s >= 70 ? 'rgba(99,102,241,0.2)' : 'rgba(251,191,36,0.15)'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <SvgIcon d={ICONS.zap} size={14} color={s >= 70 ? C.accent : '#FBBF24'} />
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: C.text3, letterSpacing: '0.06em', fontWeight: 500 }}>
-                EMPFOHLENE AKTION
-              </div>
-              <div style={{ fontSize: 13, color: C.text1, fontWeight: 500, marginTop: 2 }}>{lead.nextAction}</div>
-            </div>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: s >= 70 ? 'rgba(99,102,241,0.1)' : 'rgba(251,191,36,0.08)',
+              border: `1px solid ${s >= 70 ? 'rgba(99,102,241,0.2)' : 'rgba(251,191,36,0.15)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <SvgIcon d={ICONS.zap} size={14} color={s >= 70 ? C.accent : '#FBBF24'} />
           </div>
-          <GlowButton onClick={() => showToast('Aktion wird ausgeführt...', 'info')}>Jetzt ausführen</GlowButton>
+          <div>
+            <div style={{ fontSize: 10, color: C.text3, letterSpacing: '0.06em', fontWeight: 500 }}>
+              EMPFOHLENE AKTION
+            </div>
+            <div style={{ fontSize: 13, color: C.text1, fontWeight: 500, marginTop: 2 }}>{lead.nextAction}</div>
+          </div>
         </div>
       )}
 
@@ -997,15 +1001,6 @@ export default function LeadDetailPage() {
                 action: () => {
                   showToast('Rescore wird gestartet...', 'info');
                   writeActivity(lead.id, 'score_update', 'KI-Rescore angefordert');
-                },
-              },
-              {
-                label: 'Outreach generieren',
-                icon: ICONS.zap,
-                color: '#FBBF24',
-                action: () => {
-                  showToast('Outreach wird generiert...', 'info');
-                  writeActivity(lead.id, 'outreach_generated', 'Outreach generiert');
                 },
               },
             ].map((a) => (

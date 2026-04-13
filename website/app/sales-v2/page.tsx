@@ -297,7 +297,7 @@ function LiveActivityFeed() {
 
 function QuickActions() {
   const actions = [
-    { label: 'Lead generieren', icon: ICONS.zap, color: '#818CF8', href: '/sales-v2/leads' },
+    { label: 'Lead generieren', icon: ICONS.zap, color: '#818CF8', href: '/sales-v2/generate' },
     { label: 'Meeting planen', icon: ICONS.calendar, color: '#38BDF8', href: '/sales-v2/meetings' },
     { label: 'Prospects checken', icon: ICONS.target, color: '#34D399', href: '/sales-v2/prospects' },
     { label: 'Analytics', icon: ICONS.chart, color: '#FBBF24', href: '/sales-v2/analytics' },

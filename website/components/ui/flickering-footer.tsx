@@ -1,22 +1,19 @@
-"use client";
+'use client';
 
-import { ChevronRightIcon } from "@radix-ui/react-icons";
-import * as Color from "color-bits";
-import Link from "next/link";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { OnveroLogo } from "@/components/ui/onvero-logo";
-import { useTranslation, useLanguage, type Lang } from "@/lib/language-context";
+import { ChevronRightIcon } from '@radix-ui/react-icons';
+import * as Color from 'color-bits';
+import Link from 'next/link';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { OnveroLogo } from '@/components/ui/onvero-logo';
+import { useTranslation, useLanguage, type Lang } from '@/lib/language-context';
 
-export const getRGBA = (
-  cssColor: React.CSSProperties["color"],
-  fallback: string = "rgba(180, 180, 180)",
-): string => {
-  if (typeof window === "undefined") return fallback;
+export const getRGBA = (cssColor: React.CSSProperties['color'], fallback: string = 'rgba(180, 180, 180)'): string => {
+  if (typeof window === 'undefined') return fallback;
   if (!cssColor) return fallback;
   try {
-    if (typeof cssColor === "string" && cssColor.startsWith("var(")) {
-      const element = document.createElement("div");
+    if (typeof cssColor === 'string' && cssColor.startsWith('var(')) {
+      const element = document.createElement('div');
       element.style.color = cssColor;
       document.body.appendChild(element);
       const computedColor = window.getComputedStyle(element).color;
@@ -30,7 +27,7 @@ export const getRGBA = (
 };
 
 export const colorWithOpacity = (color: string, opacity: number): string => {
-  if (!color.startsWith("rgb")) return color;
+  if (!color.startsWith('rgb')) return color;
   return Color.formatRGBA(Color.alpha(Color.parse(color), opacity));
 };
 
@@ -51,12 +48,12 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   squareSize = 3,
   gridGap = 3,
   flickerChance = 0.2,
-  color = "#B4B4B4",
+  color = '#B4B4B4',
   width,
   height,
   className,
   maxOpacity = 0.15,
-  text = "",
+  text = '',
   fontSize = 140,
   fontWeight = 600,
   ...props
@@ -69,20 +66,28 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   const memoizedColor = useMemo(() => getRGBA(color), [color]);
 
   const drawGrid = useCallback(
-    (ctx: CanvasRenderingContext2D, w: number, h: number, cols: number, rows: number, squares: Float32Array, dpr: number) => {
+    (
+      ctx: CanvasRenderingContext2D,
+      w: number,
+      h: number,
+      cols: number,
+      rows: number,
+      squares: Float32Array,
+      dpr: number
+    ) => {
       ctx.clearRect(0, 0, w, h);
-      const maskCanvas = document.createElement("canvas");
+      const maskCanvas = document.createElement('canvas');
       maskCanvas.width = w;
       maskCanvas.height = h;
-      const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
+      const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
       if (!maskCtx) return;
       if (text) {
         maskCtx.save();
         maskCtx.scale(dpr, dpr);
-        maskCtx.fillStyle = "white";
+        maskCtx.fillStyle = 'white';
         maskCtx.font = `${fontWeight} ${fontSize}px system-ui, sans-serif`;
-        maskCtx.textAlign = "center";
-        maskCtx.textBaseline = "middle";
+        maskCtx.textAlign = 'center';
+        maskCtx.textBaseline = 'middle';
         maskCtx.fillText(text, w / (2 * dpr), h / (2 * dpr));
         maskCtx.restore();
       }
@@ -101,7 +106,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
         }
       }
     },
-    [memoizedColor, squareSize, gridGap, text, fontSize, fontWeight],
+    [memoizedColor, squareSize, gridGap, text, fontSize, fontWeight]
   );
 
   const setupCanvas = useCallback(
@@ -119,7 +124,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       }
       return { cols, rows, squares, dpr };
     },
-    [squareSize, gridGap, maxOpacity],
+    [squareSize, gridGap, maxOpacity]
   );
 
   const updateSquares = useCallback(
@@ -130,14 +135,14 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
         }
       }
     },
-    [flickerChance, maxOpacity],
+    [flickerChance, maxOpacity]
   );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     let animationFrameId: number;
@@ -165,10 +170,9 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
     const resizeObserver = new ResizeObserver(() => updateCanvasSize());
     resizeObserver.observe(container);
 
-    const intersectionObserver = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting),
-      { threshold: 0 },
-    );
+    const intersectionObserver = new IntersectionObserver(([entry]) => setIsInView(entry.isIntersecting), {
+      threshold: 0,
+    });
     intersectionObserver.observe(canvas);
 
     if (isInView) animationFrameId = requestAnimationFrame(animate);
@@ -181,7 +185,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   }, [setupCanvas, updateSquares, drawGrid, width, height, isInView]);
 
   return (
-    <div ref={containerRef} className={cn("h-full w-full", className)} {...props}>
+    <div ref={containerRef} className={cn('h-full w-full', className)} {...props}>
       <canvas
         ref={canvasRef}
         className="pointer-events-none"
@@ -199,8 +203,8 @@ function useMediaQuery(query: string) {
     }
     check();
     const mql = window.matchMedia(query);
-    mql.addEventListener("change", check);
-    return () => mql.removeEventListener("change", check);
+    mql.addEventListener('change', check);
+    return () => mql.removeEventListener('change', check);
   }, [query]);
   return value;
 }
@@ -210,20 +214,20 @@ function LangToggle() {
   return (
     <div
       className="inline-flex items-center rounded-md overflow-hidden text-xs font-semibold"
-      style={{ border: "1px solid rgba(255,255,255,0.1)" }}
+      style={{ border: '1px solid rgba(255,255,255,0.1)' }}
       role="group"
       aria-label="Sprache wählen"
     >
-      {(["de", "en"] as Lang[]).map((code, i) => (
+      {(['de', 'en'] as Lang[]).map((code, i) => (
         <button
           key={code}
           onClick={() => setLang(code)}
           className="px-3 py-1.5 transition-colors"
           style={{
-            color: lang === code ? "#fff" : "rgba(255,255,255,0.35)",
-            background: lang === code ? "rgba(255,255,255,0.1)" : "transparent",
-            borderRight: i === 0 ? "1px solid rgba(255,255,255,0.1)" : "none",
-            cursor: lang === code ? "default" : "pointer",
+            color: lang === code ? '#fff' : 'rgba(255,255,255,0.35)',
+            background: lang === code ? 'rgba(255,255,255,0.1)' : 'transparent',
+            borderRight: i === 0 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+            cursor: lang === code ? 'default' : 'pointer',
           }}
         >
           {code.toUpperCase()}
@@ -234,34 +238,31 @@ function LangToggle() {
 }
 
 export function FooterComponent() {
-  const tablet = useMediaQuery("(max-width: 1024px)");
+  const tablet = useMediaQuery('(max-width: 1024px)');
   const { t } = useTranslation();
 
   const footerLinks = [
     {
-      title: t("Unternehmen", "Company"),
+      title: t('Unternehmen', 'Company'),
       links: [
-        { id: 1, title: t("Über uns", "About us"),              url: "/ueber-uns"            },
-        { id: 2, title: t("Erstgespräch buchen", "Book a call"), url: "/erstgespraech-buchen" },
+        { id: 1, title: t('Über uns', 'About us'), url: '/ueber-uns' },
+        { id: 2, title: t('Erstgespräch buchen', 'Book a call'), url: '/erstgespraech-buchen' },
       ],
     },
     {
-      title: t("Rechtliches", "Legal"),
+      title: t('Rechtliches', 'Legal'),
       links: [
-        { id: 9,  title: t("Datenschutz", "Privacy Policy"), url: "/datenschutz" },
-        { id: 10, title: t("Impressum", "Imprint"),           url: "/impressum"   },
+        { id: 8, title: t('AGB', 'Terms of Service'), url: '/agb' },
+        { id: 9, title: t('Datenschutz', 'Privacy Policy'), url: '/datenschutz' },
+        { id: 10, title: t('Impressum', 'Imprint'), url: '/impressum' },
       ],
     },
   ];
 
   return (
-    <footer
-      id="footer"
-      className="w-full pb-0"
-      style={{ backgroundColor: "#0f0f0f" }}
-    >
+    <footer id="footer" className="w-full pb-0" style={{ backgroundColor: '#0f0f0f' }}>
       {/* Top divider */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
 
       <div className="flex flex-col md:flex-row md:items-start md:justify-between p-10 gap-10">
         {/* Brand */}
@@ -269,19 +270,22 @@ export function FooterComponent() {
           <Link href="/" aria-label="Onvero">
             <OnveroLogo className="h-6 w-auto" />
           </Link>
-          <p className="tracking-tight text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.4)" }}>
-            {t("KI-Infrastruktur für dein Unternehmen — von der Website bis zum internen Tool. Einfach wirksam.", "AI infrastructure for your business — from the website to internal tools. Simply effective.")}
+          <p className="tracking-tight text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            {t(
+              'KI-Infrastruktur für dein Unternehmen — von der Website bis zum internen Tool. Einfach wirksam.',
+              'AI infrastructure for your business — from the website to internal tools. Simply effective.'
+            )}
           </p>
           <div className="flex items-center gap-2 mt-2">
             <span
               className="text-xs px-2 py-1 rounded-md"
-              style={{ color: "rgba(255,255,255,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}
+              style={{ color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               DSGVO
             </span>
             <span
               className="text-xs px-2 py-1 rounded-md"
-              style={{ color: "rgba(255,255,255,0.3)", border: "1px solid rgba(255,255,255,0.08)" }}
+              style={{ color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
               Made in DE
             </span>
@@ -292,18 +296,18 @@ export function FooterComponent() {
             <a
               href="mailto:info@onvero.de"
               className="text-sm transition-colors"
-              style={{ color: "rgba(255,255,255,0.4)" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
-              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+              style={{ color: 'rgba(255,255,255,0.4)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.75)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
             >
               info@onvero.de
             </a>
             <a
               href="tel:+491638981544"
               className="text-sm transition-colors"
-              style={{ color: "rgba(255,255,255,0.4)" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
-              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+              style={{ color: 'rgba(255,255,255,0.4)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.75)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
             >
               +49 163 8981544
             </a>
@@ -318,26 +322,24 @@ export function FooterComponent() {
           <div className="flex flex-col items-start justify-start md:flex-row md:items-start md:justify-between gap-y-8 lg:pl-10">
             {footerLinks.map((column, columnIndex) => (
               <ul key={columnIndex} className="flex flex-col gap-y-2">
-                <li className="mb-2 text-sm font-semibold text-white">
-                  {column.title}
-                </li>
+                <li className="mb-2 text-sm font-semibold text-white">{column.title}</li>
                 {column.links.map((link) => (
                   <li
                     key={link.id}
                     className="group inline-flex cursor-pointer items-center justify-start gap-1 text-sm transition-colors"
-                    style={{ color: "rgba(255,255,255,0.4)" }}
+                    style={{ color: 'rgba(255,255,255,0.4)' }}
                   >
                     <Link
                       href={link.url}
-                      onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.75)")}
-                      onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
-                      style={{ color: "inherit" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.75)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+                      style={{ color: 'inherit' }}
                     >
                       {link.title}
                     </Link>
                     <div
                       className="flex size-4 items-center justify-center rounded translate-x-0 transform opacity-0 transition-all duration-300 ease-out group-hover:translate-x-1 group-hover:opacity-100"
-                      style={{ border: "1px solid rgba(255,255,255,0.12)" }}
+                      style={{ border: '1px solid rgba(255,255,255,0.12)' }}
                     >
                       <ChevronRightIcon className="h-3 w-3 text-white" />
                     </div>
@@ -353,7 +355,7 @@ export function FooterComponent() {
       <div className="w-full h-48 md:h-64 relative mt-8 z-0">
         <div
           className="absolute inset-0 z-10 from-40%"
-          style={{ background: "linear-gradient(to top, transparent, #0f0f0f)" }}
+          style={{ background: 'linear-gradient(to top, transparent, #0f0f0f)' }}
         />
         <div className="absolute inset-0 mx-6">
           <FlickeringGrid
@@ -373,13 +375,13 @@ export function FooterComponent() {
       {/* Copyright */}
       <div
         className="px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-2"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}
+        style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
       >
-        <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-          © 2025 Onvero. {t("Alle Rechte vorbehalten.", "All rights reserved.")}
+        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
+          © 2026 Onvero. {t('Alle Rechte vorbehalten.', 'All rights reserved.')}
         </p>
-        <p className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>
-          {t("Gebaut mit KI. Für Unternehmen.", "Built with AI. For businesses.")}
+        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.15)' }}>
+          {t('Gebaut mit KI. Für Unternehmen.', 'Built with AI. For businesses.')}
         </p>
       </div>
     </footer>

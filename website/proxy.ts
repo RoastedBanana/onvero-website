@@ -1,45 +1,38 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { ensureCsrfCookie } from '@/lib/csrf';
 
+// ─── FAST AUTH CHECK — cookie-only, no Supabase network calls ───────────────
+// The old approach called supabase.auth.getSession() on EVERY request which
+// made a network call to Supabase. When Supabase was slow or the connection
+// died, the ENTIRE server hung and no pages could load.
+//
+// New approach: check for auth cookies directly. The Supabase client stores
+// session tokens in cookies — we just check if they exist. Actual token
+// validation happens client-side or in API routes that need it.
+
+function hasSupabaseSession(request: NextRequest): boolean {
+  // Supabase stores auth in cookies like sb-<ref>-auth-token
+  const cookies = request.cookies.getAll();
+  return cookies.some((c) => c.name.includes('-auth-token') && c.value.length > 10);
+}
+
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
-        },
-      },
-    }
-  );
-
-  // IMPORTANT: Do not add logic between createServerClient and getSession.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
+  const supabaseResponse = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
 
+  const hasSession = hasSupabaseSession(request);
+  const hasOnveroSession = !!request.cookies.get('onvero_user')?.value;
+  const isLoggedIn = hasSession || hasOnveroSession;
+
   // Logged-in user visiting /login → send to sales-v2
-  if (pathname === '/login' && session) {
+  if (pathname === '/login' && isLoggedIn) {
     return NextResponse.redirect(new URL('/sales-v2', request.url));
   }
 
-  // Unauthenticated user visiting /dashboard/* or /sales-v2/* → send to login
-  // Accept either Supabase session OR onvero_user cookie
-  const hasOnveroSession = !!request.cookies.get('onvero_user')?.value;
+  // Unauthenticated user visiting protected routes → send to login
   const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/sales-v2');
-  if (isProtected && !session && !hasOnveroSession) {
+  if (isProtected && !isLoggedIn) {
     const url = new URL('/login', request.url);
     url.searchParams.set('from', pathname);
     return NextResponse.redirect(url);

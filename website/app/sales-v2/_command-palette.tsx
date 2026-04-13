@@ -192,7 +192,7 @@ export function CommandPalette() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop + centering container */}
       <div
         onClick={() => setOpen(false)}
         style={{
@@ -202,197 +202,212 @@ export function CommandPalette() {
           backdropFilter: 'blur(8px)',
           zIndex: 99992,
           animation: 'fadeIn 0.15s ease both',
+          display: 'flex',
+          justifyContent: 'center',
+          paddingTop: '16vh',
+          paddingLeft: 220,
         }}
       />
 
-      {/* Palette */}
+      {/* Palette centering wrapper */}
       <div
         style={{
           position: 'fixed',
-          top: '16%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 580,
-          maxHeight: '62vh',
-          background: '#131530',
-          border: `1px solid ${C.borderLight}`,
-          borderRadius: 14,
-          overflow: 'hidden',
+          top: '16vh',
+          left: 220,
+          right: 0,
           zIndex: 99993,
-          boxShadow: '0 16px 80px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04), 0 0 40px rgba(99,102,241,0.08)',
-          animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
+          display: 'flex',
+          justifyContent: 'center',
+          pointerEvents: 'none',
         }}
       >
-        {/* Input */}
         <div
+          onClick={(e) => e.stopPropagation()}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '14px 18px',
-            borderBottom: `1px solid ${C.border}`,
+            width: 580,
+            maxHeight: '62vh',
+            background: '#131530',
+            border: `1px solid ${C.borderLight}`,
+            borderRadius: 14,
+            overflow: 'hidden',
+            boxShadow:
+              '0 16px 80px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04), 0 0 40px rgba(99,102,241,0.08)',
+            animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
+            pointerEvents: 'auto',
           }}
         >
-          <SvgIcon d={ICONS.search} size={16} color={C.text3} />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Leads, Seiten, Aktionen suchen..."
+          {/* Input */}
+          <div
             style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: C.text1,
-              fontSize: 14,
-              fontFamily: 'inherit',
-            }}
-          />
-          <kbd
-            style={{
-              fontSize: 10,
-              color: C.text3,
-              background: 'rgba(255,255,255,0.05)',
-              border: `1px solid ${C.border}`,
-              borderRadius: 4,
-              padding: '2px 6px',
-              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '14px 18px',
+              borderBottom: `1px solid ${C.border}`,
             }}
           >
-            ESC
-          </kbd>
-        </div>
+            <SvgIcon d={ICONS.search} size={16} color={C.text3} />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Leads, Seiten, Aktionen suchen..."
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: C.text1,
+                fontSize: 14,
+                fontFamily: 'inherit',
+              }}
+            />
+            <kbd
+              style={{
+                fontSize: 10,
+                color: C.text3,
+                background: 'rgba(255,255,255,0.05)',
+                border: `1px solid ${C.border}`,
+                borderRadius: 4,
+                padding: '2px 6px',
+                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+              }}
+            >
+              ESC
+            </kbd>
+          </div>
 
-        {/* Results */}
-        <div style={{ maxHeight: 'calc(62vh - 54px)', overflowY: 'auto', padding: 8 }}>
-          {allItems.length === 0 ? (
-            <div style={{ padding: '32px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 13, color: C.text3 }}>Keine Ergebnisse für &quot;{query}&quot;</div>
-            </div>
-          ) : (
-            sections.map((section) => (
-              <div key={section}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: '0.1em',
-                    color: C.text3,
-                    padding: '10px 12px 4px',
-                    marginTop: 4,
-                  }}
-                >
-                  {section.toUpperCase()}
-                </div>
-                {allItems
-                  .filter((i) => i.section === section)
-                  .map((item) => {
-                    const globalIdx = allItems.indexOf(item);
-                    const isSelected = globalIdx === selectedIndex;
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => {
-                          item.action();
-                          setOpen(false);
-                        }}
-                        onMouseEnter={() => setSelectedIndex(globalIdx)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: '10px 12px',
-                          borderRadius: 8,
-                          cursor: 'pointer',
-                          background: isSelected ? 'rgba(99,102,241,0.08)' : 'transparent',
-                          transition: 'background 0.1s ease',
-                        }}
-                      >
+          {/* Results */}
+          <div style={{ maxHeight: 'calc(62vh - 54px)', overflowY: 'auto', padding: 8 }}>
+            {allItems.length === 0 ? (
+              <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+                <div style={{ fontSize: 13, color: C.text3 }}>Keine Ergebnisse für &quot;{query}&quot;</div>
+              </div>
+            ) : (
+              sections.map((section) => (
+                <div key={section}>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: '0.1em',
+                      color: C.text3,
+                      padding: '10px 12px 4px',
+                      marginTop: 4,
+                    }}
+                  >
+                    {section.toUpperCase()}
+                  </div>
+                  {allItems
+                    .filter((i) => i.section === section)
+                    .map((item) => {
+                      const globalIdx = allItems.indexOf(item);
+                      const isSelected = globalIdx === selectedIndex;
+                      return (
                         <div
+                          key={item.id}
+                          onClick={() => {
+                            item.action();
+                            setOpen(false);
+                          }}
+                          onMouseEnter={() => setSelectedIndex(globalIdx)}
                           style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 7,
-                            background: `${item.color}10`,
-                            border: `1px solid ${item.color}18`,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
+                            gap: 12,
+                            padding: '10px 12px',
+                            borderRadius: 8,
+                            cursor: 'pointer',
+                            background: isSelected ? 'rgba(99,102,241,0.08)' : 'transparent',
+                            transition: 'background 0.1s ease',
                           }}
                         >
-                          <SvgIcon d={item.icon} size={13} color={item.color} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: isSelected ? C.text1 : C.text2 }}>
-                            {item.label}
-                          </div>
-                          {item.description && (
-                            <div style={{ fontSize: 11, color: C.text3, marginTop: 1 }}>{item.description}</div>
-                          )}
-                        </div>
-                        {isSelected && (
-                          <kbd
+                          <div
                             style={{
-                              fontSize: 9,
-                              color: C.text3,
-                              background: 'rgba(255,255,255,0.05)',
-                              border: `1px solid ${C.border}`,
-                              borderRadius: 3,
-                              padding: '1px 5px',
-                              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                              width: 28,
+                              height: 28,
+                              borderRadius: 7,
+                              background: `${item.color}10`,
+                              border: `1px solid ${item.color}18`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
                             }}
                           >
-                            ↵
-                          </kbd>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
-            ))
-          )}
-        </div>
+                            <SvgIcon d={item.icon} size={13} color={item.color} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 500, color: isSelected ? C.text1 : C.text2 }}>
+                              {item.label}
+                            </div>
+                            {item.description && (
+                              <div style={{ fontSize: 11, color: C.text3, marginTop: 1 }}>{item.description}</div>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <kbd
+                              style={{
+                                fontSize: 9,
+                                color: C.text3,
+                                background: 'rgba(255,255,255,0.05)',
+                                border: `1px solid ${C.border}`,
+                                borderRadius: 3,
+                                padding: '1px 5px',
+                                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                              }}
+                            >
+                              ↵
+                            </kbd>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              ))
+            )}
+          </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            padding: '10px 18px',
-            borderTop: `1px solid ${C.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
-            background: 'rgba(255,255,255,0.01)',
-          }}
-        >
-          {[
-            { keys: ['↑', '↓'], label: 'navigieren' },
-            { keys: ['↵'], label: 'öffnen' },
-            { keys: ['esc'], label: 'schließen' },
-          ].map((h) => (
-            <div key={h.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {h.keys.map((k) => (
-                <kbd
-                  key={k}
-                  style={{
-                    fontSize: 9,
-                    color: C.text3,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${C.border}`,
-                    borderRadius: 3,
-                    padding: '1px 5px',
-                    fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                  }}
-                >
-                  {k}
-                </kbd>
-              ))}
-              <span style={{ fontSize: 10, color: C.text3 }}>{h.label}</span>
-            </div>
-          ))}
+          {/* Footer */}
+          <div
+            style={{
+              padding: '10px 18px',
+              borderTop: `1px solid ${C.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              background: 'rgba(255,255,255,0.01)',
+            }}
+          >
+            {[
+              { keys: ['↑', '↓'], label: 'navigieren' },
+              { keys: ['↵'], label: 'öffnen' },
+              { keys: ['esc'], label: 'schließen' },
+            ].map((h) => (
+              <div key={h.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {h.keys.map((k) => (
+                  <kbd
+                    key={k}
+                    style={{
+                      fontSize: 9,
+                      color: C.text3,
+                      background: 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 3,
+                      padding: '1px 5px',
+                      fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                    }}
+                  >
+                    {k}
+                  </kbd>
+                ))}
+                <span style={{ fontSize: 10, color: C.text3 }}>{h.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </>

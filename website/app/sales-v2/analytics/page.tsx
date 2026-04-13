@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   C,
   SvgIcon,
@@ -12,107 +12,96 @@ import {
   ActivityHeatmap,
   ProgressRing,
   Sparkline,
+  showToast,
 } from '../_shared';
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
 type Tab = 'overview' | 'leads' | 'activity';
 
-// ─── MOCK DATA ───────────────────────────────────────────────────────────────
+interface LeadsData {
+  total: number;
+  hot: number;
+  warm: number;
+  cold: number;
+  avgScore: number;
+  withEmail: number;
+  scored: number;
+  avgDataQuality: number;
+  contacted?: number;
+  scoreRanges: Record<string, number>;
+  industries: { name: string; count: number; avgScore: number }[];
+  topCities: { name: string; count: number }[];
+  hotLeads: { id: string; name: string; company: string; score: number; status: string; city: string }[];
+  weeklyLeads: { week: string; total: number; hot: number; warm: number; cold: number }[];
+}
 
-const OVERVIEW_METRICS = [
-  {
-    label: 'REVENUE',
-    value: '€128.4k',
-    delta: '+12% MoM',
-    deltaType: 'up' as const,
-    gradient: 'radial-gradient(ellipse at 20% 0%, rgba(52,211,153,0.15) 0%, transparent 60%)',
-    accentColor: '#34D399',
-    glowColor: 'rgba(52,211,153,0.25)',
-  },
-  {
-    label: 'WIN RATE',
-    value: '24.6%',
-    delta: '+3.2%',
-    deltaType: 'up' as const,
-    gradient: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)',
-    accentColor: '#818CF8',
-    glowColor: 'rgba(99,102,241,0.25)',
-  },
-  {
-    label: 'AVG DEAL SIZE',
-    value: '€8.4k',
-    delta: null,
-    deltaType: null,
-    gradient: 'radial-gradient(ellipse at 80% 0%, rgba(56,189,248,0.12) 0%, transparent 60%)',
-    accentColor: '#38BDF8',
-    glowColor: 'rgba(56,189,248,0.2)',
-  },
-  {
-    label: 'SALES CYCLE',
-    value: '18 Tage',
-    delta: '-3 Tage',
-    deltaType: 'up' as const,
-    gradient: 'radial-gradient(ellipse at 30% 0%, rgba(251,191,36,0.10) 0%, transparent 60%)',
-    accentColor: '#FBBF24',
-    glowColor: 'rgba(251,191,36,0.15)',
-  },
-];
+interface TrendItem {
+  date: string;
+  label: string;
+  total: number;
+  hot: number;
+  warm: number;
+  cold: number;
+}
 
-const LEADS_MONTHS = [
-  { m: 'Okt', v: 62 },
-  { m: 'Nov', v: 78 },
-  { m: 'Dez', v: 95 },
-  { m: 'Jan', v: 88 },
-  { m: 'Feb', v: 112 },
-  { m: 'Mär', v: 148 },
-  { m: 'Apr', v: 128 },
-];
+interface TrendData {
+  trend: TrendItem[];
+}
 
-const WEEKLY_DATA = [
-  { d: 'Mo', leads: 42, score: 82 },
-  { d: 'Di', leads: 58, score: 85 },
-  { d: 'Mi', leads: 35, score: 79 },
-  { d: 'Do', leads: 68, score: 88 },
-  { d: 'Fr', leads: 52, score: 84 },
-  { d: 'Sa', leads: 18, score: 76 },
-  { d: 'So', leads: 8, score: 71 },
-];
+interface ActivityItem {
+  id: string;
+  type: string;
+  title: string;
+  created_at: string;
+  lead_name: string;
+  company: string;
+  score: number;
+}
 
-const SCORE_DIST = [
-  { range: '90–100', count: 4, pct: 11 },
-  { range: '80–89', count: 8, pct: 23 },
-  { range: '70–79', count: 12, pct: 34 },
-  { range: '60–69', count: 6, pct: 17 },
-  { range: '50–59', count: 3, pct: 9 },
-  { range: '<50', count: 2, pct: 6 },
-];
+interface ActivityData {
+  activities: ActivityItem[];
+  typeCounts: Record<string, number>;
+  total: number;
+}
 
-const SOURCES = [
-  { name: 'Google Maps', pct: 32, count: 842, color: '#818CF8' },
-  { name: 'LinkedIn Intent', pct: 24, count: 634, color: '#34D399' },
-  { name: 'Website', pct: 20, count: 528, color: '#38BDF8' },
-  { name: 'Referral', pct: 14, count: 371, color: '#FBBF24' },
-  { name: 'Outreach', pct: 10, count: 264, color: '#A78BFA' },
-];
+// ─── HELPERS ────────────────────────────────────────────────────────────────
 
-const FUNNEL = [
-  { stage: 'Generiert', count: 2847, color: '#4E5170' },
-  { stage: 'KI-qualifiziert', count: 1248, color: '#818CF8' },
-  { stage: 'Kontaktiert', count: 486, color: '#38BDF8' },
-  { stage: 'Meeting', count: 142, color: '#FBBF24' },
-  { stage: 'Abschluss', count: 34, color: '#34D399' },
-];
+const INDUSTRY_COLORS = ['#818CF8', '#34D399', '#38BDF8', '#FBBF24', '#A78BFA'];
 
-const ACTIVITY = [
-  { action: 'Lead Marcus Weber → Qualifiziert', time: 'vor 2h', color: '#34D399' },
-  { action: 'KI-Score Batch: 23 Leads bewertet', time: 'vor 6h', color: '#818CF8' },
-  { action: 'Lead Axflow AG → Qualifiziert', time: 'vor 8h', color: '#34D399' },
-  { action: 'Outreach: 12 E-Mails versendet', time: 'vor 12h', color: '#38BDF8' },
-  { action: 'Meeting transkribiert: Silo Labs', time: 'vor 1 Tag', color: '#A78BFA' },
-  { action: 'Neuer Intent-Signal: Nexlayer GmbH', time: 'vor 1 Tag', color: '#FBBF24' },
-  { action: '3 Leads verloren markiert', time: 'vor 2 Tagen', color: '#F87171' },
-];
+function formatTimeAgo(isoDate: string): string {
+  const now = new Date();
+  const date = new Date(isoDate);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffH = Math.floor(diffMs / 3600000);
+  const diffD = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return 'gerade eben';
+  if (diffMin < 60) return `vor ${diffMin}min`;
+  if (diffH < 24) return `vor ${diffH}h`;
+  if (diffD === 1) return 'vor 1 Tag';
+  if (diffD < 7) return `vor ${diffD} Tagen`;
+  if (diffD < 30) return `vor ${Math.floor(diffD / 7)} Wochen`;
+  return `vor ${Math.floor(diffD / 30)} Monaten`;
+}
+
+function getActivityColor(type: string): string {
+  const map: Record<string, string> = {
+    score: '#818CF8',
+    email: '#38BDF8',
+    status_change: '#34D399',
+    import: '#38BDF8',
+    meeting: '#A78BFA',
+    intent: '#FBBF24',
+    lost: '#F87171',
+    campaign: '#818CF8',
+    report: '#FBBF24',
+    enrichment: '#34D399',
+    note: '#A78BFA',
+  };
+  return map[type] || '#818CF8';
+}
 
 // ─── SVG CHART HELPERS ───────────────────────────────────────────────────────
 
@@ -150,7 +139,7 @@ function AreaChart({
   formatY?: (v: number) => string;
 }) {
   const maxY = Math.max(...data.map((d) => d.y)) * 1.15;
-  const W = 400;
+  const W = 900;
   const H = height;
   const padL = 40;
   const padR = 16;
@@ -391,7 +380,7 @@ function ModernBarChart({
   formatY?: (v: number) => string;
 }) {
   const maxY = Math.max(...data.map((d) => d.y)) * 1.15;
-  const W = 400;
+  const W = 900;
   const H = height;
   const padL = 40;
   const padR = 16;
@@ -480,18 +469,18 @@ function ModernBarChart({
 
 // ─── SANKEY FLOW ─────────────────────────────────────────────────────────────
 
-function SankeyFlow() {
-  const max = FUNNEL[0].count;
-  const W = 440;
-  const H = 160;
+function SankeyFlow({ funnel }: { funnel: { stage: string; count: number; color: string }[] }) {
+  const max = funnel[0]?.count || 1;
+  const W = 900;
+  const H = 200;
   const barW = 36;
-  const gap = (W - barW * FUNNEL.length) / (FUNNEL.length - 1);
+  const gap = (W - barW * funnel.length) / (funnel.length - 1);
 
   return (
     <div>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: H }}>
         <defs>
-          {FUNNEL.map((s) => (
+          {funnel.map((s) => (
             <linearGradient key={s.stage} id={`sankey-${s.color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={s.color} stopOpacity="0.5" />
               <stop offset="100%" stopColor={s.color} stopOpacity="0.15" />
@@ -500,8 +489,8 @@ function SankeyFlow() {
         </defs>
 
         {/* Flow connections */}
-        {FUNNEL.slice(0, -1).map((s, i) => {
-          const next = FUNNEL[i + 1];
+        {funnel.slice(0, -1).map((s, i) => {
+          const next = funnel[i + 1];
           const x1 = i * (barW + gap) + barW;
           const x2 = (i + 1) * (barW + gap);
           const h1 = Math.max((s.count / max) * 100, 6);
@@ -521,7 +510,7 @@ function SankeyFlow() {
         })}
 
         {/* Stage bars */}
-        {FUNNEL.map((s, i) => {
+        {funnel.map((s, i) => {
           const h = Math.max((s.count / max) * 100, 6);
           const x = i * (barW + gap);
           const y = 80 - h / 2;
@@ -561,7 +550,7 @@ function SankeyFlow() {
                   fontSize="8"
                   fontFamily="system-ui"
                 >
-                  {Math.round((s.count / FUNNEL[i - 1].count) * 100)}%
+                  {Math.round((s.count / funnel[i - 1].count) * 100)}%
                 </text>
               )}
             </g>
@@ -627,53 +616,154 @@ function Panel({
   );
 }
 
-function OverviewTab() {
+// ─── LOADING SPINNER ────────────────────────────────────────────────────────
+
+function LoadingSpinner() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
+      <div
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          border: `2px solid ${C.border}`,
+          borderTopColor: C.accent,
+          animation: 'gradient-spin 0.8s linear infinite',
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── TAB CONTENT COMPONENTS ─────────────────────────────────────────────────
+
+function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData: TrendData }) {
+  const overviewMetrics = [
+    {
+      label: 'LEADS GESAMT',
+      value: String(leadsData.total),
+      delta: null,
+      deltaType: null,
+      gradient: 'radial-gradient(ellipse at 20% 0%, rgba(52,211,153,0.15) 0%, transparent 60%)',
+      accentColor: '#34D399',
+      glowColor: 'rgba(52,211,153,0.25)',
+    },
+    {
+      label: 'KI-SCORE Ø',
+      value: String(Math.round(leadsData.avgScore)),
+      delta: null,
+      deltaType: null,
+      gradient: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)',
+      accentColor: '#818CF8',
+      glowColor: 'rgba(99,102,241,0.25)',
+    },
+    {
+      label: 'HOT LEADS',
+      value: String(leadsData.hot),
+      delta: null,
+      deltaType: null,
+      gradient: 'radial-gradient(ellipse at 80% 0%, rgba(56,189,248,0.12) 0%, transparent 60%)',
+      accentColor: '#38BDF8',
+      glowColor: 'rgba(56,189,248,0.2)',
+    },
+    {
+      label: 'MIT E-MAIL',
+      value: String(leadsData.withEmail),
+      delta: null,
+      deltaType: null,
+      gradient: 'radial-gradient(ellipse at 30% 0%, rgba(251,191,36,0.10) 0%, transparent 60%)',
+      accentColor: '#FBBF24',
+      glowColor: 'rgba(251,191,36,0.15)',
+    },
+  ];
+
+  // Build funnel from real data
+  const funnel = [
+    { stage: 'Generiert', count: leadsData.total, color: '#4E5170' },
+    { stage: 'KI-bewertet', count: leadsData.scored, color: '#818CF8' },
+    { stage: 'Hot Leads', count: leadsData.hot, color: '#38BDF8' },
+    { stage: 'Mit E-Mail', count: leadsData.withEmail, color: '#FBBF24' },
+    { stage: 'Kontaktiert', count: leadsData.contacted ?? 0, color: '#34D399' },
+  ];
+
+  // Weekly bar chart: last 7 entries from trend
+  const last7 = trendData.trend.slice(-7);
+  const weeklyBarData = last7.map((item) => ({ x: item.label, y: item.total }));
+
+  // Lead sources from industries (top 5)
+  const topIndustries = leadsData.industries.slice(0, 5);
+  const industryTotal = topIndustries.reduce((sum, ind) => sum + ind.count, 0) || 1;
+  const sourceSegments = topIndustries.map((ind, i) => ({
+    value: Math.round((ind.count / industryTotal) * 100),
+    color: INDUSTRY_COLORS[i],
+    label: ind.name,
+  }));
+
+  const totalLabel = leadsData.total >= 1000 ? `${(leadsData.total / 1000).toFixed(1)}k` : String(leadsData.total);
+
+  // Progress ring data
+  const dataQuality = Math.round(leadsData.avgDataQuality);
+  const hotRate = leadsData.total > 0 ? Math.round((leadsData.hot / leadsData.total) * 100) : 0;
+  const scoredRate = leadsData.total > 0 ? Math.round((leadsData.scored / leadsData.total) * 100) : 0;
+
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-        {OVERVIEW_METRICS.map((m, i) => (
+        {overviewMetrics.map((m, i) => (
           <MetricCard key={m.label} {...m} index={i} />
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
-        {/* Leads trend — 2D area chart */}
-        <Panel title="Leads-Entwicklung" icon={ICONS.trending} color="#34D399" delay={0.15}>
+      {/* Leads trend -- full width */}
+      <Panel title="Leads-Entwicklung" icon={ICONS.trending} color="#34D399" delay={0.15}>
+        {trendData.trend.length > 1 ? (
           <AreaChart
-            data={LEADS_MONTHS.map((d) => ({ x: d.m, y: d.v }))}
+            data={trendData.trend.map((d) => ({ x: d.label, y: d.total }))}
             color="#34D399"
-            height={180}
+            height={220}
             label="Leads"
             formatY={(v) => `${Math.round(v)}`}
           />
+        ) : (
+          <div style={{ color: C.text3, fontSize: 12, textAlign: 'center', padding: 40 }}>Keine Trenddaten</div>
+        )}
+      </Panel>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+        {/* Conversion funnel */}
+        <Panel title="Conversion Funnel" icon={ICONS.chart} color="#818CF8" delay={0.3}>
+          <SankeyFlow funnel={funnel} />
         </Panel>
 
-        {/* Conversion funnel — sankey */}
-        <Panel title="Conversion Funnel" icon={ICONS.chart} color="#818CF8" delay={0.3}>
-          <SankeyFlow />
+        {/* Weekly leads -- bar chart */}
+        <Panel title="Leads diese Woche" icon={ICONS.list} color="#38BDF8" delay={0.25}>
+          {weeklyBarData.length > 0 ? (
+            <ModernBarChart data={weeklyBarData} color="#38BDF8" height={200} />
+          ) : (
+            <div style={{ color: C.text3, fontSize: 12, textAlign: 'center', padding: 40 }}>Keine Daten</div>
+          )}
         </Panel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-        {/* Weekly leads — bar chart */}
-        <Panel title="Leads diese Woche" icon={ICONS.list} color="#38BDF8" delay={0.25}>
-          <ModernBarChart data={WEEKLY_DATA.map((d) => ({ x: d.d, y: d.leads }))} color="#38BDF8" height={140} />
-        </Panel>
-
-        {/* Lead Sources — donut */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        {/* Lead Sources -- donut */}
         <Panel title="Lead-Quellen" icon={ICONS.globe} color="#A78BFA" delay={0.3}>
-          <DonutChart
-            segments={SOURCES.map((s) => ({ value: s.pct, color: s.color, label: s.name }))}
-            size={120}
-            strokeWidth={16}
-            label="2.8k"
-            sublabel="Leads gesamt"
-          />
+          {sourceSegments.length > 0 ? (
+            <DonutChart
+              segments={sourceSegments}
+              size={160}
+              strokeWidth={20}
+              label={totalLabel}
+              sublabel="Leads gesamt"
+            />
+          ) : (
+            <div style={{ color: C.text3, fontSize: 12, textAlign: 'center', padding: 40 }}>Keine Quellen</div>
+          )}
         </Panel>
 
         {/* Activity Heatmap */}
         <Panel title="Aktivität (12 Wochen)" icon={ICONS.clock} color="#A78BFA" delay={0.35}>
-          <ActivityHeatmap weeks={12} />
+          <ActivityHeatmap weeks={16} />
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
             <span style={{ fontSize: 10, color: C.text3 }}>Wenig</span>
             <div style={{ display: 'flex', gap: 3 }}>
@@ -688,37 +778,56 @@ function OverviewTab() {
         </Panel>
       </div>
 
-      {/* Bottom row — progress rings */}
+      {/* Bottom row -- progress rings */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-        <Panel title="Win Rate" icon={ICONS.trending} color="#34D399" delay={0.4}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <ProgressRing value={24.6} max={100} size={64} strokeWidth={4} color="#34D399" label="25%" />
-            <div>
-              <div style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>Ziel: 30%</div>
-              <div style={{ fontSize: 11, color: C.success }}>↑ +3.2% vs. letzter Monat</div>
-              <Sparkline data={[18, 19, 21, 22, 21, 23, 25]} width={80} height={18} color="#34D399" />
+        <Panel title="Datenqualität" icon={ICONS.trending} color="#34D399" delay={0.4}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '12px 0' }}>
+            <ProgressRing
+              value={dataQuality}
+              max={100}
+              size={110}
+              strokeWidth={6}
+              color="#34D399"
+              label={`${dataQuality}%`}
+            />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, color: C.text1, fontWeight: 500, marginBottom: 4 }}>
+                Durchschnittliche Qualität
+              </div>
+              <div style={{ fontSize: 12, color: dataQuality >= 70 ? C.success : C.warning }}>
+                {dataQuality >= 70 ? 'Gut' : 'Verbesserungspotenzial'}
+              </div>
             </div>
           </div>
         </Panel>
 
-        <Panel title="Avg. Deal Size" icon={ICONS.chart} color="#38BDF8" delay={0.45}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <ProgressRing value={56} max={100} size={64} strokeWidth={4} color="#38BDF8" label="€8.4k" />
-            <div>
-              <div style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>Ziel: €15k</div>
-              <div style={{ fontSize: 11, color: C.text2 }}>56% vom Ziel</div>
-              <Sparkline data={[5.2, 6.1, 6.8, 7.2, 7.8, 8.1, 8.4]} width={80} height={18} color="#38BDF8" />
+        <Panel title="Hot Rate" icon={ICONS.chart} color="#38BDF8" delay={0.45}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '12px 0' }}>
+            <ProgressRing value={hotRate} max={100} size={110} strokeWidth={6} color="#38BDF8" label={`${hotRate}%`} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, color: C.text1, fontWeight: 500, marginBottom: 4 }}>
+                {leadsData.hot} von {leadsData.total} Leads
+              </div>
+              <div style={{ fontSize: 12, color: C.text2 }}>Score &ge; 70</div>
             </div>
           </div>
         </Panel>
 
-        <Panel title="Sales Cycle" icon={ICONS.clock} color="#FBBF24" delay={0.5}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <ProgressRing value={60} max={100} size={64} strokeWidth={4} color="#FBBF24" label="18d" />
-            <div>
-              <div style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>Ziel: 14 Tage</div>
-              <div style={{ fontSize: 11, color: C.success }}>↓ -3 Tage vs. Q3</div>
-              <Sparkline data={[28, 25, 24, 22, 21, 19, 18]} width={80} height={18} color="#FBBF24" />
+        <Panel title="KI-bewertet" icon={ICONS.clock} color="#FBBF24" delay={0.5}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '12px 0' }}>
+            <ProgressRing
+              value={scoredRate}
+              max={100}
+              size={110}
+              strokeWidth={6}
+              color="#FBBF24"
+              label={`${scoredRate}%`}
+            />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, color: C.text1, fontWeight: 500, marginBottom: 4 }}>
+                {leadsData.scored} von {leadsData.total} Leads
+              </div>
+              <div style={{ fontSize: 12, color: scoredRate >= 80 ? C.success : C.text2 }}>mit KI-Score bewertet</div>
             </div>
           </div>
         </Panel>
@@ -727,13 +836,51 @@ function OverviewTab() {
   );
 }
 
-function LeadsTab() {
+function LeadsTab({ leadsData, trendData }: { leadsData: LeadsData; trendData: TrendData }) {
+  // Score distribution from scoreRanges
+  const ranges = leadsData.scoreRanges || {};
+  const below50 =
+    (ranges['0-9'] || 0) +
+    (ranges['10-19'] || 0) +
+    (ranges['20-29'] || 0) +
+    (ranges['30-39'] || 0) +
+    (ranges['40-49'] || 0);
+
+  const scoreDist = [
+    { range: '90\u2013100', count: ranges['90-99'] || 0 },
+    { range: '80\u201389', count: ranges['80-89'] || 0 },
+    { range: '70\u201379', count: ranges['70-79'] || 0 },
+    { range: '60\u201369', count: ranges['60-69'] || 0 },
+    { range: '50\u201359', count: ranges['50-59'] || 0 },
+    { range: '<50', count: below50 },
+  ];
+
+  const scoreTotal = scoreDist.reduce((s, d) => s + d.count, 0) || 1;
+  const scoreDistWithPct = scoreDist.map((d) => ({
+    ...d,
+    pct: Math.round((d.count / scoreTotal) * 100),
+  }));
+
+  // Lead sources from industries (top 5)
+  const topIndustries = leadsData.industries.slice(0, 5);
+  const industryTotal = topIndustries.reduce((sum, ind) => sum + ind.count, 0) || 1;
+  const sourceSegments = topIndustries.map((ind, i) => ({
+    value: Math.round((ind.count / industryTotal) * 100),
+    color: INDUSTRY_COLORS[i],
+    label: ind.name,
+  }));
+
+  const totalLabel = leadsData.total >= 1000 ? `${(leadsData.total / 1000).toFixed(1)}k` : String(leadsData.total);
+
+  // KI-Score Trend from trend data (hot leads over time)
+  const scoreTrendData = trendData.trend.map((item) => ({ x: item.label, y: item.hot }));
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
-      {/* Score Distribution — horizontal bar chart */}
+      {/* Score Distribution -- horizontal bar chart */}
       <Panel title="Score-Verteilung" icon={ICONS.chart} color="#818CF8" delay={0.1}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {SCORE_DIST.map((d, i) => {
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {scoreDistWithPct.map((d, i) => {
             const colors = ['#818CF8', '#6366F1', '#38BDF8', '#FBBF24', '#F87171', '#4E5170'];
             return (
               <div
@@ -760,8 +907,8 @@ function LeadsTab() {
                 <div
                   style={{
                     flex: 1,
-                    height: 20,
-                    borderRadius: 4,
+                    height: 28,
+                    borderRadius: 6,
                     background: 'rgba(255,255,255,0.03)',
                     overflow: 'hidden',
                     position: 'relative',
@@ -801,34 +948,52 @@ function LeadsTab() {
         </div>
       </Panel>
 
-      {/* Lead Sources — donut */}
+      {/* Lead Sources -- donut */}
       <Panel title="Lead-Quellen" icon={ICONS.globe} color="#34D399" delay={0.15}>
-        <DonutChart
-          segments={SOURCES.map((s) => ({ value: s.pct, color: s.color, label: s.name }))}
-          size={140}
-          strokeWidth={20}
-          label="2.8k"
-          sublabel="Leads gesamt"
-        />
+        {sourceSegments.length > 0 ? (
+          <DonutChart
+            segments={sourceSegments}
+            size={170}
+            strokeWidth={22}
+            label={totalLabel}
+            sublabel="Leads gesamt"
+          />
+        ) : (
+          <div style={{ color: C.text3, fontSize: 12, textAlign: 'center', padding: 40 }}>Keine Quellen</div>
+        )}
       </Panel>
 
-      {/* Weekly Score Trend — area chart */}
+      {/* KI-Score Trend -- full width area chart */}
       <Panel title="KI-Score Trend (Woche)" icon={ICONS.spark} color="#818CF8" span={2} delay={0.2}>
-        <AreaChart
-          data={WEEKLY_DATA.map((d) => ({ x: d.d, y: d.score }))}
-          color="#818CF8"
-          height={160}
-          label="Score"
-          formatY={(v) => `${Math.round(v)}`}
-        />
+        {scoreTrendData.length > 1 ? (
+          <AreaChart
+            data={scoreTrendData}
+            color="#818CF8"
+            height={200}
+            label="Score"
+            formatY={(v) => `${Math.round(v)}`}
+          />
+        ) : (
+          <div style={{ color: C.text3, fontSize: 12, textAlign: 'center', padding: 40 }}>Keine Trenddaten</div>
+        )}
       </Panel>
     </div>
   );
 }
 
-function ActivityTab() {
+function ActivityTab({ activityData, trendData }: { activityData: ActivityData; trendData: TrendData }) {
+  const timelineItems = activityData.activities.map((a) => ({
+    action: a.title,
+    time: formatTimeAgo(a.created_at),
+    color: getActivityColor(a.type),
+  }));
+
+  // Daily bar chart from last 7 trend entries
+  const last7 = trendData.trend.slice(-7);
+  const dailyBarData = last7.map((item) => ({ x: item.label, y: item.total }));
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
       <Panel title="Aktivitäts-Timeline" icon={ICONS.clock} color="#A78BFA" delay={0.1}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
           <div
@@ -841,42 +1006,42 @@ function ActivityTab() {
               background: `linear-gradient(180deg, ${C.border}, transparent)`,
             }}
           />
-          {ACTIVITY.concat([
-            { action: 'Kampagne "SaaS DACH Q2" gestartet', time: 'vor 3 Tagen', color: '#818CF8' },
-            { action: '48 Leads aus Google Maps importiert', time: 'vor 4 Tagen', color: '#38BDF8' },
-            { action: 'Monatsreport generiert', time: 'vor 5 Tagen', color: '#FBBF24' },
-          ]).map((a, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                gap: 16,
-                padding: '12px 0',
-                paddingLeft: 4,
-                borderBottom: '1px solid rgba(255,255,255,0.03)',
-                animation: 'fadeIn 0.3s ease both',
-                animationDelay: `${0.15 + i * 0.04}s`,
-              }}
-            >
+          {timelineItems.length > 0 ? (
+            timelineItems.map((a, i) => (
               <div
+                key={i}
                 style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  background: C.surface,
-                  border: `2px solid ${a.color}`,
-                  boxShadow: `0 0 8px ${a.color}40`,
-                  flexShrink: 0,
-                  marginTop: 2,
-                  zIndex: 1,
+                  display: 'flex',
+                  gap: 16,
+                  padding: '12px 0',
+                  paddingLeft: 4,
+                  borderBottom: '1px solid rgba(255,255,255,0.03)',
+                  animation: 'fadeIn 0.3s ease both',
+                  animationDelay: `${0.15 + i * 0.04}s`,
                 }}
-              />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12.5, color: C.text1, lineHeight: 1.4 }}>{a.action}</div>
-                <div style={{ fontSize: 10, color: C.text3, marginTop: 3 }}>{a.time}</div>
+              >
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    background: C.surface,
+                    border: `2px solid ${a.color}`,
+                    boxShadow: `0 0 8px ${a.color}40`,
+                    flexShrink: 0,
+                    marginTop: 2,
+                    zIndex: 1,
+                  }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12.5, color: C.text1, lineHeight: 1.4 }}>{a.action}</div>
+                  <div style={{ fontSize: 10, color: C.text3, marginTop: 3 }}>{a.time}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <div style={{ color: C.text3, fontSize: 12, textAlign: 'center', padding: 40 }}>Keine Aktivitäten</div>
+          )}
         </div>
       </Panel>
 
@@ -885,7 +1050,11 @@ function ActivityTab() {
           <ActivityHeatmap weeks={8} />
         </Panel>
         <Panel title="Tagesverteilung" icon={ICONS.clock} color="#38BDF8" delay={0.2}>
-          <ModernBarChart data={WEEKLY_DATA.map((d) => ({ x: d.d, y: d.leads }))} color="#38BDF8" height={120} />
+          {dailyBarData.length > 0 ? (
+            <ModernBarChart data={dailyBarData} color="#38BDF8" height={200} />
+          ) : (
+            <div style={{ color: C.text3, fontSize: 12, textAlign: 'center', padding: 40 }}>Keine Daten</div>
+          )}
         </Panel>
       </div>
     </div>
@@ -947,10 +1116,184 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
   );
 }
 
+// ─── PERIOD DROPDOWN ────────────────────────────────────────────────────────
+
+function PeriodDropdown({ period, onChange }: { period: string; onChange: (v: Period) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const current = PERIODS.find((p) => p.value === period);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', zIndex: 100 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="s-ghost"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '7px 14px',
+          borderRadius: 8,
+          border: `1px solid ${C.border}`,
+          background: 'rgba(255,255,255,0.02)',
+          color: C.text1,
+          fontSize: 12,
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        <SvgIcon d={ICONS.calendar} size={13} color={C.accent} />
+        {current?.label ?? 'Zeitraum'}
+        <svg
+          width={10}
+          height={10}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={C.text3}
+          strokeWidth={2}
+          strokeLinecap="round"
+          style={{ transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'rotate(0)' }}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            right: 0,
+            background: C.surface,
+            border: `1px solid ${C.borderLight}`,
+            borderRadius: 10,
+            padding: 4,
+            minWidth: 160,
+            zIndex: 9999,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            animation: 'scaleIn 0.15s cubic-bezier(0.22, 1, 0.36, 1) both',
+          }}
+        >
+          {PERIODS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => {
+                onChange(p.value);
+                setOpen(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: 6,
+                border: 'none',
+                background: period === p.value ? C.accentGhost : 'transparent',
+                color: period === p.value ? C.accentBright : C.text2,
+                fontSize: 12,
+                fontWeight: period === p.value ? 500 : 400,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                textAlign: 'left',
+                transition: 'all 0.1s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (period !== p.value) e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+              }}
+              onMouseLeave={(e) => {
+                if (period !== p.value) e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              {period === p.value && (
+                <div style={{ width: 4, height: 4, borderRadius: '50%', background: C.accent, flexShrink: 0 }} />
+              )}
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── PAGE ────────────────────────────────────────────────────────────────────
+
+const PERIODS = [
+  { value: '7d', label: '1 Woche' },
+  { value: '14d', label: '2 Wochen' },
+  { value: '30d', label: '4 Wochen' },
+  { value: '3mo', label: '3 Monate' },
+  { value: '6mo', label: '6 Monate' },
+  { value: '1y', label: '1 Jahr' },
+] as const;
+
+type Period = (typeof PERIODS)[number]['value'];
 
 export default function AnalyticsPage() {
   const [tab, setTab] = useState<Tab>('overview');
+  const [period, setPeriod] = useState<Period>('30d');
+  const [loading, setLoading] = useState(true);
+  const [leadsData, setLeadsData] = useState<LeadsData | null>(null);
+  const [trendData, setTrendData] = useState<TrendData | null>(null);
+  const [activityData, setActivityData] = useState<ActivityData | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+
+    const emptyLeads: LeadsData = {
+      total: 0,
+      hot: 0,
+      warm: 0,
+      cold: 0,
+      avgScore: 0,
+      withEmail: 0,
+      scored: 0,
+      avgDataQuality: 0,
+      scoreRanges: {},
+      industries: [],
+      topCities: [],
+      hotLeads: [],
+      weeklyLeads: [],
+    };
+    const emptyTrend: TrendData = { trend: [] };
+    const emptyActivity: ActivityData = { activities: [], typeCounts: {}, total: 0 };
+
+    Promise.all([
+      fetch(`/api/analytics/leads?period=${period}`)
+        .then((r) => (r.ok ? r.json() : emptyLeads))
+        .catch(() => emptyLeads),
+      fetch('/api/analytics/trend')
+        .then((r) => (r.ok ? r.json() : emptyTrend))
+        .catch(() => emptyTrend),
+      fetch('/api/analytics/activity')
+        .then((r) => (r.ok ? r.json() : emptyActivity))
+        .catch(() => emptyActivity),
+    ])
+      .then(([leads, trend, activity]) => {
+        setLeadsData(leads);
+        setTrendData(trend);
+        setActivityData(activity);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLeadsData(emptyLeads);
+        setTrendData(emptyTrend);
+        setActivityData(emptyActivity);
+        setLoading(false);
+        showToast('Daten konnten nicht geladen werden', 'error');
+      });
+  }, [period]);
 
   return (
     <>
@@ -958,19 +1301,19 @@ export default function AnalyticsPage() {
       <PageHeader
         title="Analytics"
         subtitle="Deine Sales-Performance auf einen Blick"
-        actions={
-          <>
-            <GhostButton>Zeitraum: 30 Tage</GhostButton>
-            <GhostButton>Export</GhostButton>
-          </>
-        }
+        actions={<PeriodDropdown period={period} onChange={setPeriod} />}
       />
       <TabBar active={tab} onChange={setTab} />
-      <div key={tab} className="tab-content-enter">
-        {tab === 'overview' && <OverviewTab />}
-        {tab === 'leads' && <LeadsTab />}
-        {tab === 'activity' && <ActivityTab />}
-      </div>
+
+      {loading || !leadsData || !trendData || !activityData ? (
+        <LoadingSpinner />
+      ) : (
+        <div key={tab} className="tab-content-enter">
+          {tab === 'overview' && <OverviewTab leadsData={leadsData} trendData={trendData} />}
+          {tab === 'leads' && <LeadsTab leadsData={leadsData} trendData={trendData} />}
+          {tab === 'activity' && <ActivityTab activityData={activityData} trendData={trendData} />}
+        </div>
+      )}
     </>
   );
 }

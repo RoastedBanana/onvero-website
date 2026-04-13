@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, DM_Sans, DM_Mono } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { CookieConsent } from '@/components/CookieConsent';
+import { AnalyticsLoader } from '@/components/AnalyticsLoader';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -48,10 +48,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
         <CookieConsent />
-        <Script src="https://plausible.io/js/pa-kKZb9OGJJyFPeOOINz23w.js" strategy="afterInteractive" />
-        <Script id="plausible-init" strategy="afterInteractive">
-          {`window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()`}
-        </Script>
+        <AnalyticsLoader />
       </body>
     </html>
   );

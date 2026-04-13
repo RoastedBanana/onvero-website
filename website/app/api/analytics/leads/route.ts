@@ -12,7 +12,20 @@ export async function GET(req: Request) {
   const period = searchParams.get('period') || '30d';
   const supabase = await createServerSupabaseClient();
 
-  const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '3mo' ? 90 : 365;
+  const days =
+    period === '7d'
+      ? 7
+      : period === '14d'
+        ? 14
+        : period === '30d'
+          ? 30
+          : period === '3mo'
+            ? 90
+            : period === '6mo'
+              ? 180
+              : period === '1y'
+                ? 365
+                : 30;
   const since = new Date(Date.now() - days * 86400000).toISOString();
 
   const { data: leads } = await supabase

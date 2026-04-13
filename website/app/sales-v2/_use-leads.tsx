@@ -1,18 +1,179 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Lead } from './_lead-data';
 
-// ─── SUPABASE CLIENT ─────────────────────────────────────────────────────────
+// ─── SUPABASE CLIENT (singleton) ────────────────────────────────────────────
 
 let _supabase: ReturnType<typeof createBrowserClient> | null = null;
-function getSupabase() {
+export function getSupabase() {
   if (!_supabase) {
     _supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   }
   return _supabase;
+}
+
+// ─── TIMEOUT HELPER ─────────────────────────────────────────────────────────
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)),
+  ]);
+}
+
+// ─── CACHED AUTH + TENANT (deduplicated — only 1 call no matter how many hooks) ─
+
+let _authPromise: Promise<string | null> | null = null;
+let _cachedTenantId: string | null = null;
+
+// Try to restore tenant ID from sessionStorage (survives page navigations)
+if (typeof window !== 'undefined') {
+  _cachedTenantId = sessionStorage.getItem('_tenantId');
+}
+
+// Read Supabase session directly from localStorage — bypasses Web Locks deadlock bug
+// (supabase-js #2013, #2111). Never calls getSession() or getUser() which can hang.
+export function readSessionFromStorage(): { userId: string; accessToken: string; email?: string } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    // Supabase stores session in localStorage as sb-<ref>-auth-token
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes('-auth-token')) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        // Can be stored as array [session] or as object
+        const session = Array.isArray(parsed) ? parsed[0] : parsed;
+        if (session?.user?.id && session?.access_token) {
+          return { userId: session.user.id, accessToken: session.access_token, email: session.user.email };
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+export function getCachedTenantId(): Promise<string | null> {
+  if (_cachedTenantId) return Promise.resolve(_cachedTenantId);
+  if (_authPromise) return _authPromise;
+
+  _authPromise = (async () => {
+    try {
+      // Fast path: read session directly from localStorage (no Web Locks, no network)
+      const stored = readSessionFromStorage();
+      if (stored) {
+        const supabase = getSupabase();
+        const { data: tu } = (await withTimeout(
+          supabase.from('tenant_users').select('tenant_id').eq('user_id', stored.userId).single(),
+          8000
+        )) as { data: { tenant_id: string } | null };
+        _cachedTenantId = tu?.tenant_id ?? null;
+      }
+
+      // Fallback: if no localStorage session, try getUser (with strict timeout)
+      if (!_cachedTenantId) {
+        const supabase = getSupabase();
+        const {
+          data: { user },
+        } = (await withTimeout(supabase.auth.getUser(), 5000)) as {
+          data: { user: { id: string } | null };
+        };
+        if (!user) return null;
+        const { data: tu } = (await withTimeout(
+          supabase.from('tenant_users').select('tenant_id').eq('user_id', user.id).single(),
+          5000
+        )) as { data: { tenant_id: string } | null };
+        _cachedTenantId = tu?.tenant_id ?? null;
+      }
+
+      if (_cachedTenantId && typeof window !== 'undefined') {
+        sessionStorage.setItem('_tenantId', _cachedTenantId);
+      }
+      return _cachedTenantId;
+    } catch (err) {
+      console.error('[auth] failed:', err);
+      return null;
+    } finally {
+      _authPromise = null;
+    }
+  })();
+
+  return _authPromise;
+}
+
+// ─── SHARED LEADS STORE (single fetch, all hooks subscribe) ─────────────────
+
+type LeadsState = { leads: Lead[]; loading: boolean; tenantId: string | null };
+
+let _store: LeadsState = { leads: [], loading: true, tenantId: null };
+let _listeners = new Set<() => void>();
+let _initialized = false;
+function setStore(partial: Partial<LeadsState>) {
+  _store = { ..._store, ...partial };
+  _listeners.forEach((fn) => fn());
+}
+
+function subscribe(fn: () => void) {
+  _listeners.add(fn);
+  // Initialize on first subscriber
+  if (!_initialized) {
+    _initialized = true;
+    initLeadsStore();
+  }
+  return () => {
+    _listeners.delete(fn);
+  };
+}
+
+function getSnapshot(): LeadsState {
+  return _store;
+}
+
+async function initLeadsStore() {
+  try {
+    const tid = await getCachedTenantId();
+    if (!tid) {
+      setStore({ loading: false });
+      return;
+    }
+    setStore({ tenantId: tid });
+
+    const supabase = getSupabase();
+    const { data } = (await withTimeout(
+      supabase
+        .from('leads')
+        .select(
+          `id, company_name, first_name, last_name, email, phone,
+           website, street, city, zip, country,
+           status, score, source, notes, estimated_value,
+           ai_summary, ai_tags, ai_next_action, ai_scored_at,
+           email_draft_subject, email_draft_body,
+           google_rating, google_reviews, google_maps_url,
+           custom_fields, last_contacted_at, follow_up_at, created_at,
+           employment_history, tenant_id`
+        )
+        .eq('tenant_id', tid)
+        .order('score', { ascending: false, nullsFirst: false })
+        .limit(200),
+      10000
+    )) as { data: DbLead[] | null };
+
+    if (data) {
+      setStore({ leads: data.map((r: DbLead) => dbToLead(r)), loading: false });
+    } else {
+      setStore({ loading: false });
+    }
+
+    // NOTE: Realtime disabled — Supabase Realtime WebSocket causes a Web Locks
+    // deadlock (supabase-js #2013) that freezes the entire app after ~3 minutes.
+    // Data is refreshed on navigation instead. Re-enable once supabase-js fixes the bug.
+  } catch (err) {
+    console.error('[useLeads] init failed:', err);
+    setStore({ loading: false });
+  }
 }
 
 // ─── STATUS MAPPING ──────────────────────────────────────────────────────────
@@ -134,101 +295,15 @@ function timeAgo(dateStr: string): string {
   return `vor ${Math.floor(diffD / 7)} Woche${Math.floor(diffD / 7) > 1 ? 'n' : ''}`;
 }
 
-// ─── HOOK: useLeads — live from Supabase with Realtime ───────────────────────
+// ─── HOOK: useLeads — shared store, single fetch ────────────────────────────
 
 export function useLeads() {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return { leads: state.leads, loading: state.loading, tenantId: state.tenantId };
+}
 
-  // Initial fetch
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      const supabase = getSupabase();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user || cancelled) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: tu } = await supabase.from('tenant_users').select('tenant_id').eq('user_id', user.id).single();
-
-      const tid = tu?.tenant_id;
-      if (!tid || cancelled) {
-        setLoading(false);
-        return;
-      }
-      setTenantId(tid);
-
-      const { data } = await supabase
-        .from('leads')
-        .select(
-          `
-          id, company_name, first_name, last_name, email, phone,
-          website, street, city, zip, country,
-          status, score, source, notes, estimated_value,
-          ai_summary, ai_tags, ai_next_action, ai_scored_at,
-          email_draft_subject, email_draft_body,
-          google_rating, google_reviews, google_maps_url,
-          custom_fields, last_contacted_at, follow_up_at, created_at,
-          employment_history, tenant_id
-        `
-        )
-        .eq('tenant_id', tid)
-        .order('score', { ascending: false, nullsFirst: false })
-        .limit(200);
-
-      if (!cancelled && data) {
-        setLeads(data.map((r: DbLead) => dbToLead(r)));
-      }
-      if (!cancelled) setLoading(false);
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Realtime: listen for UPDATE on leads table
-  useEffect(() => {
-    if (!tenantId) return;
-
-    const supabase = getSupabase();
-    let channel: RealtimeChannel;
-
-    channel = supabase
-      .channel(`leads-${tenantId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'leads',
-          filter: `tenant_id=eq.${tenantId}`,
-        },
-        (payload: { eventType: string; new: DbLead; old: { id?: string } }) => {
-          if (payload.eventType === 'UPDATE') {
-            const updated = dbToLead(payload.new);
-            setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
-          } else if (payload.eventType === 'INSERT') {
-            const newLead = dbToLead(payload.new);
-            setLeads((prev) => [newLead, ...prev]);
-          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
-            setLeads((prev) => prev.filter((l) => l.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [tenantId]);
-
-  return { leads, loading, tenantId };
+/** Re-fetch leads from Supabase and update the shared store */
+export function refreshLeads() {
+  _initialized = false;
+  initLeadsStore();
 }

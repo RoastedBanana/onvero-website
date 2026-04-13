@@ -9,7 +9,6 @@ import {
   Calendar,
   Users,
   BarChart2,
-  Activity,
   Sparkles,
   Zap,
   Plug,
@@ -88,121 +87,125 @@ export default function DashboardSidebar() {
       style={{
         width: 220,
         flexShrink: 0,
-        height: '100vh',
-        position: 'sticky',
-        top: 0,
-        background: 'rgba(255,255,255,0.02)',
-        borderRight: '1px solid rgba(255,255,255,0.04)',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        position: 'relative',
         fontFamily: 'var(--font-dm-sans)',
+        borderRight: '1px solid rgba(255,255,255,0.04)',
       }}
     >
-      {/* Subtle noise/gradient overlay at top */}
+      {/* ── Sticky Top: Logo + Search ── */}
       <div
         style={{
-          position: 'absolute',
+          position: 'sticky',
           top: 0,
-          left: 0,
-          right: 0,
-          height: 120,
-          background: 'linear-gradient(180deg, rgba(107,122,255,0.03) 0%, transparent 100%)',
-          pointerEvents: 'none',
-          zIndex: 0,
+          zIndex: 2,
+          background: '#050505',
         }}
-      />
+      >
+        {/* Subtle gradient overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 120,
+            background: 'linear-gradient(180deg, rgba(107,122,255,0.03) 0%, transparent 100%)',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }}
+        />
 
-      {/* ── Logo ── */}
-      <div style={{ padding: '22px 18px 16px', position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <div
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                background: '#6B7AFF',
-                flexShrink: 0,
-                boxShadow: '0 0 6px rgba(107,122,255,0.4)',
-              }}
-            />
-            <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.03em' }}>Onvero.</span>
+        {/* Logo */}
+        <div style={{ padding: '22px 18px 16px', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <div
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: '#6B7AFF',
+                  flexShrink: 0,
+                  boxShadow: '0 0 6px rgba(107,122,255,0.4)',
+                }}
+              />
+              <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.03em' }}>Onvero.</span>
+            </div>
           </div>
-        </div>
-        <div
-          style={{
-            fontSize: 9,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: 'rgba(255,255,255,0.25)',
-            marginTop: 4,
-            marginLeft: 14,
-          }}
-        >
-          BusinessOS
-        </div>
-        <div style={{ ...gradientSeparator, marginTop: 14 }} />
-      </div>
-
-      {/* ── Search ── */}
-      <div style={{ margin: '6px 12px 8px', position: 'relative', zIndex: 1 }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: 'rgba(255,255,255,0.03)',
-            border: `1px solid ${searchHover ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)'}`,
-            borderRadius: 14,
-            padding: '7px 12px',
-            transition: TRANSITION,
-          }}
-          onMouseEnter={() => setSearchHover(true)}
-          onMouseLeave={() => setSearchHover(false)}
-        >
-          <Search size={13} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suchen..."
-            readOnly
-            onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-            onFocus={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-            style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: 12,
-              padding: 0,
-              fontFamily: 'var(--font-dm-sans)',
-              cursor: 'pointer',
-            }}
-          />
-          <span
+          <div
             style={{
               fontSize: 9,
-              color: 'rgba(255,255,255,0.2)',
-              background: 'rgba(255,255,255,0.06)',
-              borderRadius: 4,
-              padding: '2px 6px',
-              fontFamily: 'var(--font-dm-mono)',
-              flexShrink: 0,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'rgba(255,255,255,0.25)',
+              marginTop: 4,
+              marginLeft: 14,
             }}
           >
-            K
-          </span>
+            BusinessOS
+          </div>
+          <div style={{ ...gradientSeparator, marginTop: 14 }} />
+        </div>
+
+        {/* Search */}
+        <div style={{ margin: '6px 12px 8px', position: 'relative', zIndex: 1 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'rgba(255,255,255,0.03)',
+              border: `1px solid ${searchHover ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)'}`,
+              borderRadius: 14,
+              padding: '7px 12px',
+              transition: TRANSITION,
+            }}
+            onMouseEnter={() => setSearchHover(true)}
+            onMouseLeave={() => setSearchHover(false)}
+          >
+            <Search size={13} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Suchen..."
+              readOnly
+              onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+              onFocus={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
+              style={{
+                flex: 1,
+                background: 'none',
+                border: 'none',
+                outline: 'none',
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: 12,
+                padding: 0,
+                fontFamily: 'var(--font-dm-sans)',
+                cursor: 'pointer',
+              }}
+            />
+            <span
+              style={{
+                fontSize: 9,
+                color: 'rgba(255,255,255,0.2)',
+                background: 'rgba(255,255,255,0.06)',
+                borderRadius: 4,
+                padding: '2px 6px',
+                fontFamily: 'var(--font-dm-mono)',
+                flexShrink: 0,
+              }}
+            >
+              K
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ── Nav Items ── */}
+      {/* ── Nav Items (scroll with page) ── */}
       <nav
         style={{
-          flex: 1,
           padding: '6px 10px',
-          overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
@@ -304,15 +307,20 @@ export default function DashboardSidebar() {
         })}
       </nav>
 
-      {/* ── Bottom Section ── */}
+      {/* Spacer pushes bottom section down */}
+      <div style={{ flex: 1 }} />
+
+      {/* ── Sticky Bottom: Settings + Profile ── */}
       <div
         style={{
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 2,
+          background: '#050505',
           padding: '0 10px 8px',
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          position: 'relative',
-          zIndex: 1,
         }}
       >
         <div style={{ ...gradientSeparator, marginBottom: 8 }} />

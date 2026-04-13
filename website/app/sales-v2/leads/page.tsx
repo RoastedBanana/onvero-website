@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { createPortal } from 'react-dom';
+import LeadAvatar from '@/components/ui/LeadAvatar';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   C,
   SvgIcon,
@@ -20,7 +23,7 @@ import {
 import { getLeadStats } from '../_lead-data';
 import type { Lead } from '../_lead-data';
 import { updateLeadStatus } from '../_activities';
-import { useLeads } from '../_use-leads';
+import { useLeads, getSupabase, refreshLeads } from '../_use-leads';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
@@ -201,10 +204,22 @@ const STATUS_COLORS: Record<string, string> = {
 
 function InlineStatusDropdown({ status, onChange }: { status: Lead['status']; onChange: (s: Lead['status']) => void }) {
   const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen(!open);
+  };
+
   return (
-    <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+    <div onClick={(e) => e.stopPropagation()}>
       <button
-        onClick={() => setOpen(!open)}
+        ref={btnRef}
+        onClick={handleOpen}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -242,55 +257,56 @@ function InlineStatusDropdown({ status, onChange }: { status: Lead['status']; on
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {open && (
-        <>
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
-          <div
-            style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              marginTop: 4,
-              zIndex: 100,
-              background: '#131530',
-              border: `1px solid ${C.borderLight}`,
-              borderRadius: 8,
-              padding: 3,
-              minWidth: 140,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-              animation: 'scaleIn 0.12s ease both',
-            }}
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <button
-                key={opt}
-                onClick={() => {
-                  onChange(opt);
-                  setOpen(false);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  width: '100%',
-                  padding: '6px 10px',
-                  borderRadius: 5,
-                  border: 'none',
-                  background: status === opt ? 'rgba(99,102,241,0.06)' : 'transparent',
-                  color: C.text1,
-                  fontSize: 11,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  textAlign: 'left',
-                }}
-              >
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: STATUS_COLORS[opt] }} />
-                {opt}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+      {open &&
+        createPortal(
+          <>
+            <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99998 }} />
+            <div
+              style={{
+                position: 'fixed',
+                top: pos.top,
+                left: pos.left,
+                zIndex: 99999,
+                background: '#131530',
+                border: `1px solid ${C.borderLight}`,
+                borderRadius: 8,
+                padding: 3,
+                minWidth: 140,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                animation: 'scaleIn 0.12s ease both',
+              }}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => {
+                    onChange(opt);
+                    setOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    width: '100%',
+                    padding: '6px 10px',
+                    borderRadius: 5,
+                    border: 'none',
+                    background: status === opt ? 'rgba(99,102,241,0.06)' : 'transparent',
+                    color: C.text1,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: STATUS_COLORS[opt] }} />
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </>,
+          document.body
+        )}
     </div>
   );
 }
@@ -302,6 +318,9 @@ function LeadTable({
   onToggleAll,
   onLeadClick,
   onStatusChange,
+  onExport,
+  onBatchStatus,
+  onBatchDelete,
 }: {
   leads: Lead[];
   selected: Set<string>;
@@ -309,6 +328,9 @@ function LeadTable({
   onToggleAll: () => void;
   onLeadClick: (lead: Lead) => void;
   onStatusChange: (leadId: string, oldStatus: string, newStatus: Lead['status']) => void;
+  onExport: () => void;
+  onBatchStatus: () => void;
+  onBatchDelete: () => void;
 }) {
   const headers = ['', 'Kontakt & Firma', 'KI-Score', 'Status', 'Branche', 'Aktivität'];
   const allSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
@@ -322,6 +344,7 @@ function LeadTable({
         background: C.surface,
         boxShadow: '0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
         animation: 'fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both',
+        flexShrink: 0,
       }}
     >
       {/* Batch actions */}
@@ -339,23 +362,48 @@ function LeadTable({
         >
           <span style={{ fontSize: 12, color: C.accentBright, fontWeight: 500 }}>{selected.size} ausgewählt</span>
           <div style={{ width: 1, height: 16, background: 'rgba(99,102,241,0.15)' }} />
-          {['Exportieren', 'Status ändern', 'Löschen'].map((a, i) => (
-            <button
-              key={a}
-              onClick={() => showToast(`${a}...`, i === 2 ? 'error' : 'info')}
-              style={{
-                fontSize: 11,
-                color: i === 2 ? C.danger : C.accentBright,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                padding: '2px 6px',
-              }}
-            >
-              {a}
-            </button>
-          ))}
+          <button
+            onClick={onExport}
+            style={{
+              fontSize: 11,
+              color: C.accentBright,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              padding: '2px 6px',
+            }}
+          >
+            Exportieren
+          </button>
+          <button
+            onClick={onBatchStatus}
+            style={{
+              fontSize: 11,
+              color: C.accentBright,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              padding: '2px 6px',
+            }}
+          >
+            Status ändern
+          </button>
+          <button
+            onClick={onBatchDelete}
+            style={{
+              fontSize: 11,
+              color: C.danger,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              padding: '2px 6px',
+            }}
+          >
+            Löschen
+          </button>
         </div>
       )}
 
@@ -365,7 +413,11 @@ function LeadTable({
             title="Keine Leads gefunden"
             description="Versuche einen anderen Filter oder generiere neue Leads mit der KI."
             icon={ICONS.search}
-            action={<GlowButton>+ Lead generieren</GlowButton>}
+            action={
+              <Link href="/sales-v2/generate" style={{ textDecoration: 'none' }}>
+                <GlowButton>+ Lead generieren</GlowButton>
+              </Link>
+            }
           />
         </div>
       ) : (
@@ -462,27 +514,12 @@ function LeadTable({
                       }
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                            background: `linear-gradient(135deg, ${C.surface2}, ${C.surface3})`,
-                            border: `1px solid ${C.border}`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 10,
-                            fontWeight: 500,
-                            color: C.text2,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {lead.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')}
-                        </div>
+                        <LeadAvatar
+                          website={lead.website}
+                          companyName={lead.company}
+                          score={lead.score ?? undefined}
+                          size="md"
+                        />
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
                           <div
@@ -689,30 +726,12 @@ function KanbanBoard({
                 >
                   {/* Top: Avatar + Name */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                    <div
-                      style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 8,
-                        background:
-                          (lead.score ?? 0) >= 70
-                            ? 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05))'
-                            : `linear-gradient(135deg, ${C.surface2}, ${C.surface3})`,
-                        border: `1px solid ${(lead.score ?? 0) >= 70 ? 'rgba(99,102,241,0.2)' : C.border}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 10,
-                        fontWeight: 500,
-                        color: (lead.score ?? 0) >= 70 ? C.accent : C.text3,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {lead.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')}
-                    </div>
+                    <LeadAvatar
+                      website={lead.website}
+                      companyName={lead.company}
+                      score={lead.score ?? undefined}
+                      size="md"
+                    />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
@@ -860,6 +879,15 @@ function LeadsPage() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [batchStatusOpen, setBatchStatusOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Restore saved view mode after mount to avoid hydration mismatch
+  useEffect(() => {
+    const saved = localStorage.getItem('leads-view-mode');
+    if (saved === 'kanban') setViewMode('kanban');
+  }, []);
 
   // Optimistic status overrides — instant UI update before DB roundtrip
   const [statusOverrides, setStatusOverrides] = useState<Record<string, Lead['status']>>({});
@@ -955,6 +983,82 @@ function LeadsPage() {
     else setSelected(new Set(filteredLeads.map((l) => l.id)));
   }
 
+  // ─── BATCH: CSV Export ──────────────────────────────────────────────────────
+
+  function handleExport() {
+    const selectedLeads = mergedLeads.filter((l) => selected.has(l.id));
+    const headers = ['Name', 'Firma', 'E-Mail', 'Telefon', 'Stadt', 'Score', 'Status', 'Branche', 'Website'];
+    const rows = selectedLeads.map((l) => [
+      l.name,
+      l.company,
+      l.email ?? '',
+      l.phone ?? '',
+      l.city,
+      l.score ?? '',
+      l.status,
+      l.industry,
+      l.website ?? '',
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`${selectedLeads.length} Leads exportiert`, 'success');
+  }
+
+  // ─── BATCH: Status ändern ───────────────────────────────────────────────────
+
+  async function handleBatchStatus(newStatus: Lead['status']) {
+    const ids = Array.from(selected);
+    setBatchStatusOpen(false);
+
+    for (const id of ids) {
+      const lead = mergedLeads.find((l) => l.id === id);
+      if (lead) {
+        setStatusOverrides((prev) => ({ ...prev, [id]: newStatus }));
+        updateLeadStatus(id, lead.status, newStatus);
+      }
+    }
+    showToast(`${ids.length} Leads → ${newStatus}`, 'success');
+    setSelected(new Set());
+  }
+
+  // ─── BATCH: Löschen ────────────────────────────────────────────────────────
+
+  async function handleBatchDelete() {
+    const ids = Array.from(selected);
+    setDeleting(true);
+    try {
+      const supabase = getSupabase();
+      const { error } = await supabase.from('leads').delete().in('id', ids);
+      if (error) throw error;
+      showToast(`${ids.length} Leads endgültig gelöscht`, 'success');
+      setSelected(new Set());
+      setDeleteConfirmOpen(false);
+      refreshLeads();
+    } catch (err) {
+      console.error('[batch-delete]', err);
+      showToast('Löschen fehlgeschlagen', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const selectedCount = selected.size;
+  const selectedNames = mergedLeads
+    .filter((l) => selected.has(l.id))
+    .slice(0, 3)
+    .map((l) => l.company);
+
   return (
     <>
       <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Leads' }]} />
@@ -976,7 +1080,10 @@ function LeadsPage() {
               {(['table', 'kanban'] as const).map((m) => (
                 <button
                   key={m}
-                  onClick={() => setViewMode(m)}
+                  onClick={() => {
+                    setViewMode(m);
+                    localStorage.setItem('leads-view-mode', m);
+                  }}
                   style={{
                     padding: '5px 12px',
                     borderRadius: 5,
@@ -993,10 +1100,7 @@ function LeadsPage() {
                 </button>
               ))}
             </div>
-            <GhostButton>Export</GhostButton>
-            <GlowButton onClick={() => showToast('Lead-Generator wird gestartet...', 'info')}>
-              + Lead generieren
-            </GlowButton>
+            <GlowButton onClick={() => router.push('/sales-v2/generate')}>+ Lead generieren</GlowButton>
           </>
         }
       />
@@ -1103,10 +1207,212 @@ function LeadsPage() {
           onToggleAll={toggleAll}
           onLeadClick={openLead}
           onStatusChange={changeStatus}
+          onExport={handleExport}
+          onBatchStatus={() => setBatchStatusOpen(true)}
+          onBatchDelete={() => setDeleteConfirmOpen(true)}
         />
       ) : (
         <KanbanBoard leads={filteredLeads} onLeadClick={openLead} onStatusChange={changeStatus} />
       )}
+
+      {/* ─── DELETE CONFIRMATION DIALOG ─────────────────────────────────── */}
+      {deleteConfirmOpen &&
+        createPortal(
+          <>
+            <div
+              onClick={() => !deleting && setDeleteConfirmOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.6)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 99998,
+                animation: 'fadeIn 0.15s ease both',
+              }}
+            />
+            <div
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 440,
+                zIndex: 99999,
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 16,
+                padding: '28px 28px 24px',
+                boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+                animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: 'rgba(248,113,113,0.1)',
+                    border: '1px solid rgba(248,113,113,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <SvgIcon d={ICONS.x} size={20} color="#F87171" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: C.text1 }}>
+                    {selectedCount} {selectedCount === 1 ? 'Lead' : 'Leads'} endgültig löschen?
+                  </div>
+                  <div style={{ fontSize: 12, color: C.text3, marginTop: 2 }}>
+                    Diese Aktion kann nicht rückgängig gemacht werden.
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: 10,
+                  background: 'rgba(248,113,113,0.04)',
+                  border: '1px solid rgba(248,113,113,0.1)',
+                  marginBottom: 20,
+                }}
+              >
+                <div
+                  style={{ fontSize: 11, color: '#F87171', fontWeight: 600, letterSpacing: '0.04em', marginBottom: 8 }}
+                >
+                  WARNUNG
+                </div>
+                <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>
+                  Alle Daten dieser Leads werden{' '}
+                  <strong style={{ color: '#F87171' }}>permanent aus der Datenbank gelöscht</strong> — inklusive
+                  KI-Scores, Aktivitäten und E-Mail-Entwürfe.
+                </div>
+                {selectedNames.length > 0 && (
+                  <div style={{ fontSize: 11, color: C.text3, marginTop: 8 }}>
+                    Betrifft u.a.: {selectedNames.join(', ')}
+                    {selectedCount > 3 ? ` und ${selectedCount - 3} weitere` : ''}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <GhostButton onClick={() => !deleting && setDeleteConfirmOpen(false)}>Abbrechen</GhostButton>
+                <button
+                  onClick={handleBatchDelete}
+                  disabled={deleting}
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: deleting ? 'rgba(248,113,113,0.3)' : 'linear-gradient(135deg, #DC2626, #EF4444)',
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: deleting ? 'wait' : 'pointer',
+                    fontFamily: 'inherit',
+                    boxShadow: '0 4px 16px rgba(220,38,38,0.3)',
+                  }}
+                >
+                  {deleting ? 'Wird gelöscht...' : `${selectedCount} Leads löschen`}
+                </button>
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+
+      {/* ─── BATCH STATUS CHANGE DIALOG ─────────────────────────────────── */}
+      {batchStatusOpen &&
+        createPortal(
+          <>
+            <div
+              onClick={() => setBatchStatusOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 99998,
+                animation: 'fadeIn 0.15s ease both',
+              }}
+            />
+            <div
+              style={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 340,
+                zIndex: 99999,
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 14,
+                padding: '20px',
+                boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+                animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, color: C.text1, marginBottom: 4 }}>Status ändern</div>
+              <div style={{ fontSize: 12, color: C.text3, marginBottom: 16 }}>
+                {selectedCount} {selectedCount === 1 ? 'Lead' : 'Leads'} ausgewählt
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {(['Neu', 'In Kontakt', 'Qualifiziert', 'Verloren'] as Lead['status'][]).map((s) => {
+                  const colors: Record<string, string> = {
+                    Neu: '#4E5170',
+                    'In Kontakt': '#818CF8',
+                    Qualifiziert: '#34D399',
+                    Verloren: '#F87171',
+                  };
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => handleBatchStatus(s)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '10px 14px',
+                        borderRadius: 8,
+                        border: `1px solid ${C.border}`,
+                        background: 'transparent',
+                        color: C.text1,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(99,102,241,0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(99,102,241,0.2)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = C.border;
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: colors[s],
+                          boxShadow: `0 0 6px ${colors[s]}40`,
+                        }}
+                      />
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
     </>
   );
 }

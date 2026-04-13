@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   C,
   SvgIcon,
@@ -12,6 +12,46 @@ import {
   showToast,
   ProgressRing,
 } from '../_shared';
+
+// ─── PROFILE DATA (loaded from /api/profile, shared across sections) ────────
+
+interface ProfileData {
+  company_name: string;
+  company_description: string;
+  company_location: string;
+  website: string;
+  websites: string[];
+  target_customers: string;
+  ideal_lead_profile: string;
+  excluded_profiles: string;
+  services: string[];
+  usp: string;
+  deal_size_min: number | null;
+  deal_size_max: number | null;
+  sender_name: string;
+  sender_role: string;
+  tone_of_voice: string;
+  email_signature: string;
+}
+
+const EMPTY_PROFILE: ProfileData = {
+  company_name: '',
+  company_description: '',
+  company_location: '',
+  website: '',
+  websites: [],
+  target_customers: '',
+  ideal_lead_profile: '',
+  excluded_profiles: '',
+  services: [],
+  usp: '',
+  deal_size_min: null,
+  deal_size_max: null,
+  sender_name: '',
+  sender_role: '',
+  tone_of_voice: 'professional',
+  email_signature: '',
+};
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -404,20 +444,8 @@ function IntegrationCard({
 
 // ─── SECTION CONTENT ─────────────────────────────────────────────────────────
 
-function ProfilSection() {
-  const [name, setName] = useState('Onvero GmbH');
-  const [desc, setDesc] = useState('B2B Sales Intelligence Plattform für den deutschsprachigen Markt');
-  const [location, setLocation] = useState('Hamburg, Deutschland');
-  const [websites, setWebsites] = useState(['onvero.de', 'onvero.io']);
-  const [target, setTarget] = useState('B2B-Entscheider in Tech-Unternehmen, 50k–5M€ Umsatz, DACH-Region');
-  const [ideal, setIdeal] = useState(
-    'SaaS-Unternehmen mit 20–250 MA, aktiv wachsend, noch kein CRM oder unzufrieden mit bestehendem'
-  );
-  const [excluded, setExcluded] = useState('Behörden, Non-Profits, Unternehmen unter 10 MA');
-  const [services, setServices] = useState(['Lead-Generierung', 'KI-Scoring', 'Sales Intelligence', 'Meeting-Analyse']);
-  const [usp, setUsp] = useState(
-    'Einzige Sales-Intelligence-Plattform die speziell für den DACH-Markt gebaut ist, mit deutschen Datenquellen und DSGVO-Konformität.'
-  );
+function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: (p: ProfileData) => void }) {
+  const upd = (field: keyof ProfileData, value: string | string[]) => onChange({ ...profile, [field]: value });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -427,38 +455,46 @@ function ProfilSection() {
       >
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <Field label="Firmenname">
-            <Input value={name} onChange={setName} />
+            <Input value={profile.company_name} onChange={(v) => upd('company_name', v)} />
           </Field>
           <Field label="Standort">
-            <Input value={location} onChange={setLocation} />
+            <Input value={profile.company_location} onChange={(v) => upd('company_location', v)} />
           </Field>
         </div>
         <Field label="Beschreibung">
-          <TextArea value={desc} onChange={setDesc} rows={2} />
+          <TextArea value={profile.company_description} onChange={(v) => upd('company_description', v)} rows={2} />
         </Field>
         <Field label="Websites">
-          <TagInput tags={websites} onChange={setWebsites} placeholder="Domain hinzufügen" />
+          <TagInput
+            tags={profile.websites ?? []}
+            onChange={(v) => upd('websites', v)}
+            placeholder="Domain hinzufügen"
+          />
         </Field>
       </SectionCard>
 
       <SectionCard title="Zielgruppe & ICP" description="Je präziser, desto besser der KI-Score.">
         <Field label="Zielkunden">
-          <TextArea value={target} onChange={setTarget} rows={2} />
+          <TextArea value={profile.target_customers} onChange={(v) => upd('target_customers', v)} rows={2} />
         </Field>
         <Field label="Ideales Lead-Profil (ICP)">
-          <TextArea value={ideal} onChange={setIdeal} rows={2} />
+          <TextArea value={profile.ideal_lead_profile} onChange={(v) => upd('ideal_lead_profile', v)} rows={2} />
         </Field>
         <Field label="Ausgeschlossene Profile">
-          <TextArea value={excluded} onChange={setExcluded} rows={2} />
+          <TextArea value={profile.excluded_profiles} onChange={(v) => upd('excluded_profiles', v)} rows={2} />
         </Field>
       </SectionCard>
 
       <SectionCard title="Produkt & Positionierung">
         <Field label="Services / Produkte">
-          <TagInput tags={services} onChange={setServices} placeholder="Service hinzufügen" />
+          <TagInput
+            tags={profile.services ?? []}
+            onChange={(v) => upd('services', v)}
+            placeholder="Service hinzufügen"
+          />
         </Field>
         <Field label="USP (Unique Selling Proposition)">
-          <TextArea value={usp} onChange={setUsp} rows={2} />
+          <TextArea value={profile.usp} onChange={(v) => upd('usp', v)} rows={2} />
         </Field>
       </SectionCard>
     </div>
@@ -570,11 +606,8 @@ function KiScoringSection() {
   );
 }
 
-function OutreachSection() {
-  const [senderName, setSenderName] = useState('Hans Lacher');
-  const [senderRole, setSenderRole] = useState('Gründer & CEO');
-  const [tone, setTone] = useState('professional');
-  const [signature, setSignature] = useState('Beste Grüße,\nHans Lacher\nOnvero GmbH\nwww.onvero.de');
+function OutreachSection({ profile, onChange }: { profile: ProfileData; onChange: (p: ProfileData) => void }) {
+  const upd = (field: keyof ProfileData, value: string) => onChange({ ...profile, [field]: value });
   const [autoGen, setAutoGen] = useState(true);
   const [followUpDays, setFollowUpDays] = useState('3');
   const [lang, setLang] = useState('de');
@@ -584,16 +617,16 @@ function OutreachSection() {
       <SectionCard title="Absender-Profil" description="Wie du in Outreach-Nachrichten erscheinst.">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <Field label="Name">
-            <Input value={senderName} onChange={setSenderName} />
+            <Input value={profile.sender_name} onChange={(v) => upd('sender_name', v)} />
           </Field>
           <Field label="Rolle / Titel">
-            <Input value={senderRole} onChange={setSenderRole} />
+            <Input value={profile.sender_role} onChange={(v) => upd('sender_role', v)} />
           </Field>
         </div>
         <Field label="Tonalität">
           <Select
-            value={tone}
-            onChange={setTone}
+            value={profile.tone_of_voice || 'professional'}
+            onChange={(v) => upd('tone_of_voice', v)}
             options={[
               { value: 'professional', label: 'Professionell — Klar, sachlich, respektvoll' },
               { value: 'casual', label: 'Casual — Persönlich, locker, direkt' },
@@ -602,7 +635,7 @@ function OutreachSection() {
           />
         </Field>
         <Field label="E-Mail-Signatur">
-          <TextArea value={signature} onChange={setSignature} rows={4} />
+          <TextArea value={profile.email_signature} onChange={(v) => upd('email_signature', v)} rows={4} />
         </Field>
       </SectionCard>
 
@@ -781,11 +814,7 @@ function BenachrichtigungenSection() {
 }
 
 function TeamSection() {
-  const members = [
-    { name: 'Hans Lacher', email: 'hans@onvero.de', role: 'Admin', status: 'Aktiv' },
-    { name: 'Maria Schmidt', email: 'maria@onvero.de', role: 'Editor', status: 'Aktiv' },
-    { name: 'Felix Braun', email: 'felix@onvero.de', role: 'Viewer', status: 'Eingeladen' },
-  ];
+  const members = [{ name: 'Du', email: '(deine E-Mail)', role: 'Admin', status: 'Aktiv' }];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -860,11 +889,11 @@ function TeamSection() {
 
 function ApiSection() {
   const [showKey, setShowKey] = useState(false);
-  const apiKey = 'sk_live_onvero_a8f3k29d…x7m2';
+  const apiKey = 'sk_live_••••••••••••••••';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <SectionCard title="API-Schlüssel" description="Nutze den API-Key um Onvero programmatisch anzusprechen.">
+      <SectionCard title="API-Schlüssel" description="Nutze den API-Key für programmatischen Zugriff.">
         <div
           style={{
             display: 'flex',
@@ -959,12 +988,56 @@ function ApiSection() {
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profil');
+  const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load profile from API on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/profile');
+        const data = await res.json();
+        if (data.profile) {
+          setProfile({ ...EMPTY_PROFILE, ...data.profile });
+        }
+      } catch {
+        // Keep empty profile
+      } finally {
+        setProfileLoaded(true);
+      }
+    })();
+  }, []);
+
+  // Save profile to API
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const method = profileLoaded ? 'PATCH' : 'POST';
+      const res = await fetch('/api/profile', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      const data = await res.json();
+      if (data.profile) {
+        setProfile({ ...EMPTY_PROFILE, ...data.profile });
+        showToast('Einstellungen gespeichert', 'success');
+      } else {
+        showToast('Fehler beim Speichern', 'error');
+      }
+    } catch {
+      showToast('Netzwerkfehler', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const sectionContent: Record<Section, React.ReactNode> = {
-    profil: <ProfilSection />,
+    profil: <ProfilSection profile={profile} onChange={setProfile} />,
     leads: <LeadsSection />,
     'ki-scoring': <KiScoringSection />,
-    outreach: <OutreachSection />,
+    outreach: <OutreachSection profile={profile} onChange={setProfile} />,
     meetings: <MeetingsSection />,
     integrationen: <IntegrationenSection />,
     benachrichtigungen: <BenachrichtigungenSection />,
@@ -979,8 +1052,8 @@ export default function SettingsPage() {
       <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Einstellungen' }]} />
       <PageHeader
         title="Einstellungen"
-        subtitle="Konfiguriere Onvero Sales nach deinen Bedürfnissen"
-        actions={<GlowButton onClick={() => showToast('Einstellungen gespeichert', 'success')}>Speichern</GlowButton>}
+        subtitle="Konfiguriere dein Sales-Dashboard nach deinen Bedürfnissen"
+        actions={<GlowButton onClick={handleSave}>{saving ? 'Speichern...' : 'Speichern'}</GlowButton>}
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 20 }}>

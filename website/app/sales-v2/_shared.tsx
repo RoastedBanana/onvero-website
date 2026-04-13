@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 // ─── DESIGN TOKENS ── Raycast-inspired deep indigo-black ─────────────────────
 
@@ -219,6 +220,14 @@ export const GLOBAL_STYLES = `
   .s-tab { transition: all 0.15s ease; }
   .s-tab:hover { color: #A5B4FC !important; }
 
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   .noise::before {
     content: '';
     position: fixed;
@@ -308,6 +317,8 @@ export function PageHeader({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        position: 'relative',
+        zIndex: 100,
         animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both',
       }}
     >
@@ -1008,28 +1019,30 @@ export function HoverCard({ children, content }: { children: React.ReactNode; co
       <div onMouseEnter={handleEnter} onMouseLeave={handleLeave} style={{ display: 'inline-block' }}>
         {children}
       </div>
-      {show && (
-        <div
-          onMouseEnter={() => setShow(true)}
-          onMouseLeave={handleLeave}
-          style={{
-            position: 'fixed',
-            left: pos.x,
-            ...(pos.above ? { bottom: window.innerHeight - pos.y } : { top: pos.y }),
-            zIndex: 1000,
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: 12,
-            padding: '14px 16px',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(16px)',
-            animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
-            maxWidth: 280,
-          }}
-        >
-          {content}
-        </div>
-      )}
+      {show &&
+        createPortal(
+          <div
+            onMouseEnter={() => setShow(true)}
+            onMouseLeave={handleLeave}
+            style={{
+              position: 'fixed',
+              left: pos.x,
+              ...(pos.above ? { bottom: window.innerHeight - pos.y } : { top: pos.y }),
+              zIndex: 1000,
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 12,
+              padding: '14px 16px',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 0 0.5px rgba(255,255,255,0.04)',
+              backdropFilter: 'blur(16px)',
+              animation: 'scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
+              maxWidth: 280,
+            }}
+          >
+            {content}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
@@ -1055,29 +1068,29 @@ export function ActivityHeatmap({ data, weeks = 12 }: { data?: number[]; weeks?:
   const days = ['Mo', '', 'Mi', '', 'Fr', '', ''];
 
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 2 }}>
+    <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 2, flexShrink: 0 }}>
         {days.map((d, i) => (
           <div
             key={i}
-            style={{ width: 16, height: 11, fontSize: 9, color: C.text3, display: 'flex', alignItems: 'center' }}
+            style={{ width: 16, fontSize: 9, color: C.text3, display: 'flex', alignItems: 'center', flex: 1 }}
           >
             {d}
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 2 }}>
+      <div style={{ display: 'flex', gap: 2, flex: 1 }}>
         {Array.from({ length: weeks }, (_, w) => (
-          <div key={w} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div key={w} style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
             {Array.from({ length: 7 }, (_, d) => {
               const v = cells[w * 7 + d] ?? 0;
               return (
                 <div
                   key={d}
                   style={{
-                    width: 11,
-                    height: 11,
-                    borderRadius: 2,
+                    width: '100%',
+                    aspectRatio: '1',
+                    borderRadius: 3,
                     background: getColor(v),
                     boxShadow: v > 0.8 ? `0 0 4px ${C.accent}40` : 'none',
                     animation: 'heatmap-pop 0.3s ease both',

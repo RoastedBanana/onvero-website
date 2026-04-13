@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useState, useEffect } from 'react';
+import { getSupabase, getCachedTenantId } from './_use-leads';
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -14,34 +13,18 @@ export type Activity = {
   title: string;
   content: string | null;
   created_at: string;
-  // Joined from leads table
   company_name?: string;
   first_name?: string;
   last_name?: string;
 };
 
-// ─── SUPABASE CLIENT (singleton for realtime) ────────────────────────────────
+// ─── TIMEOUT HELPER ─────────────────────────────────────────────────────────
 
-let _supabase: ReturnType<typeof createBrowserClient> | null = null;
-function getSupabase() {
-  if (!_supabase) {
-    _supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-  }
-  return _supabase;
-}
-
-// ─── GET TENANT ID ───────────────────────────────────────────────────────────
-
-async function getTenantId(): Promise<string | null> {
-  const supabase = getSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data } = await supabase.from('tenant_users').select('tenant_id').eq('user_id', user.id).single();
-
-  return data?.tenant_id ?? null;
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)),
+  ]);
 }
 
 // ─── HOOK: useActivities — fetches + subscribes to realtime ──────────────────
@@ -51,55 +34,66 @@ export function useActivities(leadId?: string) {
   const [loading, setLoading] = useState(true);
   const [tenantId, setTenantId] = useState<string | null>(null);
 
-  // Initial fetch
+  // Initial fetch — uses cached tenant ID (no extra auth call)
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      const tid = await getTenantId();
-      if (cancelled) return;
-      setTenantId(tid);
+      try {
+        const tid = await getCachedTenantId();
+        if (cancelled) return;
+        setTenantId(tid);
 
-      if (!tid) {
-        setLoading(false);
-        return;
+        if (!tid) {
+          setLoading(false);
+          return;
+        }
+
+        const supabase = getSupabase();
+        let query = supabase
+          .from('lead_activities')
+          .select('id, lead_id, tenant_id, type, title, content, created_at')
+          .eq('tenant_id', tid)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (leadId) {
+          query = query.eq('lead_id', leadId);
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = (await withTimeout(query, 8000)) as { data: any[] | null };
+
+        if (!cancelled && data) {
+          const leadIds = [...new Set(data.map((a: { lead_id: string }) => a.lead_id))];
+
+          let leadMap = new Map<string, { id: string; company_name: string; first_name: string; last_name: string }>();
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: leads } = (await withTimeout(
+              supabase.from('leads').select('id, company_name, first_name, last_name').in('id', leadIds),
+              5000
+            )) as { data: any[] | null };
+            type LeadInfo = { id: string; company_name: string; first_name: string; last_name: string };
+            leadMap = new Map((leads ?? []).map((l: LeadInfo) => [l.id, l]));
+          } catch {
+            // Enrichment failed — show activities without lead names
+          }
+
+          const enriched: Activity[] = data.map((a: Activity) => ({
+            ...a,
+            company_name: leadMap.get(a.lead_id)?.company_name,
+            first_name: leadMap.get(a.lead_id)?.first_name,
+            last_name: leadMap.get(a.lead_id)?.last_name,
+          }));
+
+          setActivities(enriched);
+        }
+      } catch (err) {
+        console.error('[useActivities] fetch failed:', err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      const supabase = getSupabase();
-      let query = supabase
-        .from('lead_activities')
-        .select('id, lead_id, tenant_id, type, title, content, created_at')
-        .eq('tenant_id', tid)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (leadId) {
-        query = query.eq('lead_id', leadId);
-      }
-
-      const { data } = await query;
-
-      if (!cancelled && data) {
-        // Enrich with lead names — fetch lead info
-        const leadIds = [...new Set(data.map((a: { lead_id: string }) => a.lead_id))];
-        const { data: leads } = await supabase
-          .from('leads')
-          .select('id, company_name, first_name, last_name')
-          .in('id', leadIds);
-
-        type LeadInfo = { id: string; company_name: string; first_name: string; last_name: string };
-        const leadMap = new Map<string, LeadInfo>((leads ?? []).map((l: LeadInfo) => [l.id, l]));
-
-        const enriched: Activity[] = data.map((a: Activity) => ({
-          ...a,
-          company_name: leadMap.get(a.lead_id)?.company_name,
-          first_name: leadMap.get(a.lead_id)?.first_name,
-          last_name: leadMap.get(a.lead_id)?.last_name,
-        }));
-
-        setActivities(enriched);
-      }
-      if (!cancelled) setLoading(false);
     }
 
     load();
@@ -108,51 +102,9 @@ export function useActivities(leadId?: string) {
     };
   }, [leadId]);
 
-  // Realtime subscription
-  useEffect(() => {
-    if (!tenantId) return;
-
-    const supabase = getSupabase();
-    let channel: RealtimeChannel;
-
-    // Subscribe to INSERT events on lead_activities for this tenant
-    channel = supabase
-      .channel(`activities-${tenantId}${leadId ? `-${leadId}` : ''}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'lead_activities',
-          filter: leadId ? `tenant_id=eq.${tenantId},lead_id=eq.${leadId}` : `tenant_id=eq.${tenantId}`,
-        },
-        async (payload: { new: Record<string, unknown> }) => {
-          const newActivity = payload.new as Activity;
-
-          // Enrich with lead name
-          const { data: lead } = await supabase
-            .from('leads')
-            .select('company_name, first_name, last_name')
-            .eq('id', newActivity.lead_id)
-            .single();
-
-          const enriched: Activity = {
-            ...newActivity,
-            company_name: lead?.company_name,
-            first_name: lead?.first_name,
-            last_name: lead?.last_name,
-          };
-
-          // Prepend to list (newest first)
-          setActivities((prev) => [enriched, ...prev].slice(0, 50));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [tenantId, leadId]);
+  // NOTE: Realtime disabled — Supabase Realtime WebSocket causes a Web Locks
+  // deadlock (supabase-js #2013) that freezes the entire app after ~3 minutes.
+  // Activities are loaded fresh on each page visit instead.
 
   return { activities, loading, tenantId };
 }
@@ -160,22 +112,26 @@ export function useActivities(leadId?: string) {
 // ─── WRITE ACTIVITY ──────────────────────────────────────────────────────────
 
 export async function writeActivity(leadId: string, type: string, title: string, content?: string | null) {
-  const supabase = getSupabase();
-  const tid = await getTenantId();
-  if (!tid) return;
+  try {
+    const supabase = getSupabase();
+    const tid = await getCachedTenantId();
+    if (!tid) return;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  await supabase.from('lead_activities').insert({
-    lead_id: leadId,
-    tenant_id: tid,
-    user_id: user?.id ?? null,
-    type,
-    title,
-    content: content ?? null,
-  });
+    await supabase.from('lead_activities').insert({
+      lead_id: leadId,
+      tenant_id: tid,
+      user_id: user?.id ?? null,
+      type,
+      title,
+      content: content ?? null,
+    });
+  } catch (err) {
+    console.error('[writeActivity] failed:', err);
+  }
 }
 
 // ─── UPDATE LEAD STATUS (DB + Activity) ──────────────────────────────────────
@@ -188,16 +144,18 @@ const STATUS_MAP: Record<string, string> = {
 };
 
 export async function updateLeadStatus(leadId: string, oldStatus: string, newStatus: string) {
-  const supabase = getSupabase();
-  const tid = await getTenantId();
-  if (!tid) return;
+  try {
+    const supabase = getSupabase();
+    const tid = await getCachedTenantId();
+    if (!tid) return;
 
-  // Update lead status in DB
-  const dbStatus = STATUS_MAP[newStatus] ?? 'new';
-  await supabase.from('leads').update({ status: dbStatus }).eq('id', leadId).eq('tenant_id', tid);
+    const dbStatus = STATUS_MAP[newStatus] ?? 'new';
+    await supabase.from('leads').update({ status: dbStatus }).eq('id', leadId).eq('tenant_id', tid);
 
-  // Write activity
-  await writeActivity(leadId, 'status_change', `Status geändert: ${oldStatus} → ${newStatus}`);
+    await writeActivity(leadId, 'status_change', `Status geändert: ${oldStatus} → ${newStatus}`);
+  } catch (err) {
+    console.error('[updateLeadStatus] failed:', err);
+  }
 }
 
 // ─── ACTIVITY TYPE STYLING ───────────────────────────────────────────────────
