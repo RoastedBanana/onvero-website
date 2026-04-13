@@ -67,24 +67,33 @@ function humanize(companyName: string): string {
     .trim();
 }
 
-function generateFollowUpDraft(meeting: Meeting, lead: Lead | null, aiSummaryText?: string | null): string {
+function generateFollowUpDraft(
+  meeting: Meeting,
+  lead: Lead | null,
+  aiSummaryText?: string | null,
+  actionItems?: { text: string }[]
+): string {
   const name = lead?.firstName ?? meeting.contact.split(' ')[0] ?? meeting.contact;
   const company = humanize(lead?.company ?? meeting.company);
   const sender = ACCOUNT.senderName.split(' ')[0];
 
-  // If we have an AI summary, use it for the email
   if (aiSummaryText) {
+    const actionsBlock =
+      actionItems && actionItems.length > 0
+        ? `\nNächste Schritte:\n${actionItems.map((a) => `- ${a.text}`).join('\n')}\n`
+        : '';
+
     return `Hallo ${name},
 
-vielen Dank für das gute Gespräch heute!
-
-Hier nochmal die wichtigsten Punkte zusammengefasst:
+danke nochmal für das gute Gespräch heute! Hier eine kurze Zusammenfassung:
 
 ${aiSummaryText}
-
-Ich stelle dir bis Ende der Woche ein konkretes Angebot zusammen. Falls du vorher noch Fragen hast, meld dich jederzeit.
+${actionsBlock}
+Falls dir noch was einfällt oder Fragen aufkommen — meld dich jederzeit bei mir.
 
 Beste Grüße
+${sender}
+
 ${ACCOUNT.senderName}
 ${ACCOUNT.senderRole} — ${humanize(ACCOUNT.companyName)}`;
   }
@@ -199,31 +208,70 @@ export default function PostMeeting({
   };
 
   const triggerAnalysis = async (transcriptText?: string) => {
+    const txt = transcriptText ?? transcript;
+    if (!txt) {
+      showToast('Kein Transkript vorhanden', 'error');
+      return;
+    }
     setAnalyzing(true);
     try {
-      const res = await fetch(`/api/meetings/${meeting.id}/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: transcriptText ?? transcript }),
-      });
-      const data = await res.json();
+      const isRealId = meeting.id && !meeting.id.startsWith('mtg-');
+      let data: Record<string, unknown>;
 
-      if (data.summary) setAiSummary(data.summary);
-      if (data.ai_insights) setAiInsights(data.ai_insights);
+      if (isRealId) {
+        // Use the dedicated meeting analyze endpoint
+        const res = await fetch(`/api/meetings/${meeting.id}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript: txt }),
+        });
+        data = await res.json();
+      } else {
+        // Fallback: call n8n proxy directly if we don't have a real DB ID
+        const res = await fetch('/api/proxy/n8n', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'meeting-analyzer',
+            meeting_id: meeting.id,
+            tenant_id: '',
+            transcript: txt,
+            meeting_title: meeting.title,
+            meeting_type: meeting.type,
+            contact_name: meeting.contact,
+            company: meeting.company,
+            product: meeting.product,
+            notes: notes.map((n) => ({ text: n.text, timestamp: n.timestamp, phaseName: n.phaseName })),
+            phases: meeting.phases,
+          }),
+        });
+        data = await res.json();
+      }
+
+      if (data.summary) setAiSummary(data.summary as string);
+      if (data.ai_insights) setAiInsights(data.ai_insights as string[]);
       if (data.action_items) {
         setActions(
-          data.action_items.map((a: { text: string }, i: number) => ({
+          (data.action_items as { text: string }[]).map((a, i) => ({
             id: `ai-${i}`,
             text: a.text,
             done: false,
           }))
         );
       }
-      // Regenerate follow-up email with AI summary
+
+      // Regenerate follow-up email with AI summary + action items
       if (data.follow_up_draft) {
-        setFollowUpText(data.follow_up_draft);
+        setFollowUpText(data.follow_up_draft as string);
       } else if (data.summary) {
-        setFollowUpText(generateFollowUpDraft(meeting, lead, data.summary));
+        setFollowUpText(
+          generateFollowUpDraft(
+            meeting,
+            lead,
+            data.summary as string,
+            data.action_items as { text: string }[] | undefined
+          )
+        );
       }
 
       showToast('KI-Analyse abgeschlossen', 'success');

@@ -229,47 +229,50 @@ function getSnapshot(): MeetingsState {
 
 // ─── ACTIONS ────────────────────────────────────────────────────────────────
 
-export function addMeeting(meeting: Omit<Meeting, 'id' | 'createdAt' | 'status'>): Meeting {
+export async function addMeeting(meeting: Omit<Meeting, 'id' | 'createdAt' | 'status'>): Promise<Meeting> {
+  const tempId = `mtg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const newMeeting: Meeting = {
     ...meeting,
-    id: `mtg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    id: tempId,
     status: 'Geplant',
     createdAt: new Date().toISOString(),
   };
+
+  // Show immediately in UI
   _state = { ..._state, meetings: [newMeeting, ..._state.meetings] };
   persist();
   emit();
 
-  // Also save to Supabase API (non-blocking)
-  fetch('/api/meetings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      lead_id: meeting.leadId || null,
-      title: meeting.title,
-      type: meeting.type,
-      date: meeting.date,
-      time: meeting.time,
-      duration: meeting.duration,
-      phases: meeting.phases,
-      product: meeting.product,
-      notes: meeting.notes,
-      from_suggestion: meeting.fromSuggestion ?? false,
-    }),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.meeting?.id) {
-        // Replace the temp ID with the real DB ID
-        _state = {
-          ..._state,
-          meetings: _state.meetings.map((m) => (m.id === newMeeting.id ? { ...m, id: data.meeting.id } : m)),
-        };
-        persist();
-        emit();
-      }
-    })
-    .catch(() => {});
+  // Save to Supabase and get real DB ID
+  try {
+    const res = await fetch('/api/meetings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lead_id: meeting.leadId || null,
+        title: meeting.title,
+        type: meeting.type,
+        date: meeting.date,
+        time: meeting.time,
+        duration: meeting.duration,
+        phases: meeting.phases,
+        product: meeting.product,
+        notes: meeting.notes,
+        from_suggestion: meeting.fromSuggestion ?? false,
+      }),
+    });
+    const data = await res.json();
+    if (data.meeting?.id) {
+      // Replace temp ID with real DB ID
+      newMeeting.id = data.meeting.id;
+      _state = {
+        ..._state,
+        meetings: _state.meetings.map((m) => (m.id === tempId ? { ...m, id: data.meeting.id } : m)),
+      };
+      persist();
+      emit();
+    }
+  } catch {}
 
   return newMeeting;
 }

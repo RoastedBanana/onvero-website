@@ -159,13 +159,13 @@ export default function CreateMeetingModal({
     }
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!title.trim()) {
       showToast('Bitte gib einen Titel ein', 'error');
       return;
     }
 
-    addMeeting({
+    await addMeeting({
       leadId: selectedLead?.id ?? '',
       leadName: selectedLead?.name ?? prefill?.leadName ?? '',
       company: selectedLead?.company ?? prefill?.company ?? '',
