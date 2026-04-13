@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { C, SvgIcon, ICONS, showToast } from '../_shared';
 import { ACCOUNT } from '../_lead-data';
+import { updateMeeting } from './_meeting-store';
 import type { Meeting } from './_meeting-store';
 import type { Lead } from '../_lead-data';
 
@@ -377,7 +378,19 @@ export default function PostMeeting({
             return (
               <button
                 key={opt.value}
-                onClick={() => setWinLoss(active ? null : opt.value)}
+                onClick={() => {
+                  const newVal = active ? null : opt.value;
+                  setWinLoss(newVal);
+                  updateMeeting(meeting.id, { status: 'Abgeschlossen' } as Partial<Meeting>);
+                  // Persist win_loss via API
+                  if (!meeting.id.startsWith('mtg-')) {
+                    fetch(`/api/meetings/${meeting.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ win_loss: newVal, status: 'Abgeschlossen' }),
+                    }).catch(() => {});
+                  }
+                }}
                 className="s-chip"
                 style={{
                   display: 'flex',

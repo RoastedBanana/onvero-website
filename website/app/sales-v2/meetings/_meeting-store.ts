@@ -293,6 +293,46 @@ export function acceptSuggestion(id: string): SmartSuggestion | null {
   return sug;
 }
 
+export function deleteMeeting(id: string) {
+  _state = { ..._state, meetings: _state.meetings.filter((m) => m.id !== id) };
+  persist();
+  emit();
+  // Also delete from API
+  if (!id.startsWith('mtg-')) {
+    fetch(`/api/meetings/${id}`, { method: 'DELETE' }).catch(() => {});
+  }
+}
+
+export function updateMeeting(id: string, patch: Partial<Meeting>) {
+  _state = {
+    ..._state,
+    meetings: _state.meetings.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+  };
+  persist();
+  emit();
+  // Also update in API
+  if (!id.startsWith('mtg-')) {
+    const apiPatch: Record<string, unknown> = {};
+    if (patch.title !== undefined) apiPatch.title = patch.title;
+    if (patch.type !== undefined) apiPatch.type = patch.type;
+    if (patch.status !== undefined) apiPatch.status = patch.status;
+    if (patch.date !== undefined) apiPatch.date = patch.date;
+    if (patch.time !== undefined) apiPatch.time = patch.time;
+    if (patch.duration !== undefined) apiPatch.duration = patch.duration;
+    if (patch.notes !== undefined) apiPatch.notes = patch.notes;
+    if (patch.product !== undefined) apiPatch.product = patch.product;
+    if ((patch as Record<string, unknown>).win_loss !== undefined)
+      apiPatch.win_loss = (patch as Record<string, unknown>).win_loss;
+    if (Object.keys(apiPatch).length > 0) {
+      fetch(`/api/meetings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiPatch),
+      }).catch(() => {});
+    }
+  }
+}
+
 // ─── HOOK ───────────────────────────────────────────────────────────────────
 
 const SERVER_SNAPSHOT: MeetingsState = { meetings: [], suggestions: [] };

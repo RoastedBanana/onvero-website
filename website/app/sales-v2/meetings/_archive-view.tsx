@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { C, SvgIcon, ICONS, StatusBadge } from '../_shared';
+import { C, SvgIcon, ICONS, StatusBadge, showToast } from '../_shared';
+import { deleteMeeting } from './_meeting-store';
 import type { Meeting } from './_meeting-store';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
@@ -349,6 +350,31 @@ export default function ArchiveView({ meetings }: { meetings: Meeting[] }) {
                   >
                     <span style={{ fontSize: 10, fontWeight: 500, color: ts.color }}>{m.type}</span>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteMeeting(m.id);
+                      showToast('Meeting gelöscht', 'info');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 4,
+                      display: 'flex',
+                      opacity: 0.25,
+                      transition: 'opacity 0.15s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = '0.25';
+                    }}
+                    title="Meeting löschen"
+                  >
+                    <SvgIcon d={ICONS.x} size={13} color={C.danger} />
+                  </button>
                 </div>
               </div>
 

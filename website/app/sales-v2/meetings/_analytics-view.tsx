@@ -1,64 +1,67 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { C, SvgIcon, ICONS } from '../_shared';
 import type { Meeting } from './_meeting-store';
 
-// ─── MOCK ANALYTICS DATA ────────────────────────────────────────────────────
-// In production these come from the DB. For now we generate from meetings + static mocks.
+// ─── TYPES ──────────────────────────────────────────────────────────────────
 
-interface CoachingInsight {
-  category: string;
-  score: number;
-  label: string;
-  tip: string;
-  color: string;
+interface AnalyticsData {
+  totalMeetings: number;
+  completed: number;
+  planned: number;
+  totalDuration: number;
+  avgDuration: number;
+  analysisCount: number;
+  coachingAvg: Record<string, number>;
+  sentiments: { positive: number; neutral: number; negative: number };
+  talkRatioUser: number | null;
+  byType: Record<string, { count: number; won: number; lost: number }>;
+  patterns: { word: string; count: number }[];
+  recentInsights: string[];
+  winLoss: { won: number; lost: number; pending: number };
 }
 
-const COACHING: CoachingInsight[] = [
-  {
-    category: 'Gesprächsanteil',
-    score: 62,
-    label: 'Du redest 62% der Zeit',
-    tip: 'Ideal ist 40-50%. Versuche mehr Fragen zu stellen.',
+// ─── COACHING LABELS ────────────────────────────────────────────────────────
+
+const COACHING_META: Record<string, { label: string; color: string; tip: string; badTip: string }> = {
+  gespraechsanteil: {
+    label: 'Gesprächsanteil',
     color: '#FBBF24',
+    tip: 'Gut balanciert — Kunde kommt zu Wort.',
+    badTip: 'Du redest zu viel. Mehr Fragen stellen, mehr zuhören.',
   },
-  {
-    category: 'Fragetechnik',
-    score: 78,
-    label: 'Gute offene Fragen',
-    tip: 'Weiter so — offene Fragen öffnen Gespräche.',
+  fragetechnik: {
+    label: 'Fragetechnik',
     color: '#34D399',
+    tip: 'Starke offene Fragen — weiter so.',
+    badTip: 'Zu wenig offene Fragen. Starte mit "Was", "Wie", "Warum".',
   },
-  {
-    category: 'Einwandbehandlung',
-    score: 55,
-    label: 'Ausbaufähig',
-    tip: 'Bei Preiseinwänden häufiger den ROI betonen.',
+  einwandbehandlung: {
+    label: 'Einwandbehandlung',
     color: '#F87171',
+    tip: 'Einwände werden souverän behandelt.',
+    badTip: 'Einwände werden umgangen statt adressiert. ROI und Referenzen nutzen.',
   },
-  {
-    category: 'Closing',
-    score: 71,
-    label: 'Solide',
-    tip: 'Am Ende konkreter werden: "Sollen wir nächste Woche starten?"',
+  closing: {
+    label: 'Closing',
     color: '#818CF8',
+    tip: 'Klare nächste Schritte am Ende.',
+    badTip: 'Gespräche enden ohne klaren nächsten Schritt. Immer konkreten Follow-Up vereinbaren.',
   },
-  {
-    category: 'Bedarfsanalyse',
-    score: 83,
-    label: 'Stark',
-    tip: 'Du erkennst Pain Points schnell und präzise.',
-    color: '#34D399',
-  },
-  {
-    category: 'Follow-Up',
-    score: 68,
-    label: 'Gut',
-    tip: 'Follow-Ups innerhalb von 24h senden für höhere Conversion.',
+  bedarfsanalyse: {
+    label: 'Bedarfsanalyse',
     color: '#38BDF8',
+    tip: 'Pain Points werden schnell erkannt.',
+    badTip: 'Zu schnell zum Pitch gesprungen. Erst Problem verstehen, dann Lösung präsentieren.',
   },
-];
+  follow_up: {
+    label: 'Follow-Up',
+    color: '#22D3EE',
+    tip: 'Schnelles, relevantes Follow-Up.',
+    badTip: 'Follow-Ups dauern zu lang oder sind zu generisch. Innerhalb von 24h senden.',
+  },
+};
 
 // ─── STAT CARD ──────────────────────────────────────────────────────────────
 
@@ -125,125 +128,44 @@ function StatCard({
   );
 }
 
-// ─── BAR CHART (simple) ─────────────────────────────────────────────────────
-
-function SimpleBarChart({ data, label }: { data: { name: string; value: number; color: string }[]; label: string }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
-
-  return (
-    <div
-      style={{
-        background: C.surface,
-        border: `1px solid ${C.border}`,
-        borderRadius: 12,
-        padding: '18px 20px',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-      }}
-    >
-      <div style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em', marginBottom: 16 }}>
-        {label}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {data.map((d) => (
-          <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 11, color: C.text2, minWidth: 70, textAlign: 'right' }}>{d.name}</span>
-            <div
-              style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.04)', overflow: 'hidden' }}
-            >
-              <div
-                style={{
-                  height: '100%',
-                  width: `${(d.value / max) * 100}%`,
-                  borderRadius: 4,
-                  background: `linear-gradient(90deg, ${d.color}90, ${d.color})`,
-                  transition: 'width 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              />
-            </div>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                color: d.color,
-                minWidth: 30,
-              }}
-            >
-              {d.value}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── COACHING CARD ──────────────────────────────────────────────────────────
-
-function CoachingCard({ insight, delay }: { insight: CoachingInsight; delay: number }) {
-  return (
-    <div
-      style={{
-        padding: '16px 18px',
-        borderRadius: 10,
-        background: C.surface,
-        border: `1px solid ${C.border}`,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        animation: 'fadeInUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
-        animationDelay: `${delay}s`,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{insight.category}</span>
-        <span
-          style={{
-            fontSize: 14,
-            fontWeight: 700,
-            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-            color: insight.color,
-          }}
-        >
-          {insight.score}
-        </span>
-      </div>
-      {/* Score bar */}
-      <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.04)', marginBottom: 10 }}>
-        <div
-          style={{
-            height: '100%',
-            width: `${insight.score}%`,
-            borderRadius: 2,
-            background: `linear-gradient(90deg, ${insight.color}80, ${insight.color})`,
-            transition: 'width 1s cubic-bezier(0.22, 1, 0.36, 1)',
-          }}
-        />
-      </div>
-      <div style={{ fontSize: 11, color: C.text2, marginBottom: 6 }}>{insight.label}</div>
-      <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.5, fontStyle: 'italic' }}>{insight.tip}</div>
-    </div>
-  );
-}
-
-// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
+// ─── COMPONENT ──────────────────────────────────────────────────────────────
 
 export default function AnalyticsView({ meetings }: { meetings: Meeting[] }) {
-  const stats = useMemo(() => {
-    const completed = meetings.filter((m) => m.status === 'Abgeschlossen');
-    const planned = meetings.filter((m) => m.status === 'Geplant');
-    const totalDuration = completed.reduce((s, m) => s + m.duration, 0);
-    const avgDuration = completed.length > 0 ? Math.round(totalDuration / completed.length) : 0;
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    const byType = { Video: 0, Telefon: 0, 'Vor Ort': 0 };
-    meetings.forEach((m) => {
-      if (m.type in byType) byType[m.type as keyof typeof byType]++;
-    });
+  useEffect(() => {
+    fetch('/api/meetings/analytics')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.analytics) setData(d.analytics);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
-    return { completed: completed.length, planned: planned.length, totalDuration, avgDuration, byType };
-  }, [meetings]);
+  // Fallback to local data if API fails
+  const total = data?.totalMeetings ?? meetings.length;
+  const completed = data?.completed ?? meetings.filter((m) => m.status === 'Abgeschlossen').length;
+  const planned = data?.planned ?? meetings.filter((m) => m.status === 'Geplant').length;
+  const avgDuration = data?.avgDuration ?? 0;
+  const talkUser = data?.talkRatioUser ?? null;
+  const talkCustomer = talkUser ? 100 - talkUser : null;
+  const coaching = data?.coachingAvg ?? {};
+  const overallScore =
+    Object.values(coaching).length > 0
+      ? Math.round(Object.values(coaching).reduce((s, v) => s + v, 0) / Object.values(coaching).length)
+      : 0;
 
-  // For mock data enrichment
-  const displayCompleted = Math.max(stats.completed, 12);
-  const displayAvg = stats.avgDuration || 38;
+  // Find weak spots (score < 65)
+  const weakSpots = Object.entries(coaching)
+    .filter(([, v]) => v > 0 && v < 65)
+    .sort((a, b) => a[1] - b[1]);
+
+  // Find strengths (score >= 75)
+  const strengths = Object.entries(coaching)
+    .filter(([, v]) => v >= 75)
+    .sort((a, b) => b[1] - a[1]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, animation: 'fadeInUp 0.3s ease both' }}>
@@ -251,212 +173,441 @@ export default function AnalyticsView({ meetings }: { meetings: Meeting[] }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         <StatCard
           label="MEETINGS GESAMT"
-          value={String(displayCompleted + stats.planned)}
-          subtext={`${displayCompleted} abgeschlossen · ${stats.planned} geplant`}
+          value={String(total)}
+          subtext={`${completed} abgeschlossen · ${planned} geplant`}
           color="#818CF8"
           gradient="radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)"
           delay={0}
         />
         <StatCard
           label="DURCHSCHN. DAUER"
-          value={`${displayAvg}m`}
+          value={avgDuration > 0 ? `${avgDuration}m` : '—'}
           subtext="pro Meeting"
           color="#38BDF8"
           gradient="radial-gradient(ellipse at 50% 0%, rgba(56,189,248,0.12) 0%, transparent 60%)"
           delay={0.06}
         />
         <StatCard
-          label="CONVERSION RATE"
-          value="34%"
-          subtext="Meeting → Deal"
-          color="#34D399"
-          gradient="radial-gradient(ellipse at 80% 0%, rgba(52,211,153,0.12) 0%, transparent 60%)"
+          label="KI-ANALYSEN"
+          value={String(data?.analysisCount ?? 0)}
+          subtext="Gespräche analysiert"
+          color="#A78BFA"
+          gradient="radial-gradient(ellipse at 80% 0%, rgba(167,139,250,0.12) 0%, transparent 60%)"
           delay={0.12}
         />
         <StatCard
-          label="GESPRÄCHSZEIT"
-          value={`${Math.round((stats.totalDuration || 456) / 60)}h`}
-          subtext="insgesamt aufgenommen"
-          color="#A78BFA"
-          gradient="radial-gradient(ellipse at 30% 0%, rgba(167,139,250,0.12) 0%, transparent 60%)"
+          label="GESAMTSCORE"
+          value={overallScore > 0 ? String(overallScore) : '—'}
+          subtext={
+            overallScore >= 75
+              ? 'Stark'
+              : overallScore >= 60
+                ? 'Solide'
+                : overallScore > 0
+                  ? 'Ausbaufähig'
+                  : 'Noch keine Daten'
+          }
+          color={overallScore >= 75 ? '#34D399' : overallScore >= 60 ? '#FBBF24' : '#F87171'}
+          gradient={`radial-gradient(ellipse at 30% 0%, ${overallScore >= 75 ? 'rgba(52,211,153,0.12)' : 'rgba(251,191,36,0.12)'} 0%, transparent 60%)`}
           delay={0.18}
         />
       </div>
 
-      {/* Charts Row */}
+      {/* Two columns: Coaching + Insights */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <SimpleBarChart
-          label="MEETINGS NACH TYP"
-          data={[
-            { name: 'Video', value: Math.max(stats.byType.Video, 8), color: '#818CF8' },
-            { name: 'Telefon', value: Math.max(stats.byType.Telefon, 5), color: '#FBBF24' },
-            { name: 'Vor Ort', value: Math.max(stats.byType['Vor Ort'], 3), color: '#34D399' },
-          ]}
-        />
-        <SimpleBarChart
-          label="CONVERSION NACH TYP"
-          data={[
-            { name: 'Video', value: 42, color: '#818CF8' },
-            { name: 'Telefon', value: 28, color: '#FBBF24' },
-            { name: 'Vor Ort', value: 67, color: '#34D399' },
-          ]}
-        />
-      </div>
-
-      {/* Talk Ratio & Deal Velocity */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        {/* Talk Ratio */}
+        {/* Coaching Dashboard */}
         <div
           style={{
             background: C.surface,
             border: `1px solid ${C.border}`,
             borderRadius: 12,
-            padding: '18px 20px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            padding: '20px 22px',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.2)',
           }}
         >
-          <div style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em', marginBottom: 16 }}>
-            GESPRÄCHSANTEIL (TALK RATIO)
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+            <SvgIcon d={ICONS.spark} size={13} color={C.accent} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Persönliches Coaching</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {/* Visual ratio bar */}
-            <div style={{ flex: 1, height: 24, borderRadius: 6, overflow: 'hidden', display: 'flex' }}>
-              <div
-                style={{
-                  width: '62%',
-                  height: '100%',
-                  background: `linear-gradient(90deg, ${C.accentDim}, ${C.accent})`,
-                }}
-              />
-              <div style={{ width: '38%', height: '100%', background: `linear-gradient(90deg, #34D39980, #34D399)` }} />
-            </div>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <div style={{ textAlign: 'center' }}>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {Object.entries(COACHING_META).map(([key, meta]) => {
+              const score = coaching[key] ?? 0;
+              const isWeak = score > 0 && score < 65;
+              return (
                 <div
+                  key={key}
                   style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                    color: C.accent,
+                    padding: '12px 14px',
+                    borderRadius: 9,
+                    background: isWeak ? 'rgba(248,113,113,0.04)' : 'transparent',
+                    border: `1px solid ${isWeak ? 'rgba(248,113,113,0.12)' : C.border}`,
                   }}
                 >
-                  62%
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}
+                  >
+                    <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{meta.label}</span>
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                        color: score >= 75 ? '#34D399' : score >= 60 ? '#FBBF24' : score > 0 ? '#F87171' : C.text3,
+                      }}
+                    >
+                      {score > 0 ? score : '—'}
+                    </span>
+                  </div>
+                  {score > 0 && (
+                    <>
+                      <div
+                        style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.04)', marginBottom: 6 }}
+                      >
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${score}%`,
+                            borderRadius: 2,
+                            background: `linear-gradient(90deg, ${meta.color}80, ${meta.color})`,
+                            transition: 'width 1s ease',
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: 11, color: isWeak ? '#F87171' : C.text3, lineHeight: 1.5 }}>
+                        {isWeak ? meta.badTip : meta.tip}
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div style={{ fontSize: 9, color: C.text3, marginTop: 2 }}>DU</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                    color: '#34D399',
-                  }}
-                >
-                  38%
-                </div>
-                <div style={{ fontSize: 9, color: C.text3, marginTop: 2 }}>KUNDE</div>
-              </div>
-            </div>
-          </div>
-          <div style={{ fontSize: 11, color: C.text3, marginTop: 10, fontStyle: 'italic' }}>
-            Ideal: 40-50% du, 50-60% Kunde. Versuche mehr zuzuhören.
+              );
+            })}
           </div>
         </div>
 
-        {/* Deal Velocity */}
+        {/* What went wrong + What went right */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Weak Spots */}
+          {weakSpots.length > 0 && (
+            <div
+              style={{
+                background: C.surface,
+                border: '1px solid rgba(248,113,113,0.12)',
+                borderRadius: 12,
+                padding: '18px 20px',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <SvgIcon d={ICONS.trending} size={13} color="#F87171" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Daran arbeiten</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {weakSpots.map(([key, score]) => {
+                  const meta = COACHING_META[key];
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        display: 'flex',
+                        gap: 10,
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        background: 'rgba(248,113,113,0.04)',
+                        border: '1px solid rgba(248,113,113,0.08)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                          color: '#F87171',
+                          minWidth: 30,
+                        }}
+                      >
+                        {score}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{meta?.label ?? key}</div>
+                        <div style={{ fontSize: 11, color: C.text3, marginTop: 2, lineHeight: 1.5 }}>
+                          {meta?.badTip}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Strengths */}
+          {strengths.length > 0 && (
+            <div
+              style={{
+                background: C.surface,
+                border: '1px solid rgba(52,211,153,0.12)',
+                borderRadius: 12,
+                padding: '18px 20px',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <SvgIcon d={ICONS.check} size={13} color="#34D399" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Deine Stärken</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {strengths.map(([key, score]) => {
+                  const meta = COACHING_META[key];
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        display: 'flex',
+                        gap: 10,
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        background: 'rgba(52,211,153,0.04)',
+                        border: '1px solid rgba(52,211,153,0.08)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                          color: '#34D399',
+                          minWidth: 30,
+                        }}
+                      >
+                        {score}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{meta?.label ?? key}</div>
+                        <div style={{ fontSize: 11, color: C.text3, marginTop: 2, lineHeight: 1.5 }}>{meta?.tip}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Talk Ratio */}
+          {talkUser !== null && talkCustomer !== null && (
+            <div
+              style={{
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 12,
+                padding: '18px 20px',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em', marginBottom: 12 }}>
+                TALK RATIO
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ flex: 1, height: 20, borderRadius: 5, overflow: 'hidden', display: 'flex' }}>
+                  <div
+                    style={{
+                      width: `${talkUser}%`,
+                      height: '100%',
+                      background: `linear-gradient(90deg, ${C.accentDim}, ${C.accent})`,
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: `${talkCustomer}%`,
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #34D39980, #34D399)',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                        color: C.accent,
+                      }}
+                    >
+                      {talkUser}%
+                    </div>
+                    <div style={{ fontSize: 9, color: C.text3 }}>DU</div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                        color: '#34D399',
+                      }}
+                    >
+                      {talkCustomer}%
+                    </div>
+                    <div style={{ fontSize: 9, color: C.text3 }}>KUNDE</div>
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{ fontSize: 11, color: talkUser > 60 ? '#FBBF24' : C.text3, marginTop: 8, fontStyle: 'italic' }}
+              >
+                {talkUser > 60
+                  ? 'Du redest zu viel — Ziel ist 40-50%. Mehr zuhören, mehr Fragen stellen.'
+                  : talkUser > 50
+                    ? 'Fast perfekt — etwas weniger reden wäre ideal.'
+                    : 'Perfekte Balance!'}
+              </div>
+            </div>
+          )}
+
+          {/* Sentiment */}
+          {data?.sentiments && data.sentiments.positive + data.sentiments.neutral + data.sentiments.negative > 0 && (
+            <div
+              style={{
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 12,
+                padding: '18px 20px',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em', marginBottom: 12 }}>
+                GESPRÄCHSSTIMMUNG
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                {[
+                  { label: 'Positiv', value: data.sentiments.positive, color: '#34D399' },
+                  { label: 'Neutral', value: data.sentiments.neutral, color: '#FBBF24' },
+                  { label: 'Negativ', value: data.sentiments.negative, color: '#F87171' },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    style={{
+                      flex: 1,
+                      textAlign: 'center',
+                      padding: '10px 8px',
+                      borderRadius: 8,
+                      background: `${s.color}06`,
+                      border: `1px solid ${s.color}12`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 20,
+                        fontWeight: 700,
+                        fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                        color: s.color,
+                      }}
+                    >
+                      {s.value}
+                    </div>
+                    <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* KI-Erkenntnisse aus allen Gesprächen */}
+      {data?.recentInsights && data.recentInsights.length > 0 && (
         <div
           style={{
             background: C.surface,
             border: `1px solid ${C.border}`,
             borderRadius: 12,
-            padding: '18px 20px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            padding: '20px 22px',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.2)',
           }}
         >
-          <div style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em', marginBottom: 16 }}>
-            DEAL VELOCITY
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <SvgIcon d={ICONS.spark} size={13} color={C.accent} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>KI-Erkenntnisse aus deinen Gesprächen</span>
+            <span style={{ fontSize: 11, color: C.text3, marginLeft: 'auto' }}>
+              {data.recentInsights.length} Insights
+            </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {[
-              { label: 'Ø Meetings bis Abschluss', value: '2.4', color: C.accent },
-              { label: 'Ø Tage bis Abschluss', value: '18', color: '#38BDF8' },
-              { label: 'Schnellster Deal', value: '3 Tage', color: '#34D399' },
-              { label: 'Längster Deal', value: '42 Tage', color: '#FBBF24' },
-            ].map((item) => (
-              <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: C.text2 }}>{item.label}</span>
-                <span
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                    color: item.color,
-                  }}
-                >
-                  {item.value}
-                </span>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {data.recentInsights.slice(0, 12).map((insight, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 7,
+                  background: 'rgba(99,102,241,0.05)',
+                  border: '1px solid rgba(99,102,241,0.1)',
+                  maxWidth: 400,
+                }}
+              >
+                <SvgIcon d={ICONS.spark} size={10} color={C.accent} />
+                <span style={{ fontSize: 11, color: C.accentBright, lineHeight: 1.4 }}>{insight}</span>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Coaching Dashboard */}
-      <div
-        style={{
-          background: C.surface,
-          border: `1px solid ${C.border}`,
-          borderRadius: 12,
-          padding: '20px 22px',
-          boxShadow: '0 2px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 7,
-              background: `${C.accent}10`,
-              border: `1px solid ${C.accent}20`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <SvgIcon d={ICONS.spark} size={13} color={C.accent} />
+      {/* Recurring Patterns */}
+      {data?.patterns && data.patterns.length > 0 && (
+        <div
+          style={{
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 12,
+            padding: '20px 22px',
+            boxShadow: '0 2px 16px rgba(0,0,0,0.2)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <SvgIcon d={ICONS.target} size={13} color="#FBBF24" />
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Häufige Themen in deinen Gesprächen</span>
           </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: C.text1, letterSpacing: '-0.01em' }}>
-              Persönliches Coaching
-            </div>
-            <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>
-              KI-Analyse deiner Gesprächsqualität über alle Meetings
-            </div>
-          </div>
-          <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-            <div style={{ fontSize: 10, color: C.text3 }}>GESAMTSCORE</div>
-            <div
-              style={{
-                fontSize: 24,
-                fontWeight: 700,
-                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                color: '#34D399',
-                textShadow: '0 0 20px rgba(52,211,153,0.3)',
-              }}
-            >
-              {Math.round(COACHING.reduce((s, c) => s + c.score, 0) / COACHING.length)}
-            </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {data.patterns.map((p) => (
+              <div
+                key={p.word}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 7,
+                  background: 'rgba(251,191,36,0.06)',
+                  border: '1px solid rgba(251,191,36,0.12)',
+                }}
+              >
+                <span style={{ fontSize: 12, color: '#FBBF24', fontWeight: 500 }}>{p.word}</span>
+                <span style={{ fontSize: 10, color: C.text3, marginLeft: 6 }}>×{p.count}</span>
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {COACHING.map((insight, i) => (
-            <CoachingCard key={insight.category} insight={insight} delay={0.05 + i * 0.04} />
-          ))}
+      {/* Empty state */}
+      {!loading && (!data || data.analysisCount === 0) && (
+        <div
+          style={{
+            padding: '40px 20px',
+            textAlign: 'center',
+            borderRadius: 12,
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+          }}
+        >
+          <SvgIcon d={ICONS.chart} size={28} color={C.text3} />
+          <p style={{ fontSize: 13, color: C.text3, marginTop: 12, lineHeight: 1.6 }}>
+            Noch keine analysierten Meetings. Führe ein paar Gespräche mit Aufnahme und die Analytics füllen sich
+            automatisch.
+          </p>
         </div>
-      </div>
+      )}
     </div>
   );
 }

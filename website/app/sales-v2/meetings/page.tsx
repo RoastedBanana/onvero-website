@@ -9,7 +9,7 @@ import LiveMeeting from './_live-meeting';
 import PostMeeting from './_post-meeting';
 import ArchiveViewComponent from './_archive-view';
 import AnalyticsView from './_analytics-view';
-import { useMeetings, acceptSuggestion, dismissSuggestion } from './_meeting-store';
+import { useMeetings, acceptSuggestion, dismissSuggestion, deleteMeeting, updateMeeting } from './_meeting-store';
 import { useLeads } from '../_use-leads';
 import type { Meeting, SmartSuggestion } from './_meeting-store';
 
@@ -353,8 +353,50 @@ function UpcomingMeetings({
                 </div>
               )}
 
-              {/* Action */}
+              {/* Actions */}
               {isToday && <PrimaryButton onClick={() => onStartLive?.(m.id)}>Beitreten</PrimaryButton>}
+              {!isToday && (
+                <button
+                  onClick={() => onStartLive?.(m.id)}
+                  className="s-ghost"
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 7,
+                    background: 'transparent',
+                    border: `1px solid ${C.border}`,
+                    color: C.text3,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Starten
+                </button>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteMeeting(m.id);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 4,
+                  display: 'flex',
+                  opacity: 0.3,
+                  transition: 'opacity 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '0.3';
+                }}
+                title="Meeting löschen"
+              >
+                <SvgIcon d={ICONS.x} size={14} color={C.danger} />
+              </button>
             </div>
 
             {/* Phases preview */}
