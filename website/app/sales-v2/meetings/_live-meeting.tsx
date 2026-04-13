@@ -386,24 +386,31 @@ function LiveNotes({
 
 type PrepTab = 'script' | 'facts' | 'objections';
 
+function humanize(name: string): string {
+  return name
+    .replace(/\s*(GmbH|UG|AG|SE|KG|OHG|e\.?K\.?|mbH|GbR|Inc\.?|Ltd\.?|LLC|Co\.?\s*KG)\s*(\(.*?\))?\s*/gi, '')
+    .trim();
+}
+
 function generateQuickScript(phase: MeetingPhase, lead: Lead | null, meeting: Meeting): string {
   const name = lead?.firstName ?? 'Kunde';
-  const company = lead?.company ?? '';
+  const company = humanize(lead?.company ?? '');
   const product = meeting.product || ACCOUNT.description;
+  const sender = ACCOUNT.senderName.split(' ')[0];
 
   const scripts: Record<string, string> = {
-    Begrüßung: `Hallo ${name}, ${ACCOUNT.senderName} von ${ACCOUNT.companyName}. Schön, dass wir sprechen.`,
-    Bedarfsanalyse: `Was sind aktuell Ihre größten Herausforderungen${company ? ` bei ${company}` : ''}? Was nutzen Sie momentan?`,
-    Kurzpitch: `${product} — so können wir helfen. Konkret für ${company || 'Sie'}:`,
-    'Fragen & Antworten': `Was sind Ihre ersten Gedanken? Bedenken?`,
-    'Nächste Schritte': `Zusammenfassung + nächster Schritt. Wann passt Follow-Up?`,
-    'Pain Points': `Welche Prozesse kosten am meisten Zeit? Was passiert wenn es so bleibt?`,
-    'Live-Demo': `Bildschirm teilen. Beispiel an ${company || 'Ihren Case'} angepasst.`,
-    'Q&A': `Was hat Sie am meisten angesprochen? Was passt nicht?`,
-    Close: `Sehen Sie den Mehrwert? Wer entscheidet noch mit? Angebot bis wann?`,
-    Recap: `Zusammenfassung letztes Gespräch. Was hat sich seitdem getan?`,
+    Begrüßung: `Hey ${name}, ${sender} hier von ${humanize(ACCOUNT.companyName)}. Freut mich!`,
+    Bedarfsanalyse: `Was sind gerade eure größten Baustellen${company ? ` bei ${company}` : ''}?`,
+    Kurzpitch: `${product} — so helfen wir. Konkret für ${company || 'euch'}:`,
+    'Fragen & Antworten': `Was denkst du? Was spricht dich an, was nicht?`,
+    'Nächste Schritte': `Kurzes Recap + nächster Schritt. Wann passt ein Follow-Up?`,
+    'Pain Points': `Was kostet euch am meisten Zeit? Was passiert wenn nichts passiert?`,
+    'Live-Demo': `Bildschirm teilen. Beispiel für ${company || 'euch'} angepasst.`,
+    'Q&A': `Was hat dich am meisten angesprochen? Was passt nicht?`,
+    Close: `Siehst du den Mehrwert? Wer entscheidet noch mit?`,
+    Recap: `Recap letztes Gespräch. Was hat sich seitdem getan?`,
     'Offene Punkte': `Offene Punkte durchgehen. Neue Fragen?`,
-    Entscheidung: `Konnten Sie intern abstimmen? Was brauchen Sie noch?`,
+    Entscheidung: `Konntet ihr intern abstimmen? Was braucht ihr noch?`,
   };
   return scripts[phase.name] ?? phase.name;
 }

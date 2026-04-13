@@ -6,187 +6,141 @@ import { ACCOUNT } from '../_lead-data';
 import type { Meeting, MeetingPhase } from './_meeting-store';
 import type { Lead } from '../_lead-data';
 
+// ─── HUMANIZE ───────────────────────────────────────────────────────────────
+// Strip legal suffixes, make company names conversational
+
+function humanize(companyName: string): string {
+  return companyName
+    .replace(/\s*(GmbH|UG|AG|SE|KG|OHG|e\.?K\.?|mbH|GbR|Inc\.?|Ltd\.?|LLC|Co\.?\s*KG)\s*(\(.*?\))?\s*/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function senderFirst(): string {
+  return ACCOUNT.senderName.split(' ')[0];
+}
+
 // ─── INDIVIDUALIZED SCRIPT GENERATION ───────────────────────────────────────
 
 function generatePhaseScript(phase: MeetingPhase, lead: Lead | null, meeting: Meeting): string {
   const name = lead?.firstName ?? 'den Kunden';
-  const lastName = lead?.lastName ?? '';
-  const company = lead?.company ?? 'das Unternehmen';
+  const company = humanize(lead?.company ?? '');
   const product = meeting.product || ACCOUNT.description;
   const industry = lead?.industry && lead.industry !== 'Sonstige' ? lead.industry : null;
   const city = lead?.city || null;
-  const googleRating = lead?.googleRating;
   const emailSent = !!lead?.emailDraftSubject;
-  const emailSubject = lead?.emailDraftSubject;
   const aiSummary = lead?.aiSummary;
   const nextAction = lead?.nextAction;
+  const sender = senderFirst();
+  const senderCompany = humanize(ACCOUNT.companyName);
 
-  // Build context-aware scripts
   const scripts: Record<string, string> = {
     Begrüßung: [
-      `Hallo ${name}${lastName ? ` ${lastName}` : ''}, schön dass wir heute sprechen können.`,
-      `Mein Name ist ${ACCOUNT.senderName} von ${ACCOUNT.companyName}.`,
+      `Hallo ${name}, freut mich dass es klappt!`,
+      `Ich bin ${sender} von ${senderCompany}.`,
       emailSent
-        ? `Wir hatten ja schon per E-Mail Kontakt${emailSubject ? ` zum Thema "${emailSubject}"` : ''} — freut mich, dass wir jetzt persönlich sprechen.`
-        : `Ich habe mir ${company} mal genauer angeschaut und denke, da gibt es spannende Ansätze.`,
-      city ? `Sie sitzen in ${city}, richtig?` : '',
+        ? `Wir hatten ja schon per Mail Kontakt — schön, dass wir jetzt direkt sprechen können.`
+        : company
+          ? `Ich hab mir ${company} mal angeschaut und finde, da gibt es spannende Ansätze.`
+          : '',
+      city ? `Ihr sitzt in ${city}, oder?` : '',
     ]
       .filter(Boolean)
       .join(' '),
 
     Bedarfsanalyse: [
-      `${name}, bevor ich Ihnen etwas zeige — erzählen Sie mir kurz:`,
-      industry
-        ? `Wie sieht es aktuell bei ${company} im Bereich ${industry} aus?`
-        : `Was sind aktuell Ihre größten Herausforderungen bei ${company}?`,
+      `${name}, erzähl mir erstmal kurz:`,
+      company
+        ? `Was sind gerade eure größten Baustellen bei ${company}?`
+        : 'Was sind gerade eure größten Herausforderungen?',
       aiSummary
-        ? `Ich habe gelesen, dass ${aiSummary
+        ? `Ich hab gelesen, dass ${aiSummary
             .split('.')[0]
             .toLowerCase()
-            .replace(/^(das |die |der )/, '')}. Stimmt das so?`
-        : 'Was nutzen Sie momentan und wo hakt es?',
-      'Was wäre Ihre ideale Lösung, wenn alles möglich wäre?',
+            .replace(/^(das |die |der )/, '')} — stimmt das noch so?`
+        : 'Was nutzt ihr momentan und wo hakt es?',
+      'Und was wäre so euer Idealzustand?',
     ]
       .filter(Boolean)
       .join('\n'),
 
     Kurzpitch: [
-      `Basierend auf dem, was Sie mir erzählt haben:`,
-      `${product}`,
-      industry ? `Wir arbeiten bereits mit Unternehmen im Bereich ${industry} zusammen.` : '',
-      `Konkret heißt das für ${company}:`,
-      `• [Vorteil 1 basierend auf dem Gespräch]`,
-      `• [Vorteil 2 basierend auf dem Gespräch]`,
-      `• [Vorteil 3 basierend auf dem Gespräch]`,
+      `Okay, basierend auf dem was du mir erzählt hast:`,
+      `Wir machen Folgendes — ${product}`,
+      industry ? `Wir arbeiten schon mit einigen Unternehmen aus dem Bereich ${industry}.` : '',
+      company ? `Für ${company} heißt das konkret:` : 'Für euch heißt das konkret:',
+      `• [Vorteil 1 — aus dem Gespräch ableiten]`,
+      `• [Vorteil 2 — spezifisch für deren Situation]`,
+      `• [Vorteil 3 — was am meisten resoniert hat]`,
     ]
       .filter(Boolean)
       .join('\n'),
 
     'Fragen & Antworten': [
-      `Das war der grobe Überblick. ${name}, was sind Ihre ersten Gedanken?`,
-      `Gibt es Punkte, die Sie besonders interessieren?`,
-      `Oder Bedenken, die wir direkt klären können?`,
+      `So, das war der grobe Überblick.`,
+      `${name}, was denkst du? Was spricht dich an, was nicht?`,
+      `Gibt es Punkte, wo du sagst: "Das müsste ich nochmal genauer verstehen"?`,
     ].join('\n'),
 
     'Nächste Schritte': [
-      `${name}, ich fasse mal zusammen was wir besprochen haben:`,
-      `[Zusammenfassung der Key Points]`,
-      nextAction
-        ? `Als nächstes: ${nextAction}`
-        : 'Als nächstes würde ich vorschlagen, dass ich Ihnen ein konkretes Angebot zusammenstelle.',
-      `Wann passt es Ihnen für ein Follow-Up? Nächste Woche?`,
+      `Cool, dann lass mich mal kurz zusammenfassen:`,
+      `[Die 2-3 wichtigsten Punkte aus dem Gespräch]`,
+      nextAction ? `Nächster Schritt: ${nextAction}` : 'Ich stell euch ein konkretes Angebot zusammen.',
+      `Wann passt dir ein kurzes Follow-Up? Nächste Woche?`,
     ].join('\n'),
 
     'Pain Points': [
-      `${name}, lassen Sie uns mal konkret werden:`,
-      `Welche Prozesse kosten Sie aktuell am meisten Zeit?`,
-      `Was passiert, wenn das Problem ungelöst bleibt?`,
-      industry ? `In der ${industry}-Branche sehen wir häufig: [typisches Problem]. Kennen Sie das?` : '',
+      `${name}, lass uns mal konkret werden:`,
+      `Welche Prozesse kosten euch am meisten Zeit?`,
+      `Und was passiert, wenn sich da nichts ändert?`,
+      industry ? `Im Bereich ${industry} sehen wir oft: [typisches Problem]. Kennt ihr das?` : '',
     ]
       .filter(Boolean)
       .join('\n'),
 
     'Live-Demo': [
-      `Ich teile jetzt meinen Bildschirm und zeige Ihnen ${product} live.`,
-      `Ich habe das Beispiel an ${company} angepasst, damit Sie direkt sehen, wie es bei Ihnen aussehen würde.`,
-      `Fragen Sie jederzeit, wenn etwas unklar ist.`,
+      `Okay, ich teil jetzt mal meinen Bildschirm.`,
+      company
+        ? `Ich hab das Beispiel an ${company} angelehnt, damit du siehst wie es bei euch aussehen würde.`
+        : 'Ich zeig euch das an einem echten Beispiel.',
+      `Frag jederzeit, wenn was unklar ist.`,
     ].join('\n'),
 
     'Q&A': [
-      `Vielen Dank fürs Zuschauen, ${name}.`,
-      `Was hat Sie am meisten angesprochen?`,
-      `Gibt es etwas, das für ${company} nicht passen würde?`,
+      `Danke fürs Zuschauen, ${name}.`,
+      `Was hat dich am meisten angesprochen?`,
+      `Und gibt es Punkte, wo du sagst: Das passt bei uns nicht?`,
     ].join('\n'),
 
     Close: [
-      `${name}, basierend auf unserem Gespräch — sehen Sie den Mehrwert für ${company}?`,
-      `Wie sieht Ihr Entscheidungsprozess aus? Sind noch andere Personen involviert?`,
-      `Ich kann Ihnen bis [Datum] ein konkretes Angebot schicken.`,
+      `${name}, Hand aufs Herz — siehst du den Mehrwert${company ? ` für ${company}` : ''}?`,
+      `Wie läuft bei euch die Entscheidung? Wer muss noch mit ins Boot?`,
+      `Ich kann dir bis Ende der Woche ein konkretes Angebot schicken.`,
     ].join('\n'),
 
     Recap: [
-      `${name}, schön dass wir wieder zusammenkommen.`,
-      emailSent ? `Seit unserer letzten E-Mail hat sich einiges getan.` : '',
-      `Lassen Sie mich kurz zusammenfassen, was wir beim letzten Mal besprochen haben:`,
-      `[Punkte vom letzten Gespräch]`,
+      `${name}, schön dass wir wieder sprechen.`,
+      emailSent ? `Seit unserer letzten Mail hat sich einiges getan.` : '',
+      `Kurzer Recap vom letzten Mal:`,
+      `[Wichtigste Punkte zusammenfassen]`,
     ]
       .filter(Boolean)
       .join('\n'),
 
     'Offene Punkte': [
-      `Sie hatten beim letzten Mal einige offene Punkte — lassen Sie uns die durchgehen:`,
-      `1. [Punkt aus dem letzten Meeting]`,
-      `2. [Punkt aus dem letzten Meeting]`,
-      `Gibt es noch weitere Fragen, die seitdem aufgekommen sind?`,
+      `Du hattest beim letzten Mal ein paar Fragen — lass uns die durchgehen:`,
+      `1. [Offener Punkt]`,
+      `2. [Offener Punkt]`,
+      `Ist seitdem noch was Neues dazugekommen?`,
     ].join('\n'),
 
     Entscheidung: [
-      `${name}, konnten Sie intern bereits abstimmen?`,
-      `Wie stehen die Chancen, dass wir zusammenkommen?`,
-      `Was brauchen Sie noch, um eine Entscheidung treffen zu können?`,
+      `${name}, konntet ihr intern schon abstimmen?`,
+      `Wie stehen die Chancen? Was braucht ihr noch von uns?`,
     ].join('\n'),
   };
 
   return scripts[phase.name] ?? `Phase: ${phase.name}\n\n[Eigene Gesprächspunkte hier eintragen]`;
-}
-
-// ─── KEY FACTS ──────────────────────────────────────────────────────────────
-
-function KeyFacts({ lead, meeting }: { lead: Lead | null; meeting: Meeting }) {
-  const facts: { icon: string; label: string; value: string; color: string }[] = [];
-
-  if (lead) {
-    facts.push({ icon: ICONS.users, label: 'Name', value: lead.name, color: C.accent });
-    if (lead.jobTitle) facts.push({ icon: ICONS.chart, label: 'Position', value: lead.jobTitle, color: '#38BDF8' });
-    facts.push({ icon: ICONS.globe, label: 'Firma', value: lead.company, color: '#34D399' });
-    if (lead.city) facts.push({ icon: ICONS.target, label: 'Ort', value: lead.city, color: '#A78BFA' });
-    if (lead.email) facts.push({ icon: ICONS.mail, label: 'E-Mail', value: lead.email, color: '#FBBF24' });
-    if (lead.phone) facts.push({ icon: ICONS.mic, label: 'Telefon', value: lead.phone, color: '#F87171' });
-    if (lead.googleRating)
-      facts.push({
-        icon: ICONS.trending,
-        label: 'Google',
-        value: `${lead.googleRating} ★ (${lead.googleReviews})`,
-        color: '#22D3EE',
-      });
-  }
-  if (meeting.product) facts.push({ icon: ICONS.zap, label: 'Angebot', value: meeting.product, color: C.accent });
-
-  return (
-    <div
-      style={{
-        background: C.surface,
-        border: `1px solid ${C.border}`,
-        borderRadius: 12,
-        padding: '14px 16px',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-      }}
-    >
-      <div style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em', marginBottom: 10 }}>
-        NICHT VERGESSEN
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {facts.map((f) => (
-          <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <SvgIcon d={f.icon} size={11} color={f.color} />
-            <span style={{ fontSize: 9, color: C.text3, minWidth: 48 }}>{f.label}</span>
-            <span
-              style={{
-                fontSize: 12,
-                color: C.text1,
-                fontWeight: 500,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {f.value}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
@@ -202,8 +156,85 @@ export default function PrepareScript({ meeting, lead }: { meeting: Meeting; lea
 
   const totalDuration = meeting.phases.reduce((s, p) => s + p.duration, 0);
 
+  // Key facts for the header bar
+  const facts = [
+    lead?.name && { icon: ICONS.users, value: lead.name, color: C.accent },
+    lead?.jobTitle && { icon: ICONS.chart, value: lead.jobTitle, color: '#38BDF8' },
+    lead?.company && { icon: ICONS.globe, value: humanize(lead.company), color: '#34D399' },
+    lead?.city && { icon: ICONS.target, value: lead.city, color: '#A78BFA' },
+    lead?.phone && { icon: ICONS.mic, value: lead.phone, color: '#F87171' },
+    lead?.email && { icon: ICONS.mail, value: lead.email, color: '#FBBF24' },
+    lead?.googleRating && {
+      icon: ICONS.trending,
+      value: `${lead.googleRating} ★ (${lead.googleReviews})`,
+      color: '#22D3EE',
+    },
+    meeting.product && { icon: ICONS.zap, value: meeting.product, color: C.accent },
+  ].filter(Boolean) as { icon: string; value: string; color: string }[];
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: 14 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Key Facts Bar — horizontal, scannable */}
+      {facts.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            flexWrap: 'wrap',
+            padding: '14px 18px',
+            borderRadius: 12,
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            animation: 'fadeInUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) both',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginRight: 8 }}>
+            <SvgIcon d={ICONS.eye} size={12} color={C.accent} />
+            <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em' }}>KEY FACTS</span>
+          </div>
+          {facts.map((f, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: 7,
+                background: `${f.color}06`,
+                border: `1px solid ${f.color}12`,
+              }}
+            >
+              <SvgIcon d={f.icon} size={11} color={f.color} />
+              <span style={{ fontSize: 12, color: C.text1, fontWeight: 500 }}>{f.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* AI Context — if available */}
+      {lead?.aiSummary && (
+        <div
+          style={{
+            padding: '14px 18px',
+            borderRadius: 12,
+            background: C.surface,
+            border: `1px solid ${C.accent}10`,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            display: 'flex',
+            gap: 10,
+            animation: 'fadeInUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both',
+          }}
+        >
+          <SvgIcon d={ICONS.spark} size={13} color={C.accent} />
+          <div>
+            <span style={{ fontSize: 10, fontWeight: 600, color: C.accent, letterSpacing: '0.06em' }}>KI-KONTEXT </span>
+            <span style={{ fontSize: 12.5, color: C.text2, lineHeight: 1.6 }}>{lead.aiSummary}</span>
+          </div>
+        </div>
+      )}
+
       {/* Script — all phases visible */}
       <div
         style={{
@@ -212,7 +243,7 @@ export default function PrepareScript({ meeting, lead }: { meeting: Meeting; lea
           borderRadius: 12,
           overflow: 'hidden',
           boxShadow: '0 2px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
-          animation: 'fadeInUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
+          animation: 'fadeInUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both',
         }}
       >
         <div
@@ -247,7 +278,6 @@ export default function PrepareScript({ meeting, lead }: { meeting: Meeting; lea
                   animationDelay: `${i * 0.04}s`,
                 }}
               >
-                {/* Phase dot */}
                 <div
                   style={{
                     position: 'absolute',
@@ -261,7 +291,6 @@ export default function PrepareScript({ meeting, lead }: { meeting: Meeting; lea
                   }}
                 />
 
-                {/* Phase header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>{phase.name}</span>
                   <span
@@ -278,7 +307,6 @@ export default function PrepareScript({ meeting, lead }: { meeting: Meeting; lea
                   </span>
                 </div>
 
-                {/* Script text — always visible, editable on click */}
                 <textarea
                   value={getScript(phase)}
                   onChange={(e) => updateScript(phase.id, e.target.value)}
@@ -286,7 +314,7 @@ export default function PrepareScript({ meeting, lead }: { meeting: Meeting; lea
                   style={{
                     width: '100%',
                     background: 'transparent',
-                    border: `1px solid transparent`,
+                    border: '1px solid transparent',
                     borderRadius: 8,
                     padding: '8px 10px',
                     color: C.text2,
@@ -312,50 +340,28 @@ export default function PrepareScript({ meeting, lead }: { meeting: Meeting; lea
         </div>
       </div>
 
-      {/* Sidebar */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <KeyFacts lead={lead} meeting={meeting} />
-
-        {/* AI context */}
-        {lead?.aiSummary && (
-          <div
-            style={{
-              background: C.surface,
-              border: `1px solid ${C.border}`,
-              borderRadius: 12,
-              padding: '14px 16px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <SvgIcon d={ICONS.spark} size={11} color={C.accent} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em' }}>KI-KONTEXT</span>
-            </div>
-            <p style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.6, margin: 0 }}>{lead.aiSummary}</p>
-          </div>
-        )}
-
-        {/* Meeting Notes */}
-        {meeting.notes && (
-          <div
-            style={{
-              background: C.surface,
-              border: `1px solid ${C.border}`,
-              borderRadius: 12,
-              padding: '14px 16px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <SvgIcon d={ICONS.chat} size={11} color={C.text3} />
-              <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em' }}>NOTIZEN</span>
-            </div>
-            <p style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
+      {/* Meeting Notes */}
+      {meeting.notes && (
+        <div
+          style={{
+            padding: '14px 18px',
+            borderRadius: 12,
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            display: 'flex',
+            gap: 10,
+          }}
+        >
+          <SvgIcon d={ICONS.chat} size={12} color={C.text3} />
+          <div>
+            <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.06em' }}>NOTIZEN </span>
+            <span style={{ fontSize: 12, color: C.text2, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
               {meeting.notes}
-            </p>
+            </span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

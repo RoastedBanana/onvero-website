@@ -61,27 +61,51 @@ function generateMockActions(meeting: Meeting): ActionItem[] {
   ];
 }
 
-function generateFollowUpDraft(meeting: Meeting, lead: Lead | null): string {
+function humanize(companyName: string): string {
+  return companyName
+    .replace(/\s*(GmbH|UG|AG|SE|KG|OHG|e\.?K\.?|mbH|GbR|Inc\.?|Ltd\.?|LLC|Co\.?\s*KG)\s*(\(.*?\))?\s*/gi, '')
+    .trim();
+}
+
+function generateFollowUpDraft(meeting: Meeting, lead: Lead | null, aiSummaryText?: string | null): string {
   const name = lead?.firstName ?? meeting.contact.split(' ')[0] ?? meeting.contact;
-  const company = lead?.company ?? meeting.company;
-  const product = meeting.product || ACCOUNT.description;
-  return `Hallo ${name},
+  const company = humanize(lead?.company ?? meeting.company);
+  const sender = ACCOUNT.senderName.split(' ')[0];
 
-vielen Dank für das angenehme Gespräch heute zum Thema ${meeting.title}.
+  // If we have an AI summary, use it for the email
+  if (aiSummaryText) {
+    return `Hallo ${name},
 
-Wie besprochen fasse ich die wichtigsten Punkte zusammen:
+vielen Dank für das gute Gespräch heute!
 
-- Ihre aktuelle Situation bei ${company} und die Herausforderungen im Bereich ${product ? product : 'Ihres Geschäfts'}
-- Wie ${ACCOUNT.companyName} hier konkret unterstützen kann
-- Die nächsten Schritte für eine mögliche Zusammenarbeit
+Hier nochmal die wichtigsten Punkte zusammengefasst:
 
-Als nächstes werde ich Ihnen ein passendes Angebot zusammenstellen. Gibt es von Ihrer Seite noch offene Fragen?
+${aiSummaryText}
 
-Ich freue mich auf die weitere Zusammenarbeit!
+Ich stelle dir bis Ende der Woche ein konkretes Angebot zusammen. Falls du vorher noch Fragen hast, meld dich jederzeit.
 
 Beste Grüße
 ${ACCOUNT.senderName}
-${ACCOUNT.senderRole} — ${ACCOUNT.companyName}`;
+${ACCOUNT.senderRole} — ${humanize(ACCOUNT.companyName)}`;
+  }
+
+  return `Hallo ${name},
+
+danke für das gute Gespräch heute! Hat mich gefreut, mehr über ${company} zu erfahren.
+
+Wie besprochen hier die nächsten Schritte:
+
+- Ich stelle euch ein konkretes Angebot zusammen
+- Darin berücksichtige ich die Punkte, die wir heute besprochen haben
+- Geplanter Zeitraum: bis Ende der Woche
+
+Falls dir noch was einfällt oder du Fragen hast — meld dich jederzeit.
+
+Beste Grüße
+${sender}
+
+${ACCOUNT.senderName}
+${ACCOUNT.senderRole} — ${humanize(ACCOUNT.companyName)}`;
 }
 
 // ─── WIN/LOSS TAG ───────────────────────────────────────────────────────────
@@ -120,6 +144,13 @@ export default function PostMeeting({
   const [analyzing, setAnalyzing] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiInsights, setAiInsights] = useState<string[]>([]);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [scheduleTime, setScheduleTime] = useState('09:00');
   const autoStarted = useRef(false);
 
   // Auto-start transcription when component mounts with audio
@@ -188,7 +219,12 @@ export default function PostMeeting({
           }))
         );
       }
-      if (data.follow_up_draft) setFollowUpText(data.follow_up_draft);
+      // Regenerate follow-up email with AI summary
+      if (data.follow_up_draft) {
+        setFollowUpText(data.follow_up_draft);
+      } else if (data.summary) {
+        setFollowUpText(generateFollowUpDraft(meeting, lead, data.summary));
+      }
 
       showToast('KI-Analyse abgeschlossen', 'success');
     } catch {
@@ -610,48 +646,152 @@ export default function PostMeeting({
                 resize: 'vertical',
               }}
             />
-            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button
-                className="s-primary"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  padding: '9px 18px',
-                  borderRadius: 9,
-                  background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
-                  border: 'none',
-                  color: '#fff',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  boxShadow: '0 2px 12px rgba(99,102,241,0.3)',
-                }}
-                onClick={() => showToast('E-Mail wird gesendet… (Backend noch nicht verbunden)', 'info')}
-              >
-                <SvgIcon d={ICONS.mail} size={13} color="#fff" />
-                E-Mail senden
-              </button>
-              <button
-                className="s-ghost"
-                style={{
-                  padding: '9px 16px',
-                  borderRadius: 9,
-                  background: 'transparent',
-                  border: `1px solid ${C.border}`,
-                  color: C.text2,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-                onClick={() => {
-                  navigator.clipboard.writeText(followUpText);
-                  showToast('In Zwischenablage kopiert', 'success');
-                }}
-              >
-                Kopieren
-              </button>
+            {/* Send actions + scheduling */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                marginTop: 14,
+                paddingTop: 14,
+                borderTop: `1px solid ${C.border}`,
+              }}
+            >
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  className="s-primary"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    padding: '9px 18px',
+                    borderRadius: 9,
+                    background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    boxShadow: '0 2px 12px rgba(99,102,241,0.3)',
+                  }}
+                  onClick={() => showToast('E-Mail wird gesendet…', 'info')}
+                >
+                  <SvgIcon d={ICONS.mail} size={13} color="#fff" />
+                  Jetzt senden
+                </button>
+                <button
+                  className="s-ghost"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '9px 14px',
+                    borderRadius: 9,
+                    background: 'transparent',
+                    border: `1px solid ${C.border}`,
+                    color: C.text2,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                  onClick={() => setScheduleOpen(!scheduleOpen)}
+                >
+                  <SvgIcon d={ICONS.clock} size={12} color={C.text3} />
+                  Timer
+                </button>
+                <button
+                  className="s-ghost"
+                  style={{
+                    padding: '9px 14px',
+                    borderRadius: 9,
+                    background: 'transparent',
+                    border: `1px solid ${C.border}`,
+                    color: C.text2,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(followUpText);
+                    showToast('In Zwischenablage kopiert', 'success');
+                  }}
+                >
+                  Kopieren
+                </button>
+              </div>
+
+              {/* Schedule picker */}
+              {scheduleOpen && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 14px',
+                    borderRadius: 9,
+                    background: C.surface2,
+                    border: `1px solid ${C.border}`,
+                    animation: 'fadeInUp 0.2s ease both',
+                  }}
+                >
+                  <SvgIcon d={ICONS.clock} size={12} color={C.accent} />
+                  <span style={{ fontSize: 12, color: C.text2 }}>Senden am:</span>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 7,
+                      background: C.surface,
+                      border: `1px solid ${C.border}`,
+                      color: C.text1,
+                      fontSize: 12,
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      colorScheme: 'dark',
+                    }}
+                  />
+                  <span style={{ fontSize: 12, color: C.text2 }}>um</span>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 7,
+                      background: C.surface,
+                      border: `1px solid ${C.border}`,
+                      color: C.text1,
+                      fontSize: 12,
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      colorScheme: 'dark',
+                    }}
+                  />
+                  <button
+                    className="s-primary"
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: 7,
+                      background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: 11,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                    onClick={() => {
+                      showToast(`E-Mail geplant für ${scheduleDate} ${scheduleTime}`, 'success');
+                      setScheduleOpen(false);
+                    }}
+                  >
+                    Planen
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
