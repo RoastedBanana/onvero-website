@@ -13,13 +13,36 @@ export async function GET() {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('meetings')
-    .select('*')
+    .select(
+      `
+      *,
+      leads:lead_id ( first_name, last_name, company_name ),
+      meeting_analysis ( summary, ai_insights, sentiment, coaching_scores )
+    `
+    )
     .eq('tenant_id', tenantId)
     .order('date', { ascending: false })
     .limit(100);
 
   if (error) return NextResponse.json({ meetings: [], error: error.message }, { status: 500 });
-  return NextResponse.json({ meetings: data ?? [] });
+
+  // Flatten lead + analysis into meeting object
+  const meetings = (data ?? []).map((m: Record<string, unknown>) => {
+    const lead = m.leads as { first_name: string; last_name: string; company_name: string } | null;
+    const analysis = Array.isArray(m.meeting_analysis) ? m.meeting_analysis[0] : m.meeting_analysis;
+    return {
+      ...m,
+      leads: undefined,
+      meeting_analysis: undefined,
+      lead_name: lead ? `${lead.first_name} ${lead.last_name}` : null,
+      lead_company: lead?.company_name ?? null,
+      summary: (analysis as Record<string, unknown>)?.summary ?? null,
+      ai_insights: (analysis as Record<string, unknown>)?.ai_insights ?? null,
+      sentiment: (analysis as Record<string, unknown>)?.sentiment ?? null,
+    };
+  });
+
+  return NextResponse.json({ meetings });
 }
 
 // ─── POST: Create a new meeting ─────────────────────────────────────────────

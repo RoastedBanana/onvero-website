@@ -141,8 +141,50 @@ function load() {
   } catch {
     _state = { meetings: [], suggestions: MOCK_SUGGESTIONS };
   }
-  // Also fetch real suggestions from API (non-blocking)
+  // Fetch real data from API (non-blocking)
+  fetchMeetingsFromApi();
   fetchSuggestionsFromApi();
+}
+
+async function fetchMeetingsFromApi() {
+  try {
+    const res = await fetch('/api/meetings');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.meetings && data.meetings.length > 0) {
+      const apiMeetings: Meeting[] = data.meetings.map((m: Record<string, unknown>) => {
+        const leadName = (m.lead_name as string) ?? '';
+        const leadCompany = (m.lead_company as string) ?? '';
+        const titleParts = ((m.title as string) ?? '').split('—');
+        return {
+          id: m.id as string,
+          leadId: (m.lead_id as string) ?? '',
+          leadName,
+          company: leadCompany || titleParts[1]?.trim() || '',
+          contact: leadName || titleParts[1]?.trim() || '',
+          title: m.title as string,
+          type: m.type as MeetingType,
+          status: m.status as MeetingStatus,
+          date: (m.date as string) ?? '',
+          time: ((m.time as string) ?? '').slice(0, 5),
+          duration: (m.duration as number) ?? 25,
+          phases: (m.phases as MeetingPhase[]) ?? [],
+          notes: (m.notes as string) ?? '',
+          product: (m.product as string) ?? '',
+          summary: (m.summary as string) ?? undefined,
+          aiInsights: (m.ai_insights as string[]) ?? undefined,
+          createdAt: m.created_at as string,
+          fromSuggestion: (m.from_suggestion as boolean) ?? false,
+        };
+      });
+      // Merge: API meetings take priority, keep local-only meetings
+      const apiIds = new Set(apiMeetings.map((m) => m.id));
+      const localOnly = _state.meetings.filter((m) => !apiIds.has(m.id));
+      _state = { ..._state, meetings: [...apiMeetings, ...localOnly] };
+      persist();
+      emit();
+    }
+  } catch {}
 }
 
 async function fetchSuggestionsFromApi() {
@@ -197,6 +239,38 @@ export function addMeeting(meeting: Omit<Meeting, 'id' | 'createdAt' | 'status'>
   _state = { ..._state, meetings: [newMeeting, ..._state.meetings] };
   persist();
   emit();
+
+  // Also save to Supabase API (non-blocking)
+  fetch('/api/meetings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      lead_id: meeting.leadId || null,
+      title: meeting.title,
+      type: meeting.type,
+      date: meeting.date,
+      time: meeting.time,
+      duration: meeting.duration,
+      phases: meeting.phases,
+      product: meeting.product,
+      notes: meeting.notes,
+      from_suggestion: meeting.fromSuggestion ?? false,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.meeting?.id) {
+        // Replace the temp ID with the real DB ID
+        _state = {
+          ..._state,
+          meetings: _state.meetings.map((m) => (m.id === newMeeting.id ? { ...m, id: data.meeting.id } : m)),
+        };
+        persist();
+        emit();
+      }
+    })
+    .catch(() => {});
+
   return newMeeting;
 }
 
