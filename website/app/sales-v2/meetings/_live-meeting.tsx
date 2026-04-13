@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { C, SvgIcon, ICONS, showToast } from '../_shared';
+import { ACCOUNT } from '../_lead-data';
 import type { Meeting, MeetingPhase } from './_meeting-store';
+import type { Lead } from '../_lead-data';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 
@@ -380,13 +382,240 @@ function LiveNotes({
   );
 }
 
+// ─── LIVE PREP PANEL — quick reference during call ──────────────────────────
+
+type PrepTab = 'script' | 'facts' | 'objections';
+
+function generateQuickScript(phase: MeetingPhase, lead: Lead | null, meeting: Meeting): string {
+  const name = lead?.firstName ?? 'Kunde';
+  const company = lead?.company ?? '';
+  const product = meeting.product || ACCOUNT.description;
+
+  const scripts: Record<string, string> = {
+    Begrüßung: `Hallo ${name}, ${ACCOUNT.senderName} von ${ACCOUNT.companyName}. Schön, dass wir sprechen.`,
+    Bedarfsanalyse: `Was sind aktuell Ihre größten Herausforderungen${company ? ` bei ${company}` : ''}? Was nutzen Sie momentan?`,
+    Kurzpitch: `${product} — so können wir helfen. Konkret für ${company || 'Sie'}:`,
+    'Fragen & Antworten': `Was sind Ihre ersten Gedanken? Bedenken?`,
+    'Nächste Schritte': `Zusammenfassung + nächster Schritt. Wann passt Follow-Up?`,
+    'Pain Points': `Welche Prozesse kosten am meisten Zeit? Was passiert wenn es so bleibt?`,
+    'Live-Demo': `Bildschirm teilen. Beispiel an ${company || 'Ihren Case'} angepasst.`,
+    'Q&A': `Was hat Sie am meisten angesprochen? Was passt nicht?`,
+    Close: `Sehen Sie den Mehrwert? Wer entscheidet noch mit? Angebot bis wann?`,
+    Recap: `Zusammenfassung letztes Gespräch. Was hat sich seitdem getan?`,
+    'Offene Punkte': `Offene Punkte durchgehen. Neue Fragen?`,
+    Entscheidung: `Konnten Sie intern abstimmen? Was brauchen Sie noch?`,
+  };
+  return scripts[phase.name] ?? phase.name;
+}
+
+const QUICK_OBJECTIONS = [
+  { q: 'Zu teuer', a: 'ROI aufzeigen — was kostet Nicht-Handeln?' },
+  { q: 'Keine Zeit', a: 'Minimaler Einstieg. Wann besser?' },
+  { q: 'Haben schon was', a: 'Was fehlt? Wo gibt es Lücken?' },
+  { q: 'Muss abstimmen', a: 'Wer noch? Material für intern?' },
+  { q: 'Kein Bedarf', a: 'Branchen-Beispiel zeigen.' },
+  { q: 'Kenne euch nicht', a: 'Referenzkunden nennen. Pilotprojekt.' },
+];
+
+function LivePrepPanel({
+  meeting,
+  lead,
+  currentPhase,
+}: {
+  meeting: Meeting;
+  lead: Lead | null;
+  currentPhase: MeetingPhase | undefined;
+}) {
+  const [tab, setTab] = useState<PrepTab>('script');
+
+  const tabs: { id: PrepTab; label: string; icon: string }[] = [
+    { id: 'script', label: 'Script', icon: ICONS.chat },
+    { id: 'facts', label: 'Facts', icon: ICONS.eye },
+    { id: 'objections', label: 'Einwände', icon: ICONS.zap },
+  ];
+
+  return (
+    <div
+      style={{
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 12,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Tab switcher */}
+      <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
+        {tabs.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 5,
+                padding: '10px 6px',
+                background: active ? C.accentGhost : 'transparent',
+                border: 'none',
+                borderBottom: active ? `2px solid ${C.accent}` : '2px solid transparent',
+                color: active ? C.accentBright : C.text3,
+                fontSize: 10,
+                fontWeight: active ? 600 : 400,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <SvgIcon d={t.icon} size={11} color={active ? C.accent : C.text3} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflowY: 'auto', maxHeight: 350, padding: '12px 14px' }}>
+        {/* SCRIPT TAB — current phase highlighted */}
+        {tab === 'script' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {meeting.phases.map((phase) => {
+              const isCurrent = currentPhase?.id === phase.id;
+              return (
+                <div
+                  key={phase.id}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: isCurrent ? `${C.accent}08` : 'transparent',
+                    border: `1px solid ${isCurrent ? C.borderAccent : 'transparent'}`,
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: isCurrent ? C.accentBright : C.text2 }}>
+                      {phase.name}
+                    </span>
+                    {isCurrent && (
+                      <span style={{ fontSize: 8, color: C.accent, fontWeight: 600, letterSpacing: '0.08em' }}>
+                        JETZT
+                      </span>
+                    )}
+                  </div>
+                  <p
+                    style={{
+                      fontSize: 11.5,
+                      color: isCurrent ? C.text1 : C.text3,
+                      lineHeight: 1.5,
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {generateQuickScript(phase, lead, meeting)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* FACTS TAB */}
+        {tab === 'facts' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {lead && (
+              <>
+                {[
+                  { l: 'Name', v: lead.name },
+                  { l: 'Position', v: lead.jobTitle },
+                  { l: 'Firma', v: lead.company },
+                  { l: 'Ort', v: lead.city },
+                  { l: 'E-Mail', v: lead.email },
+                  { l: 'Telefon', v: lead.phone },
+                  { l: 'Branche', v: lead.industry !== 'Sonstige' ? lead.industry : null },
+                  { l: 'Score', v: lead.score !== null ? String(lead.score) : null },
+                  { l: 'Google', v: lead.googleRating ? `${lead.googleRating} ★` : null },
+                ]
+                  .filter((f) => f.v)
+                  .map((f) => (
+                    <div key={f.l} style={{ display: 'flex', gap: 8 }}>
+                      <span style={{ fontSize: 10, color: C.text3, minWidth: 50 }}>{f.l}</span>
+                      <span style={{ fontSize: 12, color: C.text1, fontWeight: 500 }}>{f.v}</span>
+                    </div>
+                  ))}
+                {lead.aiSummary && (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      padding: '8px 10px',
+                      borderRadius: 7,
+                      background: `${C.accent}06`,
+                      border: `1px solid ${C.accent}10`,
+                    }}
+                  >
+                    <div style={{ fontSize: 9, color: C.accent, fontWeight: 600, marginBottom: 4 }}>KI-ANALYSE</div>
+                    <p style={{ fontSize: 11, color: C.text2, lineHeight: 1.5, margin: 0 }}>{lead.aiSummary}</p>
+                  </div>
+                )}
+              </>
+            )}
+            {!lead && (
+              <p style={{ fontSize: 12, color: C.text3, textAlign: 'center', padding: 10 }}>Kein Lead verknüpft.</p>
+            )}
+            {meeting.product && (
+              <div
+                style={{
+                  marginTop: 4,
+                  padding: '8px 10px',
+                  borderRadius: 7,
+                  background: 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${C.border}`,
+                }}
+              >
+                <div style={{ fontSize: 9, color: C.text3, fontWeight: 600, marginBottom: 3 }}>DEIN ANGEBOT</div>
+                <p style={{ fontSize: 11.5, color: C.text1, margin: 0, lineHeight: 1.5 }}>{meeting.product}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* OBJECTIONS TAB — quick reference */}
+        {tab === 'objections' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {QUICK_OBJECTIONS.map((o) => (
+              <div
+                key={o.q}
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 7,
+                  background: 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${C.border}`,
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#FBBF24', marginBottom: 3 }}>{o.q}</div>
+                <div style={{ fontSize: 11.5, color: C.text2, lineHeight: 1.4 }}>{o.a}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN LIVE MEETING VIEW ─────────────────────────────────────────────────
 
 export default function LiveMeeting({
   meeting,
+  lead,
   onEnd,
 }: {
   meeting: Meeting;
+  lead?: Lead | null;
   onEnd: (data: { audioBlob: Blob | null; notes: TimestampedNote[]; durationSeconds: number }) => void;
 }) {
   const [started, setStarted] = useState(false);
@@ -683,8 +912,8 @@ export default function LiveMeeting({
         </div>
       </div>
 
-      {/* Main Content — Phase Tracker + Notes */}
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 14 }}>
+      {/* Main Content — Phase Tracker + Notes + Prep Reference */}
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 280px', gap: 14 }}>
         <PhaseTracker phases={meeting.phases} elapsedSeconds={elapsed} />
         <LiveNotes
           notes={notes}
@@ -693,6 +922,7 @@ export default function LiveMeeting({
           currentPhaseName={currentPhase?.name ?? ''}
           currentPhaseId={currentPhase?.id ?? ''}
         />
+        <LivePrepPanel meeting={meeting} lead={lead ?? null} currentPhase={currentPhase} />
       </div>
 
       {/* Audio recorded indicator */}

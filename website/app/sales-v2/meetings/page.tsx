@@ -668,7 +668,7 @@ export default function MeetingsPage() {
         )}
         {tab === 'prepare' && <PrepareView meetings={meetings} />}
         {tab === 'record' && liveState?.phase === 'live' && liveMeeting && (
-          <LiveMeeting meeting={liveMeeting} onEnd={handleEndLive} />
+          <LiveMeeting meeting={liveMeeting} lead={liveLead} onEnd={handleEndLive} />
         )}
         {tab === 'record' && liveState?.phase === 'post' && liveMeeting && (
           <PostMeeting
