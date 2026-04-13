@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { C, SvgIcon, ICONS, showToast } from '../_shared';
+import { ACCOUNT } from '../_lead-data';
 import type { Meeting } from './_meeting-store';
 import type { Lead } from '../_lead-data';
 
@@ -40,35 +41,47 @@ function formatDuration(seconds: number): string {
 // ─── MOCK AI SUMMARY ────────────────────────────────────────────────────────
 
 function generateMockSummary(meeting: Meeting, notes: TimestampedNote[]): string {
-  const notesSummary = notes.length > 0 ? `Während des Gesprächs wurden ${notes.length} Notizen festgehalten.` : '';
-  return `Gespräch mit ${meeting.contact} (${meeting.company}) zum Thema "${meeting.title}". ${notesSummary} Das Meeting dauerte ${meeting.duration} Minuten und umfasste ${meeting.phases.length} Phasen. Eine detaillierte KI-Analyse wird erstellt, sobald die Transkription abgeschlossen ist.`;
+  const noteTexts = notes.map((n) => n.text).join('; ');
+  if (notes.length > 0) {
+    return `Gespräch mit ${meeting.contact} von ${meeting.company} zum Thema "${meeting.title}". Wichtigste Punkte: ${noteTexts}. Das Meeting dauerte ${meeting.duration} Minuten. Starte die Transkription für eine detaillierte KI-Analyse.`;
+  }
+  return `Gespräch mit ${meeting.contact} von ${meeting.company} zum Thema "${meeting.title}". Dauer: ${meeting.duration} Minuten, ${meeting.phases.length} Phasen. Starte die Transkription für eine detaillierte KI-Analyse.`;
 }
 
 function generateMockActions(meeting: Meeting): ActionItem[] {
   return [
-    { id: 'a1', text: `Follow-Up E-Mail an ${meeting.contact} senden`, done: false },
-    { id: 'a2', text: `Angebot für ${meeting.company} erstellen`, done: false },
-    { id: 'a3', text: 'Interne Abstimmung zu besprochenen Punkten', done: false },
-    { id: 'a4', text: 'Nächsten Termin vorschlagen', done: false },
+    { id: 'a1', text: `Follow-Up E-Mail an ${meeting.contact} (${meeting.company}) senden`, done: false },
+    {
+      id: 'a2',
+      text: `Angebot für ${meeting.company} erstellen${meeting.product ? ` — ${meeting.product}` : ''}`,
+      done: false,
+    },
+    { id: 'a3', text: 'Besprochene Punkte intern dokumentieren', done: false },
+    { id: 'a4', text: `Nächsten Termin mit ${meeting.contact} vorschlagen`, done: false },
   ];
 }
 
 function generateFollowUpDraft(meeting: Meeting, lead: Lead | null): string {
-  const name = lead?.firstName ?? meeting.contact;
+  const name = lead?.firstName ?? meeting.contact.split(' ')[0] ?? meeting.contact;
+  const company = lead?.company ?? meeting.company;
+  const product = meeting.product || ACCOUNT.description;
   return `Hallo ${name},
 
-vielen Dank für das angenehme Gespräch heute. Hier eine kurze Zusammenfassung der besprochenen Punkte:
+vielen Dank für das angenehme Gespräch heute zum Thema ${meeting.title}.
 
-- [Punkt 1]
-- [Punkt 2]
-- [Punkt 3]
+Wie besprochen fasse ich die wichtigsten Punkte zusammen:
 
-Als nächsten Schritt würde ich vorschlagen: [nächster Schritt]
+- Ihre aktuelle Situation bei ${company} und die Herausforderungen im Bereich ${product ? product : 'Ihres Geschäfts'}
+- Wie ${ACCOUNT.companyName} hier konkret unterstützen kann
+- Die nächsten Schritte für eine mögliche Zusammenarbeit
+
+Als nächstes werde ich Ihnen ein passendes Angebot zusammenstellen. Gibt es von Ihrer Seite noch offene Fragen?
 
 Ich freue mich auf die weitere Zusammenarbeit!
 
 Beste Grüße
-[Dein Name]`;
+${ACCOUNT.senderName}
+${ACCOUNT.senderRole} — ${ACCOUNT.companyName}`;
 }
 
 // ─── WIN/LOSS TAG ───────────────────────────────────────────────────────────
@@ -107,6 +120,15 @@ export default function PostMeeting({
   const [analyzing, setAnalyzing] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [aiInsights, setAiInsights] = useState<string[]>([]);
+  const autoStarted = useRef(false);
+
+  // Auto-start transcription when component mounts with audio
+  useEffect(() => {
+    if (audioBlob && !autoStarted.current) {
+      autoStarted.current = true;
+      handleTranscribe();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const summary = aiSummary ?? generateMockSummary(meeting, notes);
 
@@ -358,7 +380,86 @@ export default function PostMeeting({
                 KI-ZUSAMMENFASSUNG
               </span>
             </div>
-            <p style={{ fontSize: 13, color: C.text1, lineHeight: 1.7, margin: '0 0 18px' }}>{summary}</p>
+            {/* Status indicators */}
+            {(transcribing || analyzing) && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 14,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  background: `${C.accent}06`,
+                  border: `1px solid ${C.accent}12`,
+                }}
+              >
+                <div
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: C.accent,
+                    animation: 'pulse-live 1.5s ease-in-out infinite',
+                  }}
+                />
+                <span style={{ fontSize: 12, color: C.accentBright }}>
+                  {transcribing ? 'Transkription läuft…' : 'KI-Analyse läuft…'}
+                </span>
+              </div>
+            )}
+
+            <p style={{ fontSize: 13, color: C.text1, lineHeight: 1.7, margin: '0 0 14px' }}>{summary}</p>
+
+            {/* AI Insights */}
+            {aiInsights.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
+                {aiInsights.map((insight) => (
+                  <div
+                    key={insight}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '5px 12px',
+                      borderRadius: 7,
+                      background: 'rgba(99,102,241,0.05)',
+                      border: '1px solid rgba(99,102,241,0.1)',
+                    }}
+                  >
+                    <SvgIcon d={ICONS.spark} size={10} color={C.accent} />
+                    <span style={{ fontSize: 11, color: C.accentBright }}>{insight}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Manual analyze button if no auto-transcription happened */}
+            {!aiSummary && !analyzing && !transcribing && (
+              <button
+                onClick={() => (audioBlob ? handleTranscribe() : triggerAnalysis())}
+                className="s-primary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  padding: '9px 18px',
+                  borderRadius: 9,
+                  background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  boxShadow: '0 2px 12px rgba(99,102,241,0.3)',
+                  marginBottom: 18,
+                }}
+              >
+                <SvgIcon d={ICONS.spark} size={13} color="#fff" />
+                {audioBlob ? 'Transkription + KI-Analyse starten' : 'KI-Analyse starten'}
+              </button>
+            )}
 
             {/* Notes recap */}
             {notes.length > 0 && (

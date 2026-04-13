@@ -36,11 +36,18 @@ function useAudioRecorder() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
+  const onStopResolve = useRef<((blob: Blob) => void) | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      // Pick a supported MIME type
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : '';
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunks.current = [];
 
       recorder.ondataavailable = (e) => {
@@ -48,26 +55,39 @@ function useAudioRecorder() {
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(chunks.current, { type: 'audio/webm' });
+        const type = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(chunks.current, { type });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
+        // Resolve the promise so stopRecording can return the blob
+        if (onStopResolve.current) {
+          onStopResolve.current(blob);
+          onStopResolve.current = null;
+        }
       };
 
       mediaRecorder.current = recorder;
-      recorder.start(1000);
+      recorder.start(1000); // collect chunks every second
       setRecording(true);
+      showToast('Aufnahme gestartet', 'success');
     } catch {
       showToast('Mikrofon-Zugriff verweigert', 'error');
     }
   }, []);
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorder.current && recording) {
-      mediaRecorder.current.stop();
-      setRecording(false);
-    }
-  }, [recording]);
+  // Returns a promise that resolves with the Blob once recording fully stops
+  const stopRecording = useCallback((): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+        onStopResolve.current = resolve;
+        mediaRecorder.current.stop();
+        setRecording(false);
+      } else {
+        resolve(audioBlob);
+      }
+    });
+  }, [audioBlob]);
 
   return { recording, audioUrl, audioBlob, startRecording, stopRecording };
 }
@@ -413,10 +433,10 @@ export default function LiveMeeting({
     setPaused(!paused);
   };
 
-  const handleEnd = () => {
-    stopRecording();
+  const handleEnd = async () => {
+    const blob = await stopRecording();
     setStarted(false);
-    onEnd({ audioBlob, notes, durationSeconds: elapsed });
+    onEnd({ audioBlob: blob, notes, durationSeconds: elapsed });
   };
 
   const addNote = (note: TimestampedNote) => {

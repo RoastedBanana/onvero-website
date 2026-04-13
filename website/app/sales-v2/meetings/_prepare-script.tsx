@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { C, SvgIcon, ICONS } from '../_shared';
+import { ACCOUNT } from '../_lead-data';
 import type { Meeting, MeetingPhase } from './_meeting-store';
 import type { Lead } from '../_lead-data';
 
@@ -11,10 +12,12 @@ import type { Lead } from '../_lead-data';
 function generatePhaseScript(phase: MeetingPhase, lead: Lead | null, meeting: Meeting): string {
   const name = lead?.firstName ?? 'den Kunden';
   const company = lead?.company ?? 'das Unternehmen';
-  const product = meeting.product || 'unser Angebot';
+  const product = meeting.product || ACCOUNT.description || 'unser Angebot';
+  const senderName = ACCOUNT.senderName;
+  const senderCompany = ACCOUNT.companyName;
 
   const scripts: Record<string, string> = {
-    Begrüßung: `Hallo ${name}, schön dass wir heute sprechen können. Mein Name ist [dein Name] von [deine Firma]. Wie geht es Ihnen?`,
+    Begrüßung: `Hallo ${name}, schön dass wir heute sprechen können. Mein Name ist ${senderName} von ${senderCompany}. Wie geht es Ihnen?`,
     Bedarfsanalyse: `${name}, bevor ich Ihnen etwas zeige — erzählen Sie mir kurz: Was sind aktuell Ihre größten Herausforderungen bei ${company}? Was nutzen Sie momentan dafür?`,
     Kurzpitch: `Basierend auf dem, was Sie mir erzählt haben, denke ich dass ${product} genau hier ansetzen kann. Lassen Sie mich kurz erklären, wie das funktioniert…`,
     'Fragen & Antworten': `Das war der grobe Überblick. Was sind Ihre ersten Gedanken dazu? Gibt es Bedenken oder Fragen?`,

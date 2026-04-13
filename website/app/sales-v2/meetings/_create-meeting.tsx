@@ -7,6 +7,7 @@ import LeadPicker from './_lead-picker';
 import PhaseConfig from './_phase-config';
 import { addMeeting, PHASE_TEMPLATES, totalPhaseDuration, nextPhaseId } from './_meeting-store';
 import type { MeetingType, MeetingPhase, SmartSuggestion } from './_meeting-store';
+import { ACCOUNT } from '../_lead-data';
 import type { Lead } from '../_lead-data';
 
 // ─── MEETING TYPE OPTIONS ───────────────────────────────────────────────────
@@ -60,10 +61,9 @@ function buildAutoNotes(lead: Lead): string {
 
 function buildAutoProduct(lead: Lead): string {
   const tags = lead.aiTags ?? [];
-  // Versuche aus AI-Tags ein Produkt/Thema abzuleiten
   const relevant = tags.filter((t) => !['b2b', 'email', 'kontakt'].includes(t.toLowerCase()) && t.length > 2);
-  if (relevant.length > 0) return relevant.slice(0, 3).join(', ');
-  return '';
+  if (relevant.length > 0) return `${ACCOUNT.companyName} — ${relevant.slice(0, 2).join(', ')}`;
+  return ACCOUNT.description;
 }
 
 function todayDate(): string {
