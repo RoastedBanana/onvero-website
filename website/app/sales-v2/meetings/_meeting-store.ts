@@ -1,0 +1,211 @@
+'use client';
+
+import { useSyncExternalStore } from 'react';
+
+// ─── TYPES ──────────────────────────────────────────────────────────────────
+
+export type MeetingType = 'Video' | 'Telefon' | 'Vor Ort';
+export type MeetingStatus = 'Geplant' | 'Aktiv' | 'Abgeschlossen';
+
+export interface MeetingPhase {
+  id: string;
+  name: string;
+  duration: number; // minutes
+}
+
+export interface SmartSuggestion {
+  id: string;
+  leadId: string;
+  leadName: string;
+  company: string;
+  emailSnippet: string;
+  suggestedType: MeetingType;
+  suggestedDuration: number;
+  reason: string;
+  createdAt: string;
+  dismissed: boolean;
+}
+
+export interface Meeting {
+  id: string;
+  leadId: string;
+  leadName: string;
+  company: string;
+  contact: string;
+  title: string;
+  type: MeetingType;
+  status: MeetingStatus;
+  date: string; // ISO date
+  time: string; // HH:mm
+  duration: number; // minutes
+  phases: MeetingPhase[];
+  notes: string;
+  product: string;
+  summary?: string;
+  aiInsights?: string[];
+  createdAt: string;
+  fromSuggestion?: boolean;
+}
+
+// ─── PHASE TEMPLATES ────────────────────────────────────────────────────────
+
+export const PHASE_TEMPLATES: Record<string, MeetingPhase[]> = {
+  'Discovery Call': [
+    { id: '1', name: 'Begrüßung', duration: 2 },
+    { id: '2', name: 'Bedarfsanalyse', duration: 10 },
+    { id: '3', name: 'Kurzpitch', duration: 5 },
+    { id: '4', name: 'Fragen & Antworten', duration: 5 },
+    { id: '5', name: 'Nächste Schritte', duration: 3 },
+  ],
+  Demo: [
+    { id: '1', name: 'Begrüßung', duration: 2 },
+    { id: '2', name: 'Pain Points', duration: 5 },
+    { id: '3', name: 'Live-Demo', duration: 15 },
+    { id: '4', name: 'Q&A', duration: 8 },
+    { id: '5', name: 'Close', duration: 5 },
+  ],
+  'Follow-Up': [
+    { id: '1', name: 'Recap', duration: 3 },
+    { id: '2', name: 'Offene Punkte', duration: 10 },
+    { id: '3', name: 'Entscheidung', duration: 5 },
+    { id: '4', name: 'Close', duration: 2 },
+  ],
+};
+
+// ─── MOCK SMART SUGGESTIONS ─────────────────────────────────────────────────
+
+const MOCK_SUGGESTIONS: SmartSuggestion[] = [
+  {
+    id: 'sug-1',
+    leadId: '',
+    leadName: 'Clara Wolff',
+    company: 'Silo Labs',
+    emailSnippet:
+      'Vielen Dank für die ausführliche Info! Ich hätte Interesse an einem kurzen Gespräch, um Details zu klären…',
+    suggestedType: 'Video',
+    suggestedDuration: 25,
+    reason: 'Positive Antwort auf E-Mail erkannt — Interesse an Gespräch signalisiert',
+    createdAt: new Date().toISOString(),
+    dismissed: false,
+  },
+  {
+    id: 'sug-2',
+    leadId: '',
+    leadName: 'Jonas Braun',
+    company: 'Deepmark',
+    emailSnippet: 'Klingt spannend. Können wir nächste Woche einen Termin finden? Am besten Dienstag oder Mittwoch.',
+    suggestedType: 'Video',
+    suggestedDuration: 30,
+    reason: 'Lead schlägt aktiv Termin vor — hohe Kaufbereitschaft',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    dismissed: false,
+  },
+];
+
+// ─── STORAGE KEY ────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'onvero_meetings';
+const SUGGESTIONS_KEY = 'onvero_meeting_suggestions';
+
+// ─── STORE ──────────────────────────────────────────────────────────────────
+
+type MeetingsState = {
+  meetings: Meeting[];
+  suggestions: SmartSuggestion[];
+};
+
+let _state: MeetingsState = { meetings: [], suggestions: [] };
+let _listeners = new Set<() => void>();
+let _initialized = false;
+
+function emit() {
+  _listeners.forEach((fn) => fn());
+}
+
+function persist() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(_state.meetings));
+    localStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(_state.suggestions));
+  } catch {}
+}
+
+function load() {
+  if (_initialized) return;
+  _initialized = true;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const meetings: Meeting[] = raw ? JSON.parse(raw) : [];
+    const rawSug = localStorage.getItem(SUGGESTIONS_KEY);
+    const suggestions: SmartSuggestion[] = rawSug ? JSON.parse(rawSug) : MOCK_SUGGESTIONS;
+    _state = { meetings, suggestions };
+  } catch {
+    _state = { meetings: [], suggestions: MOCK_SUGGESTIONS };
+  }
+}
+
+function subscribe(fn: () => void) {
+  _listeners.add(fn);
+  if (typeof window !== 'undefined') load();
+  return () => {
+    _listeners.delete(fn);
+  };
+}
+
+function getSnapshot(): MeetingsState {
+  return _state;
+}
+
+// ─── ACTIONS ────────────────────────────────────────────────────────────────
+
+export function addMeeting(meeting: Omit<Meeting, 'id' | 'createdAt' | 'status'>): Meeting {
+  const newMeeting: Meeting = {
+    ...meeting,
+    id: `mtg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    status: 'Geplant',
+    createdAt: new Date().toISOString(),
+  };
+  _state = { ..._state, meetings: [newMeeting, ..._state.meetings] };
+  persist();
+  emit();
+  return newMeeting;
+}
+
+export function dismissSuggestion(id: string) {
+  _state = {
+    ..._state,
+    suggestions: _state.suggestions.map((s) => (s.id === id ? { ...s, dismissed: true } : s)),
+  };
+  persist();
+  emit();
+}
+
+export function acceptSuggestion(id: string): SmartSuggestion | null {
+  const sug = _state.suggestions.find((s) => s.id === id);
+  if (!sug) return null;
+  dismissSuggestion(id);
+  return sug;
+}
+
+// ─── HOOK ───────────────────────────────────────────────────────────────────
+
+export function useMeetings() {
+  const state = useSyncExternalStore(subscribe, getSnapshot, () => ({
+    meetings: [],
+    suggestions: [],
+  }));
+  return {
+    meetings: state.meetings,
+    suggestions: state.suggestions.filter((s) => !s.dismissed),
+  };
+}
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+
+let _idCounter = 100;
+export function nextPhaseId(): string {
+  return `p-${++_idCounter}`;
+}
+
+export function totalPhaseDuration(phases: MeetingPhase[]): number {
+  return phases.reduce((sum, p) => sum + p.duration, 0);
+}
