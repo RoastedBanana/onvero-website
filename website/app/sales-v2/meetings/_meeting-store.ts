@@ -141,6 +141,36 @@ function load() {
   } catch {
     _state = { meetings: [], suggestions: MOCK_SUGGESTIONS };
   }
+  // Also fetch real suggestions from API (non-blocking)
+  fetchSuggestionsFromApi();
+}
+
+async function fetchSuggestionsFromApi() {
+  try {
+    const res = await fetch('/api/meetings/suggestions');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.suggestions && data.suggestions.length > 0) {
+      const apiSuggestions: SmartSuggestion[] = data.suggestions.map((s: Record<string, unknown>) => ({
+        id: s.id as string,
+        leadId: (s.lead_id as string) ?? '',
+        leadName: s.lead_name as string,
+        company: s.company as string,
+        emailSnippet: (s.email_snippet as string) ?? '',
+        suggestedType: (s.suggested_type as string as SmartSuggestion['suggestedType']) ?? 'Video',
+        suggestedDuration: (s.suggested_duration as number) ?? 25,
+        reason: (s.reason as string) ?? '',
+        createdAt: s.created_at as string,
+        dismissed: false,
+      }));
+      // Merge with local — API takes priority, remove duplicates
+      const localIds = new Set(_state.suggestions.map((s) => s.id));
+      const merged = [...apiSuggestions.filter((s) => !localIds.has(s.id)), ..._state.suggestions];
+      _state = { ..._state, suggestions: merged };
+      persist();
+      emit();
+    }
+  } catch {}
 }
 
 function subscribe(fn: () => void) {

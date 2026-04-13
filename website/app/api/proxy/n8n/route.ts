@@ -8,9 +8,11 @@ const WEBHOOK_MAP: Record<string, string> = {
   'meeting-calendar': 'N8N_WEBHOOK_MEETING_CALENDAR',
   'lead-generator': 'N8N_WEBHOOK_LEAD_GENERATOR',
   'maps-import': 'N8N_WEBHOOK_MAPS_IMPORT',
-  'chat': 'N8N_WEBHOOK_CHAT',
+  chat: 'N8N_WEBHOOK_CHAT',
   'chat-image': 'N8N_WEBHOOK_CHAT_IMAGE',
   'meeting-summarizer': 'N8N_WEBHOOK_MEETING_SUMMARIZER',
+  'meeting-analyzer': 'N8N_WEBHOOK_MEETING_ANALYZER',
+  'meeting-auto-suggest': 'N8N_WEBHOOK_MEETING_AUTO_SUGGEST',
   'vector-store': 'N8N_WEBHOOK_VECTOR_STORE',
 };
 

@@ -104,8 +104,11 @@ export default function PostMeeting({
   const [followUpText, setFollowUpText] = useState(generateFollowUpDraft(meeting, lead));
   const [transcribing, setTranscribing] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiInsights, setAiInsights] = useState<string[]>([]);
 
-  const summary = generateMockSummary(meeting, notes);
+  const summary = aiSummary ?? generateMockSummary(meeting, notes);
 
   const toggleAction = (id: string) => {
     setActions((prev) => prev.map((a) => (a.id === id ? { ...a, done: !a.done } : a)));
@@ -117,14 +120,60 @@ export default function PostMeeting({
       return;
     }
     setTranscribing(true);
-    // TODO: Call real transcription API
-    setTimeout(() => {
-      setTranscript(
-        `[Transkription wird generiert...]\n\nDies ist ein Platzhalter. Die echte Transkription wird über die API erstellt, sobald das Backend verbunden ist.\n\n${notes.map((n) => `[${formatTimestamp(n.timestamp)}] ${n.text}`).join('\n')}`
-      );
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+
+      const res = await fetch('/api/meetings/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.transcript) {
+        setTranscript(data.transcript);
+        showToast('Transkription erstellt', 'success');
+        // Auto-trigger KI-Analyse
+        triggerAnalysis(data.transcript);
+      } else {
+        showToast(data.error || 'Transkription fehlgeschlagen', 'error');
+      }
+    } catch {
+      showToast('Transkription fehlgeschlagen', 'error');
+    } finally {
       setTranscribing(false);
-      showToast('Transkription erstellt', 'success');
-    }, 2000);
+    }
+  };
+
+  const triggerAnalysis = async (transcriptText?: string) => {
+    setAnalyzing(true);
+    try {
+      const res = await fetch(`/api/meetings/${meeting.id}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: transcriptText ?? transcript }),
+      });
+      const data = await res.json();
+
+      if (data.summary) setAiSummary(data.summary);
+      if (data.ai_insights) setAiInsights(data.ai_insights);
+      if (data.action_items) {
+        setActions(
+          data.action_items.map((a: { text: string }, i: number) => ({
+            id: `ai-${i}`,
+            text: a.text,
+            done: false,
+          }))
+        );
+      }
+      if (data.follow_up_draft) setFollowUpText(data.follow_up_draft);
+
+      showToast('KI-Analyse abgeschlossen', 'success');
+    } catch {
+      showToast('KI-Analyse fehlgeschlagen', 'error');
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const tabs: { id: PostTab; label: string; icon: string }[] = [
