@@ -218,11 +218,10 @@ export function acceptSuggestion(id: string): SmartSuggestion | null {
 
 // ─── HOOK ───────────────────────────────────────────────────────────────────
 
+const SERVER_SNAPSHOT: MeetingsState = { meetings: [], suggestions: [] };
+
 export function useMeetings() {
-  const state = useSyncExternalStore(subscribe, getSnapshot, () => ({
-    meetings: [],
-    suggestions: [],
-  }));
+  const state = useSyncExternalStore(subscribe, getSnapshot, () => SERVER_SNAPSHOT);
   return {
     meetings: state.meetings,
     suggestions: state.suggestions.filter((s) => !s.dismissed),
