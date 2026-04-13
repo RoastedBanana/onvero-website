@@ -96,21 +96,17 @@ function useAudioRecorder() {
 
 // ─── PHASE TRACKER ──────────────────────────────────────────────────────────
 
-function PhaseTracker({ phases, elapsedSeconds }: { phases: MeetingPhase[]; elapsedSeconds: number }) {
-  const totalDuration = phases.reduce((s, p) => s + p.duration, 0);
-  const elapsedMinutes = elapsedSeconds / 60;
-
-  let accumulated = 0;
-  let currentPhaseIndex = 0;
-  for (let i = 0; i < phases.length; i++) {
-    if (elapsedMinutes < accumulated + phases[i].duration) {
-      currentPhaseIndex = i;
-      break;
-    }
-    accumulated += phases[i].duration;
-    if (i === phases.length - 1) currentPhaseIndex = i;
-  }
-
+function PhaseTracker({
+  phases,
+  currentPhaseIndex,
+  onGoToPhase,
+  onAdvance,
+}: {
+  phases: MeetingPhase[];
+  currentPhaseIndex: number;
+  onGoToPhase: (index: number) => void;
+  onAdvance: () => void;
+}) {
   return (
     <div
       style={{
@@ -124,19 +120,20 @@ function PhaseTracker({ phases, elapsedSeconds }: { phases: MeetingPhase[]; elap
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <SvgIcon d={ICONS.list} size={12} color={C.accent} />
         <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em' }}>PHASEN</span>
+        <span style={{ fontSize: 10, color: C.text3, marginLeft: 'auto' }}>
+          {currentPhaseIndex + 1}/{phases.length}
+        </span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {phases.map((phase, i) => {
-          const phaseStart = phases.slice(0, i).reduce((s, p) => s + p.duration, 0);
-          const phaseEnd = phaseStart + phase.duration;
           const isCurrent = i === currentPhaseIndex;
-          const isDone = elapsedMinutes >= phaseEnd;
-          const progress = isCurrent ? Math.min(1, (elapsedMinutes - phaseStart) / phase.duration) : isDone ? 1 : 0;
+          const isDone = i < currentPhaseIndex;
 
           return (
-            <div
+            <button
               key={phase.id}
+              onClick={() => onGoToPhase(i)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -146,6 +143,10 @@ function PhaseTracker({ phases, elapsedSeconds }: { phases: MeetingPhase[]; elap
                 background: isCurrent ? `${C.accent}08` : 'transparent',
                 border: `1px solid ${isCurrent ? C.borderAccent : 'transparent'}`,
                 transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                textAlign: 'left',
+                width: '100%',
               }}
             >
               {/* Status indicator */}
@@ -191,28 +192,6 @@ function PhaseTracker({ phases, elapsedSeconds }: { phases: MeetingPhase[]; elap
                 >
                   {phase.name}
                 </div>
-                {/* Progress bar for current phase */}
-                {isCurrent && (
-                  <div
-                    style={{
-                      height: 2,
-                      borderRadius: 1,
-                      background: 'rgba(255,255,255,0.04)',
-                      marginTop: 4,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${progress * 100}%`,
-                        borderRadius: 1,
-                        background: `linear-gradient(90deg, ${C.accentDim}, ${C.accent})`,
-                        transition: 'width 1s linear',
-                      }}
-                    />
-                  </div>
-                )}
               </div>
 
               <span
@@ -225,10 +204,39 @@ function PhaseTracker({ phases, elapsedSeconds }: { phases: MeetingPhase[]; elap
               >
                 {phase.duration}m
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
+
+      {/* Next phase button */}
+      {currentPhaseIndex < phases.length - 1 && (
+        <button
+          onClick={onAdvance}
+          className="s-primary"
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '9px 14px',
+            marginTop: 10,
+            borderRadius: 8,
+            background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
+            border: 'none',
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            boxShadow: '0 2px 10px rgba(99,102,241,0.25)',
+          }}
+        >
+          <SvgIcon d={ICONS.chevRight} size={11} color="#fff" />
+          Nächste Phase: {phases[currentPhaseIndex + 1]?.name}
+        </button>
+      )}
     </div>
   );
 }
@@ -628,6 +636,7 @@ export default function LiveMeeting({
   const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [manualPhaseIndex, setManualPhaseIndex] = useState(0);
   const [notes, setNotes] = useState<TimestampedNote[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { recording, audioUrl, audioBlob, startRecording, stopRecording } = useAudioRecorder();
@@ -644,21 +653,23 @@ export default function LiveMeeting({
     };
   }, [started, paused]);
 
-  // Current phase
-  const elapsedMinutes = elapsed / 60;
-  let accumulated = 0;
-  let currentPhaseIndex = 0;
-  for (let i = 0; i < meeting.phases.length; i++) {
-    if (elapsedMinutes < accumulated + meeting.phases[i].duration) {
-      currentPhaseIndex = i;
-      break;
-    }
-    accumulated += meeting.phases[i].duration;
-    if (i === meeting.phases.length - 1) currentPhaseIndex = i;
-  }
+  // Phase is manually controlled
+  const currentPhaseIndex = manualPhaseIndex;
   const currentPhase = meeting.phases[currentPhaseIndex];
   const totalDuration = meeting.phases.reduce((s, p) => s + p.duration, 0);
-  const overallProgress = Math.min(1, elapsedMinutes / totalDuration);
+  const plannedSeconds = totalDuration * 60;
+  const overallProgress = Math.min(1, elapsed / plannedSeconds);
+  const isOvertime = elapsed > plannedSeconds;
+
+  const advancePhase = () => {
+    if (manualPhaseIndex < meeting.phases.length - 1) {
+      setManualPhaseIndex(manualPhaseIndex + 1);
+    }
+  };
+
+  const goToPhase = (index: number) => {
+    setManualPhaseIndex(index);
+  };
 
   const handleStart = async () => {
     setStarted(true);
@@ -822,18 +833,38 @@ export default function LiveMeeting({
           </span>
         </div>
 
-        {/* Timer */}
-        <div
-          style={{
-            fontSize: 32,
-            fontWeight: 700,
-            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-            color: C.text1,
-            letterSpacing: '-0.02em',
-            textShadow: `0 0 30px ${C.accent}20`,
-          }}
-        >
-          {formatTime(elapsed)}
+        {/* Timer: actual vs planned */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+          <div
+            style={{
+              fontSize: 32,
+              fontWeight: 700,
+              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+              color: isOvertime ? '#F87171' : C.text1,
+              letterSpacing: '-0.02em',
+              textShadow: isOvertime ? '0 0 20px rgba(248,113,113,0.3)' : `0 0 30px ${C.accent}20`,
+            }}
+          >
+            {formatTime(elapsed)}
+          </div>
+          <div style={{ fontSize: 12, color: C.text3, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
+            / {formatTime(plannedSeconds)}
+          </div>
+          {isOvertime && (
+            <div
+              style={{
+                fontSize: 10,
+                color: '#F87171',
+                fontWeight: 600,
+                padding: '2px 8px',
+                borderRadius: 4,
+                background: 'rgba(248,113,113,0.08)',
+                border: '1px solid rgba(248,113,113,0.15)',
+              }}
+            >
+              +{formatTime(elapsed - plannedSeconds)}
+            </div>
+          )}
         </div>
 
         {/* Current Phase */}
@@ -845,7 +876,9 @@ export default function LiveMeeting({
             border: `1px solid ${C.borderAccent}`,
           }}
         >
-          <div style={{ fontSize: 9, color: C.text3, letterSpacing: '0.06em' }}>AKTUELLE PHASE</div>
+          <div style={{ fontSize: 9, color: C.text3, letterSpacing: '0.06em' }}>
+            PHASE {currentPhaseIndex + 1}/{meeting.phases.length}
+          </div>
           <div style={{ fontSize: 13, fontWeight: 500, color: C.accentBright, marginTop: 1 }}>
             {currentPhase?.name ?? '—'}
           </div>
@@ -921,7 +954,12 @@ export default function LiveMeeting({
 
       {/* Main Content — Phase Tracker + Notes + Prep Reference */}
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 280px', gap: 14 }}>
-        <PhaseTracker phases={meeting.phases} elapsedSeconds={elapsed} />
+        <PhaseTracker
+          phases={meeting.phases}
+          currentPhaseIndex={currentPhaseIndex}
+          onGoToPhase={goToPhase}
+          onAdvance={advancePhase}
+        />
         <LiveNotes
           notes={notes}
           onAddNote={addNote}
