@@ -905,7 +905,7 @@ const LS_HISTORY_KEY = 'onvero_generate_history';
 function loadHistory(): SearchHistoryEntry[] {
   try {
     const raw = localStorage.getItem(LS_HISTORY_KEY);
-    if (raw) return JSON.parse(raw) as SearchHistoryEntry[];
+    if (raw) return (JSON.parse(raw) as SearchHistoryEntry[]).filter((e) => typeof e.text === 'string');
   } catch {}
   return [];
 }
@@ -967,6 +967,7 @@ export default function GeneratePage() {
 
   // Reasoning result
   const [reasoning, setReasoning] = useState<ReasoningResult | null>(null);
+  const [showReasoning, setShowReasoning] = useState(false);
 
   // Editable reasoning fields
   const [editKeywords, setEditKeywords] = useState(false);
@@ -1105,23 +1106,32 @@ export default function GeneratePage() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
+      console.log('[generate] reasoning response:', data);
 
-      if (data.success) {
-        setReasoning(data);
-        setRKeywords(data.apollo_keywords || []);
-        setRIndustries(data.apollo_industries || []);
-        setRTitles(data.person_titles || []);
-        setRLocations(data.person_locations || []);
-        setREmployeeMin(data.refined_employee_min || 1);
-        setREmployeeMax(data.refined_employee_max || 10000);
-        setStep(2);
-      } else {
-        showToast('KI-Analyse fehlgeschlagen', 'error');
-        setStep(0);
-      }
+      setReasoning(data);
+      setRKeywords(data.apollo_keywords || []);
+      setRIndustries(data.apollo_industries || []);
+      setRTitles(data.person_titles || []);
+      setRLocations(data.person_locations || []);
+      setREmployeeMin(data.refined_employee_min || 1);
+      setREmployeeMax(data.refined_employee_max || 10000);
+      setStep(2);
     } catch {
-      showToast('Netzwerkfehler', 'error');
-      setStep(0);
+      // Fallback: use freetext as base so the user can still proceed
+      setReasoning({
+        success: true,
+        reasoning: `Suche basierend auf: "${form.freetext.slice(0, 100)}"`,
+        strategy: 'Standard Apollo-Suche mit deinen Kriterien.',
+        apollo_keywords: [],
+        apollo_industries: [],
+        person_titles: [],
+        person_locations: [],
+        refined_employee_min: 1,
+        refined_employee_max: 10000,
+        confidence: 50,
+        why_contact_even_if_low_score: 'Auch Leads mit niedrigerem Score können wertvolle Kontakte sein.',
+      });
+      setStep(2);
     }
   }, [form, tenantId]);
 
@@ -1134,7 +1144,7 @@ export default function GeneratePage() {
 
     // Update execution params if edited
     try {
-      await fetch(`/api/generate/execution/${reasoning.execution_id}`, {
+      const upd = await fetch(`/api/generate/execution/${reasoning.execution_id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1142,12 +1152,22 @@ export default function GeneratePage() {
           apollo_industries: rIndustries,
           person_titles: rTitles,
           person_locations: rLocations,
-          employee_min: rEmployeeMin,
-          employee_max: rEmployeeMax,
+          refined_employee_min: rEmployeeMin,
+          refined_employee_max: rEmployeeMax,
           lead_count: leadCount,
         }),
       });
-    } catch {}
+      if (!upd.ok) {
+        const err = await upd.json().catch(() => ({}));
+        console.error('Execution update failed:', err);
+        showToast(err.error ?? 'Anpassungen konnten nicht gespeichert werden', 'error');
+        return;
+      }
+    } catch (e) {
+      console.error('Execution update error:', e);
+      showToast('Netzwerkfehler beim Speichern', 'error');
+      return;
+    }
 
     setStep(3);
     setGenProgress(0);
@@ -1156,15 +1176,37 @@ export default function GeneratePage() {
     setGenStep(0);
 
     try {
-      await fetch('/api/generate/trigger', {
+      const triggerRes = await fetch('/api/generate/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ execution_id: reasoning.execution_id }),
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          profile_id: 'default',
+          execution_id: reasoning.execution_id,
+          lead_count: leadCount,
+          on_demand: {
+            execution_id: reasoning.execution_id,
+            apollo_industries: rIndustries,
+            apollo_keywords: rKeywords,
+            person_titles: rTitles,
+            person_locations: rLocations,
+            refined_employee_min: rEmployeeMin,
+            refined_employee_max: rEmployeeMax,
+            lead_count: leadCount,
+          },
+        }),
       });
+      if (!triggerRes.ok) {
+        const err = await triggerRes.json().catch(() => ({}));
+        console.error('Trigger failed:', err);
+        showToast(err.error ?? 'Workflow konnte nicht gestartet werden', 'error');
+        setStep(2);
+        return;
+      }
     } catch {
       // Generation continues in background even if request times out
     }
-  }, [reasoning, rKeywords, rIndustries, rTitles, rLocations, rEmployeeMin, rEmployeeMax, leadCount]);
+  }, [reasoning, rKeywords, rIndustries, rTitles, rLocations, rEmployeeMin, rEmployeeMax, leadCount, tenantId]);
 
   // ─── Save profile ─────────────────────────────────────────────────────
   const handleSaveProfile = useCallback(async () => {
@@ -1970,10 +2012,32 @@ export default function GeneratePage() {
                 KI-Analyse
               </h3>
 
-              {/* Reasoning text */}
-              <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.7, marginBottom: 16, whiteSpace: 'pre-wrap' }}>
-                {reasoning.reasoning}
-              </div>
+              {/* Reasoning text (collapsible) */}
+              <button
+                onClick={() => setShowReasoning(!showReasoning)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  marginBottom: showReasoning ? 8 : 16,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 11,
+                  color: C.text3,
+                  fontFamily: 'inherit',
+                  letterSpacing: '0.03em',
+                }}
+              >
+                <span style={{ transform: showReasoning ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block', fontSize: 9 }}>▶</span>
+                Reasoning
+              </button>
+              {showReasoning && (
+                <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.65, marginBottom: 16, whiteSpace: 'pre-wrap' }}>
+                  {reasoning.reasoning}
+                </div>
+              )}
 
               {/* Strategy */}
               <div
@@ -2170,47 +2234,6 @@ export default function GeneratePage() {
                 )}
               </EditableSection>
 
-              {/* Confidence */}
-              <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}
-                >
-                  <span style={labelStyle}>Konfidenz</span>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color:
-                        reasoning.confidence >= 0.8 ? C.success : reasoning.confidence >= 0.5 ? C.warning : C.danger,
-                    }}
-                  >
-                    {Math.round(reasoning.confidence * 100)}%
-                  </span>
-                </div>
-                <div
-                  style={{
-                    height: 6,
-                    borderRadius: 3,
-                    background: C.surface2,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${reasoning.confidence * 100}%`,
-                      borderRadius: 3,
-                      background:
-                        reasoning.confidence >= 0.8
-                          ? C.success
-                          : reasoning.confidence >= 0.5
-                            ? `linear-gradient(90deg, ${C.warning}, ${C.success})`
-                            : C.danger,
-                      transition: 'width 1s cubic-bezier(0.22, 1, 0.36, 1)',
-                    }}
-                  />
-                </div>
-              </div>
 
               {/* Low score info */}
               {reasoning.why_contact_even_if_low_score && (

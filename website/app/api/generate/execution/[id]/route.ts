@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Verify the user belongs to the tenant of this execution row
     const { data: row, error: fetchErr } = await client
-      .from('lead_run_execution')
+      .from('lead_run_executions')
       .select('id, tenant_id')
       .eq('id', id)
       .maybeSingle();
@@ -71,7 +71,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const { data, error } = await client
-      .from('lead_run_execution')
+      .from('lead_run_executions')
       .update(update)
       .eq('id', id)
       .select()
