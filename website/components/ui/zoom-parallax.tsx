@@ -2,6 +2,7 @@
 
 import { useScroll, useTransform, motion } from 'framer-motion';
 import { useRef } from 'react';
+import Image from 'next/image';
 import { Model3D } from '@/components/ui/model-3d';
 
 interface Image {
@@ -68,16 +69,14 @@ export function ZoomParallax({ images }: ZoomParallaxProps) {
                 {index === 0 ? (
                   <Model3D />
                 ) : img ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={img.src}
                     alt={img.alt || `Parallax image ${index + 1}`}
+                    fill
+                    sizes="20vw"
                     style={{
-                      width: '100%',
-                      height: '100%',
                       objectFit: 'cover',
                       borderRadius: '0.75rem',
-                      display: 'block',
                     }}
                   />
                 ) : null}

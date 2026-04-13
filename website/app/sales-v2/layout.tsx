@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, StatusBar } from './_shared';
-import { CommandPalette, openCommandPalette } from './_command-palette';
-import { AIChatWidget } from './_ai-chat';
-import { OnboardingTour } from './_onboarding';
+import { openCommandPalette } from './_command-palette';
 import { useLeads } from './_use-leads';
 import { useActivities, formatActivityTime, getActivityStyle } from './_activities';
+
+const CommandPalette = dynamic(() => import('./_command-palette').then((m) => m.CommandPalette), { ssr: false });
+const AIChatWidget = dynamic(() => import('./_ai-chat').then((m) => m.AIChatWidget), { ssr: false });
+const OnboardingTour = dynamic(() => import('./_onboarding').then((m) => m.OnboardingTour), { ssr: false });
 
 // ─── NAV CONFIG ──────────────────────────────────────────────────────────────
 
@@ -707,15 +710,22 @@ function Sidebar() {
   const pathname = usePathname();
   const { leads } = useLeads();
 
-  // Compute counts from live data
-  const neuHeute = leads.filter((l) => {
-    const created = new Date(l.createdAt.replace(/(\d+)\. (\w+) (\d+)/, '$2 $1, $3'));
-    return created.toDateString() === new Date().toDateString();
-  }).length;
-  const qualifiziert = leads.filter((l) => l.status === 'Qualifiziert').length;
-  const inKontakt = leads.filter((l) => l.status === 'In Kontakt').length;
-  const mitEmail = leads.filter((l) => l.emailDraftBody).length;
-  const NAV = buildNav(leads.length, neuHeute, qualifiziert, inKontakt, mitEmail);
+  // Compute counts from live data — memoized to avoid re-filtering on every render
+  const { neuHeute, qualifiziert, inKontakt, mitEmail } = useMemo(() => {
+    const todayStr = new Date().toDateString();
+    let neu = 0, qual = 0, kontakt = 0, email = 0;
+    for (const l of leads) {
+      if (l.status === 'Qualifiziert') qual++;
+      if (l.status === 'In Kontakt') kontakt++;
+      if (l.emailDraftBody) email++;
+      try {
+        const created = new Date(l.createdAt.replace(/(\d+)\. (\w+) (\d+)/, '$2 $1, $3'));
+        if (created.toDateString() === todayStr) neu++;
+      } catch { /* skip invalid dates */ }
+    }
+    return { neuHeute: neu, qualifiziert: qual, inKontakt: kontakt, mitEmail: email };
+  }, [leads]);
+  const NAV = useMemo(() => buildNav(leads.length, neuHeute, qualifiziert, inKontakt, mitEmail), [leads.length, neuHeute, qualifiziert, inKontakt, mitEmail]);
 
   function isActive(href: string) {
     if (href === '/sales-v2') return pathname === '/sales-v2';

@@ -87,6 +87,14 @@ export function BusinessOS() {
     const panel   = panelRef.current;
     if (!wrapper || !panel) return;
     let rafId = 0;
+    let isVisible = false;
+
+    // Only run scroll-driven animation when section is near the viewport
+    const io = new IntersectionObserver(
+      ([entry]) => { isVisible = entry.isIntersecting; if (isVisible) onScroll(); },
+      { rootMargin: "200px" },
+    );
+    io.observe(wrapper);
 
     const tick = () => {
       rafId = 0;
@@ -155,7 +163,7 @@ export function BusinessOS() {
     };
 
     const onScroll = () => {
-      if (!rafId) rafId = requestAnimationFrame(tick);
+      if (!rafId && isVisible) rafId = requestAnimationFrame(tick);
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -164,6 +172,7 @@ export function BusinessOS() {
     requestAnimationFrame(tick);
 
     return () => {
+      io.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);

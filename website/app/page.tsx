@@ -1,13 +1,31 @@
+import dynamic from "next/dynamic";
 import { Navbar } from "@/components/ui/navbar";
 import { BackgroundPaths } from "@/components/ui/background-paths";
-import { CyberneticBentoGrid } from "@/components/ui/cybernetic-bento-grid";
-import { BusinessOS } from "@/components/ui/business-os";
-import { TechSection } from "@/components/ui/tech-section";
-import { TimelineSection } from "@/components/ui/timeline-section";
-import { TestimonialsSection } from "@/components/ui/testimonials-section";
-import { ChatSection } from "@/components/ui/chat-section";
-import { FooterComponent } from "@/components/ui/flickering-footer";
-import { BlogSection } from "@/components/ui/blog-section";
+
+const CyberneticBentoGrid = dynamic(() =>
+  import("@/components/ui/cybernetic-bento-grid").then((m) => m.CyberneticBentoGrid)
+);
+const BusinessOS = dynamic(() =>
+  import("@/components/ui/business-os").then((m) => m.BusinessOS)
+);
+const TechSection = dynamic(() =>
+  import("@/components/ui/tech-section").then((m) => m.TechSection)
+);
+const TimelineSection = dynamic(() =>
+  import("@/components/ui/timeline-section").then((m) => m.TimelineSection)
+);
+const TestimonialsSection = dynamic(() =>
+  import("@/components/ui/testimonials-section").then((m) => m.TestimonialsSection)
+);
+const ChatSection = dynamic(() =>
+  import("@/components/ui/chat-section").then((m) => m.ChatSection)
+);
+const FooterComponent = dynamic(() =>
+  import("@/components/ui/flickering-footer").then((m) => m.FooterComponent)
+);
+const BlogSection = dynamic(() =>
+  import("@/components/ui/blog-section").then((m) => m.BlogSection)
+);
 
 export default function Home() {
   return (

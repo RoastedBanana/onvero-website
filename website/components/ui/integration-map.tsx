@@ -118,6 +118,14 @@ export function IntegrationMap() {
     const wrapper = wrapperRef.current;
     const panel   = panelRef.current;
     if (!wrapper || !panel) return;
+    let isVisible = false;
+
+    // Only run scroll-driven animation when section is near the viewport
+    const io = new IntersectionObserver(
+      ([entry]) => { isVisible = entry.isIntersecting; if (isVisible) onScroll(); },
+      { rootMargin: "200px" },
+    );
+    io.observe(wrapper);
 
     const mobile = window.innerWidth < 768;
     if (mobile) wrapper.style.height = "200vh";
@@ -295,7 +303,7 @@ export function IntegrationMap() {
 
     };
 
-    const onScroll = () => { if (!rafId) rafId = requestAnimationFrame(tick); };
+    const onScroll = () => { if (!rafId && isVisible) rafId = requestAnimationFrame(tick); };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
     requestAnimationFrame(tick);
@@ -317,6 +325,7 @@ export function IntegrationMap() {
     onCounterScroll(); // init
 
     return () => {
+      io.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (rafId) cancelAnimationFrame(rafId);

@@ -1,9 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Navbar } from "@/components/ui/navbar";
-import { ZoomParallax } from "@/components/ui/zoom-parallax";
-import { TeamCards } from "@/components/ui/team-cards";
-import { FooterComponent } from "@/components/ui/flickering-footer";
+
+const ZoomParallax = dynamic(
+  () => import("@/components/ui/zoom-parallax").then((m) => m.ZoomParallax),
+  { ssr: false }
+);
+const TeamCards = dynamic(
+  () => import("@/components/ui/team-cards").then((m) => m.TeamCards),
+  { ssr: false }
+);
+const FooterComponent = dynamic(
+  () => import("@/components/ui/flickering-footer").then((m) => m.FooterComponent),
+  { ssr: false }
+);
 
 const IMAGES = [
   {

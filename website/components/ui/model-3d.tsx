@@ -87,6 +87,20 @@ export function Model3D() {
 
       // ── Load GLB ──────────────────────────────────────────────────────────
       let raf = 0;
+      let visible = false;
+
+      // Pause rendering when off-screen
+      const io = new IntersectionObserver(
+        ([entry]) => {
+          visible = entry.isIntersecting;
+          if (visible && !raf) raf = requestAnimationFrame(loop);
+        },
+        { rootMargin: "200px" },
+      );
+      io.observe(mount);
+
+      // eslint-disable-next-line prefer-const
+      let loop: () => void;
 
       new GLTFLoader().load(
         '/onvero-3d.glb',
@@ -118,7 +132,8 @@ export function Model3D() {
           });
 
           // ── Animation loop (started after model loads) ───────────────────
-          const loop = () => {
+          loop = () => {
+            if (!visible) { raf = 0; return; }
             currentRotationX += (targetRotationX - currentRotationX) * 0.08;
             currentRotationY += (targetRotationY - currentRotationY) * 0.08;
             model.rotation.x = currentRotationX;
@@ -134,6 +149,7 @@ export function Model3D() {
 
       cleanupFn = () => {
         cancelAnimationFrame(raf);
+        io.disconnect();
         ro.disconnect();
         mount.removeEventListener('mousemove',  onMouseMove);
         mount.removeEventListener('mouseleave', onMouseLeave);

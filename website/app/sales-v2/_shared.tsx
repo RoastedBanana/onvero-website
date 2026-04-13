@@ -1174,20 +1174,23 @@ export function EmptyState({
 // ─── PARALLAX AMBIENT BACKGROUND ─────────────────────────────────────────────
 
 export function ParallaxBackground() {
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
     function handleMove(e: MouseEvent) {
       const x = (e.clientX / window.innerWidth - 0.5) * 2;
       const y = (e.clientY / window.innerHeight - 0.5) * 2;
-      setOffset({ x, y });
+      el!.style.setProperty('--px', `${x}`);
+      el!.style.setProperty('--py', `${y}`);
     }
     window.addEventListener('mousemove', handleMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMove);
   }, []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+    <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, '--px': '0', '--py': '0' } as React.CSSProperties}>
       <div
         style={{
           position: 'absolute',
@@ -1198,8 +1201,9 @@ export function ParallaxBackground() {
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 65%)',
           filter: 'blur(40px)',
-          transform: `translate(${offset.x * 20}px, ${offset.y * 15}px)`,
+          transform: 'translate(calc(var(--px) * 20px), calc(var(--py) * 15px))',
           transition: 'transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'transform',
         }}
       />
       <div
@@ -1212,8 +1216,9 @@ export function ParallaxBackground() {
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(56,189,248,0.03) 0%, transparent 65%)',
           filter: 'blur(60px)',
-          transform: `translate(${offset.x * -15}px, ${offset.y * -10}px)`,
+          transform: 'translate(calc(var(--px) * -15px), calc(var(--py) * -10px))',
           transition: 'transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'transform',
         }}
       />
       <div
@@ -1226,8 +1231,9 @@ export function ParallaxBackground() {
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(129,140,248,0.025) 0%, transparent 60%)',
           filter: 'blur(50px)',
-          transform: `translate(${offset.x * 10}px, ${offset.y * 12}px)`,
+          transform: 'translate(calc(var(--px) * 10px), calc(var(--py) * 12px))',
           transition: 'transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
+          willChange: 'transform',
         }}
       />
     </div>

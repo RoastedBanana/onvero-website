@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   C,
@@ -351,15 +351,20 @@ function QuickActions() {
 export default function SalesV2HomePage() {
   const { leads: liveLeads, loading } = useLeads();
 
-  // Derive all data from live leads
-  const stats = getLeadStats(liveLeads);
-  const scoredLeads = liveLeads.filter((l) => l.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-  const topLeads = scoredLeads.slice(0, 5);
-  const METRIC_CARDS = buildMetrics(liveLeads);
-  const topUnanswered = liveLeads
-    .filter((l) => (l.score ?? 0) >= 60 && l.status === 'Neu' && l.emailDraftBody)
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    .slice(0, 3);
+  // Derive all data from live leads — memoized to avoid re-computing on every render
+  const { stats, topLeads, METRIC_CARDS, topUnanswered } = useMemo(() => {
+    const s = getLeadStats(liveLeads);
+    const scored = liveLeads.filter((l) => l.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    return {
+      stats: s,
+      topLeads: scored.slice(0, 5),
+      METRIC_CARDS: buildMetrics(liveLeads),
+      topUnanswered: liveLeads
+        .filter((l) => (l.score ?? 0) >= 60 && l.status === 'Neu' && l.emailDraftBody)
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+        .slice(0, 3),
+    };
+  }, [liveLeads]);
 
   // Smart notifications based on real data
   useEffect(() => {
