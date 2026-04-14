@@ -72,35 +72,7 @@ export const PHASE_TEMPLATES: Record<string, MeetingPhase[]> = {
   ],
 };
 
-// ─── MOCK SMART SUGGESTIONS ─────────────────────────────────────────────────
-
-const MOCK_SUGGESTIONS: SmartSuggestion[] = [
-  {
-    id: 'sug-1',
-    leadId: '',
-    leadName: 'Clara Wolff',
-    company: 'Silo Labs',
-    emailSnippet:
-      'Vielen Dank für die ausführliche Info! Ich hätte Interesse an einem kurzen Gespräch, um Details zu klären…',
-    suggestedType: 'Video',
-    suggestedDuration: 25,
-    reason: 'Positive Antwort auf E-Mail erkannt — Interesse an Gespräch signalisiert',
-    createdAt: new Date().toISOString(),
-    dismissed: false,
-  },
-  {
-    id: 'sug-2',
-    leadId: '',
-    leadName: 'Jonas Braun',
-    company: 'Deepmark',
-    emailSnippet: 'Klingt spannend. Können wir nächste Woche einen Termin finden? Am besten Dienstag oder Mittwoch.',
-    suggestedType: 'Video',
-    suggestedDuration: 30,
-    reason: 'Lead schlägt aktiv Termin vor — hohe Kaufbereitschaft',
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    dismissed: false,
-  },
-];
+// No mock data — suggestions come from the API (n8n auto-suggest workflow)
 
 // ─── STORAGE KEY ────────────────────────────────────────────────────────────
 
@@ -136,10 +108,10 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY);
     const meetings: Meeting[] = raw ? JSON.parse(raw) : [];
     const rawSug = localStorage.getItem(SUGGESTIONS_KEY);
-    const suggestions: SmartSuggestion[] = rawSug ? JSON.parse(rawSug) : MOCK_SUGGESTIONS;
+    const suggestions: SmartSuggestion[] = rawSug ? JSON.parse(rawSug) : [];
     _state = { meetings, suggestions };
   } catch {
-    _state = { meetings: [], suggestions: MOCK_SUGGESTIONS };
+    _state = { meetings: [], suggestions: [] };
   }
   // Fetch real data from API (non-blocking)
   fetchMeetingsFromApi();

@@ -16,90 +16,6 @@ const TYPE_STYLES: Record<string, { color: string; icon: string }> = {
   Telefon: { color: '#FBBF24', icon: ICONS.mic },
 };
 
-// ─── MOCK ARCHIVED MEETINGS ────────────────────────────────────────────────
-
-const MOCK_ARCHIVE: Meeting[] = [
-  {
-    id: 'arch-1',
-    leadId: '',
-    leadName: 'Clara Wolff',
-    company: 'Silo Labs',
-    contact: 'Clara Wolff',
-    title: 'Erstgespräch',
-    type: 'Video',
-    status: 'Abgeschlossen',
-    date: '2026-04-07',
-    time: '11:00',
-    duration: 32,
-    phases: [],
-    notes: '',
-    product: '',
-    createdAt: '2026-04-07T11:00:00Z',
-    summary:
-      'Clara sucht eine Lösung für Lead-Qualifizierung. Aktuell nutzen sie nur Excel. Budget vorhanden, Entscheidung Q2.',
-    aiInsights: ['Hohe Kaufbereitschaft erkannt', 'Budget-Signal: Q2 Entscheidung', 'Nächster Schritt: Demo anbieten'],
-  },
-  {
-    id: 'arch-2',
-    leadId: '',
-    leadName: 'Jonas Braun',
-    company: 'Deepmark',
-    contact: 'Jonas Braun',
-    title: 'Produktdemo',
-    type: 'Video',
-    status: 'Abgeschlossen',
-    date: '2026-04-05',
-    time: '14:30',
-    duration: 48,
-    phases: [],
-    notes: '',
-    product: '',
-    createdAt: '2026-04-05T14:30:00Z',
-    summary:
-      'Jonas war beeindruckt von der KI-Scoring-Funktion. Bedenken: Datenschutz und DSGVO-Konformität. Will intern abstimmen.',
-    aiInsights: ['Bedenken: DSGVO-Konformität', 'Champion identifiziert: Jonas', 'Blocker: Interne Abstimmung nötig'],
-  },
-  {
-    id: 'arch-3',
-    leadId: '',
-    leadName: 'Elena Hartmann',
-    company: 'Kairon Medical',
-    contact: 'Elena Hartmann',
-    title: 'Quarterly Review',
-    type: 'Vor Ort',
-    status: 'Abgeschlossen',
-    date: '2026-04-02',
-    time: '10:00',
-    duration: 55,
-    phases: [],
-    notes: '',
-    product: '',
-    createdAt: '2026-04-02T10:00:00Z',
-    summary: 'Bestandskunde. Zufrieden mit der Plattform, möchte Outreach-Modul testen. Upsell-Potenzial €3.000/Monat.',
-    aiInsights: ['Upsell-Potenzial: €3.000/Mo', 'Stimmung: Sehr positiv', 'Action: Outreach-Modul Demo planen'],
-  },
-  {
-    id: 'arch-4',
-    leadId: '',
-    leadName: 'Marcus Weber',
-    company: 'Stackbase GmbH',
-    contact: 'Marcus Weber',
-    title: 'Discovery Call',
-    type: 'Telefon',
-    status: 'Abgeschlossen',
-    date: '2026-03-28',
-    time: '09:00',
-    duration: 22,
-    phases: [],
-    notes: '',
-    product: '',
-    createdAt: '2026-03-28T09:00:00Z',
-    summary:
-      'Marcus interessiert sich für Automatisierung seiner Outbound-Prozesse. Aktuell manuell per Excel. Team von 5 Sales-Mitarbeitern.',
-    aiInsights: ['Pain Point: Manuelle Prozesse', 'Team-Größe: 5 Sales', 'Budget: Noch unklar'],
-  },
-];
-
 // ─── COMPONENT ──────────────────────────────────────────────────────────────
 
 export default function ArchiveView({ meetings }: { meetings: Meeting[] }) {
@@ -108,10 +24,8 @@ export default function ArchiveView({ meetings }: { meetings: Meeting[] }) {
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Combine real completed meetings with mock archive
   const allArchived = useMemo(() => {
-    const completed = meetings.filter((m) => m.status === 'Abgeschlossen');
-    return [...completed, ...MOCK_ARCHIVE];
+    return meetings.filter((m) => m.status === 'Abgeschlossen');
   }, [meetings]);
 
   const filtered = useMemo(() => {
