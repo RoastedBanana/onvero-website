@@ -191,6 +191,22 @@ function UpcomingMeetings({
   onStartLive?: (meetingId: string) => void;
 }) {
   const planned = meetings.filter((m) => m.status === 'Geplant');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+
+  const startEdit = (m: Meeting) => {
+    setEditingId(m.id);
+    setEditTitle(m.title);
+    setEditDate(m.date);
+    setEditTime(m.time);
+  };
+
+  const saveEdit = (id: string) => {
+    updateMeeting(id, { title: editTitle, date: editDate, time: editTime });
+    setEditingId(null);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -291,21 +307,103 @@ function UpcomingMeetings({
 
               {/* Meeting info */}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: C.text1, letterSpacing: '-0.01em' }}>{m.title}</div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: C.text2,
-                    marginTop: 4,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                  }}
-                >
-                  <span>{m.contact}</span>
-                  <span style={{ opacity: 0.25, fontSize: 8 }}>●</span>
-                  <span>{m.company}</span>
-                </div>
+                {editingId === m.id ? (
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        background: C.surface2,
+                        border: `1px solid ${C.borderAccent}`,
+                        color: C.text1,
+                        fontSize: 13,
+                        fontFamily: 'inherit',
+                        outline: 'none',
+                        fontWeight: 500,
+                      }}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit(m.id);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        type="date"
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                        style={{
+                          padding: '3px 6px',
+                          borderRadius: 5,
+                          background: C.surface2,
+                          border: `1px solid ${C.border}`,
+                          color: C.text1,
+                          fontSize: 11,
+                          fontFamily: 'inherit',
+                          outline: 'none',
+                          colorScheme: 'dark',
+                        }}
+                      />
+                      <input
+                        type="time"
+                        value={editTime}
+                        onChange={(e) => setEditTime(e.target.value)}
+                        style={{
+                          padding: '3px 6px',
+                          borderRadius: 5,
+                          background: C.surface2,
+                          border: `1px solid ${C.border}`,
+                          color: C.text1,
+                          fontSize: 11,
+                          fontFamily: 'inherit',
+                          outline: 'none',
+                          colorScheme: 'dark',
+                        }}
+                      />
+                      <button
+                        onClick={() => saveEdit(m.id)}
+                        style={{
+                          padding: '3px 10px',
+                          borderRadius: 5,
+                          background: C.accentGhost,
+                          border: `1px solid ${C.borderAccent}`,
+                          color: C.accent,
+                          fontSize: 10,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Speichern
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: C.text1, letterSpacing: '-0.01em' }}>
+                      {m.title}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: C.text2,
+                        marginTop: 4,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                      }}
+                    >
+                      <span>{m.contact}</span>
+                      <span style={{ opacity: 0.25, fontSize: 8 }}>●</span>
+                      <span>{m.company}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Duration */}
@@ -376,6 +474,30 @@ function UpcomingMeetings({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  startEdit(m);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 4,
+                  display: 'flex',
+                  opacity: 0.3,
+                  transition: 'opacity 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '0.3';
+                }}
+                title="Bearbeiten"
+              >
+                <SvgIcon d={ICONS.settings} size={13} color={C.text2} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
                   deleteMeeting(m.id);
                 }}
                 style={{
@@ -393,7 +515,7 @@ function UpcomingMeetings({
                 onMouseLeave={(e) => {
                   e.currentTarget.style.opacity = '0.3';
                 }}
-                title="Meeting löschen"
+                title="Löschen"
               >
                 <SvgIcon d={ICONS.x} size={14} color={C.danger} />
               </button>

@@ -736,7 +736,32 @@ export default function PostMeeting({
                     fontFamily: 'inherit',
                     boxShadow: '0 2px 12px rgba(99,102,241,0.3)',
                   }}
-                  onClick={() => showToast('E-Mail wird gesendet…', 'info')}
+                  onClick={async () => {
+                    if (!lead?.email) {
+                      showToast('Keine E-Mail-Adresse vorhanden', 'error');
+                      return;
+                    }
+                    showToast('E-Mail wird gesendet…', 'info');
+                    try {
+                      const res = await fetch('/api/leads/send-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          to: lead.email,
+                          subject: `Follow-Up: ${meeting.title}`,
+                          text: followUpText,
+                          lead_id: lead.id,
+                        }),
+                      });
+                      if (res.ok) {
+                        showToast('E-Mail gesendet!', 'success');
+                      } else {
+                        showToast('E-Mail konnte nicht gesendet werden', 'error');
+                      }
+                    } catch {
+                      showToast('Fehler beim Senden', 'error');
+                    }
+                  }}
                 >
                   <SvgIcon d={ICONS.mail} size={13} color="#fff" />
                   Jetzt senden
