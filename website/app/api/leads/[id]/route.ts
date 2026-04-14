@@ -49,10 +49,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     if (leadRes.error) {
       console.error('[leads/[id]] supabase error:', leadRes.error);
-      return NextResponse.json(
-        { lead: null, activities: [], error: leadRes.error.message },
-        { status: 500 },
-      );
+      return NextResponse.json({ lead: null, activities: [], error: leadRes.error.message }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -82,14 +79,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  await client.from('lead_activities').insert({
-    lead_id: id,
-    tenant_id: tenantId,
-    type: 'status_change',
-    title: `Status geandert zu: ${body.status}`,
-    content: 'Manuell über Analytics Dashboard geaendert',
-    metadata: { new_status: body.status, changed_via: 'analytics_dashboard' },
-  });
+  // Only log activity if explicitly requested (skip_activity_log not set)
+  // The sales-v2 frontend logs activities itself, so API should not double-log
+  if (body.status && body._log_activity) {
+    await client.from('lead_activities').insert({
+      lead_id: id,
+      tenant_id: tenantId,
+      type: 'status_change',
+      title: `Status geändert: ${body.status}`,
+      content: '',
+      metadata: { new_status: body.status },
+    });
+  }
 
   return NextResponse.json({ lead: data });
 }

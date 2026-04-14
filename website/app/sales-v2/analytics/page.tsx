@@ -9,7 +9,6 @@ import {
   MetricCard,
   ICONS,
   Breadcrumbs,
-  ActivityHeatmap,
   ProgressRing,
   Sparkline,
   showToast,
@@ -17,7 +16,7 @@ import {
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'leads' | 'activity';
+type Tab = 'overview' | 'leads' | 'meetings' | 'activity';
 
 interface LeadsData {
   total: number;
@@ -761,20 +760,40 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
           )}
         </Panel>
 
-        {/* Activity Heatmap */}
-        <Panel title="Aktivität (12 Wochen)" icon={ICONS.clock} color="#A78BFA" delay={0.35}>
-          <ActivityHeatmap weeks={16} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
-            <span style={{ fontSize: 10, color: C.text3 }}>Wenig</span>
-            <div style={{ display: 'flex', gap: 3 }}>
-              {['rgba(255,255,255,0.03)', 'rgba(99,102,241,0.1)', 'rgba(99,102,241,0.25)', C.accentDim, C.accent].map(
-                (c, i) => (
-                  <div key={i} style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
-                )
-              )}
+        {/* Weekly Activity — clearer than heatmap */}
+        <Panel title="Wöchentliche Aktivität" icon={ICONS.clock} color="#A78BFA" delay={0.35}>
+          {trendData.trend.length > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
+              {trendData.trend.slice(-12).map((week, i) => {
+                const max = Math.max(...trendData.trend.map((w) => w.total), 1);
+                const pct = (week.total / max) * 100;
+                return (
+                  <div
+                    key={i}
+                    style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
+                  >
+                    <span
+                      style={{ fontSize: 9, fontFamily: 'ui-monospace, SFMono-Regular, monospace', color: C.text3 }}
+                    >
+                      {week.total}
+                    </span>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: `${Math.max(pct, 4)}%`,
+                        borderRadius: 3,
+                        background: `linear-gradient(180deg, ${C.accent}, ${C.accentDim})`,
+                        transition: 'height 0.5s ease',
+                      }}
+                    />
+                    <span style={{ fontSize: 8, color: C.text3 }}>{week.label?.slice(0, 5) ?? `W${i + 1}`}</span>
+                  </div>
+                );
+              })}
             </div>
-            <span style={{ fontSize: 10, color: C.text3 }}>Viel</span>
-          </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '16px 0', color: C.text3, fontSize: 11 }}>Noch keine Daten</div>
+          )}
         </Panel>
       </div>
 
@@ -1046,8 +1065,49 @@ function ActivityTab({ activityData, trendData }: { activityData: ActivityData; 
       </Panel>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Panel title="Heatmap" icon={ICONS.chart} color="#818CF8" delay={0.15}>
-          <ActivityHeatmap weeks={8} />
+        <Panel title="Aktivitäts-Typen" icon={ICONS.chart} color="#818CF8" delay={0.15}>
+          {activityData && Object.entries(activityData.typeCounts).length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Object.entries(activityData.typeCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([type, count]) => {
+                  const max = Math.max(...Object.values(activityData.typeCounts));
+                  return (
+                    <div key={type} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: getActivityColor(type),
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span style={{ fontSize: 11, color: C.text2, minWidth: 90 }}>{type}</span>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.04)' }}>
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${(count / max) * 100}%`,
+                            borderRadius: 3,
+                            background: getActivityColor(type),
+                          }}
+                        />
+                      </div>
+                      <span
+                        style={{ fontSize: 11, fontFamily: 'ui-monospace, SFMono-Regular, monospace', color: C.text2 }}
+                      >
+                        {count}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '16px 0', color: C.text3, fontSize: 11 }}>
+              Noch keine Aktivitäten
+            </div>
+          )}
         </Panel>
         <Panel title="Tagesverteilung" icon={ICONS.clock} color="#38BDF8" delay={0.2}>
           {dailyBarData.length > 0 ? (
@@ -1067,6 +1127,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'overview', label: 'Übersicht', icon: ICONS.home },
     { id: 'leads', label: 'Leads', icon: ICONS.users },
+    { id: 'meetings', label: 'Meetings', icon: ICONS.mic },
     { id: 'activity', label: 'Aktivität', icon: ICONS.clock },
   ];
 
@@ -1240,6 +1301,310 @@ const PERIODS = [
 
 type Period = (typeof PERIODS)[number]['value'];
 
+// ─── MEETINGS ANALYTICS TAB ────────────────────────────────────────────────
+
+function MeetingsAnalyticsTab() {
+  const [data, setData] = useState<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    fetch('/api/meetings/analytics')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.analytics) setData(d.analytics);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!data) {
+    return (
+      <div
+        style={{
+          padding: '40px 20px',
+          textAlign: 'center',
+          borderRadius: 12,
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+        }}
+      >
+        <SvgIcon d={ICONS.mic} size={28} color={C.text3} />
+        <p style={{ fontSize: 13, color: C.text3, marginTop: 12 }}>Lade Meeting-Analytics…</p>
+      </div>
+    );
+  }
+
+  const coaching = (data.coachingAvg as Record<string, number>) ?? {};
+  const sentiments = (data.sentiments as { positive: number; neutral: number; negative: number }) ?? {
+    positive: 0,
+    neutral: 0,
+    negative: 0,
+  };
+  const talkRatio = data.talkRatioUser as number | null;
+  const patterns = (data.patterns as { word: string; count: number }[]) ?? [];
+  const insights = (data.recentInsights as string[]) ?? [];
+  const winLoss = (data.winLoss as { won: number; lost: number; pending: number }) ?? { won: 0, lost: 0, pending: 0 };
+
+  const coachingMeta: Record<string, { label: string; color: string }> = {
+    gespraechsanteil: { label: 'Gesprächsanteil', color: '#FBBF24' },
+    fragetechnik: { label: 'Fragetechnik', color: '#34D399' },
+    einwandbehandlung: { label: 'Einwandbehandlung', color: '#F87171' },
+    closing: { label: 'Closing', color: '#818CF8' },
+    bedarfsanalyse: { label: 'Bedarfsanalyse', color: '#38BDF8' },
+    follow_up: { label: 'Follow-Up', color: '#22D3EE' },
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* KPI Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        {[
+          { label: 'MEETINGS', value: String(data.totalMeetings ?? 0), color: '#818CF8' },
+          {
+            label: 'Ø DAUER',
+            value: (data.avgDuration as number) > 0 ? `${data.avgDuration}m` : '—',
+            color: '#38BDF8',
+          },
+          { label: 'ANALYSEN', value: String(data.analysisCount ?? 0), color: '#A78BFA' },
+          {
+            label: 'WIN RATE',
+            value:
+              winLoss.won + winLoss.lost > 0
+                ? `${Math.round((winLoss.won / (winLoss.won + winLoss.lost)) * 100)}%`
+                : '—',
+            color: '#34D399',
+          },
+        ].map((s, i) => (
+          <div
+            key={s.label}
+            className="s-card"
+            style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 12,
+              padding: '16px 18px',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 2px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03)',
+              animation: 'scaleIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both',
+              animationDelay: `${i * 0.06}s`,
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 1,
+                background: `linear-gradient(90deg, transparent, ${s.color}40, transparent)`,
+              }}
+            />
+            <div style={{ fontSize: 10, letterSpacing: '0.08em', color: C.text3, marginBottom: 8, fontWeight: 500 }}>
+              {s.label}
+            </div>
+            <span
+              style={{
+                fontSize: 24,
+                fontWeight: 600,
+                color: s.color,
+                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                letterSpacing: '-0.03em',
+                textShadow: `0 0 25px ${s.color}40`,
+              }}
+            >
+              {s.value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Two columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        {/* Coaching */}
+        <Panel title="Coaching Scores" icon={ICONS.spark} color={C.accent} delay={0.1}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {Object.entries(coachingMeta).map(([key, meta]) => {
+              const score = coaching[key] ?? 0;
+              return (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, color: C.text2, minWidth: 110 }}>{meta.label}</span>
+                  <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.04)' }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${score}%`,
+                        borderRadius: 3,
+                        background: `linear-gradient(90deg, ${meta.color}80, ${meta.color})`,
+                        transition: 'width 0.8s ease',
+                      }}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                      color: score >= 75 ? '#34D399' : score >= 60 ? '#FBBF24' : score > 0 ? '#F87171' : C.text3,
+                      minWidth: 28,
+                    }}
+                  >
+                    {score > 0 ? score : '—'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
+
+        {/* Win/Loss + Sentiment */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Panel title="Deal-Ergebnis" icon={ICONS.trending} color="#34D399" delay={0.15}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[
+                { label: 'Gewonnen', value: winLoss.won, color: '#34D399' },
+                { label: 'Verloren', value: winLoss.lost, color: '#F87171' },
+                { label: 'Offen', value: winLoss.pending, color: '#FBBF24' },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    padding: '12px 8px',
+                    borderRadius: 9,
+                    background: `${s.color}06`,
+                    border: `1px solid ${s.color}12`,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 700,
+                      fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                      color: s.color,
+                    }}
+                  >
+                    {s.value}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Gesprächsstimmung" icon={ICONS.chat} color="#38BDF8" delay={0.2}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[
+                { label: 'Positiv', value: sentiments.positive, color: '#34D399' },
+                { label: 'Neutral', value: sentiments.neutral, color: '#FBBF24' },
+                { label: 'Negativ', value: sentiments.negative, color: '#F87171' },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    padding: '10px 8px',
+                    borderRadius: 8,
+                    background: `${s.color}06`,
+                    border: `1px solid ${s.color}12`,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                      color: s.color,
+                    }}
+                  >
+                    {s.value}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          {/* Talk Ratio */}
+          {talkRatio !== null && (
+            <Panel title="Talk Ratio" icon={ICONS.mic} color="#FBBF24" delay={0.25}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ flex: 1, height: 16, borderRadius: 4, overflow: 'hidden', display: 'flex' }}>
+                  <div
+                    style={{
+                      width: `${talkRatio}%`,
+                      height: '100%',
+                      background: `linear-gradient(90deg, ${C.accentDim}, ${C.accent})`,
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: `${100 - talkRatio}%`,
+                      height: '100%',
+                      background: 'linear-gradient(90deg, #34D39980, #34D399)',
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, monospace', color: C.text2 }}>
+                  {talkRatio}% / {100 - talkRatio}%
+                </span>
+              </div>
+              <div style={{ fontSize: 10, color: C.text3, marginTop: 6 }}>Du / Kunde</div>
+            </Panel>
+          )}
+        </div>
+      </div>
+
+      {/* Insights + Patterns */}
+      {(insights.length > 0 || patterns.length > 0) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          {insights.length > 0 && (
+            <Panel title="KI-Erkenntnisse" icon={ICONS.spark} color={C.accent} delay={0.3}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {insights.slice(0, 8).map((ins, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      gap: 8,
+                      padding: '6px 8px',
+                      borderRadius: 6,
+                      background: 'rgba(99,102,241,0.04)',
+                    }}
+                  >
+                    <SvgIcon d={ICONS.spark} size={10} color={C.accent} />
+                    <span style={{ fontSize: 11, color: C.text2, lineHeight: 1.4 }}>{ins}</span>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          )}
+          {patterns.length > 0 && (
+            <Panel title="Häufige Themen" icon={ICONS.target} color="#FBBF24" delay={0.35}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {patterns.map((p) => (
+                  <div
+                    key={p.word}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: 7,
+                      background: 'rgba(251,191,36,0.06)',
+                      border: '1px solid rgba(251,191,36,0.12)',
+                    }}
+                  >
+                    <span style={{ fontSize: 12, color: '#FBBF24', fontWeight: 500 }}>{p.word}</span>
+                    <span style={{ fontSize: 10, color: C.text3, marginLeft: 6 }}>×{p.count}</span>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [tab, setTab] = useState<Tab>('overview');
   const [period, setPeriod] = useState<Period>('30d');
@@ -1311,6 +1676,7 @@ export default function AnalyticsPage() {
         <div key={tab} className="tab-content-enter">
           {tab === 'overview' && <OverviewTab leadsData={leadsData} trendData={trendData} />}
           {tab === 'leads' && <LeadsTab leadsData={leadsData} trendData={trendData} />}
+          {tab === 'meetings' && <MeetingsAnalyticsTab />}
           {tab === 'activity' && <ActivityTab activityData={activityData} trendData={trendData} />}
         </div>
       )}
