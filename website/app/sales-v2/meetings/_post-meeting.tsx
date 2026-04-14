@@ -149,6 +149,8 @@ export default function PostMeeting({
   const [winLoss, setWinLoss] = useState<WinLoss>(null);
   const [actions, setActions] = useState<ActionItem[]>(generateMockActions(meeting));
   const [followUpText, setFollowUpText] = useState(generateFollowUpDraft(meeting, lead));
+  const [emailTo, setEmailTo] = useState(lead?.email ?? '');
+  const [emailSubject, setEmailSubject] = useState(`Follow-Up: ${meeting.title}`);
   const [transcribing, setTranscribing] = useState(false);
   const [transcript, setTranscript] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -689,6 +691,47 @@ export default function PostMeeting({
                 FOLLOW-UP E-MAIL ENTWURF
               </span>
             </div>
+
+            {/* Editable recipient + subject */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, color: C.text3, minWidth: 32 }}>An:</span>
+                <input
+                  value={emailTo}
+                  onChange={(e) => setEmailTo(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '7px 10px',
+                    borderRadius: 7,
+                    background: C.surface2,
+                    border: `1px solid ${C.border}`,
+                    color: C.text1,
+                    fontSize: 12,
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, color: C.text3, minWidth: 32 }}>Betreff:</span>
+                <input
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '7px 10px',
+                    borderRadius: 7,
+                    background: C.surface2,
+                    border: `1px solid ${C.border}`,
+                    color: C.text1,
+                    fontSize: 12,
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
             <textarea
               value={followUpText}
               onChange={(e) => setFollowUpText(e.target.value)}
@@ -737,8 +780,8 @@ export default function PostMeeting({
                     boxShadow: '0 2px 12px rgba(99,102,241,0.3)',
                   }}
                   onClick={async () => {
-                    if (!lead?.email) {
-                      showToast('Keine E-Mail-Adresse vorhanden', 'error');
+                    if (!emailTo.trim()) {
+                      showToast('Bitte E-Mail-Adresse eingeben', 'error');
                       return;
                     }
                     showToast('E-Mail wird gesendet…', 'info');
@@ -747,10 +790,10 @@ export default function PostMeeting({
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                          to: lead.email,
-                          subject: `Follow-Up: ${meeting.title}`,
+                          to: emailTo.trim(),
+                          subject: emailSubject,
                           text: followUpText,
-                          lead_id: lead.id,
+                          lead_id: lead?.id,
                         }),
                       });
                       if (res.ok) {
