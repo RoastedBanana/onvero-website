@@ -958,17 +958,69 @@ export default function CalendarView() {
         </div>
       </div>
 
-      {/* Today widget + calendar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 14 }}>
-        <div>
-          {/* Add event inline */}
-          {addingDate && (
-            <div style={{ marginBottom: 12 }}>
-              <AddEventInline date={addingDate} onAdd={handleAddEvent} onCancel={() => setAddingDate(null)} />
-            </div>
-          )}
+      {/* Quick stats bar */}
+      <div style={{ display: 'flex', gap: 10 }}>
+        {[
+          {
+            label: 'Diese Woche',
+            value: String(
+              events.filter((e) => {
+                const d = new Date(e.date);
+                const m = getMonday(new Date());
+                return d >= m && d <= new Date(m.getFullYear(), m.getMonth(), m.getDate() + 6);
+              }).length
+            ),
+            color: '#818CF8',
+          },
+          {
+            label: 'Heute',
+            value: String(events.filter((e) => e.date === dateStr(new Date())).length),
+            color: '#34D399',
+          },
+          {
+            label: 'Follow-Ups',
+            value: String(events.filter((e) => e.type === 'follow_up' && !e.completed).length),
+            color: '#38BDF8',
+          },
+          { label: 'Abgeschlossen', value: String(events.filter((e) => e.completed).length), color: '#A78BFA' },
+        ].map((s) => (
+          <div
+            key={s.label}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 14px',
+              borderRadius: 9,
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                color: s.color,
+              }}
+            >
+              {s.value}
+            </span>
+            <span style={{ fontSize: 11, color: C.text3 }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
 
-          {/* Calendar view */}
+      {/* Today widget as horizontal bar */}
+      <TodayWidget events={events} />
+
+      {/* Add event inline */}
+      {addingDate && <AddEventInline date={addingDate} onAdd={handleAddEvent} onCancel={() => setAddingDate(null)} />}
+
+      {/* Calendar — full width */}
+      <div style={{ display: 'grid', gridTemplateColumns: selectedEvent ? '1fr 280px' : '1fr', gap: 14 }}>
+        <div>
           {view === 'month' && (
             <MonthView
               year={currentDate.getFullYear()}
@@ -991,23 +1043,20 @@ export default function CalendarView() {
           )}
         </div>
 
-        {/* Sidebar: Today + selected event */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <TodayWidget events={events} />
-
-          {/* Selected event detail */}
-          {selectedEvent && (
+        {/* Selected event sidebar — only when clicked */}
+        {selectedEvent && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div
               style={{
                 background: C.surface,
                 border: `1px solid ${selectedEvent.color}20`,
                 borderRadius: 12,
-                padding: '16px 18px',
+                padding: '18px 20px',
                 boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
                 animation: 'fadeInUp 0.2s ease both',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span style={{ fontSize: 10, fontWeight: 600, color: selectedEvent.color, letterSpacing: '0.06em' }}>
                   {(TYPE_LABELS[selectedEvent.type] ?? selectedEvent.type).toUpperCase()}
                 </span>
@@ -1018,64 +1067,80 @@ export default function CalendarView() {
                   <SvgIcon d={ICONS.x} size={12} color={C.text3} />
                 </button>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: C.text1, marginBottom: 6 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: C.text1, marginBottom: 8 }}>
                 {selectedEvent.title}
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 11, color: C.text2 }}>
-                <span>
-                  {new Date(selectedEvent.date).toLocaleDateString('de-DE', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </span>
-                {selectedEvent.time && <span>· {selectedEvent.time} Uhr</span>}
-                <span>· {selectedEvent.duration} min</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  {
+                    icon: ICONS.calendar,
+                    value: new Date(selectedEvent.date).toLocaleDateString('de-DE', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    }),
+                  },
+                  selectedEvent.time
+                    ? { icon: ICONS.clock, value: `${selectedEvent.time} Uhr · ${selectedEvent.duration} min` }
+                    : null,
+                  selectedEvent.meetingType ? { icon: ICONS.mic, value: selectedEvent.meetingType } : null,
+                  selectedEvent.winLoss === 'won' ? { icon: ICONS.check, value: 'Deal gewonnen' } : null,
+                  selectedEvent.winLoss === 'lost' ? { icon: ICONS.x, value: 'Deal verloren' } : null,
+                ]
+                  .filter(Boolean)
+                  .map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <SvgIcon d={(item as { icon: string }).icon} size={12} color={C.text3} />
+                      <span style={{ fontSize: 12, color: C.text2 }}>{(item as { value: string }).value}</span>
+                    </div>
+                  ))}
               </div>
               {selectedEvent.meetingId && (
-                <a
-                  href={`/sales-v2/meetings`}
+                <button
+                  onClick={() => setSelectedEvent(null)}
+                  className="s-primary"
                   style={{
-                    display: 'inline-flex',
+                    width: '100%',
+                    marginTop: 14,
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
-                    marginTop: 10,
-                    fontSize: 11,
-                    color: C.accent,
-                    textDecoration: 'none',
+                    justifyContent: 'center',
+                    gap: 6,
+                    padding: '9px 16px',
+                    borderRadius: 9,
+                    background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
                   }}
                 >
-                  <SvgIcon d={ICONS.chevRight} size={10} color={C.accent} />
-                  Zum Meeting
-                </a>
+                  <SvgIcon d={ICONS.chevRight} size={11} color="#fff" />
+                  Meeting öffnen
+                </button>
               )}
             </div>
-          )}
-
-          {/* Legend */}
-          <div
-            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: '14px 16px' }}
-          >
-            <div style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.06em', marginBottom: 8 }}>
-              LEGENDE
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {[
-                { color: '#818CF8', label: 'Video Meeting' },
-                { color: '#FBBF24', label: 'Telefon' },
-                { color: '#34D399', label: 'Vor Ort / Gewonnen' },
-                { color: '#F87171', label: 'Verloren' },
-                { color: '#38BDF8', label: 'Follow-Up' },
-                { color: '#A78BFA', label: 'Manueller Eintrag' },
-              ].map((l) => (
-                <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: 2, background: l.color }} />
-                  <span style={{ fontSize: 11, color: C.text2 }}>{l.label}</span>
-                </div>
-              ))}
-            </div>
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* Legend — compact horizontal */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', padding: '8px 0' }}>
+        {[
+          { color: '#818CF8', label: 'Video' },
+          { color: '#FBBF24', label: 'Telefon' },
+          { color: '#34D399', label: 'Vor Ort' },
+          { color: '#F87171', label: 'Verloren' },
+          { color: '#38BDF8', label: 'Follow-Up' },
+          { color: '#A78BFA', label: 'Manuell' },
+        ].map((l) => (
+          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: 6, height: 6, borderRadius: 2, background: l.color }} />
+            <span style={{ fontSize: 10, color: C.text3 }}>{l.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

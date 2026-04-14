@@ -1,7 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { C, SvgIcon, PageHeader, PrimaryButton, GhostButton, ICONS, Breadcrumbs, GlowButton } from '../_shared';
+import {
+  C,
+  SvgIcon,
+  PageHeader,
+  PrimaryButton,
+  GhostButton,
+  ICONS,
+  Breadcrumbs,
+  GlowButton,
+  showToast,
+} from '../_shared';
 import CreateMeetingModal from './_create-meeting';
 import SmartSuggestionCard from './_smart-suggestion';
 import PrepareView from './_prepare-view';
@@ -28,29 +38,38 @@ const TYPE_STYLES: Record<string, { color: string; icon: string }> = {
 
 // ─── COMPONENTS ──────────────────────────────────────────────────────────────
 
-function MeetingStats({ meetingCount }: { meetingCount: number }) {
+function MeetingStats({ meetings }: { meetings: Meeting[] }) {
+  const planned = meetings.filter((m) => m.status === 'Geplant').length;
+  const completed = meetings.filter((m) => m.status === 'Abgeschlossen').length;
+  const withSummary = meetings.filter((m) => m.summary).length;
+  const totalInsights = meetings.reduce((s, m) => s + (m.aiInsights?.length ?? 0), 0);
+  const avgDuration =
+    completed > 0
+      ? Math.round(meetings.filter((m) => m.status === 'Abgeschlossen').reduce((s, m) => s + m.duration, 0) / completed)
+      : 0;
+
   const stats = [
     {
-      label: 'DIESE WOCHE',
-      value: String(meetingCount),
+      label: 'GEPLANT',
+      value: String(planned),
       color: '#818CF8',
       gradient: 'radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)',
     },
     {
-      label: 'DURCHSCHN. DAUER',
-      value: '38m',
+      label: 'ABGESCHLOSSEN',
+      value: String(completed),
       color: '#38BDF8',
       gradient: 'radial-gradient(ellipse at 50% 0%, rgba(56,189,248,0.12) 0%, transparent 60%)',
     },
     {
-      label: 'TRANSKRIBIERT',
-      value: '12',
+      label: 'Ø DAUER',
+      value: avgDuration > 0 ? `${avgDuration}m` : '—',
       color: '#A78BFA',
       gradient: 'radial-gradient(ellipse at 80% 0%, rgba(167,139,250,0.12) 0%, transparent 60%)',
     },
     {
-      label: 'KI-INSIGHTS',
-      value: '34',
+      label: 'KI-ANALYSEN',
+      value: String(withSummary),
       color: '#34D399',
       gradient: 'radial-gradient(ellipse at 30% 0%, rgba(52,211,153,0.10) 0%, transparent 60%)',
     },
@@ -192,11 +211,31 @@ function UpcomingMeetings({
   onDismissSuggestion: (id: string) => void;
   onStartLive?: (meetingId: string) => void;
 }) {
-  const planned = meetings.filter((m) => m.status === 'Geplant');
+  const allPlanned = meetings.filter((m) => m.status === 'Geplant');
+  const [filter, setFilter] = useState<'all' | 'today' | 'week'>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const weekEndStr = weekEnd.toISOString().slice(0, 10);
+
+  const planned = allPlanned.filter((m) => {
+    if (filter === 'today') return m.date === todayStr;
+    if (filter === 'week') return m.date >= todayStr && m.date <= weekEndStr;
+    return true;
+  });
+
+  const handleDelete = (id: string, title: string) => {
+    if (confirm(`Meeting "${title}" wirklich löschen?`)) {
+      deleteMeeting(id);
+      showToast('Meeting gelöscht', 'info');
+    }
+  };
 
   const startEdit = (m: Meeting) => {
     setEditingId(m.id);
@@ -226,21 +265,94 @@ function UpcomingMeetings({
         </div>
       )}
 
-      {/* Planned Meetings */}
+      {/* Quick Filters */}
+      {allPlanned.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {[
+            { id: 'all' as const, label: `Alle (${allPlanned.length})` },
+            { id: 'today' as const, label: `Heute (${allPlanned.filter((m) => m.date === todayStr).length})` },
+            {
+              id: 'week' as const,
+              label: `Diese Woche (${allPlanned.filter((m) => m.date >= todayStr && m.date <= weekEndStr).length})`,
+            },
+          ].map((f) => {
+            const active = filter === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className="s-tab"
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 7,
+                  border: 'none',
+                  background: active ? C.accentGhost : 'transparent',
+                  color: active ? C.accentBright : C.text3,
+                  fontSize: 11,
+                  fontWeight: active ? 500 : 400,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Empty State */}
       {planned.length === 0 && suggestions.length === 0 && (
         <div
           style={{
-            padding: '40px 20px',
+            padding: '48px 20px',
             textAlign: 'center',
             borderRadius: 12,
             background: C.surface,
             border: `1px solid ${C.border}`,
           }}
         >
-          <SvgIcon d={ICONS.calendar} size={28} color={C.text3} />
-          <p style={{ fontSize: 13, color: C.text3, marginTop: 12 }}>
-            Noch keine Meetings geplant. Erstelle dein erstes Meeting!
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 14,
+              background: C.accentGhost,
+              border: `1px solid ${C.borderAccent}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <SvgIcon d={ICONS.calendar} size={24} color={C.accent} />
+          </div>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: C.text1, margin: '0 0 6px' }}>
+            {filter !== 'all' ? 'Keine Meetings in diesem Zeitraum' : 'Noch keine Meetings geplant'}
+          </h3>
+          <p style={{ fontSize: 12, color: C.text3, margin: '0 0 16px', lineHeight: 1.6 }}>
+            {filter !== 'all'
+              ? 'Wechsle den Filter oder erstelle ein neues Meeting.'
+              : 'Erstelle dein erstes Meeting oder warte auf einen KI-Vorschlag aus deinen E-Mails.'}
           </p>
+          {filter !== 'all' && (
+            <button
+              onClick={() => setFilter('all')}
+              className="s-ghost"
+              style={{
+                padding: '7px 16px',
+                borderRadius: 8,
+                background: 'transparent',
+                border: `1px solid ${C.border}`,
+                color: C.text2,
+                fontSize: 11,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Alle anzeigen
+            </button>
+          )}
         </div>
       )}
 
@@ -500,7 +612,7 @@ function UpcomingMeetings({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteMeeting(m.id);
+                  handleDelete(m.id, m.title);
                 }}
                 style={{
                   background: 'none',
@@ -819,7 +931,7 @@ export default function MeetingsPage() {
         actions={<GlowButton onClick={handleOpenCreate}>+ Meeting planen</GlowButton>}
       />
 
-      <MeetingStats meetingCount={meetings.filter((m) => m.status === 'Geplant').length + suggestions.length} />
+      <MeetingStats meetings={meetings} />
       <TabBar active={tab} onChange={setTab} />
 
       <div key={liveState ? `live-${liveState.phase}` : tab} className="tab-content-enter">
