@@ -165,8 +165,8 @@ export async function updateLeadStatus(leadId: string, oldStatus: string, newSta
     updateLeadInStore(leadId, { status: newStatus as Lead['status'] });
   }
 
-  // Log activity (non-blocking)
-  writeActivity(leadId, 'status_change', `Status geändert: ${oldStatus} → ${newStatus}`).catch(() => {});
+  // Activity is logged automatically by the DB trigger (log_lead_status_change)
+  // No need to call writeActivity here — that caused duplicates
 }
 
 // ─── ACTIVITY TYPE STYLING ───────────────────────────────────────────────────
