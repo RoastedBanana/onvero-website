@@ -307,3 +307,12 @@ export function refreshLeads() {
   _initialized = false;
   initLeadsStore();
 }
+
+/** Optimistically update a lead in the local store (instant UI, no re-fetch) */
+export function updateLeadInStore(leadId: string, patch: Partial<Lead>) {
+  _store = {
+    ..._store,
+    leads: _store.leads.map((l) => (l.id === leadId ? { ...l, ...patch } : l)),
+  };
+  _listeners.forEach((fn) => fn());
+}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSupabase, getCachedTenantId } from './_use-leads';
+import { getSupabase, getCachedTenantId, updateLeadInStore } from './_use-leads';
+import type { Lead } from './_lead-data';
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -160,6 +161,8 @@ export async function updateLeadStatus(leadId: string, oldStatus: string, newSta
     console.error('[updateLeadStatus] FAILED:', error.message, { leadId, dbStatus, tid });
   } else {
     console.log('[updateLeadStatus] saved:', leadId, dbStatus);
+    // Update the local leads store so navigation doesn't show stale data
+    updateLeadInStore(leadId, { status: newStatus as Lead['status'] });
   }
 
   // Log activity (non-blocking)
