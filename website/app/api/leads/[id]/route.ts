@@ -63,35 +63,48 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const tenantId = await getSessionTenantId();
-  if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
   const body = await req.json();
+
+  // Extract only safe fields to update (prevent injecting arbitrary columns)
+  const safeFields: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const allowed = [
+    'status',
+    'score',
+    'notes',
+    'email',
+    'phone',
+    'first_name',
+    'last_name',
+    'company_name',
+    'follow_up_at',
+    'ai_next_action',
+  ];
+  for (const key of allowed) {
+    if (key in body) safeFields[key] = body[key];
+  }
+
   const client = getAdmin() ?? (await createServerSupabaseClient());
+
+  // Try with session tenant first
+  let tenantId = await getSessionTenantId();
+
+  // Fallback: if no session, look up tenant from the lead itself (service role only)
+  if (!tenantId && getAdmin()) {
+    const { data: lead } = await client.from('leads').select('tenant_id').eq('id', id).single();
+    tenantId = lead?.tenant_id ?? null;
+  }
+
+  if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data, error } = await client
     .from('leads')
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update(safeFields)
     .eq('id', id)
     .eq('tenant_id', tenantId)
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-
-  // Only log activity if explicitly requested (skip_activity_log not set)
-  // The sales-v2 frontend logs activities itself, so API should not double-log
-  if (body.status && body._log_activity) {
-    await client.from('lead_activities').insert({
-      lead_id: id,
-      tenant_id: tenantId,
-      type: 'status_change',
-      title: `Status geändert: ${body.status}`,
-      content: '',
-      metadata: { new_status: body.status },
-    });
-  }
-
   return NextResponse.json({ lead: data });
 }
 

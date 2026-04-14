@@ -144,29 +144,26 @@ const STATUS_MAP: Record<string, string> = {
 };
 
 export async function updateLeadStatus(leadId: string, oldStatus: string, newStatus: string) {
-  try {
-    const dbStatus = STATUS_MAP[newStatus] ?? 'new';
+  const dbStatus = STATUS_MAP[newStatus] ?? 'new';
 
-    // Use API route (server-side Supabase client) to avoid RLS/Web Locks issues
-    const res = await fetch(`/api/leads/${leadId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: dbStatus }),
-    });
+  const supabase = getSupabase();
+  const tid = await getCachedTenantId();
 
-    if (!res.ok) {
-      // Fallback: try direct Supabase client
-      const supabase = getSupabase();
-      const tid = await getCachedTenantId();
-      if (tid) {
-        await supabase.from('leads').update({ status: dbStatus }).eq('id', leadId).eq('tenant_id', tid);
-      }
-    }
-
-    await writeActivity(leadId, 'status_change', `Status geändert: ${oldStatus} → ${newStatus}`);
-  } catch (err) {
-    console.error('[updateLeadStatus] failed:', err);
+  if (!tid) {
+    console.error('[updateLeadStatus] no tenant ID');
+    return;
   }
+
+  const { error } = await supabase.from('leads').update({ status: dbStatus }).eq('id', leadId).eq('tenant_id', tid);
+
+  if (error) {
+    console.error('[updateLeadStatus] FAILED:', error.message, { leadId, dbStatus, tid });
+  } else {
+    console.log('[updateLeadStatus] saved:', leadId, dbStatus);
+  }
+
+  // Log activity (non-blocking)
+  writeActivity(leadId, 'status_change', `Status geändert: ${oldStatus} → ${newStatus}`).catch(() => {});
 }
 
 // ─── ACTIVITY TYPE STYLING ───────────────────────────────────────────────────
