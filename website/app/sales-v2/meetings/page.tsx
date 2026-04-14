@@ -9,13 +9,14 @@ import LiveMeeting from './_live-meeting';
 import PostMeeting from './_post-meeting';
 import ArchiveViewComponent from './_archive-view';
 import AnalyticsView from './_analytics-view';
+import CalendarView from './_calendar-view';
 import { useMeetings, acceptSuggestion, dismissSuggestion, deleteMeeting, updateMeeting } from './_meeting-store';
 import { useLeads } from '../_use-leads';
 import type { Meeting, SmartSuggestion } from './_meeting-store';
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
-type Tab = 'upcoming' | 'prepare' | 'record' | 'archive' | 'analytics';
+type Tab = 'upcoming' | 'prepare' | 'record' | 'archive' | 'analytics' | 'calendar';
 
 // ─── MEETING TYPE STYLES ─────────────────────────────────────────────────────
 
@@ -113,6 +114,7 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
     { id: 'prepare', label: 'Vorbereiten', icon: ICONS.eye },
     { id: 'record', label: 'Aufnehmen', icon: ICONS.mic },
     { id: 'archive', label: 'Archiv', icon: ICONS.folder },
+    { id: 'calendar', label: 'Kalender', icon: ICONS.calendar },
     { id: 'analytics', label: 'Analytics', icon: ICONS.chart },
   ];
 
@@ -845,6 +847,7 @@ export default function MeetingsPage() {
         )}
         {tab === 'record' && !liveState && <RecordView onSelectMeeting={handleStartLive} meetings={meetings} />}
         {tab === 'archive' && <ArchiveViewComponent meetings={meetings} />}
+        {tab === 'calendar' && <CalendarView />}
         {tab === 'analytics' && <AnalyticsView meetings={meetings} />}
       </div>
 
