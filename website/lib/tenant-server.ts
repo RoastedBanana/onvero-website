@@ -24,37 +24,50 @@ export function getAdminClient() {
  * Returns null if no session or no tenant membership.
  */
 export async function getSessionContext(): Promise<SessionContext | null> {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (!user) {
-    console.error('[getSessionContext] no user from auth.getUser()', authError?.message);
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    // Try getUser first (validates JWT with Supabase)
+    let userId: string | null = null;
+
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userData?.user) {
+      userId = userData.user.id;
+    } else {
+      // Fallback: try getSession (reads from cookie without network call)
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session?.user) {
+        userId = sessionData.session.user.id;
+      }
+    }
+
+    if (!userId) {
+      console.error('[getSessionContext] no user', userErr?.message);
+      return null;
+    }
+
+    // Use admin client to bypass RLS for tenant lookup
+    const admin = getAdminClient();
+    const { data: memberships } = await admin.from('tenant_users').select('tenant_id, role').eq('user_id', userId);
+
+    if (!memberships || memberships.length === 0) {
+      console.error('[getSessionContext] no tenant_users for userId', userId);
+      return null;
+    }
+
+    // Priority: owner > admin > member
+    const priority: Record<string, number> = { owner: 3, admin: 2, member: 1 };
+    const best = memberships.sort((a, b) => (priority[b.role] ?? 0) - (priority[a.role] ?? 0))[0];
+
+    return {
+      userId,
+      tenantId: best.tenant_id,
+      role: (best.role as TenantRole) || 'member',
+    };
+  } catch (err) {
+    console.error('[getSessionContext] error:', err);
     return null;
   }
-
-  // User can be in multiple tenants — use admin client to bypass RLS
-  const admin = getAdminClient();
-  const { data: memberships, error: tuError } = await admin
-    .from('tenant_users')
-    .select('tenant_id, role')
-    .eq('user_id', user.id);
-
-  if (!memberships || memberships.length === 0) {
-    console.error('[getSessionContext] no tenant_users for', user.email, tuError?.message);
-    return null;
-  }
-
-  // Priority: owner > admin > member
-  const priority: Record<string, number> = { owner: 3, admin: 2, member: 1 };
-  const best = memberships.sort((a, b) => (priority[b.role] ?? 0) - (priority[a.role] ?? 0))[0];
-
-  return {
-    userId: user.id,
-    tenantId: best.tenant_id,
-    role: (best.role as TenantRole) || 'member',
-  };
 }
 
 /**

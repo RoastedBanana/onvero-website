@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext, getAdminClient, isAdmin } from '@/lib/tenant-server';
+import { getSessionContext, getAdminClient } from '@/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!isAdmin(ctx.role)) return NextResponse.json({ error: 'Nur Admins' }, { status: 403 });
 
   const { url } = await req.json();
   if (!url || typeof url !== 'string') {
