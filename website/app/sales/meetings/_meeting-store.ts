@@ -251,6 +251,13 @@ export function dismissSuggestion(id: string) {
   };
   persist();
   emit();
+
+  // Persist to DB
+  fetch('/api/meetings/suggestions', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, action: 'dismiss' }),
+  }).catch(() => {});
 }
 
 export function acceptSuggestion(id: string): SmartSuggestion | null {
