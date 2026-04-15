@@ -1462,7 +1462,9 @@ function TeamSection() {
                 }}
               >
                 <div>
-                  <span style={{ fontSize: 12, color: C.text1 }}>{inv.email}</span>
+                  <span style={{ fontSize: 12, color: C.text1 }}>
+                    {inv.email === 'pending' ? 'Offener Einladungslink' : inv.email}
+                  </span>
                   <span
                     style={{
                       fontSize: 9,
@@ -1623,11 +1625,20 @@ function CreditBar({ used, total, color }: { used: number; total: number; color:
 }
 
 function PlanSection() {
-  const totalCredits = 25000;
-  const usedCredits = 8470;
+  // TODO: Replace with GET /api/plan when backend is ready
+  // Expected API response: { plan, totalCredits, usedCredits, resetDate, usage: [...] }
+  const [planData] = useState({
+    plan: 'Starter',
+    totalCredits: 25000,
+    usedCredits: 8470,
+    resetDate: '1. Mai 2026',
+    price: '249',
+  });
+
+  const totalCredits = planData.totalCredits;
+  const usedCredits = planData.usedCredits;
   const remainingCredits = totalCredits - usedCredits;
   const usagePercent = Math.round((usedCredits / totalCredits) * 100);
-  const resetDate = '1. Mai 2026';
 
   // What costs credits
   const creditActions = [
@@ -1687,7 +1698,8 @@ function PlanSection() {
     'Daten-Export (CSV)',
   ];
 
-  // Usage by category
+  // TODO: Replace with data from GET /api/plan response
+  // Expected: usage: [{ label, used, credits, icon, color }]
   const usageBreakdown = [
     { label: 'Leads (E-Mail)', used: 620, credits: 6200, icon: ICONS.mail, color: '#34D399' },
     { label: 'Leads (+ Telefon)', used: 18, credits: 900, icon: ICONS.users, color: '#38BDF8' },
@@ -1709,7 +1721,7 @@ function PlanSection() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, color: C.text1, margin: 0 }}>Starter</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: C.text1, margin: 0 }}>{planData.plan}</h3>
               <span
                 style={{
                   fontSize: 9,
@@ -1726,7 +1738,7 @@ function PlanSection() {
               </span>
             </div>
             <p style={{ fontSize: 12, color: C.text3, margin: '4px 0 0' }}>
-              €249/Monat · {totalCredits.toLocaleString()} Credits · Reset: {resetDate}
+              €{planData.price}/Monat · {totalCredits.toLocaleString()} Credits · Reset: {planData.resetDate}
             </p>
           </div>
           <GlowButton onClick={() => showToast('Upgrade-Optionen werden geladen...', 'info')}>Upgrade</GlowButton>
