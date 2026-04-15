@@ -7,10 +7,7 @@ export async function POST(request: Request) {
     const { email, password, firstName, lastName } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'E-Mail und Passwort sind erforderlich.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'E-Mail und Passwort sind erforderlich.' }, { status: 400 });
     }
 
     const supabase = await createServerSupabaseClient();
@@ -21,10 +18,7 @@ export async function POST(request: Request) {
     });
 
     if (error || !data.session) {
-      return NextResponse.json(
-        { error: error?.message ?? 'Ungültige Anmeldedaten.' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: error?.message ?? 'Ungültige Anmeldedaten.' }, { status: 401 });
     }
 
     // Try to get first/last name from profiles table, fall back to form values
@@ -48,11 +42,14 @@ export async function POST(request: Request) {
       const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       if (serviceKey) {
         const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
-        const { data: membership } = await admin
+        const { data: memberships } = await admin
           .from('tenant_users')
-          .select('tenant_id')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
+          .select('tenant_id, role')
+          .eq('user_id', data.user.id);
+
+        // Pick tenant with highest role (owner > admin > member)
+        const rolePriority: Record<string, number> = { owner: 3, admin: 2, member: 1 };
+        const membership = memberships?.sort((a, b) => (rolePriority[b.role] ?? 0) - (rolePriority[a.role] ?? 0))[0];
 
         if (membership?.tenant_id) {
           const tenantId = membership.tenant_id;

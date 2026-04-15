@@ -472,6 +472,38 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
     onChange({ ...profile, [field]: value });
   const [scraping, setScraping] = useState(false);
   const [scraped, setScraped] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+
+  // Load logo on mount
+  useEffect(() => {
+    fetch('/api/integrations')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.logo_url) setLogoUrl(d.logo_url);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function handleLogoUpload(file: File) {
+    setLogoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('logo', file);
+      const res = await fetch('/api/profile/logo', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok && data.logo_url) {
+        setLogoUrl(data.logo_url);
+        showToast('Logo hochgeladen', 'success');
+      } else {
+        showToast(data.error || 'Upload fehlgeschlagen', 'error');
+      }
+    } catch {
+      showToast('Netzwerkfehler', 'error');
+    } finally {
+      setLogoUploading(false);
+    }
+  }
 
   async function handleWebsiteScrape() {
     const url = profile.website?.trim();
@@ -481,17 +513,28 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
     }
     setScraping(true);
     try {
-      const res = await fetch('/api/proxy/n8n', {
+      const res = await fetch('/api/profile/analyze-website', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'website-analysis', website: url }),
+        body: JSON.stringify({ url }),
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.suggestions) {
+        const s = data.suggestions;
+        const updated = { ...profile };
+        if (s.company_name && !profile.company_name) updated.company_name = s.company_name;
+        if (s.company_description && !profile.company_description) updated.company_description = s.company_description;
+        if (s.company_location && !profile.company_location) updated.company_location = s.company_location;
+        if (s.website) updated.website = s.website;
+        if (s.industry && !profile.industry) updated.industry = s.industry;
+        if (s.services?.length && (!profile.services || profile.services.length === 0)) updated.services = s.services;
+        onChange(updated);
         setScraped(true);
-        showToast('Website wird analysiert — Daten werden in Kürze aktualisiert', 'success');
+        const filled = [s.company_name, s.company_description, s.company_location, s.industry].filter(Boolean).length;
+        showToast(`${filled} Felder automatisch ausgefüllt — bitte prüfen und speichern`, 'success');
         setTimeout(() => setScraped(false), 8000);
       } else {
-        showToast('Analyse konnte nicht gestartet werden', 'error');
+        showToast(data.error || 'Analyse fehlgeschlagen', 'error');
       }
     } catch {
       showToast('Netzwerkfehler', 'error');
@@ -535,6 +578,79 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
         title="Basis-Informationen"
         description="Diese Daten nutzt die KI um deine Leads besser zu qualifizieren."
       >
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 12,
+              flexShrink: 0,
+              background: logoUrl ? `url(${logoUrl}) center/cover no-repeat` : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${C.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 22,
+              color: C.text3,
+            }}
+          >
+            {!logoUrl && '⬆'}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: C.text1, fontWeight: 500, marginBottom: 4 }}>
+              {logoUrl ? 'Logo hochgeladen' : 'Firmenlogo hochladen'}
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <label
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 6,
+                  fontSize: 10,
+                  fontWeight: 500,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${C.border}`,
+                  color: C.text3,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {logoUploading ? 'Lädt...' : logoUrl ? 'Ändern' : 'Hochladen'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleLogoUpload(f);
+                  }}
+                />
+              </label>
+              {logoUrl && (
+                <button
+                  onClick={async () => {
+                    await fetch('/api/profile/logo', { method: 'DELETE' });
+                    setLogoUrl(null);
+                    showToast('Logo entfernt', 'success');
+                  }}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: 6,
+                    fontSize: 10,
+                    background: 'none',
+                    border: `1px solid ${C.border}`,
+                    color: '#F87171',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Entfernen
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <Field label="Firmenname">
             <Input value={profile.company_name} onChange={(v) => upd('company_name', v)} />
@@ -679,6 +795,49 @@ function IntegrationenSection() {
   const [emailDomain, setEmailDomain] = useState('');
   const [configuring, setConfiguring] = useState<string | null>(null);
   const [autoFollowUp, setAutoFollowUp] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load from DB on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/integrations');
+        if (res.ok) {
+          const data = await res.json();
+          setEmailDomain(data.email_resend || '');
+          setAutoFollowUp(data.follow_up_email || false);
+        }
+      } catch {
+        /* silent */
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, []);
+
+  async function saveIntegrations(updates: Record<string, unknown>) {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/integrations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        showToast('Gespeichert', 'success');
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Fehler beim Speichern', 'error');
+      }
+    } catch {
+      showToast('Netzwerkfehler', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!loaded) return null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -772,18 +931,29 @@ function IntegrationenSection() {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <GhostButton onClick={() => setConfiguring(null)}>Abbrechen</GhostButton>
               <GlowButton
-                onClick={() => {
-                  showToast('E-Mail-Versand eingerichtet', 'success');
+                onClick={async () => {
+                  if (!emailDomain.includes('@')) {
+                    showToast('Bitte gültige E-Mail eingeben', 'error');
+                    return;
+                  }
+                  await saveIntegrations({ email_resend: emailDomain });
                   setConfiguring(null);
                 }}
               >
-                Speichern
+                {saving ? 'Speichern...' : 'Speichern'}
               </GlowButton>
             </div>
           </div>
         )}
 
-        <Toggle enabled={autoFollowUp} onChange={setAutoFollowUp} label="Automatische Follow-up-E-Mails aktivieren" />
+        <Toggle
+          enabled={autoFollowUp}
+          onChange={(v) => {
+            setAutoFollowUp(v);
+            saveIntegrations({ follow_up_email: v });
+          }}
+          label="Automatische Follow-up-E-Mails aktivieren"
+        />
       </SectionCard>
 
       {/* Lead-Generierung */}

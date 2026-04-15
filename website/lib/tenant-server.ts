@@ -27,13 +27,24 @@ export async function getSessionContext(): Promise<SessionContext | null> {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) {
+    console.error('[getSessionContext] no user from auth.getUser()', authError?.message);
+    return null;
+  }
 
-  // User can be in multiple tenants — pick the one with the highest role
-  const { data: memberships } = await supabase.from('tenant_users').select('tenant_id, role').eq('user_id', user.id);
+  // User can be in multiple tenants — use admin client to bypass RLS
+  const admin = getAdminClient();
+  const { data: memberships, error: tuError } = await admin
+    .from('tenant_users')
+    .select('tenant_id, role')
+    .eq('user_id', user.id);
 
-  if (!memberships || memberships.length === 0) return null;
+  if (!memberships || memberships.length === 0) {
+    console.error('[getSessionContext] no tenant_users for', user.email, tuError?.message);
+    return null;
+  }
 
   // Priority: owner > admin > member
   const priority: Record<string, number> = { owner: 3, admin: 2, member: 1 };
