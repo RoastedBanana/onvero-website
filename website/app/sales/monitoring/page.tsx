@@ -574,7 +574,7 @@ export default function MonitoringPage() {
   return (
     <>
       <Breadcrumbs
-        items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Prospects' }, { label: 'Monitoring' }]}
+        items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Prospects' }, { label: 'Monitoring' }]}
       />
       <PageHeader
         title="Monitoring"

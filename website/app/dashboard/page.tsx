@@ -9,7 +9,7 @@ import { DashboardWidgets } from '@/components/ui/DashboardWidgets';
 import { Users, BarChart2, Zap, Calendar, Search, Sparkles, ArrowUp, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const WEBHOOK = 'https://n8n.srv1223027.hstgr.cloud/webhook/6c419e39-f35c-49a8-abb8-51b2de160070/chat';
+const WEBHOOK = process.env.NEXT_PUBLIC_N8N_WEBHOOK_DASHBOARD_CHAT || '';
 
 const quickActions = [
   { label: 'Was steht an?', icon: Calendar },

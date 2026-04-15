@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { getSessionContext } from '@/lib/tenant-server';
 
 // Map of allowed action names to env var keys
 const WEBHOOK_MAP: Record<string, string> = {
@@ -18,6 +19,9 @@ const WEBHOOK_MAP: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
+    const ctx = await getSessionContext();
+    if (!ctx) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+
     const ip = getClientIp(req.headers);
     const { success } = await rateLimit(`n8n-proxy:${ip}`, { maxRequests: 20, windowMs: 60_000 });
     if (!success) return NextResponse.json({ error: 'Zu viele Anfragen' }, { status: 429 });
@@ -36,7 +40,7 @@ export async function POST(req: NextRequest) {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, tenant_id: ctx.tenantId }),
     });
 
     const text = await res.text();

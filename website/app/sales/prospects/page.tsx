@@ -368,8 +368,8 @@ export default function ProspectsPage() {
     <>
       <Breadcrumbs
         items={[
-          { label: 'Onvero Sales', href: '/sales-v2' },
-          { label: 'Prospects', href: '/sales-v2/prospects' },
+          { label: 'Onvero Sales', href: '/sales' },
+          { label: 'Prospects', href: '/sales/prospects' },
           { label: 'Market Intent' },
         ]}
       />

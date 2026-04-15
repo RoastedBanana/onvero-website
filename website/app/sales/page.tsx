@@ -297,10 +297,10 @@ function LiveActivityFeed() {
 
 function QuickActions() {
   const actions = [
-    { label: 'Lead generieren', icon: ICONS.zap, color: '#818CF8', href: '/sales-v2/generate' },
-    { label: 'Meeting planen', icon: ICONS.calendar, color: '#38BDF8', href: '/sales-v2/meetings' },
-    { label: 'Prospects checken', icon: ICONS.target, color: '#34D399', href: '/sales-v2/prospects' },
-    { label: 'Analytics', icon: ICONS.chart, color: '#FBBF24', href: '/sales-v2/analytics' },
+    { label: 'Lead generieren', icon: ICONS.zap, color: '#818CF8', href: '/sales/generate' },
+    { label: 'Meeting planen', icon: ICONS.calendar, color: '#38BDF8', href: '/sales/meetings' },
+    { label: 'Prospects checken', icon: ICONS.target, color: '#34D399', href: '/sales/prospects' },
+    { label: 'Analytics', icon: ICONS.chart, color: '#FBBF24', href: '/sales/analytics' },
   ];
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
@@ -402,7 +402,7 @@ export default function SalesV2HomePage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Home' }]} />
+      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Home' }]} />
 
       <PageHeader title={`Willkommen zurück, ${ACCOUNT.senderName.split(' ')[0]}`} subtitle={ACCOUNT.companyName} />
 
@@ -453,7 +453,7 @@ export default function SalesV2HomePage() {
             {topLeads.map((lead, i) => (
               <Link
                 key={lead.id}
-                href={`/sales-v2/leads/${lead.id}`}
+                href={`/sales/leads/${lead.id}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -590,7 +590,7 @@ export default function SalesV2HomePage() {
         <BentoCard
           span={1}
           delay={0.3}
-          href="/sales-v2/leads"
+          href="/sales/leads"
           gradient="radial-gradient(ellipse at 80% 100%, rgba(248,113,113,0.04) 0%, transparent 50%)"
         >
           <SectionLabel icon={ICONS.mail} label="Kontaktdaten-Übersicht" color="#FBBF24" />
@@ -680,7 +680,7 @@ export default function SalesV2HomePage() {
           {topUnanswered.map((lead, i) => (
             <Link
               key={lead.id}
-              href={`/sales-v2/leads/${lead.id}`}
+              href={`/sales/leads/${lead.id}`}
               className="s-bento"
               style={{
                 display: 'flex',

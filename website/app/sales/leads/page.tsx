@@ -414,7 +414,7 @@ function LeadTable({
             description="Versuche einen anderen Filter oder generiere neue Leads mit der KI."
             icon={ICONS.search}
             action={
-              <Link href="/sales-v2/generate" style={{ textDecoration: 'none' }}>
+              <Link href="/sales/generate" style={{ textDecoration: 'none' }}>
                 <GlowButton>+ Lead generieren</GlowButton>
               </Link>
             }
@@ -951,7 +951,7 @@ function LeadsPage() {
   });
 
   function openLead(lead: Lead) {
-    router.push(`/sales-v2/leads/${lead.id}`);
+    router.push(`/sales/leads/${lead.id}`);
   }
 
   // Keyboard: j/k navigate, Enter opens detail
@@ -1061,7 +1061,7 @@ function LeadsPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Leads' }]} />
+      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Leads' }]} />
       <PageHeader
         title="Alle Leads"
         subtitle={leadsLoading ? 'Laden...' : `${mergedLeads.length} Einträge · live aus Supabase`}
@@ -1100,7 +1100,7 @@ function LeadsPage() {
                 </button>
               ))}
             </div>
-            <GlowButton onClick={() => router.push('/sales-v2/generate')}>+ Lead generieren</GlowButton>
+            <GlowButton onClick={() => router.push('/sales/generate')}>+ Lead generieren</GlowButton>
           </>
         }
       />

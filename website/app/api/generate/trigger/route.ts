@@ -1,34 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { isUUID } from '@/lib/validate';
+import { getSessionContext } from '@/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    const ctx = await getSessionContext();
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-
-    if (!isUUID(body.tenant_id)) {
-      return NextResponse.json({ error: 'Ungültige tenant_id' }, { status: 400 });
-    }
-
-    // Verify the user actually belongs to this tenant
-    const { data: membership } = await supabase
-      .from('tenant_users')
-      .select('tenant_id')
-      .eq('user_id', user.id)
-      .eq('tenant_id', body.tenant_id)
-      .maybeSingle();
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const secret = process.env.N8N_LEAD_GENERATOR_SECRET;
     const webhookUrl = process.env.N8N_WEBHOOK_LEAD_GENERATOR;
@@ -43,7 +24,7 @@ export async function POST(req: NextRequest) {
           error: `Server-Konfiguration fehlt: ${missing.join(', ')}`,
           missing,
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -59,7 +40,7 @@ export async function POST(req: NextRequest) {
         'x-webhook-secret': secret,
       },
       body: JSON.stringify({
-        tenant_id: body.tenant_id,
+        tenant_id: ctx.tenantId,
         secret,
         profile_id: body.profile_id ?? 'default',
         execution_id: body.execution_id ?? body.on_demand?.execution_id,
@@ -70,17 +51,14 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      return NextResponse.json(
-        { error: 'Webhook fehlgeschlagen', status: res.status, detail: text },
-        { status: 502 },
-      );
+      return NextResponse.json({ error: 'Webhook fehlgeschlagen', status: res.status, detail: text }, { status: 502 });
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json(
       { error: 'Server-Fehler', detail: err instanceof Error ? err.message : String(err) },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

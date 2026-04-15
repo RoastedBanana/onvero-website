@@ -1,0 +1,1340 @@
+[     457ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     513ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     628ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     640ms] [LOG] [Fast Refresh] done in 112ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  363732ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  364567ms] [LOG] [Fast Refresh] done in 935ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  369069ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  369099ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1086809ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1088273ms] [LOG] [Fast Refresh] done in 1501ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1088635ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1088756ms] [LOG] [Fast Refresh] done in 202ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1157927ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1158209ms] [LOG] [Fast Refresh] done in 352ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1158831ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1158844ms] [LOG] [Fast Refresh] done in 85ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1232956ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1234101ms] [LOG] [Fast Refresh] done in 1149ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1234805ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1235017ms] [LOG] [Fast Refresh] done in 296ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1303262ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1305493ms] [LOG] [Fast Refresh] done in 2305ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1306463ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1306880ms] [LOG] [Fast Refresh] done in 489ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1404963ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1404983ms] [LOG] [Fast Refresh] done in 121ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1493266ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1493516ms] [LOG] [Fast Refresh] done in 326ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1530006ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1530219ms] [LOG] [Fast Refresh] done in 292ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1543640ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1544590ms] [LOG] [Fast Refresh] done in 1025ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1562873ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1562950ms] [LOG] [Fast Refresh] done in 157ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1576313ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1576529ms] [LOG] [Fast Refresh] done in 294ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1590717ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1590823ms] [LOG] [Fast Refresh] done in 189ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1609683ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1610475ms] [ERROR] ./app/sales-v2/settings/page.tsx:1288:3
+Return statement is not allowed here
+  1286 |   ];
+  1287 |
+> 1288 |   return (
+       |   ^^^^^^^
+> 1289 |     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1290 |       {/* Explanation */}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1291 |       <div style={{ padding: '0 2px' }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1292 |         <p style={{ fontSize: 12, color: C.text3, margin: 0, lineHeight: 1.7 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1293 |           Nutze die Onvero API, um deine Lead-Daten programmatisch abzufragen, oder rich...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1294 |           über Ereignisse benachrichtigt zu werden.
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1295 |         </p>
+       | ^^^^^^^^^^^^
+> 1296 |       </div>
+       | ^^^^^^^^^^^^
+> 1297 |
+       | ^
+> 1298 |       {/* API Key */}
+       | ^^^^^^^^^^^^^^^^^^^^^
+> 1299 |       <SectionCard
+       | ^^^^^^^^^^^^^^^^^^
+> 1300 |         title="API-Schlüssel"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1301 |         description="Mit deinem API-Key kannst du Leads, Meetings und Kontakte über unse...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1302 |       >
+       | ^^^^^^^
+> 1303 |         <div
+       | ^^^^^^^^^^^^
+> 1304 |           style={{
+       | ^^^^^^^^^^^^^^^^^^
+> 1305 |             display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1306 |             alignItems: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1307 |             gap: 10,
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1308 |             padding: '12px 14px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1309 |             borderRadius: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1310 |             background: 'rgba(255,255,255,0.03)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1311 |             border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1312 |           }}
+       | ^^^^^^^^^^^^
+> 1313 |         >
+       | ^^^^^^^^^
+> 1314 |           <div
+       | ^^^^^^^^^^^^^^
+> 1315 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1316 |               width: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1317 |               height: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1318 |               borderRadius: '50%',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1319 |               background: C.success,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1320 |               boxShadow: '0 0 6px rgba(52,211,153,0.4)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1321 |               flexShrink: 0,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1322 |             }}
+       | ^^^^^^^^^^^^^^
+> 1323 |           />
+       | ^^^^^^^^^^^^
+> 1324 |           <span
+       | ^^^^^^^^^^^^^^^
+> 1325 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1326 |               flex: 1,
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1327 |               fontSize: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1328 |               color: showKey ? C.text1 : C.text3,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1329 |               fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1330 |             }}
+       | ^^^^^^^^^^^^^^
+> 1331 |           >
+       | ^^^^^^^^^^^
+> 1332 |             {showKey ? apiKey : '••••••••••••••••••••••••'}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1333 |           </span>
+       | ^^^^^^^^^^^^^^^^^
+> 1334 |           <button
+       | ^^^^^^^^^^^^^^^^^
+> 1335 |             onClick={() => setShowKey(!showKey)}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1336 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1337 |               background: 'none',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1338 |               border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1339 |               borderRadius: 6,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1340 |               padding: '4px 10px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1341 |               fontSize: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1342 |               color: C.text3,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1343 |               cursor: 'pointer',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1344 |               fontFamily: 'inherit',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1345 |             }}
+       | ^^^^^^^^^^^^^^
+> 1346 |           >
+       | ^^^^^^^^^^^
+> 1347 |             {showKey ? 'Verbergen' : 'Anzeigen'}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1348 |           </button>
+       | ^^^^^^^^^^^^^^^^^^^
+> 1349 |           <button
+       | ^^^^^^^^^^^^^^^^^
+> 1350 |             onClick={() => {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1351 |               navigator.clipboard.writeText(apiKey);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1352 |               showToast('API-Key kopiert', 'success');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1353 |             }}
+       | ^^^^^^^^^^^^^^
+> 1354 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1355 |               background: 'none',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1356 |               border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1357 |               borderRadius: 6,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1358 |               padding: '4px 10px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1359 |               fontSize: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1360 |               color: C.text3,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1361 |               cursor: 'pointer',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1362 |               fontFamily: 'inherit',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1363 |             }}
+       | ^^^^^^^^^^^^^^
+> 1364 |           >
+       | ^^^^^^^^^^^
+> 1365 |             Kopieren
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1366 |           </button>
+       | ^^^^^^^^^^^^^^^^^^^
+> 1367 |         </div>
+       | ^^^^^^^^^^^^^^
+> 1368 |         <p style={{ fontSize: 11, color: C.text3, margin: 0, lineHeight: 1.6 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1369 |           Sende den Key als{' '}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1370 |           <code style={{ fontSize: 10, padding: '1px 4px', borderRadius: 3, background: ...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1371 |             Authorization: Bearer sk_live_...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1372 |           </code>{' '}
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1373 |           Header mit jeder Anfrage.
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1374 |         </p>
+       | ^^^^^^^^^^^^
+> 1375 |         <div style={{ display: 'flex', gap: 8 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1376 |           <GhostButton onClick={() => showToast('Neuer API-Key generiert', 'success')}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1377 |             Neuen Key generieren
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1378 |           </GhostButton>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1379 |           <GhostButton onClick={() => showToast('API-Key widerrufen', 'info')}>Key wider...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1380 |         </div>
+       | ^^^^^^^^^^^^^^
+> 1381 |       </SectionCard>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1382 |
+       | ^
+> 1383 |       {/* Webhooks */}
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1384 |       <SectionCard
+       | ^^^^^^^^^^^^^^^^^^
+> 1385 |         title="Webhooks"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1386 |         description="Webhooks senden HTTP POST-Requests an deine URL, sobald ein Event e...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1387 |       >
+       | ^^^^^^^
+> 1388 |         {/* Existing webhooks */}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1389 |         {webhooks.length > 0 ? (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1390 |           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1391 |             {webhooks.map((wh) => (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1392 |               <div
+       | ^^^^^^^^^^^^^^^^^^
+> 1393 |                 key={wh.name}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1394 |                 style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1395 |                   display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1396 |                   alignItems: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1397 |                   justifyContent: 'space-between',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1398 |                   padding: '12px 14px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1399 |                   borderRadius: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1400 |                   background: 'rgba(255,255,255,0.015)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1401 |                   border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1402 |                 }}
+       | ^^^^^^^^^^^^^^^^^^
+> 1403 |               >
+       | ^^^^^^^^^^^^^^^
+> 1404 |                 <div>
+       | ^^^^^^^^^^^^^^^^^^^^^
+> 1405 |                   <div style={{ fontSize: 12, color: C.text1 }}>{wh.name}</div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1406 |                   <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1407 |                     {wh.events.map((evt) => (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1408 |                       <span
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1409 |                         key={evt}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1410 |                         style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1411 |                           fontSize: 9,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1412 |                           padding: '2px 6px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1413 |                           borderRadius: 4,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1414 |                           background: 'rgba(99,102,241,0.08)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1415 |                           color: C.accentBright,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1416 |                           fontFamily: 'ui-monospace, monospace',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1417 |                         }}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1418 |                       >
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1419 |                         {evt}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1420 |                       </span>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1421 |                     ))}
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1422 |                   </div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1423 |                 </div>
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1424 |                 <span
+       | ^^^^^^^^^^^^^^^^^^^^^
+> 1425 |                   style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1426 |                     fontSize: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1427 |                     fontWeight: 500,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1428 |                     color: wh.active ? C.success : C.text3,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1429 |                   }}
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1430 |                 >
+       | ^^^^^^^^^^^^^^^^^
+> 1431 |                   {wh.active ? 'Aktiv' : 'Pausiert'}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1432 |                 </span>
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1433 |               </div>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1434 |             ))}
+       | ^^^^^^^^^^^^^^^
+> 1435 |           </div>
+       | ^^^^^^^^^^^^^^^^
+> 1436 |         ) : (
+       | ^^^^^^^^^^^^^
+> 1437 |           <div
+       | ^^^^^^^^^^^^^^
+> 1438 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1439 |               padding: '20px 16px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1440 |               borderRadius: 9,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1441 |               textAlign: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1442 |               background: 'rgba(255,255,255,0.015)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1443 |               border: `1px dashed ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1444 |             }}
+       | ^^^^^^^^^^^^^^
+> 1445 |           >
+       | ^^^^^^^^^^^
+> 1446 |             <p style={{ fontSize: 12, color: C.text3, margin: 0 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1447 |               Noch keine Webhooks eingerichtet. Erstelle einen, um Events in Echtzeit zu...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1448 |             </p>
+       | ^^^^^^^^^^^^^^^^
+> 1449 |           </div>
+       | ^^^^^^^^^^^^^^^^
+> 1450 |         )}
+       | ^^^^^^^^^^
+> 1451 |
+       | ^
+> 1452 |         {/* Add webhook form */}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1453 |         {showWebhookForm && (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1454 |           <div
+       | ^^^^^^^^^^^^^^
+> 1455 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1456 |               padding: '16px 20px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1457 |               background: C.surface,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1458 |               border: `1px solid rgba(99,102,241,0.2)`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1459 |               borderRadius: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1460 |               display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1461 |               flexDirection: 'column',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1462 |               gap: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1463 |             }}
+       | ^^^^^^^^^^^^^^
+> 1464 |           >
+       | ^^^^^^^^^^^
+> 1465 |             <Field label="Webhook URL" hint="Wir senden einen HTTP POST mit JSON-Body an...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1466 |               <Input value={webhookUrl} onChange={setWebhookUrl} placeholder="https://de...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1467 |             </Field>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1468 |             <Field label="Events auswählen" hint="Wähle mindestens ein Event, das den We...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1469 |               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1470 |                 {availableEvents.map((evt) => {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1471 |                   const active = webhookEvents.includes(evt.value);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1472 |                   return (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1473 |                     <button
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1474 |                       key={evt.value}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1475 |                       onClick={() =>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1476 |                         setWebhookEvents(
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1477 |                           active ? webhookEvents.filter((e) => e !== evt.value) : [...we...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1478 |                         )
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1479 |                       }
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1480 |                       style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1481 |                         display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1482 |                         alignItems: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1483 |                         gap: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1484 |                         padding: '8px 12px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1485 |                         borderRadius: 7,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1486 |                         textAlign: 'left',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1487 |                         fontFamily: 'inherit',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1488 |                         cursor: 'pointer',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1489 |                         border: `1px solid ${active ? 'rgba(99,102,241,0.3)' : C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1490 |                         background: active ? 'rgba(99,102,241,0.06)' : 'transparent',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1491 |                         transition: 'all 0.15s ease',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1492 |                       }}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1493 |                     >
+       | ^^^^^^^^^^^^^^^^^^^^^
+> 1494 |                       <div
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1495 |                         style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1496 |                           width: 16,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1497 |                           height: 16,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1498 |                           borderRadius: 4,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1499 |                           flexShrink: 0,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1500 |                           border: `1.5px solid ${active ? C.accentBright : C.text3}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1501 |                           background: active ? C.accentBright : 'transparent',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1502 |                           display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1503 |                           alignItems: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1504 |                           justifyContent: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1505 |                           transition: 'all 0.15s ease',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1506 |                         }}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1507 |                       >
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1508 |                         {active && <SvgIcon d={ICONS.check} size={10} color="#fff" />}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1509 |                       </div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1510 |                       <div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1511 |                         <div style={{ fontSize: 12, color: active ? C.text1 : C.text2 }}...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1512 |                         <div style={{ fontSize: 10, color: C.text3 }}>{evt.desc}</div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1513 |                       </div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1514 |                     </button>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1515 |                   );
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1516 |                 })}
+       | ^^^^^^^^^^^^^^^^^^^
+> 1517 |               </div>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1518 |             </Field>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1519 |             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1520 |               <GhostButton
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1521 |                 onClick={() => {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1522 |                   setShowWebhookForm(false);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1523 |                   setWebhookUrl('');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1524 |                   setWebhookEvents([]);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1525 |                 }}
+       | ^^^^^^^^^^^^^^^^^^
+> 1526 |               >
+       | ^^^^^^^^^^^^^^^
+> 1527 |                 Abbrechen
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1528 |               </GhostButton>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1529 |               <GhostButton onClick={() => showToast('Test-Event gesendet', 'info')}>Test...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1530 |               <GlowButton
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1531 |                 onClick={() => {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1532 |                   if (!webhookUrl) {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1533 |                     showToast('Bitte URL eingeben', 'error');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1534 |                     return;
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1535 |                   }
+       | ^^^^^^^^^^^^^^^^^^^
+> 1536 |                   if (webhookEvents.length === 0) {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1537 |                     showToast('Bitte mindestens ein Event auswählen', 'error');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1538 |                     return;
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1539 |                   }
+       | ^^^^^^^^^^^^^^^^^^^
+> 1540 |                   showToast('Webhook gespeichert', 'success');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1541 |                   setShowWebhookForm(false);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1542 |                   setWebhookUrl('');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1543 |                   setWebhookEvents([]);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1544 |                 }}
+       | ^^^^^^^^^^^^^^^^^^
+> 1545 |               >
+       | ^^^^^^^^^^^^^^^
+> 1546 |                 Speichern
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1547 |               </GlowButton>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1548 |             </div>
+       | ^^^^^^^^^^^^^^^^^^
+> 1549 |           </div>
+       | ^^^^^^^^^^^^^^^^
+> 1550 |         )}
+       | ^^^^^^^^^^
+> 1551 |
+       | ^
+> 1552 |         {!showWebhookForm && <GhostButton onClick={() => setShowWebhookForm(true)}>+ Web...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1553 |       </SectionCard>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1554 |
+       | ^
+> 1555 |       {/* Rate Limits */}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1556 |       <SectionCard
+       | ^^^^^^^^^^^^^^^^^^
+> 1557 |         title="Rate Limits & Nutzung"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1558 |         description="Dein aktueller API-Verbrauch. Limits schützen die Plattform vor Übe...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1559 |       >
+       | ^^^^^^^
+> 1560 |         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1561 |           <ProgressRing value={342} max={1000} size={56} strokeWidth={4} color={C.accent...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1562 |           <div style={{ flex: 1 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1563 |             <div style={{ fontSize: 14, fontWeight: 600, color: C.text1 }}>342 / 1.000</...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1564 |             <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>API-Requests die...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1565 |           </div>
+       | ^^^^^^^^^^^^^^^^
+> 1566 |         </div>
+       | ^^^^^^^^^^^^^^
+> 1567 |         <div
+       | ^^^^^^^^^^^^
+> 1568 |           style={{
+       | ^^^^^^^^^^^^^^^^^^
+> 1569 |             display: 'grid',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1570 |             gridTemplateColumns: 'repeat(3, 1fr)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1571 |             gap: 10,
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1572 |             padding: '12px 14px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1573 |             borderRadius: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1574 |             background: 'rgba(255,255,255,0.02)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1575 |             border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1576 |           }}
+       | ^^^^^^^^^^^^
+> 1577 |         >
+       | ^^^^^^^^^
+> 1578 |           {[
+       | ^^^^^^^^^^^^
+> 1579 |             { label: 'E-Mails / Min', value: '10', desc: 'Max. E-Mail-Versand' },
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1580 |             { label: 'API-Calls / Min', value: '20', desc: 'Max. API-Requests' },
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1581 |             { label: 'Reset', value: '1. Mai', desc: 'Nächster Monat' },
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1582 |           ].map((item) => (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1583 |             <div key={item.label} style={{ textAlign: 'center' }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1584 |               <div style={{ fontSize: 15, fontWeight: 600, color: C.text1 }}>{item.value...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1585 |               <div style={{ fontSize: 9, color: C.text3, marginTop: 2 }}>{item.label}</div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1586 |             </div>
+       | ^^^^^^^^^^^^^^^^^^
+> 1587 |           ))}
+       | ^^^^^^^^^^^^^
+> 1588 |         </div>
+       | ^^^^^^^^^^^^^^
+> 1589 |         <p style={{ fontSize: 11, color: C.text3, margin: 0, lineHeight: 1.6 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1590 |           Limits gelten pro Account und werden am 1. jedes Monats zurückgesetzt. Bei Bed...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1591 |           kontaktiere uns.
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1592 |         </p>
+       | ^^^^^^^^^^^^
+> 1593 |       </SectionCard>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1594 |     </div>
+       | ^^^^^^^^^^
+> 1595 |   );
+       | ^^^^
+  1596 | }
+  1597 |
+  1598 | // ─── PAGE ────────────────────────────────────────────────────────────────────
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./app/sales-v2/settings/page.tsx [Client Component Browser]
+    ./app/sales-v2/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/sales-v2/settings/page.tsx [Client Component SSR]
+    ./app/sales-v2/settings/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:3272
+[ 1611377ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1611547ms] [ERROR] ./app/sales-v2/settings/page.tsx:1288:3
+Return statement is not allowed here
+  1286 |   ];
+  1287 |
+> 1288 |   return (
+       |   ^^^^^^^
+> 1289 |     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1290 |       {/* Explanation */}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1291 |       <div style={{ padding: '0 2px' }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1292 |         <p style={{ fontSize: 12, color: C.text3, margin: 0, lineHeight: 1.7 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1293 |           Nutze die Onvero API, um deine Lead-Daten programmatisch abzufragen, oder rich...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1294 |           über Ereignisse benachrichtigt zu werden.
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1295 |         </p>
+       | ^^^^^^^^^^^^
+> 1296 |       </div>
+       | ^^^^^^^^^^^^
+> 1297 |
+       | ^
+> 1298 |       {/* API Key */}
+       | ^^^^^^^^^^^^^^^^^^^^^
+> 1299 |       <SectionCard
+       | ^^^^^^^^^^^^^^^^^^
+> 1300 |         title="API-Schlüssel"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1301 |         description="Mit deinem API-Key kannst du Leads, Meetings und Kontakte über unse...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1302 |       >
+       | ^^^^^^^
+> 1303 |         <div
+       | ^^^^^^^^^^^^
+> 1304 |           style={{
+       | ^^^^^^^^^^^^^^^^^^
+> 1305 |             display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1306 |             alignItems: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1307 |             gap: 10,
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1308 |             padding: '12px 14px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1309 |             borderRadius: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1310 |             background: 'rgba(255,255,255,0.03)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1311 |             border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1312 |           }}
+       | ^^^^^^^^^^^^
+> 1313 |         >
+       | ^^^^^^^^^
+> 1314 |           <div
+       | ^^^^^^^^^^^^^^
+> 1315 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1316 |               width: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1317 |               height: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1318 |               borderRadius: '50%',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1319 |               background: C.success,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1320 |               boxShadow: '0 0 6px rgba(52,211,153,0.4)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1321 |               flexShrink: 0,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1322 |             }}
+       | ^^^^^^^^^^^^^^
+> 1323 |           />
+       | ^^^^^^^^^^^^
+> 1324 |           <span
+       | ^^^^^^^^^^^^^^^
+> 1325 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1326 |               flex: 1,
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1327 |               fontSize: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1328 |               color: showKey ? C.text1 : C.text3,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1329 |               fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1330 |             }}
+       | ^^^^^^^^^^^^^^
+> 1331 |           >
+       | ^^^^^^^^^^^
+> 1332 |             {showKey ? apiKey : '••••••••••••••••••••••••'}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1333 |           </span>
+       | ^^^^^^^^^^^^^^^^^
+> 1334 |           <button
+       | ^^^^^^^^^^^^^^^^^
+> 1335 |             onClick={() => setShowKey(!showKey)}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1336 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1337 |               background: 'none',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1338 |               border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1339 |               borderRadius: 6,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1340 |               padding: '4px 10px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1341 |               fontSize: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1342 |               color: C.text3,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1343 |               cursor: 'pointer',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1344 |               fontFamily: 'inherit',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1345 |             }}
+       | ^^^^^^^^^^^^^^
+> 1346 |           >
+       | ^^^^^^^^^^^
+> 1347 |             {showKey ? 'Verbergen' : 'Anzeigen'}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1348 |           </button>
+       | ^^^^^^^^^^^^^^^^^^^
+> 1349 |           <button
+       | ^^^^^^^^^^^^^^^^^
+> 1350 |             onClick={() => {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1351 |               navigator.clipboard.writeText(apiKey);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1352 |               showToast('API-Key kopiert', 'success');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1353 |             }}
+       | ^^^^^^^^^^^^^^
+> 1354 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1355 |               background: 'none',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1356 |               border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1357 |               borderRadius: 6,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1358 |               padding: '4px 10px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1359 |               fontSize: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1360 |               color: C.text3,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1361 |               cursor: 'pointer',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1362 |               fontFamily: 'inherit',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1363 |             }}
+       | ^^^^^^^^^^^^^^
+> 1364 |           >
+       | ^^^^^^^^^^^
+> 1365 |             Kopieren
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1366 |           </button>
+       | ^^^^^^^^^^^^^^^^^^^
+> 1367 |         </div>
+       | ^^^^^^^^^^^^^^
+> 1368 |         <p style={{ fontSize: 11, color: C.text3, margin: 0, lineHeight: 1.6 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1369 |           Sende den Key als{' '}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1370 |           <code style={{ fontSize: 10, padding: '1px 4px', borderRadius: 3, background: ...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1371 |             Authorization: Bearer sk_live_...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1372 |           </code>{' '}
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1373 |           Header mit jeder Anfrage.
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1374 |         </p>
+       | ^^^^^^^^^^^^
+> 1375 |         <div style={{ display: 'flex', gap: 8 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1376 |           <GhostButton onClick={() => showToast('Neuer API-Key generiert', 'success')}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1377 |             Neuen Key generieren
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1378 |           </GhostButton>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1379 |           <GhostButton onClick={() => showToast('API-Key widerrufen', 'info')}>Key wider...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1380 |         </div>
+       | ^^^^^^^^^^^^^^
+> 1381 |       </SectionCard>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1382 |
+       | ^
+> 1383 |       {/* Webhooks */}
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1384 |       <SectionCard
+       | ^^^^^^^^^^^^^^^^^^
+> 1385 |         title="Webhooks"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1386 |         description="Webhooks senden HTTP POST-Requests an deine URL, sobald ein Event e...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1387 |       >
+       | ^^^^^^^
+> 1388 |         {/* Existing webhooks */}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1389 |         {webhooks.length > 0 ? (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1390 |           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1391 |             {webhooks.map((wh) => (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1392 |               <div
+       | ^^^^^^^^^^^^^^^^^^
+> 1393 |                 key={wh.name}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1394 |                 style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1395 |                   display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1396 |                   alignItems: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1397 |                   justifyContent: 'space-between',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1398 |                   padding: '12px 14px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1399 |                   borderRadius: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1400 |                   background: 'rgba(255,255,255,0.015)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1401 |                   border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1402 |                 }}
+       | ^^^^^^^^^^^^^^^^^^
+> 1403 |               >
+       | ^^^^^^^^^^^^^^^
+> 1404 |                 <div>
+       | ^^^^^^^^^^^^^^^^^^^^^
+> 1405 |                   <div style={{ fontSize: 12, color: C.text1 }}>{wh.name}</div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1406 |                   <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1407 |                     {wh.events.map((evt) => (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1408 |                       <span
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1409 |                         key={evt}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1410 |                         style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1411 |                           fontSize: 9,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1412 |                           padding: '2px 6px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1413 |                           borderRadius: 4,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1414 |                           background: 'rgba(99,102,241,0.08)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1415 |                           color: C.accentBright,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1416 |                           fontFamily: 'ui-monospace, monospace',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1417 |                         }}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1418 |                       >
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1419 |                         {evt}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1420 |                       </span>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1421 |                     ))}
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1422 |                   </div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1423 |                 </div>
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1424 |                 <span
+       | ^^^^^^^^^^^^^^^^^^^^^
+> 1425 |                   style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1426 |                     fontSize: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1427 |                     fontWeight: 500,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1428 |                     color: wh.active ? C.success : C.text3,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1429 |                   }}
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1430 |                 >
+       | ^^^^^^^^^^^^^^^^^
+> 1431 |                   {wh.active ? 'Aktiv' : 'Pausiert'}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1432 |                 </span>
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1433 |               </div>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1434 |             ))}
+       | ^^^^^^^^^^^^^^^
+> 1435 |           </div>
+       | ^^^^^^^^^^^^^^^^
+> 1436 |         ) : (
+       | ^^^^^^^^^^^^^
+> 1437 |           <div
+       | ^^^^^^^^^^^^^^
+> 1438 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1439 |               padding: '20px 16px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1440 |               borderRadius: 9,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1441 |               textAlign: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1442 |               background: 'rgba(255,255,255,0.015)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1443 |               border: `1px dashed ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1444 |             }}
+       | ^^^^^^^^^^^^^^
+> 1445 |           >
+       | ^^^^^^^^^^^
+> 1446 |             <p style={{ fontSize: 12, color: C.text3, margin: 0 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1447 |               Noch keine Webhooks eingerichtet. Erstelle einen, um Events in Echtzeit zu...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1448 |             </p>
+       | ^^^^^^^^^^^^^^^^
+> 1449 |           </div>
+       | ^^^^^^^^^^^^^^^^
+> 1450 |         )}
+       | ^^^^^^^^^^
+> 1451 |
+       | ^
+> 1452 |         {/* Add webhook form */}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1453 |         {showWebhookForm && (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1454 |           <div
+       | ^^^^^^^^^^^^^^
+> 1455 |             style={{
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1456 |               padding: '16px 20px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1457 |               background: C.surface,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1458 |               border: `1px solid rgba(99,102,241,0.2)`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1459 |               borderRadius: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1460 |               display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1461 |               flexDirection: 'column',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1462 |               gap: 12,
+       | ^^^^^^^^^^^^^^^^^^^^^^
+> 1463 |             }}
+       | ^^^^^^^^^^^^^^
+> 1464 |           >
+       | ^^^^^^^^^^^
+> 1465 |             <Field label="Webhook URL" hint="Wir senden einen HTTP POST mit JSON-Body an...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1466 |               <Input value={webhookUrl} onChange={setWebhookUrl} placeholder="https://de...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1467 |             </Field>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1468 |             <Field label="Events auswählen" hint="Wähle mindestens ein Event, das den We...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1469 |               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1470 |                 {availableEvents.map((evt) => {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1471 |                   const active = webhookEvents.includes(evt.value);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1472 |                   return (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1473 |                     <button
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1474 |                       key={evt.value}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1475 |                       onClick={() =>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1476 |                         setWebhookEvents(
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1477 |                           active ? webhookEvents.filter((e) => e !== evt.value) : [...we...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1478 |                         )
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1479 |                       }
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1480 |                       style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1481 |                         display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1482 |                         alignItems: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1483 |                         gap: 10,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1484 |                         padding: '8px 12px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1485 |                         borderRadius: 7,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1486 |                         textAlign: 'left',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1487 |                         fontFamily: 'inherit',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1488 |                         cursor: 'pointer',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1489 |                         border: `1px solid ${active ? 'rgba(99,102,241,0.3)' : C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1490 |                         background: active ? 'rgba(99,102,241,0.06)' : 'transparent',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1491 |                         transition: 'all 0.15s ease',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1492 |                       }}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^
+> 1493 |                     >
+       | ^^^^^^^^^^^^^^^^^^^^^
+> 1494 |                       <div
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1495 |                         style={{
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1496 |                           width: 16,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1497 |                           height: 16,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1498 |                           borderRadius: 4,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1499 |                           flexShrink: 0,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1500 |                           border: `1.5px solid ${active ? C.accentBright : C.text3}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1501 |                           background: active ? C.accentBright : 'transparent',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1502 |                           display: 'flex',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1503 |                           alignItems: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1504 |                           justifyContent: 'center',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1505 |                           transition: 'all 0.15s ease',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1506 |                         }}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1507 |                       >
+       | ^^^^^^^^^^^^^^^^^^^^^^^
+> 1508 |                         {active && <SvgIcon d={ICONS.check} size={10} color="#fff" />}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1509 |                       </div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1510 |                       <div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1511 |                         <div style={{ fontSize: 12, color: active ? C.text1 : C.text2 }}...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1512 |                         <div style={{ fontSize: 10, color: C.text3 }}>{evt.desc}</div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1513 |                       </div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1514 |                     </button>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1515 |                   );
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1516 |                 })}
+       | ^^^^^^^^^^^^^^^^^^^
+> 1517 |               </div>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1518 |             </Field>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1519 |             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1520 |               <GhostButton
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1521 |                 onClick={() => {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1522 |                   setShowWebhookForm(false);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1523 |                   setWebhookUrl('');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1524 |                   setWebhookEvents([]);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1525 |                 }}
+       | ^^^^^^^^^^^^^^^^^^
+> 1526 |               >
+       | ^^^^^^^^^^^^^^^
+> 1527 |                 Abbrechen
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1528 |               </GhostButton>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1529 |               <GhostButton onClick={() => showToast('Test-Event gesendet', 'info')}>Test...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1530 |               <GlowButton
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1531 |                 onClick={() => {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1532 |                   if (!webhookUrl) {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1533 |                     showToast('Bitte URL eingeben', 'error');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1534 |                     return;
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1535 |                   }
+       | ^^^^^^^^^^^^^^^^^^^
+> 1536 |                   if (webhookEvents.length === 0) {
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1537 |                     showToast('Bitte mindestens ein Event auswählen', 'error');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1538 |                     return;
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1539 |                   }
+       | ^^^^^^^^^^^^^^^^^^^
+> 1540 |                   showToast('Webhook gespeichert', 'success');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1541 |                   setShowWebhookForm(false);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1542 |                   setWebhookUrl('');
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1543 |                   setWebhookEvents([]);
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1544 |                 }}
+       | ^^^^^^^^^^^^^^^^^^
+> 1545 |               >
+       | ^^^^^^^^^^^^^^^
+> 1546 |                 Speichern
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1547 |               </GlowButton>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1548 |             </div>
+       | ^^^^^^^^^^^^^^^^^^
+> 1549 |           </div>
+       | ^^^^^^^^^^^^^^^^
+> 1550 |         )}
+       | ^^^^^^^^^^
+> 1551 |
+       | ^
+> 1552 |         {!showWebhookForm && <GhostButton onClick={() => setShowWebhookForm(true)}>+ Web...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1553 |       </SectionCard>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1554 |
+       | ^
+> 1555 |       {/* Rate Limits */}
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1556 |       <SectionCard
+       | ^^^^^^^^^^^^^^^^^^
+> 1557 |         title="Rate Limits & Nutzung"
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1558 |         description="Dein aktueller API-Verbrauch. Limits schützen die Plattform vor Übe...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1559 |       >
+       | ^^^^^^^
+> 1560 |         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1561 |           <ProgressRing value={342} max={1000} size={56} strokeWidth={4} color={C.accent...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1562 |           <div style={{ flex: 1 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1563 |             <div style={{ fontSize: 14, fontWeight: 600, color: C.text1 }}>342 / 1.000</...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1564 |             <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>API-Requests die...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1565 |           </div>
+       | ^^^^^^^^^^^^^^^^
+> 1566 |         </div>
+       | ^^^^^^^^^^^^^^
+> 1567 |         <div
+       | ^^^^^^^^^^^^
+> 1568 |           style={{
+       | ^^^^^^^^^^^^^^^^^^
+> 1569 |             display: 'grid',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1570 |             gridTemplateColumns: 'repeat(3, 1fr)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1571 |             gap: 10,
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1572 |             padding: '12px 14px',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1573 |             borderRadius: 8,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1574 |             background: 'rgba(255,255,255,0.02)',
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1575 |             border: `1px solid ${C.border}`,
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1576 |           }}
+       | ^^^^^^^^^^^^
+> 1577 |         >
+       | ^^^^^^^^^
+> 1578 |           {[
+       | ^^^^^^^^^^^^
+> 1579 |             { label: 'E-Mails / Min', value: '10', desc: 'Max. E-Mail-Versand' },
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1580 |             { label: 'API-Calls / Min', value: '20', desc: 'Max. API-Requests' },
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1581 |             { label: 'Reset', value: '1. Mai', desc: 'Nächster Monat' },
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1582 |           ].map((item) => (
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1583 |             <div key={item.label} style={{ textAlign: 'center' }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1584 |               <div style={{ fontSize: 15, fontWeight: 600, color: C.text1 }}>{item.value...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1585 |               <div style={{ fontSize: 9, color: C.text3, marginTop: 2 }}>{item.label}</div>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1586 |             </div>
+       | ^^^^^^^^^^^^^^^^^^
+> 1587 |           ))}
+       | ^^^^^^^^^^^^^
+> 1588 |         </div>
+       | ^^^^^^^^^^^^^^
+> 1589 |         <p style={{ fontSize: 11, color: C.text3, margin: 0, lineHeight: 1.6 }}>
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1590 |           Limits gelten pro Account und werden am 1. jedes Monats zurückgesetzt. Bei Bed...
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1591 |           kontaktiere uns.
+       | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 1592 |         </p>
+       | ^^^^^^^^^^^^
+> 1593 |       </SectionCard>
+       | ^^^^^^^^^^^^^^^^^^^^
+> 1594 |     </div>
+       | ^^^^^^^^^^
+> 1595 |   );
+       | ^^^^
+  1596 | }
+  1597 |
+  1598 | // ─── PAGE ────────────────────────────────────────────────────────────────────
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./app/sales-v2/settings/page.tsx [Client Component Browser]
+    ./app/sales-v2/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/sales-v2/settings/page.tsx [Client Component SSR]
+    ./app/sales-v2/settings/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:3272
+[ 1820954ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1821625ms] [LOG] [Fast Refresh] done in 750ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1821933ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1821964ms] [LOG] [Fast Refresh] done in 132ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1846394ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1846806ms] [LOG] [Fast Refresh] done in 484ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1847390ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 1847463ms] [LOG] [Fast Refresh] done in 151ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2154161ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2154195ms] [LOG] [Fast Refresh] done in 135ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2463184ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2463601ms] [LOG] [Fast Refresh] done in 475ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2515429ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2515680ms] [LOG] [Fast Refresh] done in 218ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2516965ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2517062ms] [LOG] [Fast Refresh] done in 171ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2530613ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2530800ms] [LOG] [Fast Refresh] done in 261ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2577038ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2577064ms] [LOG] [Fast Refresh] done in 127ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2919182ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2919352ms] [LOG] [Fast Refresh] done in 237ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2926655ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2927458ms] [LOG] [Fast Refresh] done in 885ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2928192ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2928208ms] [LOG] [Fast Refresh] done in 108ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2933782ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2933884ms] [LOG] [Fast Refresh] done in 171ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2946988ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2947112ms] [LOG] [Fast Refresh] done in 207ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2947937ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[ 2948103ms] [LOG] [Fast Refresh] done in 246ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431

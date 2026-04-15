@@ -924,7 +924,7 @@ export default function MeetingsPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Meetings' }]} />
+      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Meetings' }]} />
       <PageHeader
         title="Meetings"
         subtitle="Aufnehmen, analysieren und nachbereiten — alles an einem Ort"

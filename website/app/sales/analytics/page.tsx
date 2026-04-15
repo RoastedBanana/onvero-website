@@ -1365,7 +1365,7 @@ export default function AnalyticsPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Analytics' }]} />
+      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Analytics' }]} />
       <PageHeader
         title="Analytics"
         subtitle="Deine Sales-Performance auf einen Blick"

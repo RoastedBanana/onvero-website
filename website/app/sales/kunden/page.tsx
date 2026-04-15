@@ -5,7 +5,7 @@ import { C, PageHeader, Breadcrumbs, EmptyState, ICONS } from '../_shared';
 export default function KundenPage() {
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Kunden' }]} />
+      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Kunden' }]} />
       <PageHeader title="Kunden" subtitle="Bestehende Kunden & aktive Accounts" />
       <div
         style={{

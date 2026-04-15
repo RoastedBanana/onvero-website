@@ -1,59 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getAdmin() {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!serviceKey) return null;
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey);
-}
+import { getSessionContext, getAdminClient } from '@/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
+  const ctx = await getSessionContext();
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const body = await req.json();
 
-  const res = await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/lead-reasoning', {
+  const webhookUrl = process.env.N8N_WEBHOOK_LEAD_REASONING;
+  if (!webhookUrl)
+    return NextResponse.json({ error: 'N8N_WEBHOOK_LEAD_REASONING nicht konfiguriert' }, { status: 500 });
+
+  const res = await fetch(webhookUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-onvero-secret': 'onvero-internal-2024',
+      ...(process.env.N8N_WEBHOOK_SECRET ? { 'x-onvero-secret': process.env.N8N_WEBHOOK_SECRET } : {}),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, tenant_id: ctx.tenantId }),
   });
 
   const text = await res.text();
 
   try {
     const data = JSON.parse(text);
-    // n8n returns an array — unwrap first element
     const webhook = Array.isArray(data) ? data[0] : data;
     const executionId = webhook.id ?? webhook.execution_id;
 
-    // n8n saves reasoning & strategy to the DB but doesn't return them in the webhook response.
-    // Fetch the full row from Supabase to get all fields.
-    console.log('[reasoning] executionId:', executionId, 'has admin:', !!getAdmin());
     if (executionId) {
-      const admin = getAdmin();
-      if (admin) {
-        const { data: row, error: dbErr } = await admin
-          .from('lead_run_executions')
-          .select('*')
-          .eq('id', executionId)
-          .maybeSingle();
+      const admin = getAdminClient();
+      const { data: row } = await admin
+        .from('lead_run_executions')
+        .select('*')
+        .eq('id', executionId)
+        .eq('tenant_id', ctx.tenantId)
+        .maybeSingle();
 
-        console.log('[reasoning] DB row found:', !!row, 'error:', dbErr?.message ?? 'none',
-          'reasoning:', row?.reasoning?.slice(0, 80) ?? 'NULL',
-          'strategy:', row?.strategy?.slice(0, 80) ?? 'NULL');
-
-        if (row) {
-          return NextResponse.json({
-            ...row,
-            execution_id: executionId,
-            success: true,
-          });
-        }
+      if (row) {
+        return NextResponse.json({
+          ...row,
+          execution_id: executionId,
+          success: true,
+        });
       }
     }
 
-    // Fallback: return webhook response directly
     if (executionId) webhook.execution_id = executionId;
     return NextResponse.json(webhook);
   } catch {

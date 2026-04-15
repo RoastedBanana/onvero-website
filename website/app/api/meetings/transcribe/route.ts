@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionContext } from '@/lib/tenant-server';
 
 // Allow longer execution for large files with multiple chunks
 export const maxDuration = 300;
@@ -10,11 +11,15 @@ const CHUNK_SIZE = 20 * 1024 * 1024; // 20MB per chunk (under Groq's 25MB limit)
 function getFileName(audioFile: File): string {
   let fileName = audioFile.name || 'recording';
   if (!/\.\w+$/.test(fileName)) {
-    const ext = audioFile.type.includes('webm') ? 'webm'
-      : audioFile.type.includes('mp4') || audioFile.type.includes('m4a') ? 'mp4'
-      : audioFile.type.includes('ogg') ? 'ogg'
-      : audioFile.type.includes('wav') ? 'wav'
-      : 'mp3';
+    const ext = audioFile.type.includes('webm')
+      ? 'webm'
+      : audioFile.type.includes('mp4') || audioFile.type.includes('m4a')
+        ? 'mp4'
+        : audioFile.type.includes('ogg')
+          ? 'ogg'
+          : audioFile.type.includes('wav')
+            ? 'wav'
+            : 'mp3';
     fileName = `${fileName}.${ext}`;
   }
   return fileName;
@@ -28,7 +33,7 @@ async function transcribeChunk(
   buffer: ArrayBuffer,
   fileName: string,
   mimeType: string,
-  groqKey: string,
+  groqKey: string
 ): Promise<string> {
   const blob = new Blob([buffer], { type: mimeType });
   const file = new File([blob], fileName, { type: mimeType });
@@ -57,6 +62,9 @@ async function transcribeChunk(
 
 export async function POST(req: NextRequest) {
   try {
+    const ctx = await getSessionContext();
+    if (!ctx) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+
     const formData = await req.formData();
     const audioFile = formData.get('audio');
 
@@ -84,7 +92,9 @@ export async function POST(req: NextRequest) {
       const totalChunks = Math.ceil(fullBuffer.byteLength / CHUNK_SIZE);
       const parts: string[] = [];
 
-      console.log(`[transcribe] Splitting ${(fullBuffer.byteLength / 1024 / 1024).toFixed(1)} MB into ${totalChunks} chunks`);
+      console.log(
+        `[transcribe] Splitting ${(fullBuffer.byteLength / 1024 / 1024).toFixed(1)} MB into ${totalChunks} chunks`
+      );
 
       for (let i = 0; i < totalChunks; i++) {
         const start = i * CHUNK_SIZE;

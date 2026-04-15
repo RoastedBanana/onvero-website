@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getSessionContext, getAdminClient } from '@/lib/tenant-server';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ documentId: string }> }) {
+  const ctx = await getSessionContext();
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { documentId } = await params;
-  const supabase = await createServerSupabaseClient();
+  const client = getAdminClient();
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { data, error } = await supabase.from('blogposts').select('*').eq('document_id', documentId).single();
+  const { data, error } = await client
+    .from('blogposts')
+    .select('*')
+    .eq('document_id', documentId)
+    .eq('tenant_id', ctx.tenantId)
+    .single();
 
   if (error) {
     return NextResponse.json({ error: 'Beitrag nicht gefunden' }, { status: 404 });

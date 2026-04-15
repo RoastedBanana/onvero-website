@@ -210,10 +210,10 @@ export default function LeadDetailPage() {
     if (isScoring || !lead) return;
     setIsScoring(true);
     try {
-      await fetch('https://n8n.srv1223027.hstgr.cloud/webhook/lead-scoring', {
+      await fetch('/api/leads/rescore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_id: lead.id, tenant_id: 'df763f85-c687-42d6-be66-a2b353b89c90' }),
+        body: JSON.stringify({ lead_id: lead.id }),
       });
       await new Promise((r) => setTimeout(r, 75000));
       await refreshLead();

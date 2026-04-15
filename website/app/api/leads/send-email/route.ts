@@ -1,26 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { getSessionContext, getAdminClient } from '@/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   try {
+    const ctx = await getSessionContext();
+    if (!ctx) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    const tenant_id = ctx.tenantId;
+
     const ip = getClientIp(req.headers);
     const { success } = await rateLimit(`send-email:${ip}`, { maxRequests: 10, windowMs: 60_000 });
     if (!success) return NextResponse.json({ error: 'Zu viele Anfragen' }, { status: 429 });
-    const { lead_id, tenant_id, to, subject, html, text } = await req.json();
+    const { lead_id, to, subject, html, text } = await req.json();
 
     if (!to || (!html && !text)) {
       return NextResponse.json({ error: 'to and html/text are required' }, { status: 400 });
     }
 
-    // Get tenant domain from Supabase
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { getAll: () => cookieStore.getAll() } }
-    );
+    const supabase = getAdminClient();
 
     // Get email domain from tenant_integrations
     const { data: integration } = await supabase
@@ -40,7 +39,9 @@ export async function POST(req: NextRequest) {
       try {
         const sessionUser = JSON.parse(decodeURIComponent(rawCookie));
         if (sessionUser.firstName) fromName = sessionUser.firstName;
-      } catch { /* keep default */ }
+      } catch {
+        /* keep default */
+      }
     }
 
     const fromField = `${fromName} <${integration.email_resend.trim()}>`;
@@ -79,12 +80,17 @@ export async function POST(req: NextRequest) {
     if (lead_id) {
       await supabase
         .from('leads')
-        .update({ status: 'contacted', last_contacted_at: new Date().toISOString(), status_updated_at: new Date().toISOString() })
+        .update({
+          status: 'contacted',
+          last_contacted_at: new Date().toISOString(),
+          status_updated_at: new Date().toISOString(),
+        })
         .eq('id', lead_id);
 
       await supabase.from('lead_activities').insert({
         lead_id,
         tenant_id,
+        user_id: ctx.userId,
         type: 'email_sent',
         title: `E-Mail gesendet: ${subject}`,
         content: `An ${to} gesendet`,

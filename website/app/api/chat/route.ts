@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { validateCsrf } from '@/lib/csrf';
+import { getSessionContext } from '@/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   try {
+    const ctx = await getSessionContext();
+    if (!ctx) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+
     if (!validateCsrf(req)) {
       return NextResponse.json({ error: 'Ungültiges CSRF-Token' }, { status: 403 });
     }
@@ -28,7 +32,7 @@ export async function POST(req: NextRequest) {
     const response = await fetch(n8nUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, tenant_id: ctx.tenantId, user_id: ctx.userId }),
     });
 
     const text = await response.text();

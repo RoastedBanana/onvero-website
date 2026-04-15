@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionContext } from '@/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   try {
+    const ctx = await getSessionContext();
+    if (!ctx) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+
     const contentType = req.headers.get('content-type') ?? '';
     const isImage = contentType.includes('multipart') && (await req.clone().formData()).has('image');
     const url = isImage ? process.env.N8N_WEBHOOK_CHAT_IMAGE! : process.env.N8N_WEBHOOK_CHAT!;

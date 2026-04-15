@@ -1,25 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSessionContext } from '@/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   try {
+    const ctx = await getSessionContext();
+    if (!ctx) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+
     const body = await req.json();
 
     const res = await fetch(process.env.N8N_WEBHOOK_MEETING_SUMMARIZER!, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, tenant_id: ctx.tenantId }),
     });
 
     const text = await res.text();
 
     if (!res.ok) {
-      return NextResponse.json(
-        { error: text || 'n8n Webhook fehlgeschlagen' },
-        { status: res.status },
-      );
+      return NextResponse.json({ error: text || 'n8n Webhook fehlgeschlagen' }, { status: res.status });
     }
 
-    // Forward whatever n8n returns
     try {
       const json = JSON.parse(text);
       return NextResponse.json(json);

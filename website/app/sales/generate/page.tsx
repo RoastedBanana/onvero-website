@@ -1332,8 +1332,8 @@ export default function GeneratePage() {
 
       <Breadcrumbs
         items={[
-          { label: 'Onvero Sales', href: '/sales-v2' },
-          { label: 'Leads', href: '/sales-v2/leads' },
+          { label: 'Onvero Sales', href: '/sales' },
+          { label: 'Leads', href: '/sales/leads' },
           { label: 'Lead Generator' },
         ]}
       />
@@ -1439,7 +1439,7 @@ export default function GeneratePage() {
                       </span>
                     ))}
                     <Link
-                      href="/sales-v2/settings"
+                      href="/sales/settings"
                       style={{
                         fontSize: 11,
                         color: C.accent,
@@ -1912,7 +1912,7 @@ export default function GeneratePage() {
                               ))}
                             </div>
                             <Link
-                              href="/sales-v2/settings"
+                              href="/sales/settings"
                               style={{
                                 fontSize: 11,
                                 color: C.accent,
@@ -2737,7 +2737,7 @@ export default function GeneratePage() {
           {/* Done link */}
           {genDone && (
             <Link
-              href="/sales-v2/leads"
+              href="/sales/leads"
               style={{
                 marginTop: 32,
                 display: 'inline-flex',

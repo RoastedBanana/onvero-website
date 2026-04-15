@@ -40,15 +40,15 @@ function buildNav(
   return [
     {
       title: 'ÜBERSICHT',
-      items: [{ label: 'Home', href: '/sales-v2', icon: ICONS.home }],
+      items: [{ label: 'Home', href: '/sales', icon: ICONS.home }],
     },
     {
       title: 'PROSPECTS',
       items: [
-        { label: 'Market Intent', href: '/sales-v2/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
-        { label: 'Outreach-Ideen', href: '/sales-v2/outreach', icon: ICONS.mail },
-        { label: 'Monitoring', href: '/sales-v2/monitoring', icon: ICONS.eye },
-        { label: 'Network', href: '/sales-v2/network', icon: ICONS.network },
+        { label: 'Market Intent', href: '/sales/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
+        { label: 'Outreach-Ideen', href: '/sales/outreach', icon: ICONS.mail },
+        { label: 'Monitoring', href: '/sales/monitoring', icon: ICONS.eye },
+        { label: 'Network', href: '/sales/network', icon: ICONS.network },
       ],
     },
     {
@@ -56,25 +56,25 @@ function buildNav(
       items: [
         {
           label: 'Alle Leads',
-          href: '/sales-v2/leads',
+          href: '/sales/leads',
           icon: ICONS.list,
           badge: `${leadCount}`,
           children: [
-            { label: `Neu heute (${neuHeute})`, href: '/sales-v2/leads?filter=neu-heute' },
-            { label: `Qualifiziert (${qualifiziert})`, href: '/sales-v2/leads?filter=qualifiziert' },
-            { label: `In Kontakt (${inKontakt})`, href: '/sales-v2/leads?filter=kontakt' },
+            { label: `Neu heute (${neuHeute})`, href: '/sales/leads?filter=neu-heute' },
+            { label: `Qualifiziert (${qualifiziert})`, href: '/sales/leads?filter=qualifiziert' },
+            { label: `In Kontakt (${inKontakt})`, href: '/sales/leads?filter=kontakt' },
           ],
         },
-        { label: 'Lead Generator', href: '/sales-v2/generate', icon: ICONS.zap },
+        { label: 'Lead Generator', href: '/sales/generate', icon: ICONS.zap },
         // Kunden-Seite kommt als eigenes Projekt
-        // { label: 'Kunden', href: '/sales-v2/kunden', icon: ICONS.users },
+        // { label: 'Kunden', href: '/sales/kunden', icon: ICONS.users },
       ],
     },
     {
       title: 'PRODUKT',
       items: [
-        { label: 'Meetings', href: '/sales-v2/meetings', icon: ICONS.calendar },
-        { label: 'Analytics', href: '/sales-v2/analytics', icon: ICONS.chart },
+        { label: 'Meetings', href: '/sales/meetings', icon: ICONS.calendar },
+        { label: 'Analytics', href: '/sales/analytics', icon: ICONS.chart },
       ],
     },
   ];
@@ -472,7 +472,7 @@ function ProfileDropdown() {
 
           {/* Settings */}
           <Link
-            href="/sales-v2/settings"
+            href="/sales/settings"
             onClick={() => setOpen(false)}
             style={{
               display: 'flex',
@@ -576,7 +576,7 @@ function Topbar() {
       />
 
       {/* ─── Left: Logo ─── */}
-      <Link href="/sales-v2" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Link href="/sales" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
         {/* Icon container with glow */}
         <div
           style={{
@@ -760,7 +760,7 @@ function Sidebar() {
   );
 
   function isActive(href: string) {
-    if (href === '/sales-v2') return pathname === '/sales-v2';
+    if (href === '/sales') return pathname === '/sales';
     return pathname.startsWith(href);
   }
 
@@ -902,7 +902,7 @@ function Sidebar() {
       {/* Bottom settings link */}
       <div style={{ marginTop: 'auto', paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
         <Link
-          href="/sales-v2/settings"
+          href="/sales/settings"
           className="s-nav"
           style={{
             display: 'flex',

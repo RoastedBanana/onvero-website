@@ -1,24 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { NextResponse } from 'next/server';
 import { getSignedHeaders } from '@/lib/webhook-sign';
+import { getSessionContext } from '@/lib/tenant-server';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const ctx = await getSessionContext();
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const n8nUrl = process.env.N8N_WEBHOOK_LEAD_STATS;
     if (!n8nUrl) {
       return NextResponse.json({ error: 'Server-Konfiguration fehlt' }, { status: 500 });
     }
 
-    const tenantId = req.nextUrl.searchParams.get('tenant_id');
-    const payload = JSON.stringify({ tenant_id: tenantId });
+    const payload = JSON.stringify({ tenant_id: ctx.tenantId });
 
     const response = await fetch(n8nUrl, {
       method: 'GET',

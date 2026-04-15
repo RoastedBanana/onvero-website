@@ -333,8 +333,8 @@ export default function LeadDetailPage() {
       <>
         <Breadcrumbs
           items={[
-            { label: 'Onvero Sales', href: '/sales-v2' },
-            { label: 'Leads', href: '/sales-v2/leads' },
+            { label: 'Onvero Sales', href: '/sales' },
+            { label: 'Leads', href: '/sales/leads' },
             { label: 'Nicht gefunden' },
           ]}
         />
@@ -362,7 +362,7 @@ export default function LeadDetailPage() {
           </div>
           <h2 style={{ fontSize: 16, color: C.text1, margin: '0 0 6px' }}>Lead nicht gefunden</h2>
           <p style={{ fontSize: 12, color: C.text3, margin: '0 0 20px' }}>Der Lead mit ID "{id}" existiert nicht.</p>
-          <GhostButton onClick={() => router.push('/sales-v2/leads')}>← Zurück zu Leads</GhostButton>
+          <GhostButton onClick={() => router.push('/sales/leads')}>← Zurück zu Leads</GhostButton>
         </div>
       </>
     );
@@ -384,8 +384,8 @@ export default function LeadDetailPage() {
     <>
       <Breadcrumbs
         items={[
-          { label: 'Onvero Sales', href: '/sales-v2' },
-          { label: 'Leads', href: '/sales-v2/leads' },
+          { label: 'Onvero Sales', href: '/sales' },
+          { label: 'Leads', href: '/sales/leads' },
           { label: lead.name },
         ]}
       />
@@ -441,7 +441,7 @@ export default function LeadDetailPage() {
             }}
           />
 
-          <GhostButton onClick={() => router.push('/sales-v2/leads')}>← Zurück</GhostButton>
+          <GhostButton onClick={() => router.push('/sales/leads')}>← Zurück</GhostButton>
         </div>
       </div>
 
@@ -1135,7 +1135,7 @@ export default function LeadDetailPage() {
               {similar.map((sl) => (
                 <Link
                   key={sl.id}
-                  href={`/sales-v2/leads/${sl.id}`}
+                  href={`/sales/leads/${sl.id}`}
                   className="s-card"
                   style={{
                     display: 'flex',

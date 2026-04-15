@@ -104,15 +104,10 @@ function persist() {
 function load() {
   if (_initialized) return;
   _initialized = true;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const meetings: Meeting[] = raw ? JSON.parse(raw) : [];
-    const rawSug = localStorage.getItem(SUGGESTIONS_KEY);
-    const suggestions: SmartSuggestion[] = rawSug ? JSON.parse(rawSug) : [];
-    _state = { meetings, suggestions };
-  } catch {
-    _state = { meetings: [], suggestions: [] };
-  }
+  // Don't load from localStorage — always start empty and fetch from API.
+  // localStorage is per-domain, not per-user, so cached data from a previous
+  // user session would leak across accounts.
+  _state = { meetings: [], suggestions: [] };
   // Fetch real data from API (non-blocking)
   fetchMeetingsFromApi();
   fetchSuggestionsFromApi();

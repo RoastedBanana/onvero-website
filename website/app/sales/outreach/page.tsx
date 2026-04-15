@@ -457,7 +457,7 @@ export default function OutreachPage() {
   return (
     <>
       <Breadcrumbs
-        items={[{ label: 'Onvero Sales', href: '/sales-v2' }, { label: 'Prospects' }, { label: 'Outreach-Ideen' }]}
+        items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Prospects' }, { label: 'Outreach-Ideen' }]}
       />
       <PageHeader
         title="Outreach-Ideen"

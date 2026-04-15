@@ -25,13 +25,13 @@ export async function proxy(request: NextRequest) {
   const hasOnveroSession = !!request.cookies.get('onvero_user')?.value;
   const isLoggedIn = hasSession || hasOnveroSession;
 
-  // Logged-in user visiting /login → send to sales-v2
+  // Logged-in user visiting /login → send to dashboard
   if (pathname === '/login' && isLoggedIn) {
-    return NextResponse.redirect(new URL('/sales-v2', request.url));
+    return NextResponse.redirect(new URL('/sales', request.url));
   }
 
   // Unauthenticated user visiting protected routes → send to login
-  const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/sales-v2');
+  const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/sales');
   if (isProtected && !isLoggedIn) {
     const url = new URL('/login', request.url);
     url.searchParams.set('from', pathname);
@@ -72,5 +72,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/login', '/dashboard/:path*', '/sales-v2/:path*', '/api/:path*'],
+  matcher: ['/login', '/dashboard/:path*', '/sales/:path*', '/api/:path*'],
 };

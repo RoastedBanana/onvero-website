@@ -45,8 +45,8 @@ function LoginForm() {
       }
 
       // Validate redirect target — only allow relative paths to prevent open redirect
-      const raw = searchParams.get('from') || '/sales-v2';
-      const dest = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/sales-v2';
+      const raw = searchParams.get('from') || '/sales';
+      const dest = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/sales';
       // Hard navigation: forces a fresh HTTP request so the proxy sees
       // the newly set onvero_jwt cookie correctly.
       // Do NOT reset loading state — keep spinner until the page unloads.
@@ -125,32 +125,46 @@ function LoginForm() {
           {/* Row: Vorname + Nachname */}
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginBottom: '0.35rem' }}>
+              <label
+                style={{
+                  display: 'block',
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: '0.75rem',
+                  marginBottom: '0.35rem',
+                }}
+              >
                 Vorname
               </label>
               <input
                 type="text"
                 placeholder="Vorname"
                 value={form.firstName}
-                onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
                 style={inputStyle}
-                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
-                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
                 autoComplete="given-name"
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginBottom: '0.35rem' }}>
+              <label
+                style={{
+                  display: 'block',
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: '0.75rem',
+                  marginBottom: '0.35rem',
+                }}
+              >
                 Nachname
               </label>
               <input
                 type="text"
                 placeholder="Nachname"
                 value={form.lastName}
-                onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
                 style={inputStyle}
-                onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
-                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
                 autoComplete="family-name"
               />
             </div>
@@ -158,42 +172,44 @@ function LoginForm() {
 
           {/* Email */}
           <div>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginBottom: '0.35rem' }}>
+            <label
+              style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginBottom: '0.35rem' }}
+            >
               E-Mail
             </label>
             <input
               type="email"
               placeholder="name@firma.de"
               value={form.email}
-              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               style={inputStyle}
-              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
-              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
               autoComplete="email"
             />
           </div>
 
           {/* Password */}
           <div>
-            <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginBottom: '0.35rem' }}>
+            <label
+              style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', marginBottom: '0.35rem' }}
+            >
               Passwort
             </label>
             <input
               type="password"
               placeholder="••••••••"
               value={form.password}
-              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               style={inputStyle}
-              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
-              onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
               autoComplete="current-password"
             />
           </div>
 
           {/* Error */}
-          {error && (
-            <p style={{ color: '#ff6b6b', fontSize: '0.8rem', textAlign: 'center' }}>{error}</p>
-          )}
+          {error && <p style={{ color: '#ff6b6b', fontSize: '0.8rem', textAlign: 'center' }}>{error}</p>}
 
           {/* Submit */}
           <button
@@ -227,9 +243,11 @@ function LoginForm() {
               'Anmelden →'
             )}
           </button>
+          <p style={{ fontSize: 11, color: '#666', textAlign: 'center', marginTop: 12 }}>
+            Passwort vergessen? Bitte kontaktiere deinen Team-Admin.
+          </p>
         </form>
       </div>
-
     </main>
   );
 }

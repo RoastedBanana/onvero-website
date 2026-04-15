@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const WEBHOOK_URL = 'https://n8n.srv1223027.hstgr.cloud/webhook/lead-reasoning';
+const WEBHOOK_URL = process.env.N8N_WEBHOOK_LEAD_REASONING || '';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: networkId } = await params;

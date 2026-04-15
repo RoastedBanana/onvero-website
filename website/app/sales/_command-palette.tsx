@@ -79,7 +79,7 @@ export function CommandPalette() {
       description: 'Dashboard Übersicht',
       icon: ICONS.home,
       color: '#818CF8',
-      action: () => router.push('/sales-v2'),
+      action: () => router.push('/sales'),
       section: 'Navigation',
     },
     {
@@ -88,7 +88,7 @@ export function CommandPalette() {
       description: `${leads.length} Einträge`,
       icon: ICONS.list,
       color: '#818CF8',
-      action: () => router.push('/sales-v2/leads'),
+      action: () => router.push('/sales/leads'),
       section: 'Navigation',
     },
     {
@@ -96,7 +96,7 @@ export function CommandPalette() {
       label: 'Market Intent',
       icon: ICONS.zap,
       color: '#34D399',
-      action: () => router.push('/sales-v2/prospects'),
+      action: () => router.push('/sales/prospects'),
       section: 'Navigation',
     },
     {
@@ -104,7 +104,7 @@ export function CommandPalette() {
       label: 'Outreach-Ideen',
       icon: ICONS.mail,
       color: '#38BDF8',
-      action: () => router.push('/sales-v2/outreach'),
+      action: () => router.push('/sales/outreach'),
       section: 'Navigation',
     },
     {
@@ -112,7 +112,7 @@ export function CommandPalette() {
       label: 'Monitoring',
       icon: ICONS.eye,
       color: '#A78BFA',
-      action: () => router.push('/sales-v2/monitoring'),
+      action: () => router.push('/sales/monitoring'),
       section: 'Navigation',
     },
     {
@@ -120,7 +120,7 @@ export function CommandPalette() {
       label: 'Meetings',
       icon: ICONS.calendar,
       color: '#38BDF8',
-      action: () => router.push('/sales-v2/meetings'),
+      action: () => router.push('/sales/meetings'),
       section: 'Navigation',
     },
     {
@@ -128,7 +128,7 @@ export function CommandPalette() {
       label: 'Analytics',
       icon: ICONS.chart,
       color: '#FBBF24',
-      action: () => router.push('/sales-v2/analytics'),
+      action: () => router.push('/sales/analytics'),
       section: 'Navigation',
     },
     {
@@ -136,7 +136,7 @@ export function CommandPalette() {
       label: 'Einstellungen',
       icon: ICONS.settings,
       color: '#4E5170',
-      action: () => router.push('/sales-v2/settings'),
+      action: () => router.push('/sales/settings'),
       section: 'Navigation',
     },
   ];
@@ -161,7 +161,7 @@ export function CommandPalette() {
       description: `${l.company} · ${l.city}${l.score ? ` · Score ${l.score}` : ''}`,
       icon: ICONS.users,
       color: (l.score ?? 0) >= 70 ? '#818CF8' : (l.score ?? 0) >= 50 ? '#FBBF24' : '#4E5170',
-      action: () => router.push(`/sales-v2/leads/${l.id}`),
+      action: () => router.push(`/sales/leads/${l.id}`),
       section: 'Leads',
     }));
 

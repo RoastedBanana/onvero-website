@@ -14,10 +14,7 @@ import { OnveroLogo } from '@/components/ui/onvero-logo';
 /*  Supabase client                                                    */
 /* ------------------------------------------------------------------ */
 function getSupabase() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
+  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 }
 
 /* ------------------------------------------------------------------ */
@@ -71,8 +68,8 @@ function JoinForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     })
-      .then(r => r.json())
-      .then(data => {
+      .then((r) => r.json())
+      .then((data) => {
         if (data.valid) {
           setState({
             kind: 'form',
@@ -158,11 +155,14 @@ function JoinForm() {
         return;
       }
 
-      // Auto-login
-      const supabase = getSupabase();
-      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+      // Auto-login via API (sets session cookie + onvero_user cookie)
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      if (loginError) {
+      if (!loginRes.ok) {
         setFormError('Konto erstellt, aber Anmeldung fehlgeschlagen. Bitte manuell einloggen.');
         setState({ kind: 'form', email, tenant_id, tenant_name, tenant_logo });
         return;
@@ -175,7 +175,7 @@ function JoinForm() {
 
       setState({ kind: 'success' });
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.href = '/sales';
       }, 1800);
     } catch {
       setFormError('Netzwerkfehler. Bitte erneut versuchen.');
@@ -183,7 +183,7 @@ function JoinForm() {
     }
   }
 
-  const tenantName = (state.kind === 'form' || state.kind === 'submitting') ? state.tenant_name : '';
+  const tenantName = state.kind === 'form' || state.kind === 'submitting' ? state.tenant_name : '';
   const initial = tenantName.charAt(0).toUpperCase() || 'O';
   const isSubmitting = state.kind === 'submitting';
 
@@ -291,11 +291,7 @@ function JoinForm() {
               <div className="group relative">
                 <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full ring-2 ring-white/10">
                   {logoPreview ? (
-                    <img
-                      src={logoPreview}
-                      alt={`${tenantName} logo`}
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={logoPreview} alt={`${tenantName} logo`} className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-600 to-violet-600 text-xl font-bold text-white">
                       {initial}
@@ -310,20 +306,12 @@ function JoinForm() {
                   >
                     <Camera className="h-5 w-5 text-white" />
                   </button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoPick}
-                  />
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoPick} />
                 </div>
               </div>
 
               <div className="min-w-0">
-                <h3 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
-                  {tenantName}
-                </h3>
+                <h3 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{tenantName}</h3>
                 {/* Editable display name */}
                 <div className="mt-0.5 flex items-center gap-1.5">
                   {editingName ? (
@@ -331,9 +319,11 @@ function JoinForm() {
                       ref={nameRef}
                       type="text"
                       value={displayName}
-                      onChange={e => setDisplayName(e.target.value)}
+                      onChange={(e) => setDisplayName(e.target.value)}
                       onBlur={() => setEditingName(false)}
-                      onKeyDown={e => { if (e.key === 'Enter') setEditingName(false); }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') setEditingName(false);
+                      }}
                       className="w-full bg-transparent text-sm text-neutral-400 outline-none ring-0 border-b border-neutral-600 focus:border-indigo-400 transition-colors"
                       placeholder="Dein Name"
                     />
@@ -371,7 +361,7 @@ function JoinForm() {
                       type={showPw ? 'text' : 'password'}
                       placeholder="Passwort"
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={(e) => setPassword(e.target.value)}
                       className="w-full bg-transparent text-sm text-white placeholder-neutral-500 outline-none"
                       autoComplete="new-password"
                       minLength={8}
@@ -379,7 +369,7 @@ function JoinForm() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPw(v => !v)}
+                      onClick={() => setShowPw((v) => !v)}
                       className="shrink-0 text-neutral-500 hover:text-neutral-300 transition-colors"
                       tabIndex={-1}
                     >
@@ -396,14 +386,14 @@ function JoinForm() {
                       type={showConfirm ? 'text' : 'password'}
                       placeholder="Bestätigen"
                       value={confirm}
-                      onChange={e => setConfirm(e.target.value)}
+                      onChange={(e) => setConfirm(e.target.value)}
                       className="w-full bg-transparent text-sm text-white placeholder-neutral-500 outline-none"
                       autoComplete="new-password"
                       required
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirm(v => !v)}
+                      onClick={() => setShowConfirm((v) => !v)}
                       className="shrink-0 text-neutral-500 hover:text-neutral-300 transition-colors"
                       tabIndex={-1}
                     >
@@ -414,9 +404,7 @@ function JoinForm() {
               </div>
 
               {/* Error */}
-              {formError && (
-                <p className="text-center text-sm text-red-400">{formError}</p>
-              )}
+              {formError && <p className="text-center text-sm text-red-400">{formError}</p>}
 
               {/* Submit */}
               <Button
@@ -424,7 +412,7 @@ function JoinForm() {
                 disabled={isSubmitting}
                 className={cn(
                   'h-12 w-full rounded-2xl bg-white text-black font-semibold hover:bg-white/90 transition-all text-sm',
-                  isSubmitting && 'opacity-70 cursor-not-allowed',
+                  isSubmitting && 'opacity-70 cursor-not-allowed'
                 )}
               >
                 {isSubmitting ? (
@@ -437,9 +425,7 @@ function JoinForm() {
                 )}
               </Button>
 
-              <p className="text-center text-xs text-neutral-600">
-                Dieser Link ist 24 Stunden gültig.
-              </p>
+              <p className="text-center text-xs text-neutral-600">Dieser Link ist 24 Stunden gültig.</p>
             </form>
           </div>
         </Card>
