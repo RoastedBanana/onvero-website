@@ -1219,6 +1219,28 @@ function TeamSection() {
     }
   }
 
+  async function handleChangeRole(userId: string, name: string, currentRole: string) {
+    const newRole = currentRole === 'admin' ? 'member' : 'admin';
+    const label = newRole === 'admin' ? 'Admin' : 'Mitglied';
+    if (!confirm(`${name} zu ${label} ändern?`)) return;
+    try {
+      const res = await fetch(`/api/team/members/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (res.ok) {
+        showToast(`${name} ist jetzt ${label}`, 'success');
+        loadTeam();
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Fehler', 'error');
+      }
+    } catch {
+      showToast('Netzwerkfehler', 'error');
+    }
+  }
+
   async function handleRevokeInvite(token: string) {
     try {
       const res = await fetch(`/api/team/invite/${token}`, {
@@ -1366,6 +1388,24 @@ function TeamSection() {
                   >
                     Passwort
                   </button>
+                  {m.role !== 'owner' && (
+                    <button
+                      onClick={() => handleChangeRole(m.id, m.name, m.role)}
+                      style={{
+                        background: 'none',
+                        border: `1px solid ${C.border}`,
+                        borderRadius: 6,
+                        padding: '4px 10px',
+                        fontSize: 10,
+                        color: C.accentBright,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {m.role === 'admin' ? '→ Mitglied' : '→ Admin'}
+                    </button>
+                  )}
                   {m.role !== 'owner' && (
                     <button
                       onClick={() => handleRemoveMember(m.id, m.name)}
