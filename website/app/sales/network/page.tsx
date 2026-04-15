@@ -257,10 +257,11 @@ function EdgeLines({ edges, nodes, offset, scale }: { edges: NetworkEdge[]; node
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function LeadNodeCard({
-  node, offset, scale, selected, dropdownOpen, isLoading,
+  node, offset, scale, selected, dropdownOpen, isLoading, arrivalIndex,
   onSelect, onDragStart, onRemove, onToggleDropdown, onSelectCategory,
 }: {
   node: NetworkNode; offset: { x: number; y: number }; scale: number; selected: boolean; dropdownOpen: boolean; isLoading: boolean;
+  arrivalIndex?: number;
   onSelect: () => void; onDragStart: (e: React.MouseEvent) => void; onRemove: () => void;
   onToggleDropdown: () => void; onSelectCategory: (cat: ExpandCategory) => void;
 }) {
@@ -269,10 +270,18 @@ function LeadNodeCard({
   const initials = node.name.split(' ').map((n) => n[0]).slice(0, 2).join('');
   const circleSize = CIRCLE_NODE_SIZE * scale;
   const chosenOpt = node.expand_category ? EXPAND_OPTIONS.find((o) => o.key === node.expand_category) : null;
+  const isNewlyArrived = arrivalIndex !== undefined;
 
   return (
     <div onMouseDown={(e) => { e.stopPropagation(); onSelect(); onDragStart(e); }}
-      style={{ position: 'absolute', left: sx, top: sy, transform: 'translate(-50%, -50%)', cursor: 'grab', zIndex: selected || dropdownOpen ? 10 : 2 }}>
+      style={{
+        position: 'absolute', left: sx, top: sy, transform: 'translate(-50%, -50%)',
+        cursor: 'grab', zIndex: selected || dropdownOpen ? 10 : 2,
+        ...(isNewlyArrived && {
+          animation: 'nodePopIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
+          animationDelay: `${arrivalIndex * 80}ms`,
+        }),
+      }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         {/* Card */}
         <div style={{
@@ -450,7 +459,7 @@ export default function NetworkPage() {
   // Network state
   const { networks, loading: netsLoading, createNetwork, renameNetwork, deleteNetwork } = useNetworks();
   const [activeNetworkId, setActiveNetworkId] = useState<string | null>(null);
-  const { nodes, edges, loading: canvasLoading, addNode, removeNode, updateNodePosition, updateNodeCategory, addEdge, flushPositions, setExpandingNode } = useNetworkCanvas(activeNetworkId);
+  const { nodes, edges, loading: canvasLoading, newlyArrivedIds, addNode, removeNode, updateNodePosition, updateNodeCategory, addEdge, flushPositions, setExpandingNode } = useNetworkCanvas(activeNetworkId);
 
   // Stop loading spinners when new nodes arrive
   const prevNodeCount = useRef(nodes.length);
@@ -679,7 +688,13 @@ export default function NetworkPage() {
 
   return (
     <>
-    <style>{`@keyframes network-spinner { to { transform: rotate(360deg); } }`}</style>
+    <style>{`
+      @keyframes network-spinner { to { transform: rotate(360deg); } }
+      @keyframes nodePopIn {
+        from { opacity: 0; transform: translate(-50%, -50%) scale(0.75); }
+        to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      }
+    `}</style>
     <div
       ref={containerRef}
       onMouseDown={onCanvasMouseDown}
@@ -768,6 +783,7 @@ export default function NetworkPage() {
           selected={selectedNodeId === node.id}
           dropdownOpen={dropdownNodeId === node.id}
           isLoading={loadingNodeIds.has(node.id)}
+          arrivalIndex={newlyArrivedIds.get(node.id)}
           onSelect={() => { setSelectedNodeId(node.id); setDropdownNodeId(null); }}
           onDragStart={(e) => onNodeDragStart(node.id, e)}
           onRemove={() => removeNode(node.id)}

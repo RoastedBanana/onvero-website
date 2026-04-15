@@ -32,6 +32,7 @@ export type NetworkNode = {
   x: number;
   y: number;
   expand_category: string | null;
+  source_node_id: string | null;
   name: string;
   company: string;
   city: string;
@@ -53,6 +54,7 @@ type RawNode = {
   x: number;
   y: number;
   expand_category: string | null;
+  source_node_id: string | null;
   leads: {
     id: string;
     company_name: string | null;
@@ -74,6 +76,7 @@ function rawToNode(r: RawNode): NetworkNode {
     x: r.x,
     y: r.y,
     expand_category: r.expand_category,
+    source_node_id: r.source_node_id,
     name,
     company: lead?.company_name ?? '—',
     city: lead?.city ?? '—',
@@ -144,10 +147,13 @@ export function useNetworkCanvas(networkId: string | null) {
   const [nodes, setNodes] = useState<NetworkNode[]>([]);
   const [edges, setEdges] = useState<NetworkEdge[]>([]);
   const [loading, setLoading] = useState(false);
+  // Map of node-id -> arrival index for stagger animation. Cleared after animation window.
+  const [newlyArrivedIds, setNewlyArrivedIds] = useState<Map<string, number>>(new Map());
   const dirtyPositions = useRef<Map<string, { x: number; y: number }>>(new Map());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Track expanding node so we know where to position incoming nodes
+  // Track expanding node so we know where to position incoming nodes (fallback when
+  // source_node_id is not set in the DB row — e.g. legacy n8n insertions).
   const expandingNodeId = useRef<string | null>(null);
   const knownNodeIds = useRef<Set<string>>(new Set());
 
@@ -180,57 +186,92 @@ export function useNetworkCanvas(networkId: string | null) {
   }, [networkId]);
 
   // ── Auto-position new nodes from n8n ────────────────────────────────────
+  //
+  // Nodes that arrive from n8n either carry `source_node_id` (preferred — set by
+  // the n8n workflow when it inserts the row) or we fall back to the in-memory
+  // `expandingNodeId` ref (set when the user clicked expand in this browser).
+  //
+  // We ALWAYS override the position from n8n with our fan layout — n8n's
+  // positions are not trusted (they can be random or (0,0)).
+  //
+  // We group incoming nodes by their effective source so that parallel expansions
+  // from different seed-nodes all land correctly.
 
   const autoPositionNewNodes = useCallback(async (
     incomingNodes: NetworkNode[],
     existingNodes: NetworkNode[],
-    sourceNodeId: string | null,
+    fallbackSourceId: string | null,
+    existingEdges: NetworkEdge[],
   ) => {
     if (incomingNodes.length === 0) return;
 
-    // Find the source node
-    const source = sourceNodeId
-      ? existingNodes.find((n) => n.id === sourceNodeId)
-      : null;
-
-    const baseX = source ? source.x + NODE_OFFSET_X : 0;
-    const baseY = source ? source.y : 0;
-
-    // Center the new nodes vertically around the source
-    const totalHeight = (incomingNodes.length - 1) * NODE_SPACING_Y;
-    const startY = baseY - totalHeight / 2;
+    // Group by source_node_id (falling back to the ref for nodes without one)
+    const groups = new Map<string | null, NetworkNode[]>();
+    for (const node of incomingNodes) {
+      const effectiveSource = node.source_node_id ?? fallbackSourceId;
+      const list = groups.get(effectiveSource) ?? [];
+      list.push(node);
+      groups.set(effectiveSource, list);
+    }
 
     const positionUpdates: { id: string; x: number; y: number }[] = [];
     const newEdges: { sourceId: string; targetId: string }[] = [];
 
-    incomingNodes.forEach((node, i) => {
-      const x = snap(baseX);
-      const y = snap(startY + i * NODE_SPACING_Y);
-      positionUpdates.push({ id: node.id, x, y });
+    for (const [sourceId, group] of groups) {
+      // No source → can't reposition intelligently, leave as-is
+      if (!sourceId) continue;
 
-      if (sourceNodeId) {
-        newEdges.push({ sourceId: sourceNodeId, targetId: node.id });
-      }
-    });
+      const source = existingNodes.find((n) => n.id === sourceId);
+      if (!source) continue;
 
-    // Update positions in local state immediately
-    setNodes((prev) => prev.map((n) => {
-      const update = positionUpdates.find((u) => u.id === n.id);
-      return update ? { ...n, x: update.x, y: update.y } : n;
-    }));
+      // Count existing children of this source (nodes already positioned with this source)
+      // so that new nodes get placed AFTER them, not overlapping.
+      const existingChildrenCount = existingEdges.filter(
+        (e) => e.source_node_id === sourceId &&
+               !group.some((g) => g.id === e.target_node_id),
+      ).length;
 
-    // Persist positions to DB
-    if (networkId && positionUpdates.length > 0) {
-      fetch(`/api/networks/${networkId}/nodes`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates: positionUpdates }),
+      const baseX = source.x + NODE_OFFSET_X;
+      const baseY = source.y;
+
+      // Total slots = existing children + new group. Center the whole column on source.y.
+      const totalSlots = existingChildrenCount + group.length;
+      const totalHeight = (totalSlots - 1) * NODE_SPACING_Y;
+      const startY = baseY - totalHeight / 2;
+
+      group.forEach((node, i) => {
+        const slotIndex = existingChildrenCount + i;
+        const x = snap(baseX);
+        const y = snap(startY + slotIndex * NODE_SPACING_Y);
+        positionUpdates.push({ id: node.id, x, y });
+        // Only create edge if one doesn't already exist
+        const edgeExists = existingEdges.some(
+          (e) => e.source_node_id === sourceId && e.target_node_id === node.id,
+        );
+        if (!edgeExists) newEdges.push({ sourceId, targetId: node.id });
       });
     }
 
-    // Create edges
-    for (const { sourceId, targetId } of newEdges) {
+    // Update positions in local state immediately
+    if (positionUpdates.length > 0) {
+      setNodes((prev) => prev.map((n) => {
+        const update = positionUpdates.find((u) => u.id === n.id);
+        return update ? { ...n, x: update.x, y: update.y } : n;
+      }));
+
+      // Persist positions to DB
       if (networkId) {
+        fetch(`/api/networks/${networkId}/nodes`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: positionUpdates }),
+        });
+      }
+    }
+
+    // Create edges — skip if one already exists for this (source, target) pair
+    if (networkId && newEdges.length > 0) {
+      for (const { sourceId, targetId } of newEdges) {
         const res = await fetch(`/api/networks/${networkId}/edges`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -263,12 +304,13 @@ export function useNetworkCanvas(networkId: string | null) {
           table: 'network_nodes',
           filter: `network_id=eq.${networkId}`,
         }, () => {
-          // Fetch all nodes, detect new ones, auto-position them
+          // Fetch all nodes + edges, detect new nodes, auto-position them
           fetch(`/api/networks/${networkId}`, { cache: 'no-store' })
             .then((r) => r.json())
-            .then(({ nodes: rawNodes }) => {
+            .then(({ nodes: rawNodes, edges: rawEdges }) => {
               if (!rawNodes) return;
               const allMapped: NetworkNode[] = rawNodes.map((n: RawNode) => rawToNode(n));
+              const allEdges: NetworkEdge[] = rawEdges ?? [];
               const newNodes = allMapped.filter((n) => !knownNodeIds.current.has(n.id));
 
               // Update known IDs
@@ -276,13 +318,30 @@ export function useNetworkCanvas(networkId: string | null) {
 
               // Set all nodes
               setNodes(allMapped);
+              setEdges(allEdges);
 
-              // Auto-position new nodes that arrived at (0,0) from n8n
-              const unpositioned = newNodes.filter((n) => n.x === 0 && n.y === 0);
-              if (unpositioned.length > 0) {
-                const sourceId = expandingNodeId.current;
-                autoPositionNewNodes(unpositioned, allMapped, sourceId);
-              }
+              if (newNodes.length === 0) return;
+
+              // Mark new nodes for stagger animation
+              setNewlyArrivedIds((prev) => {
+                const next = new Map(prev);
+                newNodes.forEach((n, i) => next.set(n.id, i));
+                return next;
+              });
+              // Clear stagger marks after the animation window (500ms anim + 80ms * count stagger + buffer)
+              const clearAfter = 800 + newNodes.length * 80;
+              const idsToClear = newNodes.map((n) => n.id);
+              setTimeout(() => {
+                setNewlyArrivedIds((prev) => {
+                  const next = new Map(prev);
+                  idsToClear.forEach((id) => next.delete(id));
+                  return next;
+                });
+              }, clearAfter);
+
+              // Auto-position: nodes with source_node_id will be grouped; nodes without
+              // one still use the fallback ref (backwards-compat for legacy n8n workflows).
+              autoPositionNewNodes(newNodes, allMapped, expandingNodeId.current, allEdges);
             });
         })
         .on('postgres_changes', {
@@ -416,7 +475,7 @@ export function useNetworkCanvas(networkId: string | null) {
   }, [networkId]);
 
   return {
-    nodes, edges, loading,
+    nodes, edges, loading, newlyArrivedIds,
     addNode, removeNode, updateNodePosition, updateNodeCategory,
     addEdge, removeEdge, flushPositions, setExpandingNode,
   };

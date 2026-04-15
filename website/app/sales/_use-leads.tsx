@@ -153,7 +153,7 @@ async function initLeadsStore() {
            email_draft_subject, email_draft_body,
            google_rating, google_reviews, google_maps_url,
            custom_fields, last_contacted_at, follow_up_at, created_at,
-           employment_history, tenant_id`
+           employment_history, tenant_id, website_data`
         )
         .eq('tenant_id', tid)
         .order('score', { ascending: false, nullsFirst: false })
@@ -280,6 +280,7 @@ function dbToLead(r: DbLead): Lead {
         current: entry.current === true,
       };
     }),
+    websiteData: (r.website_data as Record<string, unknown> | null) ?? null,
   };
 }
 

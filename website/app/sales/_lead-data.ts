@@ -44,6 +44,7 @@ export interface Lead {
     endDate: string | null;
     current: boolean;
   }[];
+  websiteData?: Record<string, unknown> | null;
 }
 
 // ─── ACCOUNT PROFILE ─────────────────────────────────────────────────────────

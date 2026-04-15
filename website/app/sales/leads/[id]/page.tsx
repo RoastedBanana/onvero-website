@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import LeadAvatar from '@/components/ui/LeadAvatar';
@@ -286,7 +286,160 @@ function ScoreBreakdownBar({ label, value, max, color }: { label: string; value:
   );
 }
 
-// ─── PAGE ────────────────────────────────────────────────────────────────────
+// ─── DEEP RESEARCH PANEL ────────────────────────────────────────────────────
+
+const FIELD_LABELS: Record<string, string> = {
+  company_description: 'Unternehmensbeschreibung',
+  usp: 'USP',
+  core_services: 'Kernleistungen',
+  target_customers: 'Zielkunden',
+  pain_points: 'Pain Points',
+  growth_signals: 'Wachstumssignale',
+  tech_stack: 'Tech Stack',
+  automation_potential: 'Automatisierungspotenzial',
+  automation_opportunities: 'Automatisierungsmöglichkeiten',
+  personalization_hooks: 'Personalisierungsansätze',
+  website_highlights: 'Website-Highlights',
+  tone_of_voice: 'Tone of Voice',
+  company_size_signals: 'Unternehmensgröße',
+  partner_customer_urls: 'Partner & Kunden URLs',
+  scraped_at: 'Analysiert am',
+  cloudflare_blocked: 'Cloudflare blockiert',
+};
+
+const FIELD_ORDER = [
+  'company_description', 'usp', 'core_services', 'target_customers',
+  'pain_points', 'growth_signals', 'tech_stack', 'automation_potential',
+  'automation_opportunities', 'personalization_hooks', 'website_highlights',
+  'tone_of_voice', 'company_size_signals',
+];
+
+function DeepResearchPanel({ data }: { data: Record<string, unknown> }) {
+  const [open, setOpen] = useState(false);
+
+  const sortedEntries = useMemo(() => {
+    const entries = Object.entries(data).filter(
+      ([k]) => k !== 'scraped_at' && k !== 'cloudflare_blocked' && k !== 'partner_customer_urls'
+    );
+    return entries.sort((a, b) => {
+      const ia = FIELD_ORDER.indexOf(a[0]);
+      const ib = FIELD_ORDER.indexOf(b[0]);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+  }, [data]);
+
+  const scrapedAt = data.scraped_at
+    ? new Date(data.scraped_at as string).toLocaleDateString('de-DE', {
+        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      })
+    : null;
+
+  return (
+    <div
+      style={{
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 14,
+        padding: '16px 18px',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
+      }}
+    >
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          fontFamily: 'inherit',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SvgIcon d={ICONS.spark} size={12} color={C.accent} />
+          <span style={{ fontSize: 10, color: C.text3, letterSpacing: '0.06em', fontWeight: 500 }}>
+            DEEP RESEARCH
+          </span>
+        </div>
+        <span
+          style={{
+            fontSize: 10,
+            color: C.text3,
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s',
+            display: 'inline-block',
+          }}
+        >
+          ▼
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {scrapedAt && (
+            <div style={{ fontSize: 10, color: C.text3, fontStyle: 'italic' }}>
+              Analysiert: {scrapedAt}
+            </div>
+          )}
+
+          {sortedEntries.map(([key, value]) => {
+            const label = FIELD_LABELS[key] ?? key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+            if (value == null || (Array.isArray(value) && value.length === 0)) return null;
+            if (typeof value === 'string' && !value.trim()) return null;
+
+            return (
+              <div key={key}>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: C.accent,
+                    letterSpacing: '0.04em',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    marginBottom: 6,
+                  }}
+                >
+                  {label}
+                </div>
+
+                {typeof value === 'string' && (
+                  <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>
+                    {value}
+                  </div>
+                )}
+
+                {Array.isArray(value) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {(value as string[]).map((item, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 8,
+                          fontSize: 12,
+                          color: C.text2,
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        <span style={{ color: C.text3, flexShrink: 0, marginTop: 1 }}>•</span>
+                        <span>{String(item)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── PAGE ────────────────────────────────────────────────────────────────────
 
@@ -1116,6 +1269,11 @@ export default function LeadDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Deep Research */}
+          {lead.websiteData && Object.keys(lead.websiteData).length > 0 && (
+            <DeepResearchPanel data={lead.websiteData} />
+          )}
         </div>
       </div>
 
