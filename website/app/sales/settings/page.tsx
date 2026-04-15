@@ -1124,8 +1124,6 @@ function TeamSection() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<TeamInvite[]>([]);
   const [loading, setLoading] = useState(true);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteName, setInviteName] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
   const [inviting, setInviting] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -1151,28 +1149,18 @@ function TeamSection() {
   }
 
   async function handleInvite() {
-    if (!inviteEmail || !inviteEmail.includes('@')) {
-      showToast('Bitte gültige E-Mail eingeben', 'error');
-      return;
-    }
     setInviting(true);
     try {
       const res = await fetch('/api/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: inviteEmail,
-          role: inviteRole,
-          name: inviteName,
-        }),
+        body: JSON.stringify({ role: inviteRole }),
       });
       const data = await res.json();
       if (res.ok && data.invite_link) {
         await navigator.clipboard.writeText(data.invite_link);
         setCopiedLink(data.invite_link);
         showToast('Einladungslink kopiert!', 'success');
-        setInviteEmail('');
-        setInviteName('');
         loadTeam();
         setTimeout(() => setCopiedLink(null), 15000);
       } else {
@@ -1445,36 +1433,24 @@ function TeamSection() {
 
       {/* Invite */}
       <SectionCard
-        title="Mitglied einladen"
-        description="Es wird ein Einladungslink generiert, den du direkt teilen kannst. Der Eingeladene erstellt sich damit ein Konto."
+        title="Einladungslink erstellen"
+        description="Erstelle einen Link und teile ihn per WhatsApp, E-Mail oder Chat. Die Person registriert sich selbst — E-Mail, Name und Passwort. Jeder Link ist einmalig nutzbar."
       >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <Field label="Vorname">
-            <Input value={inviteName} onChange={setInviteName} placeholder="Max" />
-          </Field>
-          <Field label="E-Mail-Adresse">
-            <Input value={inviteEmail} onChange={setInviteEmail} placeholder="max@firma.de" />
-          </Field>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'end' }}>
+          <div style={{ flex: 1 }}>
+            <Field label="Rolle für den neuen Mitarbeiter">
+              <Select
+                value={inviteRole}
+                onChange={setInviteRole}
+                options={[
+                  { value: 'member', label: 'Mitglied — Leads, Meetings & Analytics' },
+                  { value: 'admin', label: 'Admin — Vollzugriff inkl. Einstellungen' },
+                ]}
+              />
+            </Field>
+          </div>
+          <GlowButton onClick={handleInvite}>{inviting ? 'Erstelle...' : 'Link erstellen'}</GlowButton>
         </div>
-        <Field label="Rolle">
-          <Select
-            value={inviteRole}
-            onChange={setInviteRole}
-            options={[
-              {
-                value: 'member',
-                label: 'Mitglied — Kann Leads, Meetings & Analytics nutzen',
-              },
-              {
-                value: 'admin',
-                label: 'Admin — Vollzugriff inkl. Einstellungen & Team',
-              },
-            ]}
-          />
-        </Field>
-        <GlowButton onClick={handleInvite}>
-          {inviting ? 'Erstelle Link...' : 'Einladungslink erstellen & kopieren'}
-        </GlowButton>
 
         {copiedLink && (
           <div

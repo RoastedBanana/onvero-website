@@ -8,10 +8,15 @@ function getSupabase() {
 export async function POST(req: NextRequest) {
   try {
     const supabase = getSupabase();
-    const { token, password, displayName } = await req.json();
+    const body = await req.json();
+    const { token, password, displayName } = body;
+    const userEmail = body.email?.trim()?.toLowerCase();
 
     if (!token || !password || password.length < 8) {
       return NextResponse.json({ error: 'Token und Passwort (min. 8 Zeichen) erforderlich.' }, { status: 400 });
+    }
+    if (!userEmail || !userEmail.includes('@')) {
+      return NextResponse.json({ error: 'Gültige E-Mail-Adresse erforderlich.' }, { status: 400 });
     }
 
     // Re-validate token server-side
@@ -38,18 +43,18 @@ export async function POST(req: NextRequest) {
     let userId: string;
 
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: invite.email,
+      email: userEmail,
       password,
       email_confirm: true,
       user_metadata: {
-        display_name: displayName || invite.email.split('@')[0],
+        display_name: displayName || userEmail.split('@')[0],
       },
     });
 
     if (authError && authError.message?.includes('already been registered')) {
       // User exists — look them up and update their password
       const { data: listData } = await supabase.auth.admin.listUsers();
-      const existing = listData?.users?.find((u) => u.email === invite.email);
+      const existing = listData?.users?.find((u) => u.email === userEmail);
       if (!existing) {
         return NextResponse.json({ error: 'Benutzer existiert, konnte aber nicht gefunden werden.' }, { status: 500 });
       }
@@ -59,7 +64,7 @@ export async function POST(req: NextRequest) {
       await supabase.auth.admin.updateUserById(userId, {
         password,
         user_metadata: {
-          display_name: displayName || existing.user_metadata?.display_name || invite.email.split('@')[0],
+          display_name: displayName || existing.user_metadata?.display_name || userEmail.split('@')[0],
         },
       });
     } else if (authError || !authData?.user) {
@@ -82,8 +87,11 @@ export async function POST(req: NextRequest) {
 
     if (existingMembership) {
       // Already a member — just mark invite as used
-      await supabase.from('invitations').update({ used_at: new Date().toISOString() }).eq('token', token);
-      return NextResponse.json({ success: true, email: invite.email, tenant_id: invite.tenant_id });
+      await supabase
+        .from('invitations')
+        .update({ used_at: new Date().toISOString(), email: userEmail })
+        .eq('token', token);
+      return NextResponse.json({ success: true, email: userEmail, tenant_id: invite.tenant_id });
     }
 
     // Insert into tenant_users
@@ -100,11 +108,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Mark invitation as used
-    await supabase.from('invitations').update({ used_at: new Date().toISOString() }).eq('token', token);
+    await supabase
+      .from('invitations')
+      .update({ used_at: new Date().toISOString(), email: userEmail })
+      .eq('token', token);
 
     return NextResponse.json({
       success: true,
-      email: invite.email,
+      email: userEmail,
       tenant_id: invite.tenant_id,
     });
   } catch (err) {

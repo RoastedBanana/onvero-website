@@ -82,58 +82,35 @@ export async function POST(req: NextRequest) {
     const tenantId = ctx.tenantId;
 
     const body = await req.json();
-    const email = body?.email?.trim()?.toLowerCase();
-    const name = body?.name?.trim() || null;
-    const role = body?.role;
-
-    if (!email || !email.includes('@')) {
-      return NextResponse.json({ error: 'Gültige E-Mail-Adresse erforderlich.' }, { status: 400 });
-    }
-
-    const inviteRole = role === 'admin' ? 'admin' : 'member';
+    const inviteRole = body?.role === 'admin' ? 'admin' : 'member';
     const admin = getAdmin();
 
-    // Check team size
-    const { data: existingUsers, error: teamErr } = await admin
-      .from('tenant_users')
-      .select('user_id')
-      .eq('tenant_id', tenantId);
+    // Check team size (members + pending invites)
+    const { data: existingUsers } = await admin.from('tenant_users').select('user_id').eq('tenant_id', tenantId);
 
-    if (teamErr) {
-      console.error('team POST: team size check failed', teamErr);
-      return NextResponse.json({ error: 'Fehler beim Prüfen der Team-Größe.' }, { status: 500 });
-    }
-
-    if (existingUsers && existingUsers.length >= 10) {
-      return NextResponse.json({ error: 'Maximale Team-Größe erreicht (10 Mitglieder).' }, { status: 400 });
-    }
-
-    // Check if there's already a pending invite for this email
-    const { data: existingInvite } = await admin
+    const { data: pendingInvites } = await admin
       .from('invitations')
       .select('token')
       .eq('tenant_id', tenantId)
-      .eq('email', email)
       .is('used_at', null)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
+      .gt('expires_at', new Date().toISOString());
 
-    if (existingInvite) {
-      return NextResponse.json({ error: 'Es gibt bereits eine offene Einladung für diese E-Mail.' }, { status: 409 });
+    const totalSlots = (existingUsers?.length ?? 0) + (pendingInvites?.length ?? 0);
+    if (totalSlots >= 10) {
+      return NextResponse.json({ error: 'Maximale Team-Größe erreicht (10 Mitglieder).' }, { status: 400 });
     }
 
-    // Let DB generate the token (uuid default) and insert
+    // Create invite link (no email needed — person enters their own data)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
     const { data: inserted, error: insertErr } = await admin
       .from('invitations')
       .insert({
-        email,
+        email: 'pending',
         role: inviteRole,
         tenant_id: tenantId,
         expires_at: expiresAt.toISOString(),
-        name,
       })
       .select('token')
       .single();
