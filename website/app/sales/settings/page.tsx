@@ -527,10 +527,18 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
         if (s.company_location && !profile.company_location) updated.company_location = s.company_location;
         if (s.website) updated.website = s.website;
         if (s.industry && !profile.industry) updated.industry = s.industry;
+        if (s.usp && !profile.usp) updated.usp = s.usp;
         if (s.services?.length && (!profile.services || profile.services.length === 0)) updated.services = s.services;
         onChange(updated);
         setScraped(true);
-        const filled = [s.company_name, s.company_description, s.company_location, s.industry].filter(Boolean).length;
+        const filled = [
+          s.company_name,
+          s.company_description,
+          s.company_location,
+          s.industry,
+          s.usp,
+          s.services?.length,
+        ].filter(Boolean).length;
         showToast(`${filled} Felder automatisch ausgefüllt — bitte prüfen und speichern`, 'success');
         setTimeout(() => setScraped(false), 8000);
       } else {
