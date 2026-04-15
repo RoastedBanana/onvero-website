@@ -31,6 +31,18 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Mitglied nicht gefunden.' }, { status: 404 });
     }
 
+    // Prevent removing the last owner
+    if (membership.role === 'owner') {
+      const { data: owners } = await admin
+        .from('tenant_users')
+        .select('user_id')
+        .eq('tenant_id', tenantId)
+        .eq('role', 'owner');
+      if (!owners || owners.length <= 1) {
+        return NextResponse.json({ error: 'Der letzte Owner kann nicht entfernt werden.' }, { status: 400 });
+      }
+    }
+
     // Remove from tenant_users
     const { error: deleteErr } = await admin
       .from('tenant_users')
@@ -67,6 +79,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const tenantId = ctx.tenantId;
     const admin = getAdminClient();
+
+    // Check current role — prevent downgrading the last owner
+    const { data: current } = await admin
+      .from('tenant_users')
+      .select('role')
+      .eq('tenant_id', tenantId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!current) {
+      return NextResponse.json({ error: 'Mitglied nicht gefunden.' }, { status: 404 });
+    }
+
+    if (current.role === 'owner') {
+      return NextResponse.json(
+        { error: 'Owner-Rolle kann nicht über diese Funktion geändert werden.' },
+        { status: 400 }
+      );
+    }
 
     const { error } = await admin.from('tenant_users').update({ role }).eq('tenant_id', tenantId).eq('user_id', userId);
 
