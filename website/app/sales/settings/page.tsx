@@ -470,8 +470,6 @@ function IntegrationCard({
 function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: (p: ProfileData) => void }) {
   const upd = (field: keyof ProfileData, value: string | string[] | number | null) =>
     onChange({ ...profile, [field]: value });
-  const [scraping, setScraping] = useState(false);
-  const [scraped, setScraped] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
 
@@ -505,83 +503,8 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
     }
   }
 
-  async function handleWebsiteScrape() {
-    const url = profile.website?.trim();
-    if (!url) {
-      showToast('Bitte zuerst eine Website eingeben', 'error');
-      return;
-    }
-    setScraping(true);
-    try {
-      const res = await fetch('/api/profile/analyze-website', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
-      const data = await res.json();
-      if (res.ok && data.suggestions) {
-        const s = data.suggestions;
-        const updated = { ...profile };
-        if (s.company_name && !profile.company_name) updated.company_name = s.company_name;
-        if (s.company_description && !profile.company_description) updated.company_description = s.company_description;
-        if (s.company_location && !profile.company_location) updated.company_location = s.company_location;
-        if (s.website) updated.website = s.website;
-        if (s.industry && !profile.industry) updated.industry = s.industry;
-        if (s.usp && !profile.usp) updated.usp = s.usp;
-        if (s.services?.length && (!profile.services || profile.services.length === 0)) updated.services = s.services;
-        onChange(updated);
-        setScraped(true);
-        const filled = [
-          s.company_name,
-          s.company_description,
-          s.company_location,
-          s.industry,
-          s.usp,
-          s.services?.length,
-        ].filter(Boolean).length;
-        showToast(`${filled} Felder automatisch ausgefüllt — bitte prüfen und speichern`, 'success');
-        setTimeout(() => setScraped(false), 8000);
-      } else {
-        showToast(data.error || 'Analyse fehlgeschlagen', 'error');
-      }
-    } catch {
-      showToast('Netzwerkfehler', 'error');
-    } finally {
-      setScraping(false);
-    }
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Website Scraper — auto-fill with AI */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(129,140,248,0.03))',
-          border: '1px solid rgba(99,102,241,0.15)',
-          borderRadius: 12,
-          padding: '20px 24px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <SvgIcon d={ICONS.spark} size={16} color={C.accentBright} />
-          <h3 style={{ fontSize: 14, fontWeight: 500, color: C.text1, margin: 0 }}>Profil mit KI ausfüllen</h3>
-        </div>
-        <p style={{ fontSize: 12, color: C.text3, margin: '0 0 14px', lineHeight: 1.6 }}>
-          Gib deine Website-URL ein und unsere KI analysiert deine Seite — Firmenbeschreibung, Services, Branche und
-          Zielgruppe werden automatisch erkannt und vorausgefüllt.
-        </p>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'end' }}>
-          <div style={{ flex: 1 }}>
-            <Field label="Website-URL">
-              <Input value={profile.website} onChange={(v) => upd('website', v)} placeholder="https://deinefirma.de" />
-            </Field>
-          </div>
-          <GlowButton onClick={handleWebsiteScrape}>
-            {scraping ? 'Analysiere...' : scraped ? 'Gestartet' : 'Website analysieren'}
-          </GlowButton>
-        </div>
-      </div>
-
       <SectionCard
         title="Basis-Informationen"
         description="Diese Daten nutzt die KI um deine Leads besser zu qualifizieren."
