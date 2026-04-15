@@ -77,21 +77,27 @@ export async function POST(req: NextRequest) {
       userId = authData.user.id;
     }
 
-    // Check if already in this tenant
-    const { data: existingMembership } = await supabase
+    // Check if user is already in ANY tenant (one user = one company)
+    const { data: anyMembership } = await supabase
       .from('tenant_users')
-      .select('user_id')
-      .eq('tenant_id', invite.tenant_id)
+      .select('user_id, tenant_id')
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (existingMembership) {
-      // Already a member — just mark invite as used
-      await supabase
-        .from('invitations')
-        .update({ used_at: new Date().toISOString(), email: userEmail })
-        .eq('token', token);
-      return NextResponse.json({ success: true, email: userEmail, tenant_id: invite.tenant_id });
+    if (anyMembership) {
+      if (anyMembership.tenant_id === invite.tenant_id) {
+        // Already in this tenant — just mark invite as used
+        await supabase
+          .from('invitations')
+          .update({ used_at: new Date().toISOString(), email: userEmail })
+          .eq('token', token);
+        return NextResponse.json({ success: true, email: userEmail, tenant_id: invite.tenant_id });
+      }
+      // In a different tenant — block
+      return NextResponse.json(
+        { error: 'Diese E-Mail ist bereits einem anderen Unternehmen zugeordnet. Bitte verwende eine andere E-Mail.' },
+        { status: 409 }
+      );
     }
 
     // Insert into tenant_users
