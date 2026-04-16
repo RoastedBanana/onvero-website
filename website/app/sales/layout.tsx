@@ -46,6 +46,7 @@ function buildNav(
       title: 'PROSPECTS',
       items: [
         { label: 'Market Intent', href: '/sales/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
+        { label: 'Lead Generator', href: '/sales/generate', icon: ICONS.spark },
         { label: 'Outreach-Ideen', href: '/sales/outreach', icon: ICONS.mail },
         { label: 'Monitoring', href: '/sales/monitoring', icon: ICONS.eye },
         { label: 'Network', href: '/sales/network', icon: ICONS.network },
@@ -65,9 +66,8 @@ function buildNav(
             { label: `In Kontakt (${inKontakt})`, href: '/sales/leads?filter=kontakt' },
           ],
         },
-        { label: 'Lead Generator', href: '/sales/generate', icon: ICONS.zap },
-        // Kunden-Seite kommt als eigenes Projekt
-        // { label: 'Kunden', href: '/sales/kunden', icon: ICONS.users },
+        { label: 'People', href: '/sales/people', icon: ICONS.users },
+        { label: 'Kunden', href: '/sales/kunden', icon: ICONS.check },
       ],
     },
     {

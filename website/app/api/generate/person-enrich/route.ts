@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionContext } from '@/lib/tenant-server';
 
-const WEBHOOK_URL = 'https://n8n.srv1223027.hstgr.cloud/webhook-test/person-enrich';
+const WEBHOOK_URL = 'https://n8n.srv1223027.hstgr.cloud/webhook/person-enrich';
 
 export async function POST(req: NextRequest) {
   const ctx = await getSessionContext();
