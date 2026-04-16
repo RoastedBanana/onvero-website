@@ -3,48 +3,113 @@
 
 export interface Lead {
   id: string;
-  name: string;
-  firstName: string;
-  lastName: string;
   company: string;
-  email: string | null;
-  phone: string | null;
   city: string;
   country: string | null;
   score: number | null;
   status: 'Neu' | 'In Kontakt' | 'Qualifiziert' | 'Verloren';
   lastActivity: string;
   industry: string;
-  industryApollo: string | null;
   employees: string;
   employeeCount: number | null;
   website: string | null;
-  jobTitle: string | null;
   linkedinUrl: string | null;
-  emailStatus: string | null;
-  aiSummary: string | null;
-  aiTags: string[];
+  logoUrl: string | null;
+  primaryDomain: string | null;
+  foundedYear: number | null;
+  annualRevenuePrinted: string | null;
+  companySize: string | null;
+  companyType: string | null;
+  tier: string | null;
+  summary: string | null;
+  strengths: string[];
+  concerns: string[];
+  nextAction: string | null;
+  tags: string[];
+  technologyNames: string[];
+  source: string;
+  createdAt: string;
+  phone: string | null;
+  // Website deep research fields
+  companyDescription: string | null;
+  usp: string | null;
+  coreServices: string[] | null;
+  targetCustomers: string | null;
+  painPoints: string[] | null;
+  automationPotential: string | null;
+  automationOpportunities: string[] | null;
+  growthSignals: string[] | null;
+  companySizeSignals: string | null;
+  toneOfVoice: string | null;
+  personalizationHooks: string[] | null;
+  websiteHighlights: string | null;
+  techStack: string[] | null;
+  partnerCustomerUrls: string[] | null;
+  websiteScrapedAt: string | null;
+  // Follow-up context
+  followUpContext: {
+    target_customers?: string;
+    tone_of_voice?: string;
+    personalization_hooks?: string[];
+    conversation_opener?: string;
+  } | null;
+  // Social links
+  twitterUrl: string | null;
+  facebookUrl: string | null;
+  // Score breakdown
+  fitScore: number | null;
+  contactQualityScore: number | null;
+  decisionMakerScore: number | null;
+  scoreBreakdown: { label: string; value: number; max: number }[];
+  // Compat fields used by existing UI
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  isExcluded?: boolean;
+  // Legacy — kept for components that still reference them
+  industryApollo: string | null;
+  jobTitle: string | null;
   emailDraftSubject: string | null;
   emailDraftBody: string | null;
-  nextAction: string | null;
-  createdAt: string;
-  lastContactedAt: string | null;
-  followUpAt: string | null;
-  source: string;
   googleRating: number | null;
   googleReviews: number;
   googleMapsUrl: string | null;
-  scoreBreakdown: { label: string; value: number; max: number }[];
   notes: string[];
   timeline: { action: string; time: string; color: string }[];
-  employmentHistory: {
-    title: string;
-    company: string;
-    startDate: string | null;
-    endDate: string | null;
-    current: boolean;
-  }[];
+  employmentHistory: { title: string; company: string; startDate: string | null; endDate: string | null; current: boolean }[];
   websiteData?: Record<string, unknown> | null;
+  organisation?: Organisation | null;
+}
+
+export interface Organisation {
+  name?: string | null;
+  websiteUrl?: string | null;
+  primaryDomain?: string | null;
+  logoUrl?: string | null;
+  industry?: string | null;
+  estimatedNumEmployees?: number | null;
+  foundedYear?: number | null;
+  shortDescription?: string | null;
+  seoDescription?: string | null;
+  annualRevenue?: number | null;
+  annualRevenuePrinted?: string | null;
+  totalFunding?: number | null;
+  totalFundingPrinted?: string | null;
+  latestFundingStage?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  street?: string | null;
+  postalCode?: string | null;
+  phone?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
+  facebookUrl?: string | null;
+  technologies?: string[];
+  keywords?: string[];
+  industries?: string[];
+  secondaryIndustries?: string[];
 }
 
 // ─── ACCOUNT PROFILE ─────────────────────────────────────────────────────────

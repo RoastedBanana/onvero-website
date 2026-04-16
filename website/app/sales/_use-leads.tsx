@@ -142,29 +142,26 @@ async function initLeadsStore() {
     setStore({ tenantId: tid });
 
     const supabase = getSupabase();
-    const { data } = (await withTimeout(
-      supabase
-        .from('leads')
-        .select(
-          `id, company_name, first_name, last_name, email, phone,
-           website, street, city, zip, country,
-           status, score, source, notes, estimated_value,
-           ai_summary, ai_tags, ai_next_action, ai_scored_at,
-           email_draft_subject, email_draft_body,
-           google_rating, google_reviews, google_maps_url,
-           custom_fields, last_contacted_at, follow_up_at, created_at,
-           employment_history, tenant_id, website_data`
-        )
-        .eq('tenant_id', tid)
-        .order('score', { ascending: false, nullsFirst: false })
-        .limit(200),
-      10000
-    )) as { data: DbLead[] | null };
 
-    if (data) {
+    // Discover actual columns — select all to handle schema changes
+    const result = (await withTimeout(
+      supabase.from('leads').select('*').eq('tenant_id', tid).order('created_at', { ascending: false }).limit(200),
+      10000
+    )) as { data: DbLead[] | null; error: { message: string } | null };
+
+    if (result.error) {
+      console.error('[useLeads] query failed:', result.error.message);
+      setStore({ loading: false });
+      return;
+    }
+
+    const data = result.data;
+    if (data && data.length > 0) {
+      console.log('[useLeads] columns:', Object.keys(data[0]));
       setStore({ leads: data.map((r: DbLead) => dbToLead(r)), loading: false });
     } else {
-      setStore({ loading: false });
+      console.warn('[useLeads] no leads found for tenant', tid);
+      setStore({ leads: [], loading: false });
     }
 
     // NOTE: Realtime disabled — Supabase Realtime WebSocket causes a Web Locks
@@ -213,76 +210,108 @@ function formatEmployees(count: number | null): string {
 
 type DbLead = Record<string, unknown>;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseFollowUpContext(raw: any): Lead['followUpContext'] {
+  if (!raw) return null;
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw); } catch { return null; }
+  }
+  return raw as Lead['followUpContext'];
+}
+
 function dbToLead(r: DbLead): Lead {
-  const cf = (r.custom_fields ?? {}) as Record<string, unknown>;
-  const empCount = cf.employee_count ? Number(cf.employee_count) : null;
-  const score = r.score as number | null;
-  const firstName = r.first_name as string;
-  const lastName = r.last_name as string;
-  const company = r.company_name as string;
-  const aiTags = (r.ai_tags as string[] | null) ?? [];
-  const aiSummary = r.ai_summary as string | null;
+  const company = (r.company_name as string) ?? '';
+  const score = (r.total_score as number | null) ?? null;
   const createdAt = r.created_at as string;
-  const lastContacted = r.last_contacted_at as string | null;
+  const empCount = r.estimated_num_employees ? Number(r.estimated_num_employees) : null;
+  const industry = (r.industry as string) ?? '';
+
+  const fitScore = r.fit_score as number | null;
+  const contactScore = r.contact_quality_score as number | null;
+  const decisionScore = r.decision_maker_score as number | null;
 
   return {
     id: r.id as string,
-    name: `${firstName} ${lastName}`,
-    firstName,
-    lastName,
     company,
-    email: r.email as string | null,
-    phone: r.phone as string | null,
+    name: company, // compat: use company name where name was used
+    firstName: '',
+    lastName: '',
+    email: null,
+    phone: (r.phone as string) ?? null,
     city: (r.city as string | null) ?? '',
     country: r.country as string | null,
     score,
     status: mapStatus(r.status as string),
-    lastActivity: lastContacted
-      ? `Kontaktiert ${new Date(lastContacted).toLocaleDateString('de-DE')}`
-      : timeAgo(createdAt),
-    industry: guessIndustry(aiTags, aiSummary, company),
-    industryApollo: (cf.industry as string) ?? null,
-    employees: formatEmployees(empCount),
+    lastActivity: timeAgo(createdAt),
+    industry,
+    industryApollo: (r.apollo_industry as string) ?? null,
+    employees: (r.company_size as string) ?? formatEmployees(empCount),
     employeeCount: empCount,
     website: r.website as string | null,
-    jobTitle: (cf.job_title as string) ?? null,
-    linkedinUrl: (cf.linkedin_url as string)?.replace('http://', 'https://') ?? null,
-    emailStatus: (cf.email_status as string) ?? null,
-    aiSummary,
-    aiTags,
-    emailDraftSubject: r.email_draft_subject as string | null,
-    emailDraftBody: r.email_draft_body as string | null,
-    nextAction: r.ai_next_action as string | null,
-    createdAt: new Date(createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }),
-    lastContactedAt: lastContacted ? new Date(lastContacted).toLocaleDateString('de-DE') : null,
-    followUpAt: null,
+    linkedinUrl: ((r.linkedin_url as string) ?? '')?.replace('http://', 'https://') || null,
+    logoUrl: (r.logo_url as string) ?? null,
+    primaryDomain: (r.primary_domain as string) ?? null,
+    foundedYear: (r.founded_year as number) ?? null,
+    annualRevenuePrinted: (r.annual_revenue_printed as string) ?? null,
+    companySize: (r.company_size as string) ?? null,
+    companyType: (r.company_type as string) ?? null,
+    tier: (r.tier as string) ?? (score && score >= 70 ? 'Hot' : score && score >= 45 ? 'Warm' : 'Cold'),
+    summary: (r.summary as string) ?? null,
+    strengths: (r.strengths as string[]) ?? [],
+    concerns: (r.concerns as string[]) ?? [],
+    nextAction: (r.next_action as string) ?? null,
+    tags: (r.tags as string[]) ?? [],
+    technologyNames: (r.technology_names as string[]) ?? [],
     source: (r.source as string) ?? 'Unbekannt',
-    googleRating: r.google_rating as number | null,
-    googleReviews: (r.google_reviews as number) ?? 0,
-    googleMapsUrl: r.google_maps_url as string | null,
+    createdAt: new Date(createdAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }),
+    // Website deep research fields
+    companyDescription: (r.company_description as string) ?? null,
+    usp: (r.usp as string) ?? null,
+    coreServices: (r.core_services as string[]) ?? null,
+    targetCustomers: (r.target_customers as string) ?? null,
+    painPoints: (r.pain_points as string[]) ?? null,
+    automationPotential: (r.automation_potential as string) ?? null,
+    automationOpportunities: (r.automation_opportunities as string[]) ?? null,
+    growthSignals: (r.growth_signals as string[]) ?? null,
+    companySizeSignals: (r.company_size_signals as string) ?? null,
+    toneOfVoice: (r.tone_of_voice as string) ?? null,
+    personalizationHooks: (r.personalization_hooks as string[]) ?? null,
+    websiteHighlights: (r.website_highlights as string) ?? null,
+    techStack: (r.tech_stack as string[]) ?? null,
+    partnerCustomerUrls: (r.partner_customer_urls as string[]) ?? null,
+    websiteScrapedAt: (r.website_scraped_at as string) ?? null,
+    // Follow-up context
+    followUpContext: parseFollowUpContext(r.follow_up_context),
+    // Social links
+    twitterUrl: (r.twitter_url as string) ?? null,
+    facebookUrl: (r.facebook_url as string) ?? null,
+    // Score breakdown
+    fitScore: fitScore ?? null,
+    contactQualityScore: contactScore ?? null,
+    decisionMakerScore: decisionScore ?? null,
     scoreBreakdown: score
       ? [
-          { label: 'Firmenprofil', value: Math.round(score * 0.3), max: 30 },
-          { label: 'Entscheider-Level', value: Math.round(score * 0.2), max: 20 },
-          { label: 'Branchenfit', value: Math.round(score * 0.25), max: 25 },
-          { label: 'Versand-Signale', value: Math.round(score * 0.25), max: 25 },
+          { label: 'Unternehmensfit', value: fitScore ?? Math.round(score * 0.4), max: 40 },
+          { label: 'Kontaktqualität', value: contactScore ?? Math.round(score * 0.3), max: 30 },
+          { label: 'Entscheider-Position', value: decisionScore ?? Math.round(score * 0.3), max: 30 },
         ]
       : [],
+    // Legacy compat
+    jobTitle: null,
+    emailDraftSubject: null,
+    emailDraftBody: null,
+    googleRating: null,
+    googleReviews: 0,
+    googleMapsUrl: null,
     notes: [],
     timeline: [],
-    employmentHistory: ((r.employment_history as unknown[] | null) ?? []).map((e: unknown) => {
-      const entry = e as Record<string, unknown>;
-      return {
-        title: (entry.title as string) ?? '',
-        company: (entry.organization_name ?? entry.name ?? entry.company ?? '') as string,
-        startDate: (entry.start_date ?? entry.startDate ?? null) as string | null,
-        endDate: (entry.end_date ?? entry.endDate ?? null) as string | null,
-        current: entry.current === true,
-      };
-    }),
-    websiteData: (r.website_data as Record<string, unknown> | null) ?? null,
+    employmentHistory: [],
+    websiteData: null,
+    organisation: null, // data is now directly on the lead
+    isExcluded: (r.is_excluded as boolean) ?? false,
   };
 }
+
 
 function timeAgo(dateStr: string): string {
   const d = new Date(dateStr);

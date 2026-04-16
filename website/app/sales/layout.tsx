@@ -55,7 +55,7 @@ function buildNav(
       title: 'LEADS & KUNDEN',
       items: [
         {
-          label: 'Alle Leads',
+          label: 'Unternehmen',
           href: '/sales/leads',
           icon: ICONS.list,
           badge: `${leadCount}`,

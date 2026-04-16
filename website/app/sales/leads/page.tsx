@@ -332,7 +332,7 @@ function LeadTable({
   onBatchStatus: () => void;
   onBatchDelete: () => void;
 }) {
-  const headers = ['', 'Kontakt & Firma', 'KI-Score', 'Status', 'Branche', 'Aktivität'];
+  const headers = ['', 'Unternehmen', 'Branche', 'Mitarbeiter', 'Standort', 'Status'];
   const allSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
 
   return (
@@ -478,83 +478,63 @@ function LeadTable({
                     />
                   </td>
 
-                  {/* Contact with HoverCard */}
+                  {/* Company */}
                   <td style={{ padding: '14px 18px' }}>
-                    <HoverCard
-                      content={
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                            <ProgressRing
-                              value={lead.score ?? 0}
-                              size={32}
-                              strokeWidth={2.5}
-                              color={(lead.score ?? 0) >= 70 ? C.accent : C.text3}
-                              label={lead.score ? `${lead.score}` : '—'}
-                            />
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
-                              <div style={{ fontSize: 11, color: C.text3 }}>{lead.company}</div>
-                            </div>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 11 }}>
-                            <div>
-                              <span style={{ color: C.text3 }}>Stadt:</span>{' '}
-                              <span style={{ color: C.text2 }}>{lead.city}</span>
-                            </div>
-                            <div>
-                              <span style={{ color: C.text3 }}>Branche:</span>{' '}
-                              <span style={{ color: C.text2 }}>{lead.industry}</span>
-                            </div>
-                            <div>
-                              <span style={{ color: C.text3 }}>Größe:</span>{' '}
-                              <span style={{ color: C.text2 }}>{lead.employees}</span>
-                            </div>
-                          </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <LeadAvatar
+                        website={lead.website}
+                        companyName={lead.company}
+                        score={lead.score ?? undefined}
+                        size="md"
+                      />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.text1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {lead.company}
                         </div>
-                      }
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <LeadAvatar
-                          website={lead.website}
-                          companyName={lead.company}
-                          score={lead.score ?? undefined}
-                          size="md"
-                        />
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: C.text3,
-                              marginTop: 2,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 5,
-                            }}
-                          >
-                            <span>{lead.company}</span>
-                            <span style={{ opacity: 0.25, fontSize: 8 }}>●</span>
-                            <span>{lead.city}</span>
+                        {(lead.primaryDomain ?? lead.website) && (
+                          <div style={{ fontSize: 10, color: C.text3, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {lead.primaryDomain ?? lead.website?.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                           </div>
-                        </div>
+                        )}
                       </div>
-                    </HoverCard>
+                    </div>
                   </td>
 
+                  {/* Industry */}
                   <td style={{ padding: '14px 18px' }}>
-                    <ScoreBar score={lead.score ?? 0} />
+                    <span style={{ fontSize: 11.5, color: C.text2 }}>
+                      {lead.industry}
+                    </span>
                   </td>
+
+                  {/* Employees */}
+                  <td style={{ padding: '14px 18px' }}>
+                    <span style={{ fontSize: 11.5, color: C.text2, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
+                      {lead.employeeCount
+                        ? lead.employeeCount.toLocaleString('de-DE')
+                        : lead.employees !== 'Unbekannt' ? lead.employees : '—'}
+                    </span>
+                  </td>
+
+                  {/* Location */}
+                  <td style={{ padding: '14px 18px' }}>
+                    <div style={{ fontSize: 11.5, color: C.text2 }}>
+                      {lead.city}
+                    </div>
+                    {(lead.country) && (
+                      <div style={{ fontSize: 10, color: C.text3, marginTop: 1 }}>
+                        {lead.country}
+                      </div>
+                    )}
+                  </td>
+
+                  {/* Status */}
                   <td style={{ padding: '14px 18px' }}>
                     <InlineStatusDropdown
                       status={lead.status}
                       onChange={(s) => onStatusChange(lead.id, lead.status, s)}
                     />
                   </td>
-                  <td style={{ padding: '14px 18px' }}>
-                    <span style={{ fontSize: 11.5, color: C.text2 }}>{lead.industry}</span>
-                    <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{lead.employees} MA</div>
-                  </td>
-                  <td style={{ padding: '14px 18px', fontSize: 11, color: C.text3 }}>{lead.lastActivity}</td>
                 </tr>
               );
             })}
@@ -573,7 +553,7 @@ function LeadTable({
             background: 'rgba(255,255,255,0.01)',
           }}
         >
-          <span style={{ fontSize: 11, color: C.text3 }}>{leads.length} Leads</span>
+          <span style={{ fontSize: 11, color: C.text3 }}>{leads.length} Unternehmen</span>
         </div>
       )}
     </div>
@@ -724,7 +704,7 @@ function KanbanBoard({
                     transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
                   }}
                 >
-                  {/* Top: Avatar + Name */}
+                  {/* Top: Avatar + Company Name */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                     <LeadAvatar
                       website={lead.website}
@@ -743,7 +723,7 @@ function KanbanBoard({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {lead.name}
+                        {lead.company}
                       </div>
                       <div
                         style={{
@@ -755,15 +735,10 @@ function KanbanBoard({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {lead.company}
+                        {lead.industry}
                       </div>
                     </div>
                   </div>
-
-                  {/* Middle: Job title + City */}
-                  {lead.jobTitle && (
-                    <div style={{ fontSize: 10, color: C.accent, marginBottom: 8 }}>{lead.jobTitle}</div>
-                  )}
 
                   {/* Bottom: Score + Industry */}
                   <div
@@ -941,10 +916,15 @@ function LeadsPage() {
     if (cityFilter !== 'Alle Städte' && lead.city !== cityFilter) return false;
     if (search) {
       const q = search.toLowerCase();
+      const orgName = lead.company.toLowerCase();
+      const orgIndustry = lead.industry.toLowerCase();
       return (
-        lead.name.toLowerCase().includes(q) ||
         lead.company.toLowerCase().includes(q) ||
-        lead.city.toLowerCase().includes(q)
+        orgName.includes(q) ||
+        lead.city.toLowerCase().includes(q) ||
+        lead.industry.toLowerCase().includes(q) ||
+        orgIndustry.includes(q) ||
+        lead.name.toLowerCase().includes(q)
       );
     }
     return true;
@@ -1061,10 +1041,10 @@ function LeadsPage() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Leads' }]} />
+      <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Unternehmen' }]} />
       <PageHeader
-        title="Alle Leads"
-        subtitle={leadsLoading ? 'Laden...' : `${mergedLeads.length} Einträge · live aus Supabase`}
+        title="Unternehmen"
+        subtitle={leadsLoading ? 'Laden...' : `${mergedLeads.length} Unternehmen · live aus Supabase`}
         actions={
           <>
             <div

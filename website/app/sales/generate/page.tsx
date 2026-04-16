@@ -15,6 +15,7 @@ import {
   GLOBAL_STYLES,
 } from '../_shared';
 import { useLeads, getSupabase } from '../_use-leads';
+import DeepResearchTab from './DeepResearchTab';
 
 // ─── DATA: APOLLO TITLE GROUPS ──────────────────────────────────────────────
 
@@ -941,6 +942,9 @@ function formatRelativeDate(isoDate: string): string {
 export default function GeneratePage() {
   const { tenantId } = useLeads();
 
+  // Tab: 'generator' = existing, 'deep-research' = new agent tab
+  const [activeTab, setActiveTab] = useState<'generator' | 'deep-research'>('generator');
+
   // Wizard step
   const [step, setStep] = useState(0);
 
@@ -1342,6 +1346,57 @@ export default function GeneratePage() {
         <PageHeader title="Lead Generator" subtitle="KI-gestützte Lead-Recherche" />
       </div>
 
+      {/* ─── TAB SWITCHER ─── */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 2,
+          marginTop: 20,
+          marginBottom: 8,
+          background: 'rgba(255,255,255,0.03)',
+          borderRadius: 10,
+          padding: 3,
+          border: `1px solid ${C.border}`,
+          width: 'fit-content',
+        }}
+      >
+        {([
+          { key: 'generator' as const, label: 'Lead Generator', icon: ICONS.zap },
+          { key: 'deep-research' as const, label: 'Deep Research', icon: ICONS.spark },
+        ]).map((tab) => {
+          const active = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '8px 18px',
+                borderRadius: 8,
+                border: 'none',
+                background: active ? 'rgba(255,255,255,0.07)' : 'transparent',
+                color: active ? C.text1 : C.text3,
+                fontSize: 12.5,
+                fontWeight: active ? 600 : 400,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.2s ease',
+                boxShadow: active ? '0 1px 4px rgba(0,0,0,0.2)' : 'none',
+              }}
+            >
+              <SvgIcon d={tab.icon} size={13} color={active ? (tab.key === 'deep-research' ? '#34D399' : C.accent) : C.text3} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === 'deep-research' ? (
+        <DeepResearchTab tenantId={tenantId} />
+      ) : (
+      <>
       <StepIndicator current={step} />
 
       {/* ═══════════════════ STEP 0: FORM ═══════════════════ */}
@@ -2767,6 +2822,8 @@ export default function GeneratePage() {
             </Link>
           )}
         </div>
+      )}
+      </>
       )}
     </div>
   );
