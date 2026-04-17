@@ -6,12 +6,10 @@ export interface Lead {
   company: string;
   city: string;
   country: string | null;
-  score: number | null;
   status: 'Neu' | 'In Kontakt' | 'Qualifiziert' | 'Verloren';
   lastActivity: string;
   industry: string;
   employees: string;
-  employeeCount: number | null;
   website: string | null;
   linkedinUrl: string | null;
   logoUrl: string | null;
@@ -56,30 +54,52 @@ export interface Lead {
   // Social links
   twitterUrl: string | null;
   facebookUrl: string | null;
-  // Score breakdown
+  // Score
+  score: number | null;
   fitScore: number | null;
   contactQualityScore: number | null;
   decisionMakerScore: number | null;
   scoreBreakdown: { label: string; value: number; max: number }[];
-  // Compat fields used by existing UI
-  name: string;
-  firstName: string;
-  lastName: string;
-  email: string | null;
   isExcluded?: boolean;
-  // Legacy — kept for components that still reference them
+  exclusionReason?: string | null;
+  // Apollo fields
   industryApollo: string | null;
-  jobTitle: string | null;
-  emailDraftSubject: string | null;
-  emailDraftBody: string | null;
-  googleRating: number | null;
-  googleReviews: number;
-  googleMapsUrl: string | null;
-  notes: string[];
-  timeline: { action: string; time: string; color: string }[];
-  employmentHistory: { title: string; company: string; startDate: string | null; endDate: string | null; current: boolean }[];
+  apolloOrganizationId?: string | null;
+  // Compat: company name as name for display
+  name: string;
+  // Legacy fields — no longer in DB, kept as optional for UI compat
+  firstName?: string;
+  lastName?: string;
+  email?: string | null;
+  jobTitle?: string | null;
+  emailDraftSubject?: string | null;
+  emailDraftBody?: string | null;
+  googleRating?: number | null;
+  googleReviews?: number;
+  googleMapsUrl?: string | null;
+  notes?: string[];
+  timeline?: { action: string; time: string; color: string }[];
+  employmentHistory?: { title: string; company: string; startDate: string | null; endDate: string | null; current: boolean }[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   websiteData?: Record<string, unknown> | null;
-  organisation?: Organisation | null;
+  organisation?: Record<string, unknown> | null;
+  aiSummary?: string | null;
+  redFlags?: string[];
+  buyingSignals?: string[];
+  emailDraft?: string | null;
+  emailStatus?: string | null;
+  newsArticles?: { title: string; source: string; days_ago: number }[];
+  newsSignals?: string[];
+  googleBusinessStatus?: string | null;
+  googleMapsSignals?: string[];
+  googleMapsMatchedName?: string | null;
+  googleMapsMatchScore?: number | null;
+  aiTags?: string[];
+  statusUpdatedAt?: string | null;
+  lastContactedAt?: string | null;
+  hasNewsSignal?: boolean;
+  technologies?: string[];
+  employeeCount?: number | null;
 }
 
 export interface Organisation {

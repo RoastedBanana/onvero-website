@@ -26,15 +26,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const [leadRes, activitiesRes] = await Promise.all([
       client
         .from('leads')
-        .select(
-          `id, company_name, first_name, last_name, email, phone,
-           website, city, country, status, score, source,
-           ai_summary, ai_tags, ai_next_action, ai_scored_at, ai_sources,
-           email_draft_subject, email_draft_body, email_subject, website_summary, website_title,
-           google_rating, google_reviews, google_maps_url, google_place_id,
-           custom_fields, last_contacted_at, created_at, apollo_id, employment_history, organisation,
-           strengths, concerns, is_excluded, exclusion_reason, website_data, follow_up_context`
-        )
+        .select('*')
         .eq('id', id)
         .eq('tenant_id', tenantId)
         .maybeSingle(),
@@ -69,15 +61,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const safeFields: Record<string, unknown> = { updated_at: new Date().toISOString() };
   const allowed = [
     'status',
-    'score',
-    'notes',
-    'email',
+    'fit_score',
     'phone',
-    'first_name',
-    'last_name',
     'company_name',
-    'follow_up_at',
-    'ai_next_action',
+    'next_action',
+    'tier',
+    'is_excluded',
+    'exclusion_reason',
   ];
   for (const key of allowed) {
     if (key in body) safeFields[key] = body[key];

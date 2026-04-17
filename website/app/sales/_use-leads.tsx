@@ -233,10 +233,6 @@ function dbToLead(r: DbLead): Lead {
   return {
     id: r.id as string,
     company,
-    name: company, // compat: use company name where name was used
-    firstName: '',
-    lastName: '',
-    email: null,
     phone: (r.phone as string) ?? null,
     city: (r.city as string | null) ?? '',
     country: r.country as string | null,
@@ -296,10 +292,25 @@ function dbToLead(r: DbLead): Lead {
           { label: 'Entscheider-Position', value: decisionScore ?? Math.round(score * 0.3), max: 30 },
         ]
       : [],
-    // Legacy compat
+    isExcluded: (r.is_excluded as boolean) ?? false,
+    exclusionReason: (r.exclusion_reason as string) ?? null,
+    apolloOrganizationId: (r.apollo_organization_id as string) ?? null,
+    // Compat: map fitScore to score for UI components
+    score: fitScore ?? null,
+    scoreBreakdown: fitScore
+      ? [
+          { label: 'Unternehmensfit', value: fitScore ?? 0, max: 100 },
+        ]
+      : [],
+    name: company,
+    // Legacy compat — empty defaults
+    firstName: '',
+    lastName: '',
+    email: null,
     jobTitle: null,
     emailDraftSubject: null,
     emailDraftBody: null,
+    emailDraft: null,
     googleRating: null,
     googleReviews: 0,
     googleMapsUrl: null,
@@ -307,8 +318,21 @@ function dbToLead(r: DbLead): Lead {
     timeline: [],
     employmentHistory: [],
     websiteData: null,
-    organisation: null, // data is now directly on the lead
-    isExcluded: (r.is_excluded as boolean) ?? false,
+    organisation: null,
+    aiSummary: (r.summary as string) ?? null,
+    redFlags: [],
+    buyingSignals: [],
+    emailStatus: null,
+    newsArticles: [],
+    newsSignals: [],
+    googleBusinessStatus: null,
+    googleMapsSignals: [],
+    googleMapsMatchedName: null,
+    googleMapsMatchScore: null,
+    aiTags: (r.tags as string[]) ?? [],
+    statusUpdatedAt: null,
+    lastContactedAt: null,
+    hasNewsSignal: false,
   };
 }
 

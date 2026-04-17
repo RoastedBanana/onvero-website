@@ -30,28 +30,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Fetch the lead's website_data
   const { data: lead } = await supabase
     .from('leads')
-    .select('id, company_name, website_data, website_summary, ai_summary')
+    .select('id, company_name, company_description, summary, website_highlights')
     .eq('id', node.lead_id)
     .eq('tenant_id', tenantId)
     .maybeSingle();
 
   if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
 
-  // Build freetext payload from website_data
-  const websiteData = lead.website_data;
+  // Build freetext payload from lead data
   let freetext = '';
 
-  if (typeof websiteData === 'string') {
-    freetext = websiteData;
-  } else if (websiteData && typeof websiteData === 'object') {
-    freetext = JSON.stringify(websiteData, null, 2);
-  }
-
-  if (!freetext && lead.website_summary) {
-    freetext = lead.website_summary;
-  }
-  if (!freetext && lead.ai_summary) {
-    freetext = lead.ai_summary;
+  if (lead.company_description) {
+    freetext = lead.company_description;
+  } else if (lead.website_highlights) {
+    freetext = lead.website_highlights;
+  } else if (lead.summary) {
+    freetext = lead.summary;
   }
 
   // Send to n8n webhook with full context for node insertion

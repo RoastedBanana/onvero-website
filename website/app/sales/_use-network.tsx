@@ -58,18 +58,16 @@ type RawNode = {
   leads: {
     id: string;
     company_name: string | null;
-    first_name: string | null;
-    last_name: string | null;
     city: string | null;
-    score: number | null;
+    fit_score: number | null;
+    industry: string | null;
+    logo_url: string | null;
+    tier: string | null;
   } | null;
 };
 
 function rawToNode(r: RawNode): NetworkNode {
   const lead = r.leads;
-  const name = lead
-    ? [lead.first_name, lead.last_name].filter(Boolean).join(' ').trim() || lead.company_name || '—'
-    : '—';
   return {
     id: r.id,
     lead_id: r.lead_id,
@@ -77,10 +75,10 @@ function rawToNode(r: RawNode): NetworkNode {
     y: r.y,
     expand_category: r.expand_category,
     source_node_id: r.source_node_id,
-    name,
+    name: lead?.company_name ?? '—',
     company: lead?.company_name ?? '—',
     city: lead?.city ?? '—',
-    score: Math.round(lead?.score ?? 0),
+    score: Math.round(lead?.fit_score ?? 0),
   };
 }
 

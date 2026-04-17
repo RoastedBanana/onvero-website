@@ -1902,9 +1902,7 @@ export default function LeadDetailPage() {
               href={org?.websiteUrl ?? lead.website ?? undefined}
             />
             <InfoRow label="Branche" value={org?.industry ?? lead.industry} />
-            {org?.industries && org.industries.length > 0 && (
-              <InfoRow label="Weitere Branchen" value={org.industries.join(', ')} />
-            )}
+            {/* industries removed — data now flat on lead */}
             <InfoRow
               label="Mitarbeiter"
               value={
@@ -1917,10 +1915,7 @@ export default function LeadDetailPage() {
             />
             {org?.foundedYear && <InfoRow label="Gegründet" value={String(org.foundedYear)} />}
             {org?.annualRevenuePrinted && <InfoRow label="Jahresumsatz" value={org.annualRevenuePrinted} />}
-            {org?.totalFundingPrinted && <InfoRow label="Funding" value={org.totalFundingPrinted} />}
-            {org?.latestFundingStage && <InfoRow label="Funding-Phase" value={org.latestFundingStage} />}
             <InfoRow label="Standort" value={[org?.city ?? lead.city, org?.country ?? lead.country].filter(Boolean).join(', ')} />
-            {org?.street && <InfoRow label="Adresse" value={[org.street, org.postalCode, org.city].filter(Boolean).join(', ')} />}
             {org?.phone && <InfoRow label="Telefon" value={org.phone} />}
             {lead.linkedinUrl && <InfoRow label="LinkedIn" value="Firmenprofil" href={lead.linkedinUrl} />}
             {lead.twitterUrl && <InfoRow label="Twitter" value="Profil" href={lead.twitterUrl} />}
@@ -2181,7 +2176,7 @@ export default function LeadDetailPage() {
                       color: (sl.score ?? 0) >= 70 ? C.accent : C.text3,
                     }}
                   >
-                    {(sl.organisation?.name ?? sl.company).slice(0, 2).toUpperCase()}
+                    {(sl.company || '??').slice(0, 2).toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div

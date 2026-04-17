@@ -45,10 +45,10 @@ function buildNav(
     {
       title: 'PROSPECTS',
       items: [
-        { label: 'Market Intent', href: '/sales/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
+        // { label: 'Market Intent', href: '/sales/prospects', icon: ICONS.zap, badge: `${mitEmail}` },
         { label: 'Lead Generator', href: '/sales/generate', icon: ICONS.spark },
-        { label: 'Outreach-Ideen', href: '/sales/outreach', icon: ICONS.mail },
-        { label: 'Monitoring', href: '/sales/monitoring', icon: ICONS.eye },
+        // { label: 'Outreach-Ideen', href: '/sales/outreach', icon: ICONS.mail },
+        // { label: 'Monitoring', href: '/sales/monitoring', icon: ICONS.eye },
         { label: 'Network', href: '/sales/network', icon: ICONS.network },
       ],
     },

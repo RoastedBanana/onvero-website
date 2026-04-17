@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       freetext: body.freetext,
       tenant_id: ctx.tenantId,
+      callback_url: `${req.nextUrl.origin}/api/generate/progress`,
     }),
   });
 

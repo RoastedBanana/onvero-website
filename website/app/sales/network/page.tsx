@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { C, ScoreBar } from '../_shared';
 import { useNetworks, useNetworkCanvas, type NetworkNode, type NetworkEdge, type Network } from '../_use-network';
 
@@ -23,7 +24,7 @@ const EXPAND_OPTIONS: { key: ExpandCategory; label: string; icon: string }[] = [
   { key: 'competitors', label: 'Konkurrenten', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
 ];
 
-type RawLead = { id: string; company_name?: string | null; first_name?: string | null; last_name?: string | null; city?: string | null; score?: number | null };
+type RawLead = { id: string; company_name?: string | null; city?: string | null; fit_score?: number | null; industry?: string | null; logo_url?: string | null; tier?: string | null };
 
 function scoreColor(s: number) { return s >= 70 ? C.success : s >= 40 ? C.warning : C.danger; }
 
@@ -170,8 +171,7 @@ function LeadPicker({ open, onClose, onSelect }: {
   const filtered = q
     ? leads.filter((l) => {
         const s = q.toLowerCase();
-        const name = [l.first_name, l.last_name].filter(Boolean).join(' ').toLowerCase();
-        return name.includes(s) || (l.company_name ?? '').toLowerCase().includes(s) || (l.city ?? '').toLowerCase().includes(s);
+        return (l.company_name ?? '').toLowerCase().includes(s) || (l.city ?? '').toLowerCase().includes(s) || (l.industry ?? '').toLowerCase().includes(s);
       })
     : leads;
 
@@ -200,7 +200,7 @@ function LeadPicker({ open, onClose, onSelect }: {
         {loading && <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.text3 }}>Lade Leads…</div>}
         {!loading && filtered.length === 0 && <div style={{ padding: 20, textAlign: 'center', fontSize: 11, color: C.text3 }}>Keine Leads gefunden.</div>}
         {!loading && filtered.map((l) => {
-          const name = [l.first_name, l.last_name].filter(Boolean).join(' ').trim() || l.company_name || '—';
+          const name = l.company_name || '—';
           const initials = name.split(' ').map((n) => n[0]).slice(0, 2).join('');
           return (
             <button key={l.id} type="button" onClick={() => onSelect(l)} style={{
@@ -213,9 +213,9 @@ function LeadPicker({ open, onClose, onSelect }: {
               <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 500, color: C.text2, flexShrink: 0 }}>{initials}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 500, color: C.text1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
-                <div style={{ fontSize: 10.5, color: C.text3, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.company_name ?? '—'} · {l.city ?? '—'}</div>
+                <div style={{ fontSize: 10.5, color: C.text3, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.industry ?? '—'} · {l.city ?? '—'}</div>
               </div>
-              <div style={{ width: 56, flexShrink: 0 }}><ScoreBar score={Math.round(l.score ?? 0)} /></div>
+              <div style={{ width: 56, flexShrink: 0 }}><ScoreBar score={Math.round(l.fit_score ?? 0)} /></div>
             </button>
           );
         })}
@@ -258,12 +258,12 @@ function EdgeLines({ edges, nodes, offset, scale }: { edges: NetworkEdge[]; node
 
 function LeadNodeCard({
   node, offset, scale, selected, dropdownOpen, isLoading, arrivalIndex,
-  onSelect, onDragStart, onRemove, onToggleDropdown, onSelectCategory,
+  onSelect, onDragStart, onRemove, onToggleDropdown, onSelectCategory, onDoubleClick,
 }: {
   node: NetworkNode; offset: { x: number; y: number }; scale: number; selected: boolean; dropdownOpen: boolean; isLoading: boolean;
   arrivalIndex?: number;
   onSelect: () => void; onDragStart: (e: React.MouseEvent) => void; onRemove: () => void;
-  onToggleDropdown: () => void; onSelectCategory: (cat: ExpandCategory) => void;
+  onToggleDropdown: () => void; onSelectCategory: (cat: ExpandCategory) => void; onDoubleClick?: () => void;
 }) {
   const sx = node.x * scale + offset.x;
   const sy = node.y * scale + offset.y;
@@ -274,6 +274,7 @@ function LeadNodeCard({
 
   return (
     <div onMouseDown={(e) => { e.stopPropagation(); onSelect(); onDragStart(e); }}
+      onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick?.(); }}
       style={{
         position: 'absolute', left: sx, top: sy, transform: 'translate(-50%, -50%)',
         cursor: 'grab', zIndex: selected || dropdownOpen ? 10 : 2,
@@ -446,6 +447,7 @@ function Toolbar({ onFit, onZoomIn, onZoomOut, onAdd, leftOffset }: { onFit: () 
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function NetworkPage() {
+  const router = useRouter();
   // Canvas state
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -789,6 +791,7 @@ export default function NetworkPage() {
           onRemove={() => removeNode(node.id)}
           onToggleDropdown={() => setDropdownNodeId((p) => p === node.id ? null : node.id)}
           onSelectCategory={(cat) => handleSelectCategory(node.id, cat)}
+          onDoubleClick={() => { if (node.lead_id) router.push(`/sales/leads/${node.lead_id}`); }}
         />
       ))}
     </div>

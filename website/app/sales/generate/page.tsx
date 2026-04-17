@@ -386,17 +386,18 @@ const PROFILE_FIELD_LABELS: Record<string, string> = {
 
 // ─── STEP INDICATOR ─────────────────────────────────────────────────────────
 
-const STEPS = [
-  {
-    label: 'Beschreiben',
-    icon: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z',
-  },
-  { label: 'KI-Analyse', icon: ICONS.spark },
-  { label: 'Überprüfen', icon: ICONS.check },
-  { label: 'Generieren', icon: ICONS.zap },
+type Phase = 'form' | 'analyzing' | 'strategy' | 'scoring' | 'done';
+
+const PHASE_STEPS: { key: Phase; label: string; icon: string }[] = [
+  { key: 'analyzing', label: 'Anfrage analysieren', icon: ICONS.spark },
+  { key: 'strategy', label: 'Strategie', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+  { key: 'scoring', label: 'Lead Scoring', icon: ICONS.chart },
 ];
 
-function StepIndicator({ current }: { current: number }) {
+function PhaseIndicator({ phase }: { phase: Phase }) {
+  if (phase === 'form' || phase === 'done') return null;
+  const phaseOrder: Phase[] = ['analyzing', 'strategy', 'scoring'];
+  const currentIdx = phaseOrder.indexOf(phase);
   return (
     <div
       style={{
@@ -408,14 +409,14 @@ function StepIndicator({ current }: { current: number }) {
         animation: 'fadeIn 0.4s ease both',
       }}
     >
-      {STEPS.map((step, i) => {
-        const done = i < current;
-        const active = i === current;
+      {PHASE_STEPS.map((s, i) => {
+        const done = i < currentIdx;
+        const active = i === currentIdx;
         const color = done ? C.success : active ? C.accent : C.text3;
         const bg = done ? 'rgba(52,211,153,0.12)' : active ? C.accentGhost : 'rgba(255,255,255,0.03)';
         const borderColor = done ? 'rgba(52,211,153,0.25)' : active ? 'rgba(99,102,241,0.3)' : C.border;
         return (
-          <div key={step.label} style={{ display: 'flex', alignItems: 'center' }}>
+          <div key={s.key} style={{ display: 'flex', alignItems: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
               <div
                 style={{
@@ -428,10 +429,15 @@ function StepIndicator({ current }: { current: number }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'all 0.3s ease',
-                  boxShadow: active ? `0 0 16px rgba(99,102,241,0.2)` : 'none',
+                  boxShadow: active ? '0 0 16px rgba(99,102,241,0.2)' : 'none',
+                  animation: active ? 'progressPulse 2s ease infinite' : 'none',
                 }}
               >
-                <SvgIcon d={step.icon} size={14} color={color} />
+                {done ? (
+                  <SvgIcon d={ICONS.check} size={14} color={C.success} />
+                ) : (
+                  <SvgIcon d={s.icon} size={14} color={color} />
+                )}
               </div>
               <span
                 style={{
@@ -442,10 +448,10 @@ function StepIndicator({ current }: { current: number }) {
                   transition: 'all 0.3s ease',
                 }}
               >
-                {step.label}
+                {s.label}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < PHASE_STEPS.length - 1 && (
               <div
                 style={{
                   width: 48,
@@ -854,34 +860,13 @@ function EditableSection({
   );
 }
 
-// ─── LOADING MESSAGES ───────────────────────────────────────────────────────
+// ─── ANALYZING LOADING MESSAGES ─────────────────────────────────────────────
 
-const LOADING_MESSAGES = [
-  'KI analysiert deine Suchkriterien...',
-  'Branchen und Zielgruppen werden identifiziert...',
-  'Suchstrategie wird optimiert...',
-  'Suchparameter werden optimiert...',
-  'Fast fertig...',
-];
-
-// ─── GENERATING STEP MESSAGES ───────────────────────────────────────────────
-
-const GENERATING_STEPS = [
-  { label: 'KI-Analyse', icon: ICONS.spark },
-  { label: 'Datenbank-Suche', icon: ICONS.search },
-  { label: 'Website-Analyse', icon: ICONS.globe },
-  { label: 'KI-Scoring', icon: ICONS.chart },
-  { label: 'Ergebnisse', icon: ICONS.check },
-];
-
-const GENERATING_MESSAGES = [
-  { time: 0, text: 'Lead-Generierung gestartet...' },
-  { time: 5, text: 'Datenbank wird durchsucht...' },
-  { time: 15, text: 'Unternehmensdaten werden angereichert...' },
-  { time: 30, text: 'Websites werden analysiert...' },
-  { time: 50, text: 'KI bewertet Lead-Qualität...' },
-  { time: 70, text: 'Ergebnisse werden zusammengestellt...' },
-  { time: 85, text: 'Finalisierung...' },
+const ANALYZING_MESSAGES = [
+  'Anfrage wird analysiert...',
+  'Zielmarkt wird untersucht...',
+  'Suchstrategie wird entwickelt...',
+  'Parameter werden optimiert...',
 ];
 
 // ─── PROFILE REQUIRED FIELDS ────────────────────────────────────────────────
@@ -945,8 +930,8 @@ export default function GeneratePage() {
   // Tab: 'generator' = existing, 'deep-research' = new agent tab
   const [activeTab, setActiveTab] = useState<'generator' | 'deep-research'>('generator');
 
-  // Wizard step
-  const [step, setStep] = useState(0);
+  // Phase-based flow
+  const [phase, setPhase] = useState<Phase>('form');
 
   // Form data
   const [form, setForm] = useState<FormData>({
@@ -971,34 +956,16 @@ export default function GeneratePage() {
 
   // Reasoning result
   const [reasoning, setReasoning] = useState<ReasoningResult | null>(null);
-  const [showReasoning, setShowReasoning] = useState(false);
 
-  // Editable reasoning fields
-  const [editKeywords, setEditKeywords] = useState(false);
-  const [editIndustries, setEditIndustries] = useState(false);
-  const [editTitles, setEditTitles] = useState(false);
-  const [editLocations, setEditLocations] = useState(false);
-  const [editEmployees, setEditEmployees] = useState(false);
-
-  const [rKeywords, setRKeywords] = useState<string[]>([]);
-  const [rIndustries, setRIndustries] = useState<string[]>([]);
-  const [rTitles, setRTitles] = useState<string[]>([]);
-  const [rLocations, setRLocations] = useState<string[]>([]);
-  const [rEmployeeMin, setREmployeeMin] = useState(1);
-  const [rEmployeeMax, setREmployeeMax] = useState(10000);
-
-  // Lead count
-  const [leadCount, setLeadCount] = useState(50);
-
-  // Loading
+  // Loading animation
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
 
-  // Generating
-  const [genProgress, setGenProgress] = useState(0);
-  const [genElapsed, setGenElapsed] = useState(0);
-  const [genDone, setGenDone] = useState(false);
-  const [genStep, setGenStep] = useState(0);
-  const genTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Timer
+  const [elapsed, setElapsed] = useState(0);
+
+  // Lead scoring progress
+  const [scoredLeads, setScoredLeads] = useState(0);
+  const [totalLeads, setTotalLeads] = useState(0);
 
   // ─── Restore form + history from localStorage on mount ─────────────────
   useEffect(() => {
@@ -1041,53 +1008,69 @@ export default function GeneratePage() {
     })();
   }, []);
 
-  // ─── Loading message cycling ──────────────────────────────────────────
+  // ─── Loading message cycling (analyzing phase) ─────────────────────────
   useEffect(() => {
-    if (step !== 1) return;
+    if (phase !== 'analyzing') return;
     const interval = setInterval(() => {
-      setLoadingMsgIdx((prev) => (prev + 1) % LOADING_MESSAGES.length);
-    }, 2200);
+      setLoadingMsgIdx((prev) => (prev + 1) % ANALYZING_MESSAGES.length);
+    }, 2500);
     return () => clearInterval(interval);
-  }, [step]);
+  }, [phase]);
 
-  // ─── Generating progress timer ────────────────────────────────────────
+  // ─── Elapsed timer (all loading phases) ───────────────────────────────
   useEffect(() => {
-    if (step !== 3) return;
-    const start = Date.now();
-    const totalDuration = 90; // seconds
+    if (phase === 'form' || phase === 'done') return;
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
 
-    genTimerRef.current = setInterval(() => {
-      const elapsed = (Date.now() - start) / 1000;
-      setGenElapsed(Math.floor(elapsed));
-      const progress = Math.min((elapsed / totalDuration) * 100, 100);
-      setGenProgress(progress);
+  // ─── Poll for lead scoring progress (strategy + scoring phases) ─────
+  useEffect(() => {
+    if (phase !== 'strategy' && phase !== 'scoring') return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/generate/progress');
+        if (!res.ok) return;
+        const data = await res.json();
 
-      // Update generating step
-      if (elapsed < 10) setGenStep(0);
-      else if (elapsed < 25) setGenStep(1);
-      else if (elapsed < 45) setGenStep(2);
-      else if (elapsed < 70) setGenStep(3);
-      else setGenStep(4);
+        if (data.status === 'loop_progress' && data.total_items > 0) {
+          setScoredLeads(data.current_run || 0);
+          setTotalLeads(data.total_items);
+          // Jump to scoring if still in strategy
+          if (phase === 'strategy') setPhase('scoring');
+        }
 
-      if (elapsed >= totalDuration) {
-        setGenDone(true);
-        if (genTimerRef.current) clearInterval(genTimerRef.current);
-      }
-    }, 250);
+        if (data.status === 'done' || data.status === 'completed') {
+          setScoredLeads(data.total_items || data.current_run || 0);
+          setTotalLeads(data.total_items || data.current_run || 0);
+          setPhase('done');
+          window.dispatchEvent(new Event('vero:new-leads'));
+        }
+      } catch { /* ignore polling errors */ }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [phase]);
 
-    return () => {
-      if (genTimerRef.current) clearInterval(genTimerRef.current);
-    };
-  }, [step]);
-
-  // ─── Submit form (step 0 → 1 → 2) ────────────────────────────────────
+  // ─── Submit form: webhook → strategy → scoring ────────────────────────
   const handleSubmit = useCallback(async () => {
     if (!tenantId) {
       showToast('Nicht angemeldet', 'error');
       return;
     }
-    setStep(1);
+
+    setPhase('analyzing');
     setLoadingMsgIdx(0);
+    setElapsed(0);
+    setReasoning(null);
+    setScoredLeads(0);
+    setTotalLeads(0);
+
+    // Reset server-side progress
+    fetch('/api/generate/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenant_id: tenantId, status: 'reset' }),
+    }).catch(() => {});
 
     // Add to search history
     if (form.freetext.trim()) {
@@ -1096,121 +1079,33 @@ export default function GeneratePage() {
     }
 
     try {
-      const body: Record<string, unknown> = {
-        freetext: form.freetext,
-        employee_min: 1,
-        employee_max: 10000,
-        lead_source: 'apollo',
-        tenant_id: tenantId,
-      };
-
-      const res = await fetch('/api/generate/reasoning', {
+      // Single webhook call to apollo-agent
+      const res = await fetch('/api/generate/apollo-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ freetext: form.freetext, tenant_id: tenantId }),
       });
-      const data = await res.json();
-      console.log('[generate] reasoning response:', data);
 
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log('[generate] webhook response:', data);
+
+      // Show strategy/reasoning from first response
       setReasoning(data);
-      setRKeywords(data.apollo_keywords || []);
-      setRIndustries(data.apollo_industries || []);
-      setRTitles(data.person_titles || []);
-      setRLocations(data.person_locations || []);
-      setREmployeeMin(data.refined_employee_min || 1);
-      setREmployeeMax(data.refined_employee_max || 10000);
-      setStep(2);
-    } catch {
-      // Fallback: use freetext as base so the user can still proceed
-      setReasoning({
-        success: true,
-        reasoning: `Suche basierend auf: "${form.freetext.slice(0, 100)}"`,
-        strategy: 'Standard Apollo-Suche mit deinen Kriterien.',
-        apollo_keywords: [],
-        apollo_industries: [],
-        person_titles: [],
-        person_locations: [],
-        refined_employee_min: 1,
-        refined_employee_max: 10000,
-        confidence: 50,
-        why_contact_even_if_low_score: 'Auch Leads mit niedrigerem Score können wertvolle Kontakte sein.',
-      });
-      setStep(2);
+      setPhase('strategy');
+
+      // Transition to scoring after showing strategy briefly
+      setTimeout(() => setPhase('scoring'), 4000);
+    } catch (e) {
+      console.error('Submit error:', e);
+      showToast(e instanceof Error ? e.message : 'Fehler bei der Analyse', 'error');
+      setPhase('form');
     }
   }, [form, tenantId]);
-
-  // ─── Trigger generation (step 2 → 3) ─────────────────────────────────
-  const handleGenerate = useCallback(async () => {
-    if (!reasoning?.execution_id) {
-      showToast('Keine Execution-ID', 'error');
-      return;
-    }
-
-    // Update execution params if edited
-    try {
-      const upd = await fetch(`/api/generate/execution/${reasoning.execution_id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          apollo_keywords: rKeywords,
-          apollo_industries: rIndustries,
-          person_titles: rTitles,
-          person_locations: rLocations,
-          refined_employee_min: rEmployeeMin,
-          refined_employee_max: rEmployeeMax,
-          lead_count: leadCount,
-        }),
-      });
-      if (!upd.ok) {
-        const err = await upd.json().catch(() => ({}));
-        console.error('Execution update failed:', err);
-        showToast(err.error ?? 'Anpassungen konnten nicht gespeichert werden', 'error');
-        return;
-      }
-    } catch (e) {
-      console.error('Execution update error:', e);
-      showToast('Netzwerkfehler beim Speichern', 'error');
-      return;
-    }
-
-    setStep(3);
-    setGenProgress(0);
-    setGenElapsed(0);
-    setGenDone(false);
-    setGenStep(0);
-
-    try {
-      const triggerRes = await fetch('/api/generate/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          profile_id: 'default',
-          execution_id: reasoning.execution_id,
-          lead_count: leadCount,
-          on_demand: {
-            execution_id: reasoning.execution_id,
-            apollo_industries: rIndustries,
-            apollo_keywords: rKeywords,
-            person_titles: rTitles,
-            person_locations: rLocations,
-            refined_employee_min: rEmployeeMin,
-            refined_employee_max: rEmployeeMax,
-            lead_count: leadCount,
-          },
-        }),
-      });
-      if (!triggerRes.ok) {
-        const err = await triggerRes.json().catch(() => ({}));
-        console.error('Trigger failed:', err);
-        showToast(err.error ?? 'Workflow konnte nicht gestartet werden', 'error');
-        setStep(2);
-        return;
-      }
-    } catch {
-      // Generation continues in background even if request times out
-    }
-  }, [reasoning, rKeywords, rIndustries, rTitles, rLocations, rEmployeeMin, rEmployeeMax, leadCount, tenantId]);
 
   // ─── Save profile ─────────────────────────────────────────────────────
   const handleSaveProfile = useCallback(async () => {
@@ -1241,14 +1136,6 @@ export default function GeneratePage() {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m}:${sec.toString().padStart(2, '0')}`;
-  }
-
-  function getGenMessage(): string {
-    let msg = GENERATING_MESSAGES[0].text;
-    for (const m of GENERATING_MESSAGES) {
-      if (genElapsed >= m.time) msg = m.text;
-    }
-    return msg;
   }
 
   // ─── Card style helper ────────────────────────────────────────────────
@@ -1346,61 +1233,11 @@ export default function GeneratePage() {
         <PageHeader title="Lead Generator" subtitle="KI-gestützte Lead-Recherche" />
       </div>
 
-      {/* ─── TAB SWITCHER ─── */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 2,
-          marginTop: 20,
-          marginBottom: 8,
-          background: 'rgba(255,255,255,0.03)',
-          borderRadius: 10,
-          padding: 3,
-          border: `1px solid ${C.border}`,
-          width: 'fit-content',
-        }}
-      >
-        {([
-          { key: 'generator' as const, label: 'Lead Generator', icon: ICONS.zap },
-          { key: 'deep-research' as const, label: 'Deep Research', icon: ICONS.spark },
-        ]).map((tab) => {
-          const active = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7,
-                padding: '8px 18px',
-                borderRadius: 8,
-                border: 'none',
-                background: active ? 'rgba(255,255,255,0.07)' : 'transparent',
-                color: active ? C.text1 : C.text3,
-                fontSize: 12.5,
-                fontWeight: active ? 600 : 400,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                transition: 'all 0.2s ease',
-                boxShadow: active ? '0 1px 4px rgba(0,0,0,0.2)' : 'none',
-              }}
-            >
-              <SvgIcon d={tab.icon} size={13} color={active ? (tab.key === 'deep-research' ? '#34D399' : C.accent) : C.text3} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {activeTab === 'deep-research' ? (
-        <DeepResearchTab tenantId={tenantId} />
-      ) : (
       <>
-      <StepIndicator current={step} />
+      <PhaseIndicator phase={phase} />
 
-      {/* ═══════════════════ STEP 0: FORM ═══════════════════ */}
-      {step === 0 &&
+      {/* ═══════════════════ FORM ═══════════════════ */}
+      {phase === 'form' &&
         (() => {
           const profilePct = Math.round(
             ((PROFILE_REQUIRED.length - profileMissing.length) / PROFILE_REQUIRED.length) * 100
@@ -1567,7 +1404,7 @@ export default function GeneratePage() {
                     }}
                   >
                     <SvgIcon d={ICONS.spark} size={15} />
-                    KI-Analyse starten &rarr;
+                    Generate &rarr;
                   </button>
                 </div>
               </div>
@@ -1988,8 +1825,8 @@ export default function GeneratePage() {
           );
         })()}
 
-      {/* ═══════════════════ STEP 1: LOADING ═══════════════════ */}
-      {step === 1 && (
+      {/* ═══════════════════ ANALYZING ═══════════════════ */}
+      {phase === 'analyzing' && (
         <div
           style={{
             display: 'flex',
@@ -1997,804 +1834,347 @@ export default function GeneratePage() {
             alignItems: 'center',
             justifyContent: 'center',
             minHeight: 400,
-            gap: 32,
+            gap: 24,
             animation: 'fadeIn 0.5s ease both',
           }}
         >
-          {/* Spinner */}
+          <style>{`
+            @keyframes drSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            @keyframes drPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+            @keyframes drFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes scoreBar { from { width: 0; } }
+          `}</style>
+
           <div
             style={{
               width: 56,
               height: 56,
               borderRadius: '50%',
-              border: `3px solid ${C.border}`,
+              border: '3px solid rgba(99,102,241,0.1)',
               borderTopColor: C.accent,
-              animation: 'spinLoader 1s linear infinite',
+              animation: 'drSpin 0.9s linear infinite',
             }}
           />
 
-          {/* Cycling message */}
+          <div style={{ fontSize: 17, fontWeight: 600, color: C.text1 }}>
+            Anfrage analysieren
+          </div>
+
           <div
             key={loadingMsgIdx}
             style={{
-              fontSize: 15,
-              color: C.text1,
-              fontWeight: 500,
-              animation: 'fadeInMsg 0.4s ease both',
-              textAlign: 'center',
+              fontSize: 13,
+              color: C.text3,
+              animation: 'drPulse 2s ease infinite',
             }}
           >
-            {LOADING_MESSAGES[loadingMsgIdx]}
+            {ANALYZING_MESSAGES[loadingMsgIdx]}
           </div>
 
-          {/* Dot indicators */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            {LOADING_MESSAGES.map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: i === loadingMsgIdx ? C.accent : C.text3,
-                  transition: 'all 0.3s ease',
-                  transform: i === loadingMsgIdx ? 'scale(1.3)' : 'scale(1)',
-                }}
-              />
-            ))}
+          <div
+            style={{
+              fontSize: 11,
+              color: C.text3,
+              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+              marginTop: 4,
+            }}
+          >
+            {formatTime(elapsed)}
           </div>
         </div>
       )}
 
-      {/* ═══════════════════ STEP 2: REASONING (Review & Edit) ═══════════════════ */}
-      {step === 2 && reasoning && (
-        <div style={{ animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both', marginTop: 20 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-            {/* Left: KI-Analyse */}
-            <div style={cardStyle}>
-              <h3
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: C.text1,
-                  margin: '0 0 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <SvgIcon d={ICONS.spark} size={14} color={C.accent} />
-                KI-Analyse
-              </h3>
-
-              {/* Reasoning text (collapsible) */}
-              <button
-                onClick={() => setShowReasoning(!showReasoning)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  marginBottom: showReasoning ? 8 : 16,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 11,
-                  color: C.text3,
-                  fontFamily: 'inherit',
-                  letterSpacing: '0.03em',
-                }}
-              >
-                <span style={{ transform: showReasoning ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', display: 'inline-block', fontSize: 9 }}>▶</span>
-                Reasoning
-              </button>
-              {showReasoning && (
-                <div style={{ fontSize: 11, color: C.text3, lineHeight: 1.65, marginBottom: 16, whiteSpace: 'pre-wrap' }}>
-                  {reasoning.reasoning}
-                </div>
-              )}
-
-              {/* Strategy */}
-              <div
-                style={{
-                  background: C.accentGhost,
-                  border: `1px solid rgba(99,102,241,0.15)`,
-                  borderRadius: 8,
-                  padding: '10px 14px',
-                  marginBottom: 20,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: C.accent,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  Strategie
-                </span>
-                <p style={{ fontSize: 12, color: C.text2, margin: '6px 0 0', lineHeight: 1.6 }}>{reasoning.strategy}</p>
-              </div>
-
-              {/* Editable: Keywords */}
-              <EditableSection label="Keywords" editing={editKeywords} onToggle={() => setEditKeywords(!editKeywords)}>
-                {editKeywords ? (
-                  <ChipInput
-                    value={rKeywords}
-                    onChange={setRKeywords}
-                    placeholder="Keyword hinzufügen"
-                    chipColor={C.accent}
-                  />
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {rKeywords.map((kw) => (
-                      <span
-                        key={kw}
-                        style={{
-                          padding: '4px 10px',
-                          background: `${C.accent}18`,
-                          border: `1px solid ${C.accent}30`,
-                          borderRadius: 6,
-                          fontSize: 11,
-                          color: C.accent,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {kw}
-                      </span>
-                    ))}
-                    {rKeywords.length === 0 && <span style={{ fontSize: 12, color: C.text3 }}>Keine Keywords</span>}
-                  </div>
-                )}
-              </EditableSection>
-
-              {/* Editable: Industries */}
-              <EditableSection
-                label="Branchen"
-                editing={editIndustries}
-                onToggle={() => setEditIndustries(!editIndustries)}
-              >
-                {editIndustries ? (
-                  <ChipInput
-                    value={rIndustries}
-                    onChange={setRIndustries}
-                    placeholder="Branche hinzufügen"
-                    chipColor={C.success}
-                  />
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {rIndustries.map((ind) => (
-                      <span
-                        key={ind}
-                        style={{
-                          padding: '4px 10px',
-                          background: `${C.success}18`,
-                          border: `1px solid ${C.success}30`,
-                          borderRadius: 6,
-                          fontSize: 11,
-                          color: C.success,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {ind}
-                      </span>
-                    ))}
-                    {rIndustries.length === 0 && <span style={{ fontSize: 12, color: C.text3 }}>Keine Branchen</span>}
-                  </div>
-                )}
-              </EditableSection>
-
-              {/* Editable: Titles */}
-              <EditableSection label="Jobtitel" editing={editTitles} onToggle={() => setEditTitles(!editTitles)}>
-                {editTitles ? (
-                  <GroupedMultiSelect
-                    groups={APOLLO_TITLE_GROUPS}
-                    selected={rTitles}
-                    onChange={setRTitles}
-                    placeholder="Titel auswählen..."
-                    chipColor={C.warning}
-                    itemKey="titles"
-                  />
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {rTitles.map((t) => (
-                      <span
-                        key={t}
-                        style={{
-                          padding: '4px 10px',
-                          background: `${C.warning}18`,
-                          border: `1px solid ${C.warning}30`,
-                          borderRadius: 6,
-                          fontSize: 11,
-                          color: C.warning,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {t}
-                      </span>
-                    ))}
-                    {rTitles.length === 0 && <span style={{ fontSize: 12, color: C.text3 }}>Keine Titel</span>}
-                  </div>
-                )}
-              </EditableSection>
-
-              {/* Editable: Locations */}
-              <EditableSection
-                label="Standorte"
-                editing={editLocations}
-                onToggle={() => setEditLocations(!editLocations)}
-              >
-                {editLocations ? (
-                  <GroupedMultiSelect
-                    groups={APOLLO_LOCATION_GROUPS}
-                    selected={rLocations}
-                    onChange={setRLocations}
-                    placeholder="Standorte auswählen..."
-                    chipColor={C.purple}
-                    itemKey="locations"
-                  />
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {rLocations.map((l) => (
-                      <span
-                        key={l}
-                        style={{
-                          padding: '4px 10px',
-                          background: `${C.purple}18`,
-                          border: `1px solid ${C.purple}30`,
-                          borderRadius: 6,
-                          fontSize: 11,
-                          color: C.purple,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {l}
-                      </span>
-                    ))}
-                    {rLocations.length === 0 && <span style={{ fontSize: 12, color: C.text3 }}>Keine Standorte</span>}
-                  </div>
-                )}
-              </EditableSection>
-
-              {/* Editable: Employees */}
-              <EditableSection
-                label="Mitarbeiterzahl"
-                editing={editEmployees}
-                onToggle={() => setEditEmployees(!editEmployees)}
-              >
-                {editEmployees ? (
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <input
-                      type="number"
-                      value={rEmployeeMin}
-                      onChange={(e) => setREmployeeMin(parseInt(e.target.value) || 1)}
-                      min={1}
-                      style={{ ...inputStyle, width: 100 }}
-                    />
-                    <span style={{ color: C.text3, fontSize: 12 }}>bis</span>
-                    <input
-                      type="number"
-                      value={rEmployeeMax}
-                      onChange={(e) => setREmployeeMax(parseInt(e.target.value) || 10000)}
-                      min={1}
-                      style={{ ...inputStyle, width: 100 }}
-                    />
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 13, color: C.text1 }}>
-                    {rEmployeeMin.toLocaleString('de-DE')} – {rEmployeeMax.toLocaleString('de-DE')} Mitarbeiter
-                  </span>
-                )}
-              </EditableSection>
-
-
-              {/* Low score info */}
-              {reasoning.why_contact_even_if_low_score && (
-                <div
-                  style={{
-                    background: C.infoBg,
-                    border: `1px solid ${C.infoBorder}`,
-                    borderRadius: 8,
-                    padding: '10px 14px',
-                    marginTop: 16,
-                    display: 'flex',
-                    gap: 10,
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <SvgIcon d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" size={14} color={C.info} />
-                  <div>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: C.info }}>Auch bei niedrigem Score</span>
-                    <p style={{ fontSize: 12, color: C.text2, margin: '4px 0 0', lineHeight: 1.5 }}>
-                      {reasoning.why_contact_even_if_low_score}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right: Unternehmensprofil */}
-            <div style={cardStyle}>
-              <h3
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: C.text1,
-                  margin: '0 0 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <SvgIcon d={ICONS.settings} size={14} color={C.accent} />
-                Unternehmensprofil
-              </h3>
-
-              {profileLoading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: '50%',
-                      border: `2px solid ${C.border}`,
-                      borderTopColor: C.accent,
-                      animation: 'spinLoader 1s linear infinite',
-                    }}
-                  />
-                </div>
-              ) : !profile && !editingProfile ? (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <p style={{ fontSize: 13, color: C.text3, marginBottom: 12 }}>Kein Profil vorhanden</p>
-                  <button
-                    onClick={() => {
-                      setProfileDraft({
-                        company_name: '',
-                        company_description: '',
-                        target_customers: '',
-                        usp: '',
-                        sender_name: '',
-                        sender_role: '',
-                        services: '',
-                        excluded_profiles: '',
-                        deal_size_min: null,
-                        deal_size_max: null,
-                      });
-                      setEditingProfile(true);
-                    }}
-                    style={{
-                      background: C.accentGhost,
-                      border: `1px solid rgba(99,102,241,0.2)`,
-                      borderRadius: 8,
-                      padding: '8px 16px',
-                      color: C.accent,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    Profil erstellen
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  {!editingProfile ? (
-                    <>
-                      {/* Read-only profile fields */}
-                      {[
-                        { label: 'Firmenname', key: 'company_name' },
-                        { label: 'Beschreibung', key: 'company_description' },
-                        { label: 'Zielkunden', key: 'target_customers' },
-                        { label: 'USP', key: 'usp' },
-                        { label: 'Services', key: 'services' },
-                        { label: 'Ausgeschlossene Profile', key: 'excluded_profiles' },
-                        { label: 'Absender Name', key: 'sender_name' },
-                        { label: 'Absender Rolle', key: 'sender_role' },
-                      ].map((f) => (
-                        <div key={f.key} style={{ marginBottom: 12 }}>
-                          <span style={{ ...labelStyle, marginBottom: 2 }}>{f.label}</span>
-                          <p
-                            style={{
-                              fontSize: 13,
-                              color: (profile as Record<string, unknown>)?.[f.key] ? C.text1 : C.text3,
-                              margin: 0,
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {((profile as Record<string, unknown>)?.[f.key] as string) || '—'}
-                          </p>
-                        </div>
-                      ))}
-                      <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
-                        <div>
-                          <span style={{ ...labelStyle, marginBottom: 2 }}>Deal Min</span>
-                          <p style={{ fontSize: 13, color: profile?.deal_size_min ? C.text1 : C.text3, margin: 0 }}>
-                            {profile?.deal_size_min ? `${profile.deal_size_min.toLocaleString('de-DE')} €` : '—'}
-                          </p>
-                        </div>
-                        <div>
-                          <span style={{ ...labelStyle, marginBottom: 2 }}>Deal Max</span>
-                          <p style={{ fontSize: 13, color: profile?.deal_size_max ? C.text1 : C.text3, margin: 0 }}>
-                            {profile?.deal_size_max ? `${profile.deal_size_max.toLocaleString('de-DE')} €` : '—'}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setEditingProfile(true)}
-                        style={{
-                          background: 'none',
-                          border: `1px solid ${C.border}`,
-                          borderRadius: 8,
-                          padding: '6px 14px',
-                          color: C.text2,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          transition: 'all 0.15s',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)';
-                          e.currentTarget.style.color = C.accentBright;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = C.border;
-                          e.currentTarget.style.color = C.text2;
-                        }}
-                      >
-                        <SvgIcon
-                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                          size={12}
-                        />
-                        Bearbeiten
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {/* Editable profile fields */}
-                      {[
-                        { label: 'Firmenname', key: 'company_name', type: 'text' },
-                        { label: 'Beschreibung', key: 'company_description', type: 'textarea' },
-                        { label: 'Zielkunden', key: 'target_customers', type: 'textarea' },
-                        { label: 'USP', key: 'usp', type: 'textarea' },
-                        { label: 'Services', key: 'services', type: 'textarea' },
-                        { label: 'Ausgeschlossene Profile', key: 'excluded_profiles', type: 'textarea' },
-                        { label: 'Absender Name', key: 'sender_name', type: 'text' },
-                        { label: 'Absender Rolle', key: 'sender_role', type: 'text' },
-                      ].map((f) => (
-                        <div key={f.key} style={{ marginBottom: 12 }}>
-                          <label style={labelStyle}>{f.label}</label>
-                          {f.type === 'textarea' ? (
-                            <textarea
-                              value={((profileDraft as Record<string, unknown>)?.[f.key] as string) || ''}
-                              onChange={(e) =>
-                                setProfileDraft((prev) => (prev ? { ...prev, [f.key]: e.target.value } : prev))
-                              }
-                              rows={3}
-                              style={{ ...inputStyle, resize: 'vertical', minHeight: 60 }}
-                            />
-                          ) : (
-                            <input
-                              value={((profileDraft as Record<string, unknown>)?.[f.key] as string) || ''}
-                              onChange={(e) =>
-                                setProfileDraft((prev) => (prev ? { ...prev, [f.key]: e.target.value } : prev))
-                              }
-                              style={inputStyle}
-                            />
-                          )}
-                        </div>
-                      ))}
-                      <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={labelStyle}>Deal Min (€)</label>
-                          <input
-                            type="number"
-                            value={profileDraft?.deal_size_min ?? ''}
-                            onChange={(e) =>
-                              setProfileDraft((prev) =>
-                                prev
-                                  ? { ...prev, deal_size_min: e.target.value ? parseInt(e.target.value) : null }
-                                  : prev
-                              )
-                            }
-                            style={inputStyle}
-                          />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={labelStyle}>Deal Max (€)</label>
-                          <input
-                            type="number"
-                            value={profileDraft?.deal_size_max ?? ''}
-                            onChange={(e) =>
-                              setProfileDraft((prev) =>
-                                prev
-                                  ? { ...prev, deal_size_max: e.target.value ? parseInt(e.target.value) : null }
-                                  : prev
-                              )
-                            }
-                            style={inputStyle}
-                          />
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                        <button
-                          onClick={handleSaveProfile}
-                          className="s-primary"
-                          style={{
-                            background: 'linear-gradient(135deg, #6366F1, #818CF8)',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: 8,
-                            padding: '8px 18px',
-                            fontSize: 12,
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            fontFamily: 'inherit',
-                          }}
-                        >
-                          Speichern
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingProfile(false);
-                            setProfileDraft(profile);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: `1px solid ${C.border}`,
-                            borderRadius: 8,
-                            padding: '8px 18px',
-                            fontSize: 12,
-                            color: C.text2,
-                            cursor: 'pointer',
-                            fontFamily: 'inherit',
-                          }}
-                        >
-                          Abbrechen
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Lead count slider */}
-          <div style={{ ...cardStyle, marginTop: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <label style={{ ...labelStyle, marginBottom: 0 }}>Anzahl Leads</label>
-              <span
-                style={{
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: C.accent,
-                  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                }}
-              >
-                {leadCount}
-              </span>
-            </div>
-            <input
-              type="range"
-              min={10}
-              max={100}
-              step={5}
-              value={leadCount}
-              onChange={(e) => setLeadCount(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                height: 4,
-                borderRadius: 2,
-                background: `linear-gradient(to right, ${C.accent} 0%, ${C.accent} ${((leadCount - 10) / 90) * 100}%, ${C.border} ${((leadCount - 10) / 90) * 100}%, ${C.border} 100%)`,
-                outline: 'none',
-                cursor: 'pointer',
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span style={{ fontSize: 10, color: C.text3 }}>10</span>
-              <span style={{ fontSize: 10, color: C.text3 }}>100</span>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
-            <button
-              onClick={() => setStep(0)}
-              className="s-ghost"
-              style={{
-                background: 'rgba(255,255,255,0.03)',
-                border: `1px solid ${C.border}`,
-                color: C.text2,
-                borderRadius: 10,
-                padding: '12px 24px',
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              &larr; Anpassen
-            </button>
-            <button
-              onClick={handleGenerate}
-              className="s-primary-glow"
-              style={{
-                background: 'linear-gradient(135deg, #6366F1, #818CF8)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 10,
-                padding: '12px 28px',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                boxShadow: '0 2px 16px rgba(99,102,241,0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <SvgIcon d={ICONS.zap} size={14} />
-              Leads generieren &rarr;
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ═══════════════════ STEP 3: GENERATING ═══════════════════ */}
-      {step === 3 && (
+      {/* ═══════════════════ STRATEGY ═══════════════════ */}
+      {phase === 'strategy' && reasoning && (
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            paddingTop: 40,
-            animation: 'fadeIn 0.5s ease both',
+            maxWidth: 640,
+            margin: '32px auto 0',
+            animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both',
           }}
         >
-          {/* Progress bar */}
-          <div style={{ width: '100%', maxWidth: 480 }}>
+          {/* Reasoning Card */}
+          {reasoning.reasoning && (
+            <div
+              style={{
+                ...cardStyle,
+                marginBottom: 16,
+                animation: 'drFadeIn 0.5s ease both',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 7,
+                    background: C.accentGhost,
+                    border: '1px solid rgba(99,102,241,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <SvgIcon
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    size={14}
+                    color={C.accent}
+                  />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Reasoning</span>
+              </div>
+              <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                {reasoning.reasoning}
+              </div>
+            </div>
+          )}
+
+          {/* Strategy Card */}
+          {reasoning.strategy && (
+            <div
+              style={{
+                ...cardStyle,
+                marginBottom: 16,
+                animation: 'drFadeIn 0.5s ease 0.15s both',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 7,
+                    background: 'rgba(52,211,153,0.1)',
+                    border: '1px solid rgba(52,211,153,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <SvgIcon d={ICONS.chart} size={14} color={C.success} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Strategie</span>
+              </div>
+              <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                {reasoning.strategy}
+              </div>
+            </div>
+          )}
+
+          {/* Still loading indicator */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              padding: '14px 20px',
+              background: C.accentGhost,
+              border: '1px solid rgba(99,102,241,0.1)',
+              borderRadius: 10,
+              animation: 'drFadeIn 0.5s ease 0.3s both',
+            }}
+          >
+            <div
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                border: '2px solid rgba(99,102,241,0.15)',
+                borderTopColor: C.accent,
+                animation: 'drSpin 0.9s linear infinite',
+              }}
+            />
+            <span style={{ fontSize: 12, color: C.accent, fontWeight: 500 }}>
+              Lead Scoring wird vorbereitet...
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                color: C.text3,
+                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                marginLeft: 'auto',
+              }}
+            >
+              {formatTime(elapsed)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════ SCORING ═══════════════════ */}
+      {phase === 'scoring' && (
+        <div
+          style={{
+            maxWidth: 640,
+            margin: '32px auto 0',
+            animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both',
+          }}
+        >
+          {/* Strategy summary (compact) */}
+          {reasoning && (reasoning.reasoning || reasoning.strategy) && (
+            <div
+              style={{
+                ...cardStyle,
+                marginBottom: 20,
+                opacity: 0.7,
+              }}
+            >
+              {reasoning.strategy && (
+                <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>
+                  <span style={{ fontWeight: 600, color: C.text1, marginRight: 6 }}>Strategie:</span>
+                  {reasoning.strategy.length > 200 ? reasoning.strategy.slice(0, 200) + '...' : reasoning.strategy}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Lead Scoring Header */}
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 17, fontWeight: 600, color: C.text1, marginBottom: 6 }}>
+              Lead Scoring
+            </div>
+            <div style={{ fontSize: 13, color: C.text3 }}>
+              Leads werden bewertet und qualifiziert
+            </div>
+          </div>
+
+          {/* Scoring Progress */}
+          <div style={{ ...cardStyle, textAlign: 'center' }}>
+            {/* Big number */}
+            <div
+              style={{
+                fontSize: 48,
+                fontWeight: 700,
+                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                color: C.accent,
+                lineHeight: 1,
+                marginBottom: 8,
+              }}
+            >
+              {scoredLeads}
+              <span style={{ fontSize: 20, color: C.text3, fontWeight: 400 }}>
+                {' '}/{' '}{totalLeads || '...'}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: C.text3, marginBottom: 20 }}>
+              Leads gescored
+            </div>
+
+            {/* Progress bar */}
             <div
               style={{
                 height: 8,
                 borderRadius: 4,
                 background: C.surface2,
                 overflow: 'hidden',
-                marginBottom: 12,
+                marginBottom: 16,
               }}
             >
               <div
                 style={{
                   height: '100%',
-                  width: `${genProgress}%`,
+                  width: totalLeads > 0 ? `${Math.min((scoredLeads / totalLeads) * 100, 100)}%` : '5%',
                   borderRadius: 4,
-                  background: genDone ? C.success : 'linear-gradient(90deg, #6366F1, #818CF8, #A5B4FC)',
+                  background: 'linear-gradient(90deg, #6366F1, #818CF8, #A5B4FC)',
                   transition: 'width 0.5s ease',
-                  boxShadow: genDone ? `0 0 12px ${C.success}40` : '0 0 12px rgba(99,102,241,0.3)',
+                  boxShadow: '0 0 12px rgba(99,102,241,0.3)',
+                  animation: totalLeads === 0 ? 'scoreBar 1.5s ease infinite alternate' : 'none',
                 }}
               />
             </div>
 
-            {/* Timer + percentage */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-              <span style={{ fontSize: 13, color: C.text2, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
-                {formatTime(genElapsed)}
-              </span>
-              <span
-                style={{
-                  fontSize: 13,
-                  color: C.text2,
-                  fontWeight: 600,
-                  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                }}
-              >
-                {Math.round(genProgress)}%
-              </span>
+            {/* Timer */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: 11,
+                color: C.text3,
+                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+              }}
+            >
+              <span>{formatTime(elapsed)}</span>
+              <span>{totalLeads > 0 ? `${Math.round((scoredLeads / totalLeads) * 100)}%` : '...'}</span>
             </div>
           </div>
 
-          {/* Status message */}
+          {/* Activity indicator */}
           <div
-            key={getGenMessage()}
             style={{
-              fontSize: 15,
-              color: C.text1,
-              fontWeight: 500,
-              marginBottom: 40,
-              animation: 'fadeInMsg 0.4s ease both',
-              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              marginTop: 20,
+              padding: '14px 20px',
+              background: C.accentGhost,
+              border: '1px solid rgba(99,102,241,0.1)',
+              borderRadius: 10,
             }}
           >
-            {genDone ? 'Lead-Generierung abgeschlossen!' : getGenMessage()}
+            <div
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                border: '2px solid rgba(99,102,241,0.15)',
+                borderTopColor: C.accent,
+                animation: 'drSpin 0.9s linear infinite',
+              }}
+            />
+            <span style={{ fontSize: 12, color: C.accent, fontWeight: 500 }}>
+              {scoredLeads === 0 ? 'Leads werden gesucht...' : 'Weitere Leads werden bewertet...'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════ DONE ═══════════════════ */}
+      {phase === 'done' && (
+        <div
+          style={{
+            maxWidth: 520,
+            margin: '80px auto 0',
+            textAlign: 'center',
+            animation: 'fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
+          }}
+        >
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              margin: '0 auto 20px',
+              borderRadius: '50%',
+              background: 'rgba(52,211,153,0.1)',
+              border: '1px solid rgba(52,211,153,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 0 32px rgba(52,211,153,0.15)',
+            }}
+          >
+            <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
           </div>
 
-          {/* Step tracker */}
-          <div style={{ ...cardStyle, width: '100%', maxWidth: 480 }}>
-            {GENERATING_STEPS.map((s, i) => {
-              const done = i < genStep || genDone;
-              const active = i === genStep && !genDone;
-              return (
-                <div
-                  key={s.label}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '10px 0',
-                    borderBottom: i < GENERATING_STEPS.length - 1 ? `1px solid ${C.border}` : 'none',
-                  }}
-                >
-                  {/* Icon */}
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: done ? 'rgba(52,211,153,0.12)' : active ? C.accentGhost : 'rgba(255,255,255,0.03)',
-                      border: `1.5px solid ${
-                        done ? 'rgba(52,211,153,0.3)' : active ? 'rgba(99,102,241,0.3)' : C.border
-                      }`,
-                      flexShrink: 0,
-                      animation: active ? 'progressPulse 2s ease infinite' : 'none',
-                    }}
-                  >
-                    {done ? (
-                      <SvgIcon d={ICONS.check} size={12} color={C.success} />
-                    ) : (
-                      <SvgIcon d={s.icon} size={12} color={active ? C.accent : C.text3} />
-                    )}
-                  </div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: C.text1, margin: '0 0 8px' }}>
+            Fertig!
+          </h2>
+          <p style={{ fontSize: 14, color: C.text2, margin: '0 0 12px', lineHeight: 1.6 }}>
+            {scoredLeads > 0
+              ? `${scoredLeads} Leads wurden erfolgreich generiert und bewertet.`
+              : 'Die Lead-Generierung wurde abgeschlossen.'}
+          </p>
+          <p style={{ fontSize: 12, color: C.text3, margin: '0 0 32px' }}>
+            Dauer: {formatTime(elapsed)}
+          </p>
 
-                  {/* Label */}
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color: done ? C.success : active ? C.text1 : C.text3,
-                      fontWeight: active ? 600 : 400,
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    {s.label}
-                  </span>
-
-                  {/* Status */}
-                  {done && <span style={{ marginLeft: 'auto', fontSize: 11, color: C.success }}>Fertig</span>}
-                  {active && (
-                    <span
-                      style={{
-                        marginLeft: 'auto',
-                        fontSize: 11,
-                        color: C.accent,
-                        animation: 'progressPulse 2s ease infinite',
-                      }}
-                    >
-                      Läuft...
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Done link */}
-          {genDone && (
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <Link
               href="/sales/leads"
               style={{
-                marginTop: 32,
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
@@ -2806,25 +2186,51 @@ export default function GeneratePage() {
                 fontWeight: 600,
                 textDecoration: 'none',
                 boxShadow: '0 2px 16px rgba(52,211,153,0.3)',
-                animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.filter = 'brightness(1.15)';
-                e.currentTarget.style.boxShadow = '0 4px 24px rgba(52,211,153,0.4)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.filter = 'brightness(1)';
-                e.currentTarget.style.boxShadow = '0 2px 16px rgba(52,211,153,0.3)';
               }}
             >
               &rarr; Zu den Leads
             </Link>
-          )}
+            <button
+              onClick={() => {
+                setPhase('form');
+                setForm({ freetext: '' });
+                setReasoning(null);
+                setElapsed(0);
+                setScoredLeads(0);
+                setTotalLeads(0);
+              }}
+              style={{
+                padding: '12px 24px',
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                fontSize: 13,
+                color: C.text2,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = C.border;
+              }}
+            >
+              Neue Suche
+            </button>
+          </div>
         </div>
       )}
+
       </>
-      )}
     </div>
   );
 }

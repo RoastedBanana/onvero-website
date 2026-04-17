@@ -22,7 +22,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       y: body.y ?? 0,
       expand_category: body.expand_category ?? null,
     })
-    .select('id, lead_id, x, y, expand_category, source_node_id, leads(id, company_name, first_name, last_name, city, score)')
+    .select('id, lead_id, x, y, expand_category, source_node_id, leads(id, company_name, city, fit_score, industry, logo_url, tier)')
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

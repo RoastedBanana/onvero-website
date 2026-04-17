@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     supabase.from('networks').select('*').eq('id', id).eq('tenant_id', tenantId).maybeSingle(),
     supabase
       .from('network_nodes')
-      .select('id, lead_id, x, y, expand_category, source_node_id, leads(id, company_name, first_name, last_name, city, score)')
+      .select('id, lead_id, x, y, expand_category, source_node_id, leads(id, company_name, city, fit_score, industry, logo_url, tier)')
       .eq('network_id', id)
       .eq('tenant_id', tenantId),
     supabase
