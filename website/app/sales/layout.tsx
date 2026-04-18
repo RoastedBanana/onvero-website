@@ -80,46 +80,6 @@ function buildNav(
   ];
 }
 
-// ─── ONVERO ICON (real brand mark) ───────────────────────────────────────────
-
-function OnveroIconMark({ size = 20, color = '#fff' }: { size?: number; color?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 148.57 212.32"
-      width={size}
-      height={size * (212.32 / 148.57)}
-      fill={color}
-    >
-      <circle cx="78.75" cy="196.57" r="15.75" />
-      <circle cx="16" cy="133.32" r="16" />
-      <line
-        x1="67.64"
-        y1="185.06"
-        x2="27.08"
-        y2="144.87"
-        fill="none"
-        stroke={color}
-        strokeLinecap="round"
-        strokeMiterlimit="10"
-        strokeWidth="8"
-      />
-      <line
-        x1="98.86"
-        y1="49.8"
-        x2="26.84"
-        y2="121.55"
-        fill="none"
-        stroke={color}
-        strokeLinecap="round"
-        strokeMiterlimit="10"
-        strokeWidth="8"
-      />
-      <path d="M147.45,21.2c-9.47-3.12-16.95-10.59-20.07-20.06C127.15.46,126.51,0,125.79,0h0c-.72,0-1.36.46-1.59,1.14-3.11,9.44-10.56,16.9-19.99,20.04-.46.15-.87.47-1.06.92-.4.95.09,1.98.98,2.27,9.47,3.12,16.95,10.59,20.07,20.06.23.68.87,1.14,1.59,1.14h0c.72,0,1.36-.46,1.59-1.14,3.11-9.44,10.56-16.9,19.99-20.04.46-.15.87-.47,1.06-.92.4-.95-.09-1.98-.98-2.27Z" />
-    </svg>
-  );
-}
-
 // ─── PORTAL DROPDOWN — renders outside topbar stacking context ───────────────
 
 function PortalDropdown({
@@ -576,63 +536,41 @@ function Topbar() {
       />
 
       {/* ─── Left: Logo ─── */}
-      <Link href="/sales" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* Icon container with glow */}
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 9,
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05))',
-            border: '1px solid rgba(99,102,241,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 12px rgba(99,102,241,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Subtle inner gradient */}
-          <div
+      <Link
+        href="/sales"
+        className="s-ghost"
+        style={{
+          textDecoration: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0,
+          padding: '2px 0',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <span
             style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'radial-gradient(circle at 30% 20%, rgba(129,140,248,0.12), transparent 70%)',
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#fff',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.1,
             }}
-          />
-          <div style={{ position: 'relative', marginTop: -1 }}>
-            <OnveroIconMark size={13} color="#A5B4FC" />
-          </div>
-        </div>
-
-        {/* Wordmark */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: C.text1,
-                letterSpacing: '-0.02em',
-                fontFamily: "TimesNewRomanPSMT, 'Times New Roman', Georgia, serif",
-              }}
-            >
-              Onvero
-            </span>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: '0.04em',
-                background: 'linear-gradient(135deg, #818CF8, #A5B4FC)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              SALES
-            </span>
-          </div>
+          >
+            onvero
+          </span>
+          <span
+            style={{
+              fontSize: 8.5,
+              fontWeight: 600,
+              letterSpacing: '0.18em',
+              color: 'rgba(165,180,252,0.7)',
+              lineHeight: 1,
+              textTransform: 'uppercase',
+            }}
+          >
+            Sales
+          </span>
         </div>
       </Link>
 
