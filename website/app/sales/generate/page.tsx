@@ -390,13 +390,12 @@ type Phase = 'form' | 'analyzing' | 'strategy' | 'scoring' | 'done';
 
 const PHASE_STEPS: { key: Phase; label: string; icon: string }[] = [
   { key: 'analyzing', label: 'Anfrage analysieren', icon: ICONS.spark },
-  { key: 'strategy', label: 'Strategie', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
   { key: 'scoring', label: 'Lead Scoring', icon: ICONS.chart },
 ];
 
 function PhaseIndicator({ phase }: { phase: Phase }) {
   if (phase === 'form' || phase === 'done') return null;
-  const phaseOrder: Phase[] = ['analyzing', 'strategy', 'scoring'];
+  const phaseOrder: Phase[] = ['analyzing', 'scoring'];
   const currentIdx = phaseOrder.indexOf(phase);
   return (
     <div
@@ -965,7 +964,10 @@ export default function GeneratePage() {
 
   // Lead scoring progress
   const [scoredLeads, setScoredLeads] = useState(0);
-  const [totalLeads, setTotalLeads] = useState(0);
+  const [totalLeads, setTotalLeads] = useState(10);
+  const [requestTime, setRequestTime] = useState<string | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [creditBlocked, setCreditBlocked] = useState(false);
 
   // ─── Restore form + history from localStorage on mount ─────────────────
   useEffect(() => {
@@ -1024,32 +1026,78 @@ export default function GeneratePage() {
     return () => clearInterval(t);
   }, [phase]);
 
-  // ─── Poll for lead scoring progress (strategy + scoring phases) ─────
+  // ─── Track scored leads via Supabase Realtime (+ polling fallback) ────
+  // Counts rows in `leads` where ai_scored_at IS NOT NULL, created after request_time.
   useEffect(() => {
     if (phase !== 'strategy' && phase !== 'scoring') return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('/api/generate/progress');
-        if (!res.ok) return;
-        const data = await res.json();
+    if (!tenantId || !requestTime) return;
 
-        if (data.status === 'loop_progress' && data.total_items > 0) {
-          setScoredLeads(data.current_run || 0);
-          setTotalLeads(data.total_items);
-          // Jump to scoring if still in strategy
-          if (phase === 'strategy') setPhase('scoring');
-        }
+    const supabase = getSupabase();
+    let cancelled = false;
 
-        if (data.status === 'done' || data.status === 'completed') {
-          setScoredLeads(data.total_items || data.current_run || 0);
-          setTotalLeads(data.total_items || data.current_run || 0);
-          setPhase('done');
-          window.dispatchEvent(new Event('vero:new-leads'));
+    const recount = async () => {
+      const { count } = (await supabase
+        .from('leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .gte('created_at', requestTime)
+        .not('ai_scored_at', 'is', null)) as { count: number | null };
+      if (cancelled) return;
+      const n = count ?? 0;
+      setScoredLeads(n);
+      if (n > 0 && totalLeads > 0 && n >= totalLeads) {
+        setPhase('done');
+        window.dispatchEvent(new Event('vero:new-leads'));
+      }
+    };
+
+    recount();
+
+    // Realtime subscription: INSERT + UPDATE where ai_scored_at gets set
+    const channel = supabase
+      .channel(`leads-scoring-${requestTime}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'leads', filter: `tenant_id=eq.${tenantId}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const row = payload.new;
+          if (
+            row &&
+            typeof row.created_at === 'string' &&
+            row.created_at >= requestTime &&
+            row.ai_scored_at
+          ) {
+            recount();
+          }
         }
-      } catch { /* ignore polling errors */ }
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [phase]);
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'leads', filter: `tenant_id=eq.${tenantId}` },
+        (payload: { new: Record<string, unknown> }) => {
+          const row = payload.new;
+          if (
+            row &&
+            typeof row.created_at === 'string' &&
+            row.created_at >= requestTime &&
+            row.ai_scored_at
+          ) {
+            recount();
+          }
+        }
+      )
+      .subscribe();
+
+    // Polling fallback every 3s in case Realtime misses events
+    const poll = setInterval(recount, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(poll);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, tenantId, requestTime, totalLeads]);
 
   // ─── Submit form: webhook → strategy → scoring ────────────────────────
   const handleSubmit = useCallback(async () => {
@@ -1058,18 +1106,22 @@ export default function GeneratePage() {
       return;
     }
 
+    const now = new Date().toISOString();
     setPhase('analyzing');
     setLoadingMsgIdx(0);
     setElapsed(0);
     setReasoning(null);
     setScoredLeads(0);
-    setTotalLeads(0);
+    setTotalLeads(10);
+    setRequestTime(now);
+    setCreditBlocked(false);
+    setCreditBalance(null);
 
-    // Reset server-side progress
+    // Reset server-side progress for this tenant
     fetch('/api/generate/progress', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenant_id: tenantId, status: 'reset' }),
+      body: JSON.stringify({ tenant_id: tenantId, status: 'reset', total_items: 10 }),
     }).catch(() => {});
 
     // Add to search history
@@ -1079,12 +1131,20 @@ export default function GeneratePage() {
     }
 
     try {
-      // Single webhook call to apollo-agent
       const res = await fetch('/api/generate/apollo-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ freetext: form.freetext, tenant_id: tenantId }),
       });
+
+      // 402 → Credits exhausted
+      if (res.status === 402) {
+        const blockedData = await res.json().catch(() => ({}));
+        setCreditBalance(blockedData?._credit_summary?.balance_after ?? 0);
+        setCreditBlocked(true);
+        setPhase('form');
+        return;
+      }
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -1094,12 +1154,26 @@ export default function GeneratePage() {
       const data = await res.json();
       console.log('[generate] webhook response:', data);
 
-      // Show strategy/reasoning from first response
-      setReasoning(data);
-      setPhase('strategy');
+      // Capture selected_count (fallback: always 10)
+      const selected = typeof data.selected_count === 'number' && data.selected_count > 0 ? data.selected_count : 10;
+      setTotalLeads(selected);
 
-      // Transition to scoring after showing strategy briefly
-      setTimeout(() => setPhase('scoring'), 4000);
+      // Sync total with server-side progress state
+      fetch('/api/generate/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId, total_items: selected }),
+      }).catch(() => {});
+
+      // Capture credit balance
+      if (data._credit_summary?.balance_after !== undefined) {
+        setCreditBalance(data._credit_summary.balance_after);
+      }
+
+      // Show strategy/reasoning immediately and start scoring phase right away —
+      // the progress bar + counter appear alongside the strategy cards.
+      setReasoning(data);
+      setPhase('scoring');
     } catch (e) {
       console.error('Submit error:', e);
       showToast(e instanceof Error ? e.message : 'Fehler bei der Analyse', 'error');
@@ -1246,6 +1320,64 @@ export default function GeneratePage() {
 
           return (
             <div style={{ animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both' }}>
+              {/* Credit-warning banner */}
+              {creditBlocked && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '14px 18px',
+                    marginTop: 16,
+                    borderRadius: 12,
+                    background: 'linear-gradient(135deg, rgba(248,113,113,0.08), rgba(248,113,113,0.03))',
+                    border: '1px solid rgba(248,113,113,0.25)',
+                    animation: 'fadeInUp 0.3s ease both',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: 'rgba(248,113,113,0.12)',
+                      border: '1px solid rgba(248,113,113,0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <SvgIcon
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                      size={14}
+                      color="#F87171"
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#F87171' }}>Credits aufgebraucht</div>
+                    <div style={{ fontSize: 12, color: C.text2, marginTop: 2 }}>
+                      {creditBalance !== null ? `Verbleibendes Guthaben: ${creditBalance} Credits.` : ''} Upgrade auf einen höheren Plan, um weiter Leads zu generieren.
+                    </div>
+                  </div>
+                  <Link
+                    href="/sales/settings?section=plan"
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: '#fff',
+                      background: 'linear-gradient(135deg, #6366F1, #818CF8)',
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      textDecoration: 'none',
+                      flexShrink: 0,
+                    }}
+                  >
+                    Upgrade &rarr;
+                  </Link>
+                </div>
+              )}
+
               {/* ── 1. Hero Section ── */}
               <div style={{ textAlign: 'center', marginTop: 28, marginBottom: 32, animation: 'fadeIn 0.5s ease both' }}>
                 <h2
@@ -2011,31 +2143,62 @@ export default function GeneratePage() {
             animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both',
           }}
         >
-          {/* Strategy summary (compact) */}
-          {reasoning && (reasoning.reasoning || reasoning.strategy) && (
-            <div
-              style={{
-                ...cardStyle,
-                marginBottom: 20,
-                opacity: 0.7,
-              }}
-            >
-              {reasoning.strategy && (
-                <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>
-                  <span style={{ fontWeight: 600, color: C.text1, marginRight: 6 }}>Strategie:</span>
-                  {reasoning.strategy.length > 200 ? reasoning.strategy.slice(0, 200) + '...' : reasoning.strategy}
+          {/* Full reasoning + strategy cards (shown throughout scoring) */}
+          {reasoning?.reasoning && (
+            <div style={{ ...cardStyle, marginBottom: 16, animation: 'drFadeIn 0.5s ease both' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <div
+                  style={{
+                    width: 28, height: 28, borderRadius: 7,
+                    background: C.accentGhost,
+                    border: '1px solid rgba(99,102,241,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <SvgIcon
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    size={14}
+                    color={C.accent}
+                  />
                 </div>
-              )}
+                <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Reasoning</span>
+              </div>
+              <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                {reasoning.reasoning}
+              </div>
+            </div>
+          )}
+
+          {reasoning?.strategy && (
+            <div style={{ ...cardStyle, marginBottom: 20, animation: 'drFadeIn 0.5s ease 0.1s both' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <div
+                  style={{
+                    width: 28, height: 28, borderRadius: 7,
+                    background: 'rgba(52,211,153,0.1)',
+                    border: '1px solid rgba(52,211,153,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <SvgIcon d={ICONS.chart} size={14} color={C.success} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Strategie</span>
+              </div>
+              <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                {reasoning.strategy}
+              </div>
             </div>
           )}
 
           {/* Lead Scoring Header */}
-          <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ fontSize: 17, fontWeight: 600, color: C.text1, marginBottom: 6 }}>
+          <div style={{ textAlign: 'center', marginBottom: 20, marginTop: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.text1, marginBottom: 4 }}>
               Lead Scoring
             </div>
-            <div style={{ fontSize: 13, color: C.text3 }}>
-              Leads werden bewertet und qualifiziert
+            <div style={{ fontSize: 12, color: C.text3 }}>
+              {scoredLeads < totalLeads
+                ? 'Leads werden bewertet und qualifiziert…'
+                : 'Alle Leads bewertet'}
             </div>
           </div>
 
@@ -2054,7 +2217,7 @@ export default function GeneratePage() {
             >
               {scoredLeads}
               <span style={{ fontSize: 20, color: C.text3, fontWeight: 400 }}>
-                {' '}/{' '}{totalLeads || '...'}
+                {' '}/{' '}{totalLeads || 10}
               </span>
             </div>
             <div style={{ fontSize: 12, color: C.text3, marginBottom: 20 }}>
@@ -2124,7 +2287,11 @@ export default function GeneratePage() {
               }}
             />
             <span style={{ fontSize: 12, color: C.accent, fontWeight: 500 }}>
-              {scoredLeads === 0 ? 'Leads werden gesucht...' : 'Weitere Leads werden bewertet...'}
+              {scoredLeads === 0
+                ? 'Leads werden gefunden und analysiert…'
+                : scoredLeads < totalLeads
+                  ? `Bewerte Lead ${scoredLeads + 1} von ${totalLeads}…`
+                  : 'Fertig!'}
             </span>
           </div>
         </div>

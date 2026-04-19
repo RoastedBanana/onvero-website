@@ -78,6 +78,7 @@ export async function PATCH(req: NextRequest) {
     'deal_size_max',
     'sender_name',
     'sender_role',
+    'sender_email',
     'tone_of_voice',
     'email_signature',
     'industry',

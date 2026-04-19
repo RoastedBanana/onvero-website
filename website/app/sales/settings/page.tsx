@@ -20,6 +20,7 @@ interface ProfileData {
   deal_size_max: number | null;
   sender_name: string;
   sender_role: string;
+  sender_email: string;
   tone_of_voice: string;
   email_signature: string;
   industry: string;
@@ -43,6 +44,7 @@ const EMPTY_PROFILE: ProfileData = {
   deal_size_max: null,
   sender_name: '',
   sender_role: '',
+  sender_email: '',
   tone_of_voice: 'professional',
   email_signature: '',
   industry: '',
@@ -623,6 +625,9 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
             <Input value={profile.sender_role} onChange={(v) => upd('sender_role', v)} />
           </Field>
         </div>
+        <Field label="Absender E-Mail" hint="Von dieser Adresse werden Outreach-Mails versendet (z.B. jan@contact.onvero.de).">
+          <Input value={profile.sender_email} onChange={(v) => upd('sender_email', v)} placeholder="jan@contact.onvero.de" />
+        </Field>
         <Field label="Tonalität">
           <Select
             value={profile.tone_of_voice || 'professional'}
@@ -1624,96 +1629,120 @@ function CreditBar({ used, total, color }: { used: number; total: number; color:
   );
 }
 
+// Plan definitions — match tenant_credits.plan values
+const PLANS: Record<
+  string,
+  { label: string; credits: number; price: string; overage: string | null; color: string }
+> = {
+  basic:      { label: 'Basic',      credits: 50,   price: '29',  overage: null,           color: '#34D399' },
+  business:   { label: 'Business',   credits: 200,  price: '79',  overage: null,           color: '#818CF8' },
+  enterprise: { label: 'Enterprise', credits: 1000, price: '199', overage: '+200 Cr Puffer', color: '#FBBF24' },
+};
+
+const CREDIT_ACTIONS = [
+  {
+    label: 'Lead-Generation-Lauf',
+    credits: 5,
+    desc: 'Ein kompletter Lauf der Lead-Generierung (Unternehmensrecherche + Scoring)',
+    color: '#34D399',
+    icon: ICONS.spark,
+  },
+  {
+    label: 'Kontaktperson – E-Mail',
+    credits: 2,
+    desc: 'E-Mail-Adresse einer Kontaktperson finden und verifizieren',
+    color: '#38BDF8',
+    icon: ICONS.mail,
+  },
+  {
+    label: 'Kontaktperson – Telefon',
+    credits: 8,
+    desc: 'Direkte Telefonnummer / Durchwahl einer Kontaktperson abrufen',
+    color: '#818CF8',
+    icon: ICONS.zap,
+  },
+  {
+    label: 'Kontaktperson – E-Mail + Telefon',
+    credits: 10,
+    desc: 'Beides zusammen in einem Schritt',
+    color: '#A78BFA',
+    icon: ICONS.users,
+  },
+];
+
+const FREE_AI_FEATURES = [
+  { label: 'KI-Scoring & Re-Scoring',       desc: 'Automatische Bewertung eines Leads' },
+  { label: 'Website-Analyse',               desc: 'Zusammenfassung & Insights zur Company-Website' },
+  { label: 'E-Mail-Drafts',                 desc: 'KI-generierte personalisierte Outreach-Entwürfe' },
+  { label: 'Meeting-Analyse',               desc: 'Transkription, Zusammenfassung, Action Items' },
+];
+
+const FREE_FEATURES = [
+  'E-Mail-Versand (Outreach, Follow-ups)',
+  'Pipeline / CRM / Kanban',
+  'Dashboard & Analytics',
+  'Lead-Filter, Suche & Verwaltung',
+  'Team-Zusammenarbeit',
+  'Einstellungen & Integrationen',
+  'Daten-Export (CSV)',
+];
+
 function PlanSection() {
-  // TODO: Replace with GET /api/plan when backend is ready
-  // Expected API response: { plan, totalCredits, usedCredits, resetDate, usage: [...] }
-  const [planData] = useState({
-    plan: 'Starter',
-    totalCredits: 25000,
-    usedCredits: 8470,
-    resetDate: '1. Mai 2026',
-    price: '249',
-  });
+  type QuotaData = {
+    tenant: { id: string; name: string } | null;
+    credits: {
+      plan: string;
+      credits_remaining: number;
+      credits_used_period: number;
+      overage_used: number;
+      period_start: string;
+      period_end: string;
+      is_paused: boolean;
+    } | null;
+  };
 
-  const totalCredits = planData.totalCredits;
-  const usedCredits = planData.usedCredits;
-  const remainingCredits = totalCredits - usedCredits;
-  const usagePercent = Math.round((usedCredits / totalCredits) * 100);
+  const [data, setData] = useState<QuotaData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // What costs credits
-  const creditActions = [
-    {
-      label: 'Lead generieren (E-Mail)',
-      credits: 10,
-      desc: 'Neuer Lead mit verifizierter geschäftlicher E-Mail-Adresse',
-      color: '#34D399',
-      icon: ICONS.mail,
-    },
-    {
-      label: 'Lead generieren (E-Mail + Telefon)',
-      credits: 50,
-      desc: 'Lead mit E-Mail und direkter Durchwahl / Mobilnummer',
-      color: '#38BDF8',
-      icon: ICONS.users,
-    },
-    {
-      label: 'Telefonnummer nachträglich abrufen',
-      credits: 40,
-      desc: 'Telefonnummer für einen bestehenden Lead nachziehen',
-      color: '#38BDF8',
-      icon: ICONS.zap,
-    },
-    {
-      label: 'KI-Scoring',
-      credits: 5,
-      desc: 'Automatische Bewertung eines Leads durch die KI',
-      color: '#818CF8',
-      icon: ICONS.spark,
-    },
-    {
-      label: 'KI Re-Scoring',
-      credits: 3,
-      desc: 'Lead erneut bewerten (z.B. nach neuen Daten)',
-      color: '#A78BFA',
-      icon: ICONS.spark,
-    },
-    {
-      label: 'Website-Analyse',
-      credits: 8,
-      desc: 'Website eines Unternehmens analysieren und zusammenfassen',
-      color: '#FBBF24',
-      icon: ICONS.globe,
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/tenant-quota', { cache: 'no-store' });
+        if (res.ok) setData(await res.json());
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  // What's free
-  const freeFeatures = [
-    'E-Mail-Versand (Outreach, Follow-ups)',
-    'Meetings (Aufnahme, Transkription, KI-Analyse)',
-    'Dashboard & Analytics',
-    'Pipeline / CRM / Kanban',
-    'Lead-Filter, Suche & Verwaltung',
-    'Team-Zusammenarbeit (max. 10 Nutzer)',
-    'Einstellungen & Integrationen',
-    'Daten-Export (CSV)',
-  ];
+  const currentPlanKey = data?.credits?.plan ?? 'basic';
+  const currentPlan = PLANS[currentPlanKey] ?? PLANS.basic;
+  const totalCredits = currentPlan.credits;
+  const usedCredits = data?.credits?.credits_used_period ?? 0;
+  const remainingCredits = data?.credits?.credits_remaining ?? totalCredits;
+  const overageUsed = data?.credits?.overage_used ?? 0;
+  const usagePercent = totalCredits > 0 ? Math.round((usedCredits / totalCredits) * 100) : 0;
+  const resetDate = data?.credits?.period_end
+    ? new Date(data.credits.period_end).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '—';
 
-  // TODO: Replace with data from GET /api/plan response
-  // Expected: usage: [{ label, used, credits, icon, color }]
-  const usageBreakdown = [
-    { label: 'Leads (E-Mail)', used: 620, credits: 6200, icon: ICONS.mail, color: '#34D399' },
-    { label: 'Leads (+ Telefon)', used: 18, credits: 900, icon: ICONS.users, color: '#38BDF8' },
-    { label: 'KI-Scoring', used: 638, credits: 870, icon: ICONS.spark, color: '#818CF8' },
-    { label: 'Website-Analysen', used: 62, credits: 500, icon: ICONS.globe, color: '#FBBF24' },
-  ];
+  if (loading) {
+    return (
+      <div style={{ padding: '60px 0', textAlign: 'center', color: C.text3, fontSize: 12 }}>
+        Plan wird geladen…
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Current Plan */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(52,211,153,0.06), rgba(56,189,248,0.03))',
-          border: '1px solid rgba(52,211,153,0.15)',
+          background: `linear-gradient(135deg, ${currentPlan.color}10, rgba(56,189,248,0.03))`,
+          border: `1px solid ${currentPlan.color}25`,
           borderRadius: 12,
           padding: '20px 24px',
         }}
@@ -1721,62 +1750,71 @@ function PlanSection() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, color: C.text1, margin: 0 }}>{planData.plan}</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: C.text1, margin: 0 }}>{currentPlan.label}</h3>
               <span
                 style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
                   fontSize: 9,
                   fontWeight: 600,
-                  padding: '2px 7px',
-                  borderRadius: 4,
+                  padding: '2.5px 9px',
+                  borderRadius: 999,
                   background: 'rgba(52,211,153,0.1)',
                   border: '1px solid rgba(52,211,153,0.2)',
                   color: C.success,
                   letterSpacing: '0.04em',
                 }}
               >
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: C.success, boxShadow: `0 0 6px ${C.success}` }} />
                 AKTIV
               </span>
             </div>
             <p style={{ fontSize: 12, color: C.text3, margin: '4px 0 0' }}>
-              €{planData.price}/Monat · {totalCredits.toLocaleString()} Credits · Reset: {planData.resetDate}
+              {totalCredits.toLocaleString('de-DE')} Credits / Monat · Reset am {resetDate}
+              {currentPlan.overage ? ` · ${currentPlan.overage}` : ''}
             </p>
           </div>
           <GlowButton onClick={() => showToast('Upgrade-Optionen werden geladen...', 'info')}>Upgrade</GlowButton>
         </div>
 
-        {/* Credit bar */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ fontSize: 13, color: C.text2 }}>
-              <strong style={{ color: C.text1, fontSize: 15 }}>{remainingCredits.toLocaleString()}</strong> Credits
-              übrig
+              <strong style={{ color: C.text1, fontSize: 15 }}>{remainingCredits.toLocaleString('de-DE')}</strong> Credits übrig
             </span>
             <span style={{ fontSize: 11, color: C.text3 }}>
-              {usedCredits.toLocaleString()} / {totalCredits.toLocaleString()} verbraucht ({usagePercent}%)
+              {usedCredits.toLocaleString('de-DE')} / {totalCredits.toLocaleString('de-DE')} verbraucht ({usagePercent}%)
             </span>
           </div>
-          <CreditBar used={usedCredits} total={totalCredits} color="#34D399" />
+          <CreditBar used={usedCredits} total={totalCredits} color={currentPlan.color} />
+          {overageUsed > 0 && (
+            <div style={{ fontSize: 10.5, color: C.warning, marginTop: 6 }}>
+              {overageUsed} Credits aus Puffer genutzt
+            </div>
+          )}
         </div>
       </div>
 
       {/* How credits work */}
       <SectionCard
         title="So funktionieren Credits"
-        description="Credits sind deine Währung auf Onvero. Du entscheidest, wofür du sie einsetzt."
+        description="Credits werden nur für zwei Dinge verbraucht: Lead-Generierung und Kontakt-Anreicherung."
       >
         <p style={{ fontSize: 12, color: C.text2, margin: 0, lineHeight: 1.7 }}>
           Jeder Plan enthält ein monatliches Credit-Budget. Credits werden verbraucht, wenn du{' '}
-          <strong style={{ color: C.text1 }}>neue Lead-Daten generierst</strong> oder{' '}
-          <strong style={{ color: C.text1 }}>KI-Funktionen</strong> nutzt. Alles andere — E-Mails senden, Meetings
-          aufnehmen, Analytics, CRM — ist kostenlos und unbegrenzt. Nicht verbrauchte Credits verfallen am Ende des
-          Monats.
+          <strong style={{ color: C.text1 }}>Leads generierst</strong> oder{' '}
+          <strong style={{ color: C.text1 }}>Kontaktpersonen anreicherst</strong> (E-Mail, Telefon).{' '}
+          <strong style={{ color: C.success }}>Alle KI-Funktionen sind kostenlos</strong> — limitiert auf{' '}
+          <strong style={{ color: C.text1 }}>100 Nutzungen pro Tag</strong>. Nicht verbrauchte Credits verfallen am
+          Ende des Monats.
         </p>
       </SectionCard>
 
       {/* What costs credits */}
       <SectionCard title="Was kostet Credits?">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {creditActions.map((item) => (
+          {CREDIT_ACTIONS.map((item) => (
             <div
               key={item.label}
               style={{
@@ -1816,28 +1854,81 @@ function PlanSection() {
                   background: `${item.color}08`,
                   padding: '4px 10px',
                   borderRadius: 6,
-                  minWidth: 50,
+                  minWidth: 60,
                   textAlign: 'center',
                 }}
               >
-                {item.credits}
+                {item.credits} Cr
               </div>
             </div>
           ))}
         </div>
-        <p style={{ fontSize: 10.5, color: C.text3, margin: '8px 0 0', lineHeight: 1.5, opacity: 0.7 }}>
-          Tipp: Du kannst Telefonnummern auch nachträglich für gut gescorte Leads abrufen, statt sie direkt bei der
-          Generierung mitzunehmen. So sparst du Credits für die Leads, die es wirklich wert sind.
-        </p>
       </SectionCard>
 
-      {/* What's free */}
+      {/* Free AI features */}
       <SectionCard
-        title="Kostenlos in jedem Plan"
-        description="Diese Funktionen kosten keine Credits — egal wie oft du sie nutzt."
+        title="KI-Funktionen — kostenlos"
+        description="100 Nutzungen pro Tag pro Funktion. Nutze sie so oft du willst — Credits werden nicht verbraucht."
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {FREE_AI_FEATURES.map((f) => (
+            <div
+              key={f.label}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '10px 14px',
+                borderRadius: 8,
+                background: 'rgba(52,211,153,0.03)',
+                border: '1px solid rgba(52,211,153,0.1)',
+              }}
+            >
+              <div
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 7,
+                  background: 'rgba(52,211,153,0.1)',
+                  border: '1px solid rgba(52,211,153,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <SvgIcon d={ICONS.spark} size={12} color={C.success} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{f.label}</div>
+                <div style={{ fontSize: 10, color: C.text3, marginTop: 1 }}>{f.desc}</div>
+              </div>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: C.success,
+                  background: 'rgba(52,211,153,0.08)',
+                  padding: '3px 9px',
+                  borderRadius: 999,
+                  border: '1px solid rgba(52,211,153,0.18)',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                100 / Tag
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* What else is free */}
+      <SectionCard
+        title="Immer kostenlos & unbegrenzt"
+        description="Diese Funktionen kosten keine Credits und haben keine Limits."
       >
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-          {freeFeatures.map((f) => (
+          {FREE_FEATURES.map((f) => (
             <div
               key={f}
               style={{
@@ -1857,133 +1948,80 @@ function PlanSection() {
         </div>
       </SectionCard>
 
-      {/* Usage this month */}
-      <SectionCard title="Verbrauch diesen Monat">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {usageBreakdown.map((item) => (
-            <div key={item.label}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <SvgIcon d={item.icon} size={12} color={item.color} />
-                  <span style={{ fontSize: 12, color: C.text1 }}>{item.label}</span>
-                </div>
-                <span style={{ fontSize: 11, color: C.text3 }}>
-                  {item.used}x · <strong style={{ color: item.color }}>{item.credits.toLocaleString()} Credits</strong>
-                </span>
-              </div>
-              <CreditBar used={item.credits} total={totalCredits} color={item.color} />
-            </div>
-          ))}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '10px 0',
-              borderTop: `1px solid ${C.border}`,
-              marginTop: 4,
-            }}
-          >
-            <span style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>Gesamt verbraucht</span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: C.text1 }}>
-              {usedCredits.toLocaleString()} / {totalCredits.toLocaleString()} Credits
-            </span>
-          </div>
-        </div>
-      </SectionCard>
-
       {/* Plans */}
       <SectionCard
         title="Verfügbare Pläne"
-        description="Alle Pläne inkl. max. 10 Team-Mitglieder, unbegrenzt Meetings, E-Mails & Analytics."
+        description="Alle Pläne inklusive KI-Funktionen (100/Tag), unbegrenzt Meetings, E-Mails & Analytics."
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-          {[
-            {
-              name: 'Starter',
-              credits: '25.000',
-              price: '249',
-              leads: '~2.000 Leads/Mo',
-              current: true,
-              color: '#34D399',
-            },
-            {
-              name: 'Growth',
-              credits: '60.000',
-              price: '499',
-              leads: '~5.000 Leads/Mo',
-              current: false,
-              color: '#818CF8',
-            },
-            {
-              name: 'Scale',
-              credits: '125.000',
-              price: '899',
-              leads: '~10.000 Leads/Mo',
-              current: false,
-              color: '#FBBF24',
-            },
-          ].map((plan) => (
-            <div
-              key={plan.name}
-              style={{
-                padding: '20px 16px',
-                borderRadius: 10,
-                textAlign: 'center',
-                background: plan.current ? 'rgba(52,211,153,0.04)' : 'rgba(255,255,255,0.015)',
-                border: `1px solid ${plan.current ? 'rgba(52,211,153,0.2)' : C.border}`,
-                position: 'relative',
-              }}
-            >
-              {plan.current && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: -8,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    fontSize: 8,
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    background: C.success,
-                    color: '#0B1120',
-                    letterSpacing: '0.06em',
-                  }}
-                >
-                  AKTUELL
-                </span>
-              )}
-              <div style={{ fontSize: 14, fontWeight: 600, color: plan.color, marginBottom: 6 }}>{plan.name}</div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: C.text1 }}>
-                €{plan.price}
-                <span style={{ fontSize: 11, fontWeight: 400, color: C.text3 }}>/Mo</span>
+          {(['basic', 'business', 'enterprise'] as const).map((key) => {
+            const plan = PLANS[key];
+            const isCurrent = key === currentPlanKey;
+            return (
+              <div
+                key={key}
+                style={{
+                  padding: '20px 16px',
+                  borderRadius: 10,
+                  textAlign: 'center',
+                  background: isCurrent ? `${plan.color}08` : 'rgba(255,255,255,0.015)',
+                  border: `1px solid ${isCurrent ? `${plan.color}40` : C.border}`,
+                  position: 'relative',
+                }}
+              >
+                {isCurrent && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: -8,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      fontSize: 8,
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      background: plan.color,
+                      color: '#0B1120',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    AKTUELL
+                  </span>
+                )}
+                <div style={{ fontSize: 14, fontWeight: 600, color: plan.color, marginBottom: 6 }}>{plan.label}</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: C.text1 }}>
+                  €{plan.price}
+                  <span style={{ fontSize: 11, fontWeight: 400, color: C.text3 }}>/Mo</span>
+                </div>
+                <div style={{ fontSize: 12, color: C.text1, fontWeight: 500, margin: '8px 0 2px' }}>
+                  {plan.credits.toLocaleString('de-DE')} Credits
+                </div>
+                <div style={{ fontSize: 10, color: C.text3, marginBottom: 14, minHeight: 14 }}>
+                  {plan.overage ?? 'Kein Puffer'}
+                </div>
+                {!isCurrent && (
+                  <button
+                    onClick={() => showToast(`Upgrade auf ${plan.label} angefragt`, 'success')}
+                    style={{
+                      width: '100%',
+                      padding: '8px 0',
+                      borderRadius: 7,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
+                      border: `1px solid ${plan.color}30`,
+                      background: `${plan.color}08`,
+                      color: plan.color,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    Wechseln
+                  </button>
+                )}
               </div>
-              <div style={{ fontSize: 12, color: C.text1, fontWeight: 500, margin: '8px 0 2px' }}>
-                {plan.credits} Credits
-              </div>
-              <div style={{ fontSize: 10, color: C.text3, marginBottom: 14 }}>{plan.leads}</div>
-              {!plan.current && (
-                <button
-                  onClick={() => showToast(`Upgrade auf ${plan.name} angefragt`, 'success')}
-                  style={{
-                    width: '100%',
-                    padding: '8px 0',
-                    borderRadius: 7,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    fontFamily: 'inherit',
-                    cursor: 'pointer',
-                    border: `1px solid ${plan.color}30`,
-                    background: `${plan.color}08`,
-                    color: plan.color,
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  Upgrade
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
         <p style={{ fontSize: 10.5, color: C.text3, margin: '4px 0 0', lineHeight: 1.5, opacity: 0.7 }}>
           Credits verfallen am Ende des Monats. Brauchst du mehr? Upgrade auf den nächsten Plan.

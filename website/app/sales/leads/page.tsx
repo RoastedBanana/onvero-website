@@ -1124,61 +1124,94 @@ function LeadsPage() {
       </div>
 
       {leadsLoading ? (
-        <div
-          style={{
-            borderRadius: 12,
-            border: `1px solid ${C.border}`,
-            overflow: 'hidden',
-            background: C.surface,
-            padding: '20px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
-            animation: 'fadeIn 0.3s ease both',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <>
+          <style>{`
+            @keyframes skelShimmerLeads {
+              0% { background-position: -200% 0; }
+              100% { background-position: 200% 0; }
+            }
+            .skel-lead {
+              background: linear-gradient(90deg,
+                rgba(255,255,255,0.03) 0%,
+                rgba(255,255,255,0.065) 50%,
+                rgba(255,255,255,0.03) 100%);
+              background-size: 200% 100%;
+              animation: skelShimmerLeads 1.6s ease-in-out infinite;
+              border-radius: 6px;
+            }
+          `}</style>
+          <div
+            style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 12,
+              overflow: 'hidden',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)',
+              animation: 'fadeIn 0.3s ease both',
+            }}
+          >
+            {/* Header */}
             <div
               style={{
-                width: 20,
-                height: 20,
-                borderRadius: '50%',
-                border: `2px solid ${C.border}`,
-                borderTopColor: C.accent,
-                animation: 'gradient-spin 0.8s linear infinite',
-              }}
-            />
-            <span style={{ fontSize: 13, color: C.text2 }}>Leads werden geladen...</span>
-          </div>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '14px 0',
-                borderBottom: `1px solid rgba(255,255,255,0.03)`,
-                animation: 'fadeIn 0.3s ease both',
-                animationDelay: `${i * 0.05}s`,
+                display: 'grid',
+                gridTemplateColumns: '0.5fr 2fr 1.2fr 1fr 0.8fr 1fr 0.8fr',
+                gap: 12,
+                padding: '12px 16px',
+                borderBottom: `1px solid ${C.border}`,
+                background: 'rgba(255,255,255,0.02)',
               }}
             >
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.04)' }} />
-              <div style={{ flex: 1 }}>
-                <div
+              {['', 'Unternehmen', 'Branche', 'Standort', 'Score', 'Status', 'Quelle'].map((h, i) => (
+                <span
+                  key={i}
                   style={{
-                    height: 12,
-                    width: '40%',
-                    borderRadius: 4,
-                    background: 'rgba(255,255,255,0.05)',
-                    marginBottom: 6,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: C.text3,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
                   }}
-                />
-                <div style={{ height: 10, width: '25%', borderRadius: 4, background: 'rgba(255,255,255,0.03)' }} />
-              </div>
-              <div style={{ height: 10, width: 50, borderRadius: 4, background: 'rgba(255,255,255,0.04)' }} />
-              <div style={{ height: 20, width: 70, borderRadius: 6, background: 'rgba(255,255,255,0.03)' }} />
+                >
+                  {h}
+                </span>
+              ))}
             </div>
-          ))}
-        </div>
+
+            {/* Skeleton rows */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '0.5fr 2fr 1.2fr 1fr 0.8fr 1fr 0.8fr',
+                  gap: 12,
+                  padding: '14px 16px',
+                  alignItems: 'center',
+                  borderBottom: i < 7 ? `1px solid rgba(255,255,255,0.03)` : 'none',
+                  opacity: Math.max(0.3, 1 - i * 0.09),
+                }}
+              >
+                {/* Checkbox */}
+                <div className="skel-lead" style={{ width: 14, height: 14, borderRadius: 3 }} />
+                {/* Company: logo + lines */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="skel-lead" style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div className="skel-lead" style={{ height: 11, width: `${60 + ((i * 7) % 30)}%` }} />
+                    <div className="skel-lead" style={{ height: 8, width: `${35 + ((i * 11) % 25)}%`, opacity: 0.7 }} />
+                  </div>
+                </div>
+                <div className="skel-lead" style={{ height: 10, width: '72%' }} />
+                <div className="skel-lead" style={{ height: 10, width: '60%' }} />
+                {/* Score pill */}
+                <div className="skel-lead" style={{ height: 22, width: 44, borderRadius: 11 }} />
+                {/* Status badge */}
+                <div className="skel-lead" style={{ height: 22, width: 80, borderRadius: 6 }} />
+                <div className="skel-lead" style={{ height: 10, width: '64%' }} />
+              </div>
+            ))}
+          </div>
+        </>
       ) : viewMode === 'table' ? (
         <LeadTable
           leads={filteredLeads}

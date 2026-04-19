@@ -309,6 +309,15 @@ function ProfileDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLButtonElement>(null);
   const [user, setUser] = useState<{ email: string; initials: string; name: string } | null>(null);
+  const [quota, setQuota] = useState<QuotaData | null>(_quotaCache);
+
+  // Load quota once at mount (cached at module level, reused across dropdown opens)
+  useEffect(() => {
+    if (_quotaCache) { setQuota(_quotaCache); return; }
+    let cancelled = false;
+    loadQuotaOnce().then((d) => { if (!cancelled && d) setQuota(d); });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     // 1) Try onvero_user cookie first (set by login API)
@@ -422,13 +431,16 @@ function ProfileDropdown() {
         </svg>
       </button>
 
-      <PortalDropdown open={open} onClose={() => setOpen(false)} anchorRef={ref} width={220}>
+      <PortalDropdown open={open} onClose={() => setOpen(false)} anchorRef={ref} width={260}>
         <div style={{ padding: 4 }}>
           {/* User info */}
           <div style={{ padding: '10px 12px', borderBottom: `1px solid ${C.border}` }}>
             <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{user?.name}</div>
             <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{user?.email}</div>
           </div>
+
+          {/* Credits + Plan */}
+          <CreditsPanel data={quota} />
 
           {/* Settings */}
           <Link
@@ -504,6 +516,175 @@ function ProfileDropdown() {
 }
 
 // ─── TOPBAR ──────────────────────────────────────────────────────────────────
+
+// ─── CREDITS PANEL (for profile dropdown) ───────────────────────────────────
+
+type QuotaData = {
+  tenant: { id: string; name: string } | null;
+  credits: {
+    plan: string;
+    credits_remaining: number;
+    credits_used_period: number;
+    overage_used: number;
+    period_start: string;
+    period_end: string;
+    is_paused: boolean;
+  } | null;
+};
+
+// Plan definitions — matches tenant_credits.plan values
+const PLAN_INFO: Record<string, { label: string; total: number; price: string; overage: string | null }> = {
+  basic: { label: 'Basic', total: 50, price: '29 €/Mo', overage: null },
+  business: { label: 'Business', total: 200, price: '79 €/Mo', overage: null },
+  enterprise: { label: 'Enterprise', total: 1000, price: '199 €/Mo', overage: '+200 Cr Puffer' },
+};
+
+// Module-level cache: fetched once on first mount, reused across dropdown open/close
+let _quotaCache: QuotaData | null = null;
+let _quotaPromise: Promise<QuotaData | null> | null = null;
+
+function loadQuotaOnce(): Promise<QuotaData | null> {
+  if (_quotaCache) return Promise.resolve(_quotaCache);
+  if (_quotaPromise) return _quotaPromise;
+  _quotaPromise = fetch('/api/tenant-quota', { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((json) => {
+      if (json) _quotaCache = json;
+      return json;
+    })
+    .catch(() => null)
+    .finally(() => {
+      _quotaPromise = null;
+    });
+  return _quotaPromise;
+}
+
+function CreditsPanel({ data }: { data: QuotaData | null }) {
+  if (!data) {
+    return (
+      <div style={{ padding: '12px', fontSize: 10, color: C.text3, textAlign: 'center' }}>
+        Lade Plan…
+      </div>
+    );
+  }
+
+  const { tenant, credits } = data;
+  const planKey = credits?.plan ?? 'basic';
+  const planInfo = PLAN_INFO[planKey] ?? { label: planKey, total: 0, price: '—', overage: null };
+  const total = planInfo.total;
+  const remaining = credits?.credits_remaining ?? 0;
+  const overageUsed = credits?.overage_used ?? 0;
+  const percent = total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : 0;
+  const lowCredits = percent < 20;
+  const midCredits = percent < 50;
+
+  const barColor = lowCredits ? '#F87171' : midCredits ? '#FBBF24' : '#34D399';
+  const barGlow = lowCredits ? 'rgba(248,113,113,0.3)' : midCredits ? 'rgba(251,191,36,0.25)' : 'rgba(52,211,153,0.25)';
+  const resetDate = credits?.period_end
+    ? new Date(credits.period_end).toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })
+    : null;
+
+  return (
+    <div style={{ padding: '12px', borderBottom: `1px solid ${C.border}` }}>
+      {/* Company + plan header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: C.text1,
+            letterSpacing: '-0.01em',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: 140,
+          }}
+          title={tenant?.name ?? ''}
+        >
+          {tenant?.name ?? 'Onvero'}
+        </div>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 9.5,
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            color: '#E0E7FF',
+            background: 'linear-gradient(135deg, rgba(99,102,241,0.22), rgba(129,140,248,0.12))',
+            border: '1px solid rgba(129,140,248,0.3)',
+            padding: '2.5px 9px',
+            borderRadius: 999,
+            lineHeight: 1.2,
+            boxShadow: '0 0 0 1px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.08)',
+          }}
+        >
+          <span
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: '#A5B4FC',
+              boxShadow: '0 0 6px rgba(165,180,252,0.8)',
+            }}
+          />
+          {planInfo.label}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div
+        style={{
+          height: 5,
+          borderRadius: 3,
+          background: 'rgba(255,255,255,0.05)',
+          overflow: 'hidden',
+          marginBottom: 7,
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${percent}%`,
+            background: `linear-gradient(90deg, ${barColor}, ${barColor}cc)`,
+            borderRadius: 3,
+            boxShadow: `0 0 10px ${barGlow}`,
+            transition: 'width 0.8s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease',
+          }}
+        />
+      </div>
+
+      {/* Numbers */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: C.text1, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
+            {remaining.toLocaleString('de-DE')}
+          </span>
+          <span style={{ fontSize: 10, color: C.text3, marginLeft: 4 }}>
+            / {total.toLocaleString('de-DE')} Credits
+          </span>
+        </div>
+        <span style={{ fontSize: 9, color: C.text3, letterSpacing: '0.04em' }}>
+          {Math.round(percent)}% frei
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 8 }}>
+        {resetDate && (
+          <span style={{ fontSize: 9.5, color: C.text3, letterSpacing: '0.02em' }}>
+            Reset am {resetDate}
+          </span>
+        )}
+        {planInfo.overage && (
+          <span style={{ fontSize: 9, color: overageUsed > 0 ? '#FBBF24' : C.text3, letterSpacing: '0.02em', fontWeight: 500 }}>
+            {planInfo.overage}{overageUsed > 0 ? ` · ${overageUsed} genutzt` : ''}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function Topbar() {
   return (

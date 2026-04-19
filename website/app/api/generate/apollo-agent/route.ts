@@ -8,6 +8,7 @@ export async function POST(req: NextRequest) {
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
+  const requestedAt = new Date().toISOString();
 
   const res = await fetch(WEBHOOK_URL, {
     method: 'POST',
@@ -23,12 +24,21 @@ export async function POST(req: NextRequest) {
   });
 
   const text = await res.text();
-
+  let data: unknown = null;
   try {
-    const data = JSON.parse(text);
-    const webhook = Array.isArray(data) ? data[0] : data;
-    return NextResponse.json(webhook);
+    data = JSON.parse(text);
   } catch {
     return NextResponse.json({ error: 'Invalid JSON from n8n', raw: text.slice(0, 200) }, { status: 502 });
   }
+  const webhook = (Array.isArray(data) ? data[0] : data) as Record<string, unknown>;
+
+  // Pass through upstream status (402 = credits exhausted)
+  if (res.status === 402 || (webhook as { status?: string })?.status === 'blocked') {
+    return NextResponse.json({ ...webhook, status: 'blocked' }, { status: 402 });
+  }
+  if (!res.ok) {
+    return NextResponse.json({ error: 'Webhook failed', status: res.status, detail: webhook }, { status: res.status });
+  }
+
+  return NextResponse.json({ ...webhook, requested_at: requestedAt });
 }
