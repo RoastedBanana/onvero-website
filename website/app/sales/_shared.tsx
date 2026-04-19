@@ -79,6 +79,30 @@ export const GLOBAL_STYLES = `
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+  @keyframes spinLoader {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes drSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes network-spinner {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes lsSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes mapsSpin {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 1; }
+  }
   @keyframes toast-in {
     from { opacity: 0; transform: translateX(40px) scale(0.95); }
     to { opacity: 1; transform: translateX(0) scale(1); }
