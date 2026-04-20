@@ -11,6 +11,7 @@ import HeroCard from '../_components/HeroCard';
 import TabBar from '../_components/TabBar';
 import type { TabKey } from '../_components/TabBar';
 import UebersichtTab from '../_components/UebersichtTab';
+import ContactsTab from '../_components/ContactsTab';
 import PlaceholderTab from '../_components/PlaceholderTab';
 
 const VALID_TABS: TabKey[] = ['uebersicht', 'analyse', 'kontakte', 'outreach', 'aktivitaet'];
@@ -218,7 +219,7 @@ function DetailInner({ id }: { id: string }) {
 
       {activeTab === 'uebersicht' && <UebersichtTab company={company} onOutreachClick={() => setTab('outreach')} />}
       {activeTab === 'analyse' && <PlaceholderTab title="KI-Analyse" phase="Phase 5" />}
-      {activeTab === 'kontakte' && <PlaceholderTab title="Ansprechpartner" phase="Phase 4" />}
+      {activeTab === 'kontakte' && <ContactsTab leadId={company.id} />}
       {activeTab === 'outreach' && <PlaceholderTab title="Outreach" phase="Phase 5" />}
       {activeTab === 'aktivitaet' && <PlaceholderTab title="Aktivität" phase="Phase 5" />}
     </>

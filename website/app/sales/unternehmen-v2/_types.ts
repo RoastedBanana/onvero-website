@@ -114,3 +114,41 @@ export interface Contact {
   created_at: string;
   updated_at: string | null;
 }
+
+// ─── APOLLO SEARCH RESULT (unenriched, from people-search webhook) ──────────
+
+export interface RawApolloPerson {
+  id: string;
+  first_name: string | null;
+  last_name_obfuscated: string | null;
+  title: string | null;
+  headline: string | null;
+  has_email: boolean;
+  has_direct_phone: string | null; // "Yes" | "Maybe: ..." | null
+  has_city: boolean;
+  has_state: boolean;
+  has_country: boolean;
+  photo_url: string | null;
+  linkedin_url: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  seniority: string | null;
+  departments: string[] | null;
+  functions: string[] | null;
+  [key: string]: unknown;
+}
+
+export interface ApolloPerson {
+  apollo_person_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  title: string | null;
+  email: string | null;
+  email_status: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  photo_url: string | null;
+  raw_apollo_person: RawApolloPerson | null;
+}
