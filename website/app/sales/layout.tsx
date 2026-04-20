@@ -57,6 +57,12 @@ function buildNav(
       items: [
         {
           label: 'Unternehmen',
+          href: '/sales/unternehmen-v2',
+          icon: ICONS.list,
+          badge: 'v2',
+        },
+        {
+          label: 'Unternehmen (legacy)',
           href: '/sales/leads',
           icon: ICONS.list,
           badge: `${leadCount}`,
