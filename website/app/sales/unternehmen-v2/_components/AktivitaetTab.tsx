@@ -31,14 +31,14 @@ function EventRow({ event, isLast }: { event: ActivityEvent; isLast: boolean }) 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 14, flexShrink: 0 }}>
         <div
           style={{
-            width: 10,
-            height: 10,
+            width: 8,
+            height: 8,
             borderRadius: '50%',
             background: dotColor,
-            boxShadow: `0 0 8px ${dotColor}40`,
+            boxShadow: `0 0 0 3px ${dotColor}20, 0 0 8px ${dotColor}40`,
             flexShrink: 0,
             zIndex: 1,
-            marginTop: 4,
+            marginTop: 5,
           }}
         />
         {!isLast && (
@@ -56,18 +56,18 @@ function EventRow({ event, isLast }: { event: ActivityEvent; isLast: boolean }) 
       {/* Content */}
       <div style={{ flex: 1, paddingBottom: isLast ? 0 : 20, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: TOKENS.color.textPrimary }}>{event.title}</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: TOKENS.color.textPrimary }}>{event.title}</span>
           {event.badge && badge && (
             <span
               style={{
-                fontSize: 9,
-                fontWeight: 600,
-                letterSpacing: '0.04em',
+                fontSize: 10.5,
+                fontWeight: 500,
                 padding: '2px 8px',
                 borderRadius: TOKENS.radius.chip,
                 background: badge.bg,
                 border: `1px solid ${badge.border}`,
                 color: badge.color,
+                fontFamily: TOKENS.font.mono,
               }}
             >
               {event.badge.text}
@@ -77,7 +77,7 @@ function EventRow({ event, isLast }: { event: ActivityEvent; isLast: boolean }) 
         {event.subtitle && (
           <div style={{ fontSize: 12, color: TOKENS.color.textTertiary, marginBottom: 2 }}>{event.subtitle}</div>
         )}
-        <div style={{ fontSize: 11, color: TOKENS.color.textMuted, fontFamily: TOKENS.font.mono }}>
+        <div style={{ fontSize: 11.5, color: TOKENS.color.textMuted, fontFamily: TOKENS.font.mono }}>
           {formatRelativeTime(event.timestamp)}
         </div>
       </div>

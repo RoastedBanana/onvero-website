@@ -121,8 +121,9 @@ function Row({
       style={{
         borderBottom: index < total - 1 ? `1px solid rgba(255,255,255,0.03)` : 'none',
         cursor: 'pointer',
-        background: isSelected ? TOKENS.color.indigoBgSubtle : hovered ? TOKENS.color.bgHover : 'transparent',
-        transition: 'background 0.1s',
+        background: isSelected ? TOKENS.color.indigoBgSubtle : hovered ? 'rgba(107,122,255,0.04)' : 'transparent',
+        borderLeft: tier === 'HOT' ? `2px solid rgba(107,122,255,0.5)` : '2px solid transparent',
+        transition: 'background 0.1s ease',
       }}
     >
       {/* Checkbox */}
@@ -230,7 +231,20 @@ function Row({
       </td>
 
       {/* Score */}
-      <td style={{ ...TD, fontFamily: TOKENS.font.mono, fontSize: 12, fontWeight: 500 }}>
+      <td
+        style={{
+          ...TD,
+          fontFamily: TOKENS.font.mono,
+          fontSize: 12,
+          fontWeight: 500,
+          color:
+            (c.fit_score ?? 0) >= 70
+              ? TOKENS.color.indigoLight
+              : (c.fit_score ?? 0) >= 40
+                ? 'rgba(255,255,255,0.8)'
+                : 'rgba(255,255,255,0.5)',
+        }}
+      >
         {fmt.score(c.fit_score).display}
       </td>
 

@@ -9,64 +9,78 @@ interface StatsGridProps {
   cold: number;
 }
 
-const stats = (p: StatsGridProps) => [
-  {
-    label: 'GESAMT',
-    value: p.total,
-    dotColor: TOKENS.color.textTertiary,
-    border: TOKENS.color.borderSubtle,
-  },
-  {
-    label: 'HOT',
-    value: p.hot,
-    dotColor: TOKENS.color.indigo,
-    border: TOKENS.color.indigoBorderSoft,
-  },
-  {
-    label: 'WARM',
-    value: p.warm,
-    dotColor: 'rgba(107,122,255,0.4)',
-    border: TOKENS.color.borderSubtle,
-  },
-  {
-    label: 'COLD',
-    value: p.cold,
-    dotColor: 'transparent',
-    dotBorder: TOKENS.color.textMuted,
-    border: TOKENS.color.borderSubtle,
-  },
-];
-
 export default function StatsGrid(props: StatsGridProps) {
+  const tiles = [
+    {
+      label: 'GESAMT',
+      value: props.total,
+      dotColor: TOKENS.color.textTertiary,
+      dotGlow: false,
+      dotBorder: false,
+      bg: TOKENS.color.bgCard,
+      border: TOKENS.color.borderSubtle,
+      valueColor: TOKENS.color.textPrimary,
+      labelColor: TOKENS.color.textMuted,
+    },
+    {
+      label: 'HOT',
+      value: props.hot,
+      dotColor: TOKENS.color.indigo,
+      dotGlow: true,
+      dotBorder: false,
+      bg: 'linear-gradient(135deg, #0f0f0f 0%, #151628 100%)',
+      border: 'rgba(107,122,255,0.25)',
+      valueColor: TOKENS.color.textPrimary,
+      labelColor: TOKENS.color.indigoLight,
+    },
+    {
+      label: 'WARM',
+      value: props.warm,
+      dotColor: 'rgba(107,122,255,0.4)',
+      dotGlow: false,
+      dotBorder: false,
+      bg: TOKENS.color.bgCard,
+      border: TOKENS.color.borderSubtle,
+      valueColor: TOKENS.color.textPrimary,
+      labelColor: TOKENS.color.textMuted,
+    },
+    {
+      label: 'COLD',
+      value: props.cold,
+      dotColor: 'transparent',
+      dotGlow: false,
+      dotBorder: true,
+      bg: TOKENS.color.bgCard,
+      border: TOKENS.color.borderSubtle,
+      valueColor: TOKENS.color.textPrimary,
+      labelColor: TOKENS.color.textMuted,
+    },
+  ];
+
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 10,
-        marginBottom: 20,
-      }}
-    >
-      {stats(props).map((s) => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+      {tiles.map((t) => (
         <div
-          key={s.label}
+          key={t.label}
           style={{
-            background: TOKENS.color.bgCard,
-            border: `1px solid ${s.border}`,
+            background: t.bg,
+            border: `0.5px solid ${t.border}`,
             borderRadius: TOKENS.radius.card,
-            padding: '16px 18px',
+            padding: '18px 20px',
             fontFamily: TOKENS.font.family,
+            transition: 'border-color 0.2s ease',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
             <div
               style={{
                 width: 7,
                 height: 7,
                 borderRadius: '50%',
-                background: s.dotColor,
-                border: s.dotBorder ? `1.5px solid ${s.dotBorder}` : 'none',
+                background: t.dotColor,
                 flexShrink: 0,
+                border: t.dotBorder ? `1.5px solid ${TOKENS.color.textMuted}` : 'none',
+                boxShadow: t.dotGlow ? `0 0 8px ${TOKENS.color.indigo}` : 'none',
               }}
             />
             <span
@@ -74,34 +88,27 @@ export default function StatsGrid(props: StatsGridProps) {
                 fontSize: 11,
                 fontWeight: 500,
                 letterSpacing: '0.06em',
-                color: TOKENS.color.textMuted,
+                color: t.labelColor,
                 textTransform: 'uppercase' as const,
               }}
             >
-              {s.label}
+              {t.label}
             </span>
           </div>
           <div
             style={{
-              fontSize: 22,
+              fontSize: 32,
               fontWeight: 500,
-              color: TOKENS.color.textPrimary,
+              color: t.valueColor,
               fontFamily: TOKENS.font.mono,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.03em',
+              lineHeight: 1,
             }}
           >
-            {s.value}
+            {t.value}
           </div>
         </div>
       ))}
-
-      <style>{`
-        @media (max-width: 640px) {
-          div[style*="grid-template-columns: repeat(4"] {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

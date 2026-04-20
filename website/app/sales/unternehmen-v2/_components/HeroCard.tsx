@@ -14,7 +14,7 @@ function HeroScoreRing({ score }: { score: number | null }) {
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - s.value / 100);
   const ringColor =
-    s.value >= 60 ? TOKENS.color.indigo : s.value >= 30 ? 'rgba(107,122,255,0.4)' : TOKENS.color.borderSubtle;
+    s.value >= 70 ? TOKENS.color.indigo : s.value >= 40 ? 'rgba(107,122,255,0.55)' : 'rgba(255,255,255,0.3)';
 
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>

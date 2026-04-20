@@ -22,23 +22,53 @@ export default function RolePicker({
   return (
     <div
       style={{
-        background: TOKENS.color.bgCard,
-        border: `1px solid ${TOKENS.color.borderSubtle}`,
-        borderRadius: TOKENS.radius.card,
-        padding: '20px 22px',
+        background: 'linear-gradient(135deg, rgba(107,122,255,0.04) 0%, transparent 100%)',
+        border: '0.5px solid rgba(107,122,255,0.15)',
+        borderRadius: TOKENS.radius.hero,
+        padding: 24,
         fontFamily: TOKENS.font.family,
         marginBottom: 16,
+        boxShadow: 'inset 0 1px 0 0 rgba(107,122,255,0.08)',
       }}
     >
-      <div style={{ marginBottom: 4 }}>
-        <span style={{ fontSize: 14, fontWeight: 500, color: TOKENS.color.textPrimary }}>Ansprechpartner finden</span>
-        <p style={{ fontSize: 12, color: TOKENS.color.textTertiary, margin: '4px 0 14px', lineHeight: 1.5 }}>
-          Wähle eine Rolle oder beschreibe freitextlich, wen du suchst.
-        </p>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: TOKENS.radius.button,
+            background: 'rgba(107,122,255,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={TOKENS.color.indigoLight}
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+          </svg>
+        </div>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 500, color: TOKENS.color.textPrimary }}>Ansprechpartner finden</div>
+          <div style={{ fontSize: 12.5, color: TOKENS.color.textTertiary, marginTop: 2 }}>
+            Wähle eine Rolle oder beschreibe freitextlich, wen du suchst.
+          </div>
+        </div>
       </div>
 
       {/* Role chips */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '16px 0' }}>
         {ROLES.map((role) => {
           const active = selectedRole?.id === role.id;
           return (
@@ -46,16 +76,17 @@ export default function RolePicker({
               key={role.id}
               onClick={() => onRoleChange(active ? null : role)}
               style={{
-                fontSize: 11,
-                fontWeight: 500,
-                padding: '6px 14px',
-                borderRadius: TOKENS.radius.pill,
+                fontSize: 13,
+                fontWeight: active ? 600 : 500,
+                padding: '8px 14px',
+                borderRadius: TOKENS.radius.button,
                 cursor: 'pointer',
                 fontFamily: TOKENS.font.family,
-                border: `1px solid ${active ? TOKENS.color.indigoBorderMedium : TOKENS.color.borderSubtle}`,
-                background: active ? TOKENS.color.indigoBgSoft : TOKENS.color.bgSubtle,
-                color: active ? TOKENS.color.indigoLight : TOKENS.color.textTertiary,
-                transition: 'all 0.15s',
+                border: active ? `0.5px solid ${TOKENS.color.indigo}` : '0.5px solid rgba(255,255,255,0.1)',
+                background: active ? TOKENS.color.indigo : 'rgba(255,255,255,0.04)',
+                color: active ? '#0a0a0a' : 'rgba(255,255,255,0.75)',
+                boxShadow: active ? '0 0 0 3px rgba(107,122,255,0.15), 0 4px 12px rgba(107,122,255,0.25)' : 'none',
+                transition: 'all 0.15s ease',
               }}
             >
               {role.label}
@@ -64,8 +95,8 @@ export default function RolePicker({
         })}
       </div>
 
-      {/* Freetext + search button */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      {/* Freetext + search */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <input
           type="text"
           value={freetext}
@@ -76,12 +107,12 @@ export default function RolePicker({
           }}
           style={{
             flex: 1,
-            padding: '8px 12px',
+            padding: '12px 14px',
             borderRadius: TOKENS.radius.button,
-            background: TOKENS.color.bgSubtle,
-            border: `1px solid ${TOKENS.color.borderSubtle}`,
+            background: '#0d0d0d',
+            border: '0.5px solid rgba(255,255,255,0.1)',
             color: TOKENS.color.textPrimary,
-            fontSize: 12,
+            fontSize: 13.5,
             fontFamily: TOKENS.font.family,
             outline: 'none',
           }}
@@ -92,39 +123,38 @@ export default function RolePicker({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            padding: '8px 18px',
+            gap: 10,
+            padding: '10px 18px',
             borderRadius: TOKENS.radius.button,
-            background: searchLoading ? TOKENS.color.bgSubtle : TOKENS.color.indigo,
-            border: searchLoading ? `1px solid ${TOKENS.color.borderSubtle}` : 'none',
+            background: searchLoading
+              ? TOKENS.color.bgSubtle
+              : `linear-gradient(135deg, ${TOKENS.color.indigo} 0%, #7A89FF 100%)`,
+            border: searchLoading ? `0.5px solid ${TOKENS.color.borderSubtle}` : 'none',
             color: searchLoading ? TOKENS.color.textMuted : '#0a0a0a',
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 600,
             cursor: searchLoading ? 'default' : 'pointer',
             fontFamily: TOKENS.font.family,
             whiteSpace: 'nowrap',
+            boxShadow: searchLoading ? 'none' : '0 2px 8px rgba(107,122,255,0.2)',
+            transition: 'all 0.15s ease',
           }}
         >
-          {searchLoading ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ animation: 'skeleton-pulse 1.2s ease-in-out infinite' }}>Suche läuft...</span>
+          {searchLoading ? 'Suche läuft...' : 'Kontakte finden'}
+          {!searchLoading && (
+            <span
+              style={{
+                background: 'rgba(0,0,0,0.2)',
+                color: '#0a0a0a',
+                fontFamily: TOKENS.font.mono,
+                fontSize: 10.5,
+                fontWeight: 600,
+                padding: '2px 7px',
+                borderRadius: 4,
+              }}
+            >
+              2 Cr
             </span>
-          ) : (
-            <>
-              Kontakte finden
-              <span
-                style={{
-                  fontSize: 9,
-                  fontWeight: 500,
-                  padding: '1px 6px',
-                  borderRadius: 4,
-                  background: 'rgba(0,0,0,0.15)',
-                  color: 'rgba(0,0,0,0.6)',
-                }}
-              >
-                2 Cr
-              </span>
-            </>
           )}
         </button>
       </div>

@@ -37,22 +37,32 @@ function ChipList({
   }
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-      {items.map((item, i) => (
-        <span
-          key={i}
-          style={{
-            fontSize: 11.5,
-            padding: '4px 10px',
-            borderRadius: TOKENS.radius.pill,
-            background: bgColor,
-            border: `1px solid ${borderColor}`,
-            color,
-            lineHeight: 1.4,
-          }}
-        >
-          {item}
-        </span>
-      ))}
+      {items.map((item, i) => {
+        const cleaned = item.replace(
+          /^[\u2705\u26A0\uFE0F\uD83D\uDD25\u274C\u2714\u2716\u26A1\u2B50\uD83D\uDCA1\uD83D\uDCCA\uD83C\uDFAF]\s*/u,
+          ''
+        );
+        return (
+          <span
+            key={i}
+            style={{
+              fontSize: 11.5,
+              padding: '4px 10px',
+              borderRadius: TOKENS.radius.pill,
+              background: bgColor,
+              border: `1px solid ${borderColor}`,
+              color,
+              lineHeight: 1.4,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+            {cleaned}
+          </span>
+        );
+      })}
     </div>
   );
 }

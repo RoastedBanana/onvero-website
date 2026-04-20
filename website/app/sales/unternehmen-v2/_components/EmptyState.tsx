@@ -12,22 +12,22 @@ export default function EmptyState({ title, subtitle, cta }: EmptyStateProps) {
   return (
     <div
       style={{
+        maxWidth: 420,
+        margin: '60px auto',
         background: TOKENS.color.bgCard,
-        border: `1px solid ${TOKENS.color.borderSubtle}`,
-        borderRadius: TOKENS.radius.cardLarge,
-        padding: '64px 32px',
+        border: `0.5px dashed rgba(107,122,255,0.25)`,
+        borderRadius: TOKENS.radius.hero,
+        padding: '40px 32px',
         textAlign: 'center',
         fontFamily: TOKENS.font.family,
       }}
     >
-      {/* Icon */}
       <div
         style={{
           width: 48,
           height: 48,
-          borderRadius: TOKENS.radius.card,
-          background: TOKENS.color.bgSubtle,
-          border: `1px solid ${TOKENS.color.borderSubtle}`,
+          borderRadius: TOKENS.radius.cardLarge,
+          background: TOKENS.color.indigoBgSubtle,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -39,7 +39,7 @@ export default function EmptyState({ title, subtitle, cta }: EmptyStateProps) {
           height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke={TOKENS.color.textMuted}
+          stroke={TOKENS.color.indigo}
           strokeWidth="1.5"
           strokeLinecap="round"
         >
@@ -47,14 +47,12 @@ export default function EmptyState({ title, subtitle, cta }: EmptyStateProps) {
           <path d="M21 21l-4.35-4.35" />
         </svg>
       </div>
-
       <h3
         style={{
           fontSize: 15,
-          fontWeight: 600,
+          fontWeight: 500,
           color: TOKENS.color.textPrimary,
           margin: '0 0 6px',
-          letterSpacing: '-0.01em',
         }}
       >
         {title}
@@ -69,22 +67,22 @@ export default function EmptyState({ title, subtitle, cta }: EmptyStateProps) {
       >
         {subtitle}
       </p>
-
       {cta && (
         <button
           onClick={cta.onClick}
           style={{
             marginTop: 20,
-            padding: '8px 20px',
+            padding: '10px 20px',
             borderRadius: TOKENS.radius.button,
-            background: TOKENS.color.indigoBgSoft,
-            border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
-            color: TOKENS.color.indigoLight,
-            fontSize: 12,
-            fontWeight: 500,
+            background: `linear-gradient(135deg, ${TOKENS.color.indigo} 0%, #7A89FF 100%)`,
+            border: 'none',
+            color: '#0a0a0a',
+            fontSize: 12.5,
+            fontWeight: 600,
             cursor: 'pointer',
             fontFamily: TOKENS.font.family,
-            transition: 'background 0.15s',
+            boxShadow: '0 2px 8px rgba(107,122,255,0.2)',
+            transition: 'all 0.15s ease',
           }}
         >
           {cta.label}

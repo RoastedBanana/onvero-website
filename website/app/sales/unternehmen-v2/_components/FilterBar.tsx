@@ -84,12 +84,27 @@ export default function FilterBar(props: FilterBarProps) {
     { key: '80+', label: '80+' },
   ];
 
-  function chip(active: boolean): React.CSSProperties {
+  function tierChip(active: boolean): React.CSSProperties {
     return {
       ...chipBase,
+      padding: '7px 14px',
+      borderRadius: TOKENS.radius.pill,
+      fontSize: 12.5,
       background: active ? TOKENS.color.indigoBgSoft : TOKENS.color.bgSubtle,
       color: active ? TOKENS.color.indigoLight : TOKENS.color.textTertiary,
       border: `1px solid ${active ? TOKENS.color.indigoBorderSoft : TOKENS.color.borderSubtle}`,
+    };
+  }
+
+  function rangeChip(active: boolean): React.CSSProperties {
+    return {
+      ...chipBase,
+      padding: '7px 14px',
+      borderRadius: TOKENS.radius.pill,
+      fontSize: 12.5,
+      background: active ? 'rgba(255,255,255,0.12)' : TOKENS.color.bgSubtle,
+      color: active ? TOKENS.color.textPrimary : TOKENS.color.textTertiary,
+      border: `1px solid ${active ? 'rgba(255,255,255,0.2)' : TOKENS.color.borderSubtle}`,
     };
   }
 
@@ -141,7 +156,7 @@ export default function FilterBar(props: FilterBarProps) {
       {/* Tier chips */}
       <div style={{ display: 'flex', gap: 4 }}>
         {tierOptions.map((t) => (
-          <button key={t.key} onClick={() => props.onTierChange(t.key)} style={chip(props.tierFilter === t.key)}>
+          <button key={t.key} onClick={() => props.onTierChange(t.key)} style={tierChip(props.tierFilter === t.key)}>
             {t.label}
           </button>
         ))}
@@ -185,7 +200,7 @@ export default function FilterBar(props: FilterBarProps) {
           <button
             key={o.key}
             onClick={() => props.onEmployeeRangeChange(props.employeeRange === o.key ? null : o.key)}
-            style={chip(props.employeeRange === o.key)}
+            style={rangeChip(props.employeeRange === o.key)}
           >
             {o.label}
           </button>
@@ -198,7 +213,7 @@ export default function FilterBar(props: FilterBarProps) {
           <button
             key={o.key}
             onClick={() => props.onScoreRangeChange(props.scoreRange === o.key ? null : o.key)}
-            style={chip(props.scoreRange === o.key)}
+            style={rangeChip(props.scoreRange === o.key)}
           >
             {o.label}
           </button>

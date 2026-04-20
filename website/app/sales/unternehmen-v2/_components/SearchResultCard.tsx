@@ -102,8 +102,8 @@ export default function SearchResultCard({
             src={photoUrl as string}
             alt=""
             style={{
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               borderRadius: '50%',
               objectFit: 'cover',
               flexShrink: 0,
@@ -113,15 +113,15 @@ export default function SearchResultCard({
         ) : (
           <div
             style={{
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               borderRadius: '50%',
               background: TOKENS.color.bgSubtle,
               border: `1px solid ${TOKENS.color.borderSubtle}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: 500,
               color: TOKENS.color.textTertiary,
               flexShrink: 0,
@@ -192,8 +192,11 @@ export default function SearchResultCard({
             padding: '9px 16px',
             borderRadius: TOKENS.radius.button,
             width: '100%',
-            background: isEnriching ? TOKENS.color.bgSubtle : TOKENS.color.indigo,
+            background: isEnriching
+              ? TOKENS.color.bgSubtle
+              : `linear-gradient(135deg, ${TOKENS.color.indigo} 0%, #7A89FF 100%)`,
             border: isEnriching ? `1px solid ${TOKENS.color.borderSubtle}` : 'none',
+            boxShadow: isEnriching ? 'none' : '0 2px 8px rgba(107,122,255,0.2)',
             color: isEnriching ? TOKENS.color.textMuted : '#0a0a0a',
             fontSize: 12,
             fontWeight: 600,

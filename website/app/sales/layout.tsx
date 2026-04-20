@@ -1034,22 +1034,50 @@ function Sidebar() {
                     )}
                     <SvgIcon d={item.icon} color={active ? C.accent : C.text3} />
                     <span style={{ flex: 1 }}>{item.label}</span>
-                    {item.badge && (
-                      <span
-                        style={{
-                          background: active ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)',
-                          color: active ? C.accent : C.text3,
-                          fontSize: 10,
-                          padding: '2px 8px',
-                          borderRadius: 10,
-                          fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                          fontWeight: 500,
-                          letterSpacing: '-0.01em',
-                        }}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
+                    {item.badge &&
+                      (item.badge === 'v2' ? (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '2px 6px',
+                            background: 'rgba(107,122,255,0.15)',
+                            borderRadius: 4,
+                            fontSize: 9.5,
+                            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                            fontWeight: 600,
+                            color: '#b9c2ff',
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 5,
+                              height: 5,
+                              borderRadius: '50%',
+                              background: '#6B7AFF',
+                              animation: 'live-pulse-v2 2s ease-in-out infinite',
+                            }}
+                          />
+                          v2
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            background: active ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)',
+                            color: active ? C.accent : C.text3,
+                            fontSize: 10,
+                            padding: '2px 8px',
+                            borderRadius: 10,
+                            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                            fontWeight: 500,
+                            letterSpacing: '-0.01em',
+                          }}
+                        >
+                          {item.badge}
+                        </span>
+                      ))}
                   </Link>
                   {item.children && active && (
                     <div style={{ marginTop: 4, marginBottom: 4 }}>
@@ -1115,6 +1143,24 @@ export default function SalesV2Layout({ children }: { children: React.ReactNode 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES }} />
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes live-pulse-v2 {
+          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(107,122,255,0.5); }
+          50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(107,122,255,0); }
+        }
+        @keyframes skeleton-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .uv2-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .uv2-scrollbar::-webkit-scrollbar-track { background: #0a0a0a; }
+        .uv2-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+        .uv2-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+      `,
+        }}
+      />
       <div
         className="noise"
         style={{

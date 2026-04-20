@@ -17,9 +17,8 @@ function ScoreRing({ score }: { score: number | null }) {
   const pct = Math.min(s.value / 100, 1);
   const offset = circ * (1 - pct);
 
-  const tier = fmt.tier(score !== null && score >= 70 ? 'HOT' : score !== null && score >= 45 ? 'WARM' : null);
   const ringColor =
-    tier === 'HOT' ? TOKENS.color.indigo : tier === 'WARM' ? 'rgba(107,122,255,0.4)' : TOKENS.color.borderSubtle;
+    s.value >= 70 ? TOKENS.color.indigo : s.value >= 40 ? 'rgba(107,122,255,0.55)' : 'rgba(255,255,255,0.3)';
 
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
@@ -64,6 +63,42 @@ function ScoreRing({ score }: { score: number | null }) {
 function TierBadge({ tier }: { tier: string | null }) {
   const t = fmt.tier(tier);
   if (t === 'UNRATED') return null;
+  if (t === 'HOT') {
+    return (
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: '0.04em',
+          padding: '3px 10px',
+          borderRadius: TOKENS.radius.chip,
+          background: `linear-gradient(135deg, ${TOKENS.color.indigo} 0%, #8B9AFF 100%)`,
+          color: '#0a0a0a',
+          boxShadow: '0 0 12px rgba(107,122,255,0.3)',
+        }}
+      >
+        HOT
+      </span>
+    );
+  }
+  if (t === 'WARM') {
+    return (
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: '0.04em',
+          padding: '3px 10px',
+          borderRadius: TOKENS.radius.chip,
+          background: 'rgba(107,122,255,0.2)',
+          color: 'rgba(185,194,255,0.95)',
+          border: `0.5px solid rgba(107,122,255,0.3)`,
+        }}
+      >
+        WARM
+      </span>
+    );
+  }
   const tc = TOKENS.tierColors[t];
   return (
     <span
@@ -111,11 +146,15 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
   const [hovered, setHovered] = useState(false);
 
   const tier = fmt.tier(company.tier);
+  const isHot = tier === 'HOT';
+  const isWarm = tier === 'WARM';
   const borderColor = hovered
-    ? TOKENS.color.borderHover
-    : tier === 'HOT'
-      ? TOKENS.color.indigoBorderSoft
-      : TOKENS.color.borderSubtle;
+    ? 'rgba(107,122,255,0.3)'
+    : isHot
+      ? 'rgba(107,122,255,0.4)'
+      : isWarm
+        ? 'rgba(107,122,255,0.18)'
+        : TOKENS.color.borderSubtle;
 
   const summaryText = company.summary ?? company.apollo_short_description ?? null;
   const domain = fmt.domain(company.website, company.primary_domain);
@@ -129,14 +168,19 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: TOKENS.color.bgCard,
-        border: `1px solid ${borderColor}`,
+        background: hovered ? '#121212' : TOKENS.color.bgCard,
+        border: `0.5px solid ${borderColor}`,
         borderRadius: TOKENS.radius.card,
         padding: '16px 18px',
         cursor: 'pointer',
         fontFamily: TOKENS.font.family,
-        transition: 'border-color 0.15s, transform 0.15s',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        boxShadow: isHot
+          ? hovered
+            ? '0 8px 24px rgba(107,122,255,0.15), inset 0 1px 0 0 rgba(107,122,255,0.2)'
+            : 'inset 0 1px 0 0 rgba(107,122,255,0.15)'
+          : 'none',
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
