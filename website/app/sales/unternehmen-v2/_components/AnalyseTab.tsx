@@ -164,7 +164,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
         <div>
           <SectionHeader label="Pain Points" dotColor={TOKENS.color.amber} count={painPoints.length} />
           {painPoints.length === 0 ? (
-            <EmptyDashed text="Noch keine Pain Points identifiziert" />
+            <EmptyInline label={PLACEHOLDER_LANG} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {painPoints.map((p, i) => (
@@ -178,9 +178,9 @@ export default function AnalyseTab({ company }: { company: Company }) {
 
         {/* Personalization Hooks */}
         <div>
-          <SectionHeader label="Personalization Hooks" dotColor={TOKENS.color.indigo} count={hooks.length} />
+          <SectionHeader label="Personalisierungs-Hooks" dotColor={TOKENS.color.indigo} count={hooks.length} />
           {hooks.length === 0 ? (
-            <EmptyDashed text="Noch keine Hooks identifiziert" />
+            <EmptyInline label={PLACEHOLDER_LANG} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {hooks.map((h, i) => (

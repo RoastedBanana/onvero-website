@@ -46,10 +46,11 @@ export const TOKENS = {
     greenBg: 'rgba(143,229,184,0.08)',
     greenBorder: 'rgba(143,229,184,0.20)',
 
-    // Status — Concern (same as warm, intentionally)
-    amber: '#F5A97F',
-    amberBg: 'rgba(245,169,127,0.08)',
-    amberBorder: 'rgba(245,169,127,0.20)',
+    // Status — Concern (stone-gray, neutral, not alarming)
+    amber: 'rgba(242,243,247,0.45)',
+    amberBg: 'rgba(242,243,247,0.04)',
+    amberBorder: 'rgba(242,243,247,0.10)',
+    amberDot: 'rgba(242,243,247,0.35)',
 
     // Status — Danger (rare)
     danger: '#FF8A7A',

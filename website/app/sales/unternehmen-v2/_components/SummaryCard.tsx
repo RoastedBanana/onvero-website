@@ -145,12 +145,12 @@ export default function SummaryCard({
           />
         </div>
         <div>
-          <SectionLabel label="Bedenken" dotColor={TOKENS.color.textMuted} />
+          <SectionLabel label="Bedenken" dotColor={TOKENS.color.amberDot} />
           <ChipList
             items={concerns ?? []}
-            color={TOKENS.color.textTertiary}
-            bgColor={TOKENS.color.bgInset}
-            borderColor={TOKENS.color.borderDefault}
+            color={TOKENS.color.amber}
+            bgColor={TOKENS.color.amberBg}
+            borderColor={TOKENS.color.amberBorder}
           />
         </div>
       </div>

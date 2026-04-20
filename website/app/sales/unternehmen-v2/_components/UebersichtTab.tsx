@@ -1,6 +1,7 @@
 'use client';
 
 import type { Company } from '../_types';
+import { sanitizeArrayForDisplay } from '../_lib/language-guard';
 import NextActionBanner from './NextActionBanner';
 import SummaryCard from './SummaryCard';
 import ScoreBreakdownCard from './ScoreBreakdownCard';
@@ -24,10 +25,10 @@ export default function UebersichtTab({ company, onOutreachClick }: { company: C
 
       {/* 3-col insights */}
       <InsightsTripleCard
-        automationOpportunities={company.automation_opportunities}
-        growthSignals={company.growth_signals}
-        techStack={company.tech_stack}
-        personalizationHooks={company.personalization_hooks}
+        automationOpportunities={sanitizeArrayForDisplay(company.automation_opportunities)}
+        growthSignals={sanitizeArrayForDisplay(company.growth_signals)}
+        techStack={sanitizeArrayForDisplay(company.tech_stack)}
+        personalizationHooks={sanitizeArrayForDisplay(company.personalization_hooks)}
       />
 
       {/* Responsive overrides */}

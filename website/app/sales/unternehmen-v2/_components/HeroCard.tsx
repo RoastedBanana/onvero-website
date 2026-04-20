@@ -3,9 +3,10 @@
 import { TOKENS } from '../_tokens';
 import { fmt } from '../_lib/formatters';
 import { sanitizeForDisplay, sanitizeArrayForDisplay } from '../_lib/language-guard';
+import { formatRelativeTime } from '../_lib/relative-time';
 import type { Company } from '../_types';
 
-// ─── SCORE RING (large, 64px) ───────────────────────────────────────────────
+// ─── SCORE RING ─────────────────────────────────────────────────────────────
 
 function HeroScoreRing({ score }: { score: number | null }) {
   const s = fmt.score(score);
@@ -67,35 +68,7 @@ function HeroScoreRing({ score }: { score: number | null }) {
   );
 }
 
-// ─── STATUS BADGE ───────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string | null }) {
-  const label =
-    status === 'contacted'
-      ? 'In Kontakt'
-      : status === 'qualified'
-        ? 'Qualifiziert'
-        : status === 'lost'
-          ? 'Verloren'
-          : 'Neu';
-  return (
-    <span
-      style={{
-        fontSize: 10,
-        fontWeight: 500,
-        padding: '3px 9px',
-        borderRadius: TOKENS.radius.chip,
-        background: TOKENS.color.bgSubtle,
-        border: `1px solid ${TOKENS.color.borderSubtle}`,
-        color: TOKENS.color.textTertiary,
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
-// ─── TIER BADGE ─────────────────────────────────────────────────────────────
+// ─── BADGES ─────────────────────────────────────────────────────────────────
 
 function TierBadge({ tier }: { tier: string | null }) {
   const t = fmt.tier(tier);
@@ -137,39 +110,85 @@ function TierBadge({ tier }: { tier: string | null }) {
   );
 }
 
+function StatusBadge({ status }: { status: string | null }) {
+  const label =
+    status === 'contacted'
+      ? 'In Kontakt'
+      : status === 'qualified'
+        ? 'Qualifiziert'
+        : status === 'lost'
+          ? 'Verloren'
+          : 'Neu';
+  return (
+    <span
+      style={{
+        fontSize: 10,
+        fontWeight: 500,
+        padding: '3px 9px',
+        borderRadius: TOKENS.radius.chip,
+        background: TOKENS.color.bgSubtle,
+        border: `1px solid ${TOKENS.color.borderSubtle}`,
+        color: TOKENS.color.textTertiary,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
 // ─── INFO STRIP ─────────────────────────────────────────────────────────────
 
-function InfoStrip({ company }: { company: Company }) {
-  const facts: { label: string; value: string; highlight?: boolean }[] = [];
+interface Fact {
+  label: string;
+  value: string;
+  highlight?: boolean;
+  muted?: boolean;
+  mono?: boolean;
+}
 
-  if (company.industry) {
-    facts.push({ label: 'Branche', value: company.industry });
-  }
+function InfoStrip({ company, contactsCount }: { company: Company; contactsCount: number }) {
+  const facts: Fact[] = [];
+
+  if (company.industry) facts.push({ label: 'Branche', value: company.industry });
+  if (company.founded_year) facts.push({ label: 'Seit', value: String(company.founded_year), mono: true });
+
+  const t = fmt.tier(company.tier);
+  if (t !== 'UNRATED') facts.push({ label: 'Tier', value: t, highlight: t === 'HOT' });
+
   if (company.estimated_num_employees) {
-    facts.push({ label: 'MA', value: fmt.employees(company.estimated_num_employees) });
+    facts.push({ label: 'MA', value: fmt.employees(company.estimated_num_employees), mono: true });
   }
+
   const loc = fmt.countryCity(company.country, company.city);
-  if (loc !== '\u2014') {
-    facts.push({ label: 'Standort', value: loc });
-  }
+  if (loc !== '\u2014') facts.push({ label: 'Standort', value: loc });
+
   if (company.annual_revenue_printed) {
     facts.push({ label: 'Umsatz', value: company.annual_revenue_printed, highlight: true });
   }
+
   const deGrowth = sanitizeArrayForDisplay(company.growth_signals);
   if (deGrowth.length > 0) {
     facts.push({ label: 'Highlight', value: deGrowth[0], highlight: true });
   }
 
-  if (facts.length === 0) return null;
+  facts.push({
+    label: 'Kontakte',
+    value: contactsCount > 0 ? String(contactsCount) : 'keine',
+    muted: contactsCount === 0,
+    mono: true,
+  });
+
+  if (company.created_at) {
+    facts.push({ label: 'Erstellt', value: formatRelativeTime(company.created_at), muted: true, mono: true });
+  }
 
   return (
     <div
       style={{
         display: 'flex',
         flexWrap: 'wrap',
-        gap: '10px 16px',
+        gap: '8px 14px',
         padding: '10px 0',
-        marginTop: 10,
         borderTop: `0.5px solid ${TOKENS.color.borderSubtle}`,
         borderBottom: `0.5px solid ${TOKENS.color.borderSubtle}`,
         fontSize: 12.5,
@@ -177,17 +196,18 @@ function InfoStrip({ company }: { company: Company }) {
       }}
     >
       {facts.map((f, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ opacity: 0.6, fontSize: 11, color: TOKENS.color.textTertiary }}>{f.label}</span>
+        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 10.5, color: TOKENS.color.textTertiary, letterSpacing: '0.04em' }}>{f.label}</span>
           <span
             style={{
-              color: f.highlight ? TOKENS.color.warm : TOKENS.color.textPrimary,
-              fontWeight: 500,
+              color: f.highlight ? TOKENS.color.warm : f.muted ? TOKENS.color.textTertiary : TOKENS.color.textPrimary,
+              fontWeight: f.highlight ? 500 : 400,
+              fontFamily: f.mono ? TOKENS.font.mono : 'inherit',
             }}
           >
             {f.value}
           </span>
-        </div>
+        </span>
       ))}
     </div>
   );
@@ -205,7 +225,6 @@ function TierReason({ company }: { company: Company }) {
   return (
     <div
       style={{
-        marginTop: 12,
         padding: '10px 14px',
         background: TOKENS.color.indigoBgSubtle,
         borderLeft: `2px solid ${TOKENS.color.indigo}`,
@@ -248,19 +267,16 @@ export default function HeroCard({
 }) {
   const domain = fmt.domain(company.website, company.primary_domain);
   const founded = company.founded_year ? `Gegr. ${company.founded_year}` : '';
-  const metaItems = [domain !== '\u2014' ? domain : '', founded];
+  const domainLine = [domain !== '\u2014' ? domain : '', founded].filter(Boolean);
 
   return (
-    <div
+    <article
       style={{
         position: 'relative',
         overflow: 'hidden',
         background: TOKENS.color.bgCard,
         border: `0.5px solid ${TOKENS.color.indigoBorderSoft}`,
         borderRadius: TOKENS.radius.hero,
-        padding: '24px 28px',
-        fontFamily: TOKENS.font.family,
-        marginBottom: 0,
         boxShadow: TOKENS.shadow.insetTop,
       }}
     >
@@ -278,91 +294,103 @@ export default function HeroCard({
         }}
       />
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
-          {/* Logo */}
-          {company.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={company.logo_url}
-              alt=""
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: TOKENS.radius.card,
-                objectFit: 'contain',
-                background: '#fff',
-                flexShrink: 0,
-                border: `1px solid ${TOKENS.color.borderSubtle}`,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: TOKENS.radius.card,
-                background: TOKENS.color.indigoBgSoft,
-                border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 20,
-                fontWeight: 600,
-                color: TOKENS.color.indigoLight,
-                flexShrink: 0,
-              }}
-            >
-              {fmt.initials(company.company_name)}
-            </div>
-          )}
-
-          {/* Name + Meta + InfoStrip */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h1
+      {/* Content grid: left=content, right=score+cta */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 200px',
+          gap: 24,
+          padding: 24,
+          alignItems: 'start',
+        }}
+      >
+        {/* LEFT COLUMN */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+          {/* Header: Logo + Name + Badges */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {company.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={company.logo_url}
+                alt=""
                 style={{
-                  fontSize: 22,
-                  fontWeight: 500,
-                  color: TOKENS.color.textPrimary,
-                  margin: 0,
-                  letterSpacing: '-0.02em',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  width: 56,
+                  height: 56,
+                  borderRadius: TOKENS.radius.card,
+                  objectFit: 'contain',
+                  background: '#fff',
+                  flexShrink: 0,
+                  border: `1px solid ${TOKENS.color.borderSubtle}`,
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: TOKENS.radius.card,
+                  background: TOKENS.color.indigoBgSoft,
+                  border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 18,
+                  fontWeight: 600,
+                  color: TOKENS.color.indigoLight,
+                  flexShrink: 0,
                 }}
               >
-                {fmt.text(company.company_name, 'Unbenannt')}
-              </h1>
-              <TierBadge tier={company.tier} />
-              <StatusBadge status={company.status} />
-            </div>
-
-            {/* Domain + founded */}
-            {metaItems.filter(Boolean).length > 0 && (
-              <div style={{ fontSize: 12.5, color: TOKENS.color.textTertiary, marginTop: 6, lineHeight: 1.5 }}>
-                {metaItems.filter(Boolean).map((item, i) => (
-                  <span key={i}>
-                    {i > 0 && <span style={{ margin: '0 6px', color: TOKENS.color.textMuted }}>&middot;</span>}
-                    {item}
-                  </span>
-                ))}
+                {fmt.initials(company.company_name)}
               </div>
             )}
 
-            {/* Info strip */}
-            <InfoStrip company={company} />
-
-            {/* Tier reason */}
-            <TierReason company={company} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <h1
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 500,
+                    color: TOKENS.color.textPrimary,
+                    margin: 0,
+                    letterSpacing: '-0.02em',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {fmt.text(company.company_name, 'Unbenannt')}
+                </h1>
+                <TierBadge tier={company.tier} />
+                <StatusBadge status={company.status} />
+              </div>
+              {domainLine.length > 0 && (
+                <div style={{ fontSize: 12.5, color: TOKENS.color.textTertiary, marginTop: 4 }}>
+                  {domainLine.join(' \u00B7 ')}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Score Ring */}
-          <HeroScoreRing score={company.fit_score} />
+          {/* Info strip */}
+          <InfoStrip company={company} contactsCount={contactsCount} />
+
+          {/* Tier reason */}
+          <TierReason company={company} />
         </div>
 
-        {/* Bottom CTA */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 16 }}>
+        {/* RIGHT COLUMN */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 14,
+            paddingTop: 4,
+          }}
+        >
+          <HeroScoreRing score={company.fit_score} />
           <button
             onClick={onOutreachClick}
             style={{
@@ -377,12 +405,13 @@ export default function HeroCard({
               fontFamily: TOKENS.font.family,
               boxShadow: '0 2px 8px rgba(107,122,255,0.2)',
               transition: 'all 0.15s ease',
+              whiteSpace: 'nowrap',
             }}
           >
             E-Mail schreiben
           </button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

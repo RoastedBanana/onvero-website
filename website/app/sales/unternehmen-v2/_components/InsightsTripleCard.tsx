@@ -1,6 +1,8 @@
 'use client';
 
 import { TOKENS } from '../_tokens';
+import { PLACEHOLDER_LANG } from '../_lib/language-guard';
+import EmptyInline from './EmptyInline';
 
 const KNOWN_TOOLS = new Set([
   'Shopify',
@@ -53,9 +55,9 @@ function EmptyHint({ text }: { text: string }) {
 
 function AutomationCard({ items }: { items: string[] | null }) {
   return (
-    <CardShell label="Automatisierungs-Chancen">
+    <CardShell label="Verkaufsansätze">
       {!items || items.length === 0 ? (
-        <EmptyHint text="Noch nicht analysiert" />
+        <EmptyInline label={PLACEHOLDER_LANG} />
       ) : (
         <ol
           style={{
@@ -98,7 +100,7 @@ function GrowthCard({ items }: { items: string[] | null }) {
   return (
     <CardShell label="Wachstums-Signale">
       {!items || items.length === 0 ? (
-        <EmptyHint text="Noch keine Signale erkannt" />
+        <EmptyInline label={PLACEHOLDER_LANG} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {items.map((item, i) => (
@@ -128,7 +130,7 @@ function TechCard({ techStack, hooks }: { techStack: string[] | null; hooks: str
   return (
     <CardShell label="Tech-Stack">
       {!techStack || techStack.length === 0 ? (
-        <EmptyHint text="\u2014" />
+        <EmptyInline label={PLACEHOLDER_LANG} />
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
           {techStack.map((t) => {
@@ -171,9 +173,25 @@ function TechCard({ techStack, hooks }: { techStack: string[] | null; hooks: str
             >
               PERSONALISIERUNGS-HOOKS
             </span>
-            <p style={{ fontSize: 12, color: TOKENS.color.textTertiary, lineHeight: 1.55, margin: 0 }}>
-              {hooks.join(', ')}
-            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {hooks.map((h, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: '8px 12px',
+                    background: TOKENS.color.indigoBgSubtle,
+                    border: `0.5px solid ${TOKENS.color.indigoBorderSoft}`,
+                    borderLeft: `2px solid ${TOKENS.color.indigo}`,
+                    borderRadius: '0 8px 8px 0',
+                    fontSize: 12.5,
+                    lineHeight: 1.5,
+                    color: TOKENS.color.textSecondary,
+                  }}
+                >
+                  {h}
+                </div>
+              ))}
+            </div>
           </div>
         </>
       )}
