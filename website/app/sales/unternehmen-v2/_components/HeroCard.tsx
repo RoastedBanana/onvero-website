@@ -273,14 +273,13 @@ export default function HeroCard({
     <article
       style={{
         position: 'relative',
-        overflow: 'hidden',
         background: TOKENS.color.bgCard,
         border: `0.5px solid ${TOKENS.color.indigoBorderSoft}`,
         borderRadius: TOKENS.radius.hero,
         boxShadow: TOKENS.shadow.insetTop,
       }}
     >
-      {/* Glow layer */}
+      {/* Glow layer — clipped via its own border-radius, not parent overflow */}
       <div
         style={{
           position: 'absolute',
@@ -291,6 +290,7 @@ export default function HeroCard({
           background: TOKENS.gradient.heroGlow,
           pointerEvents: 'none',
           zIndex: 0,
+          borderRadius: `${TOKENS.radius.hero} ${TOKENS.radius.hero} 0 0`,
         }}
       />
 
