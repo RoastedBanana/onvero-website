@@ -102,9 +102,9 @@ export default function FilterBar(props: FilterBarProps) {
       padding: '7px 14px',
       borderRadius: TOKENS.radius.pill,
       fontSize: 12.5,
-      background: active ? 'rgba(255,255,255,0.12)' : TOKENS.color.bgSubtle,
+      background: active ? 'rgba(242,243,247,0.12)' : TOKENS.color.bgSubtle,
       color: active ? TOKENS.color.textPrimary : TOKENS.color.textTertiary,
-      border: `1px solid ${active ? 'rgba(255,255,255,0.2)' : TOKENS.color.borderSubtle}`,
+      border: `1px solid ${active ? TOKENS.color.borderHover : TOKENS.color.borderSubtle}`,
     };
   }
 

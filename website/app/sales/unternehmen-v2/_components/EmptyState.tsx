@@ -76,7 +76,7 @@ export default function EmptyState({ title, subtitle, cta }: EmptyStateProps) {
             borderRadius: TOKENS.radius.button,
             background: `linear-gradient(135deg, ${TOKENS.color.indigo} 0%, #7A89FF 100%)`,
             border: 'none',
-            color: '#0a0a0a',
+            color: TOKENS.color.textOnAccent,
             fontSize: 12.5,
             fontWeight: 600,
             cursor: 'pointer',

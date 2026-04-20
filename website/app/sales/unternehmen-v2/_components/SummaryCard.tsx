@@ -1,6 +1,8 @@
 'use client';
 
 import { TOKENS } from '../_tokens';
+import { sanitizeForDisplay, PLACEHOLDER_LANG } from '../_lib/language-guard';
+import EmptyInline from './EmptyInline';
 
 function SectionLabel({ label, dotColor }: { label: string; dotColor: string }) {
   return (
@@ -78,7 +80,10 @@ export default function SummaryCard({
   strengths: string[] | null;
   concerns: string[] | null;
 }) {
-  const text = summary ?? apolloDescription ?? null;
+  const cleanSummary = sanitizeForDisplay(summary);
+  const cleanDesc = sanitizeForDisplay(apolloDescription);
+  const text = cleanSummary ?? cleanDesc ?? null;
+  const hasEnglishSource = !text && (summary || apolloDescription);
 
   return (
     <div
@@ -119,6 +124,8 @@ export default function SummaryCard({
           >
             {text}
           </p>
+        ) : hasEnglishSource ? (
+          <EmptyInline label={PLACEHOLDER_LANG} />
         ) : (
           <p style={{ fontSize: 13, color: TOKENS.color.textMuted, fontStyle: 'italic', margin: 0 }}>
             Noch nicht analysiert
@@ -129,21 +136,21 @@ export default function SummaryCard({
       {/* Strengths / Concerns grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <div>
-          <SectionLabel label="Stärken" dotColor={TOKENS.color.green} />
+          <SectionLabel label="Stärken" dotColor={TOKENS.color.warm} />
           <ChipList
             items={strengths ?? []}
-            color={TOKENS.color.green}
-            bgColor={TOKENS.color.greenBg}
-            borderColor={TOKENS.color.greenBorder}
+            color={TOKENS.color.warm}
+            bgColor={TOKENS.color.warmBg}
+            borderColor={TOKENS.color.warmBorder}
           />
         </div>
         <div>
-          <SectionLabel label="Bedenken" dotColor={TOKENS.color.amber} />
+          <SectionLabel label="Bedenken" dotColor={TOKENS.color.textMuted} />
           <ChipList
             items={concerns ?? []}
-            color={TOKENS.color.amber}
-            bgColor={TOKENS.color.amberBg}
-            borderColor={TOKENS.color.amberBorder}
+            color={TOKENS.color.textTertiary}
+            bgColor={TOKENS.color.bgInset}
+            borderColor={TOKENS.color.borderDefault}
           />
         </div>
       </div>

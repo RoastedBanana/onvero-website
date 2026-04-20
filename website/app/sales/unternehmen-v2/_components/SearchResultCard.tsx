@@ -197,7 +197,7 @@ export default function SearchResultCard({
               : `linear-gradient(135deg, ${TOKENS.color.indigo} 0%, #7A89FF 100%)`,
             border: isEnriching ? `1px solid ${TOKENS.color.borderSubtle}` : 'none',
             boxShadow: isEnriching ? 'none' : '0 2px 8px rgba(107,122,255,0.2)',
-            color: isEnriching ? TOKENS.color.textMuted : '#0a0a0a',
+            color: isEnriching ? TOKENS.color.textMuted : TOKENS.color.textOnAccent,
             fontSize: 12,
             fontWeight: 600,
             cursor: isEnriching ? 'default' : 'pointer',

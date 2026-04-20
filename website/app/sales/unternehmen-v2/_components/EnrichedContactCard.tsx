@@ -179,7 +179,7 @@ export default function EnrichedContactCard({
                   padding: '2px 7px',
                   borderRadius: TOKENS.radius.chip,
                   background: TOKENS.color.indigo,
-                  color: '#0a0a0a',
+                  color: TOKENS.color.textOnAccent,
                 }}
               >
                 PRIMARY

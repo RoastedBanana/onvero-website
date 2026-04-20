@@ -52,7 +52,7 @@ export default function CompanyTable({
     >
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
-          <tr style={{ background: 'rgba(255,255,255,0.015)' }}>
+          <tr style={{ background: 'rgba(242,243,247,0.015)' }}>
             <th style={{ ...TH, width: 36, padding: '10px 12px' }}>
               <input
                 type="checkbox"
@@ -119,7 +119,7 @@ function Row({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderBottom: index < total - 1 ? `1px solid rgba(255,255,255,0.03)` : 'none',
+        borderBottom: index < total - 1 ? `1px solid ${TOKENS.color.borderSubtle}` : 'none',
         cursor: 'pointer',
         background: isSelected ? TOKENS.color.indigoBgSubtle : hovered ? 'rgba(107,122,255,0.04)' : 'transparent',
         borderLeft: tier === 'HOT' ? `2px solid rgba(107,122,255,0.5)` : '2px solid transparent',
@@ -241,8 +241,8 @@ function Row({
             (c.fit_score ?? 0) >= 70
               ? TOKENS.color.indigoLight
               : (c.fit_score ?? 0) >= 40
-                ? 'rgba(255,255,255,0.8)'
-                : 'rgba(255,255,255,0.5)',
+                ? TOKENS.color.textSecondary
+                : TOKENS.color.textTertiary,
         }}
       >
         {fmt.score(c.fit_score).display}

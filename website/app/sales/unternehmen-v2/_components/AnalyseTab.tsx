@@ -3,6 +3,13 @@
 import { useState } from 'react';
 import { TOKENS } from '../_tokens';
 import { fmt } from '../_lib/formatters';
+import {
+  sanitizeForDisplay,
+  sanitizeArrayForDisplay,
+  PLACEHOLDER_LANG,
+  PLACEHOLDER_EMPTY,
+} from '../_lib/language-guard';
+import EmptyInline from './EmptyInline';
 import type { Company } from '../_types';
 
 // ─── SECTION HEADER ─────────────────────────────────────────────────────────
@@ -83,11 +90,15 @@ function CardShell({ children, borderLeft }: { children: React.ReactNode; border
 export default function AnalyseTab({ company }: { company: Company }) {
   const [keywordsOpen, setKeywordsOpen] = useState(false);
   const industry = company.apollo_industry ?? company.industry;
-  const painPoints = company.pain_points ?? [];
-  const hooks = company.personalization_hooks ?? [];
-  const coreServices = company.core_services ?? [];
+  const painPoints = sanitizeArrayForDisplay(company.pain_points);
+  const hooks = sanitizeArrayForDisplay(company.personalization_hooks);
+  const coreServices = sanitizeArrayForDisplay(company.core_services);
   const keywords = company.apollo_keywords ?? [];
   const partnerUrls = company.partner_customer_urls ?? [];
+  const cleanUsp = sanitizeForDisplay(company.usp);
+  const cleanTone = sanitizeForDisplay(company.tone_of_voice);
+  const cleanTargetCustomers = sanitizeForDisplay(company.target_customers);
+  const cleanWebHighlights = sanitizeForDisplay(company.website_highlights);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: TOKENS.font.family }}>
@@ -183,7 +194,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
       </div>
 
       {/* USP Hero */}
-      {company.usp && (
+      {cleanUsp ? (
         <div
           style={{
             padding: '24px 28px',
@@ -214,13 +225,15 @@ export default function AnalyseTab({ company }: { company: Company }) {
               letterSpacing: '-0.01em',
             }}
           >
-            {company.usp}
+            {cleanUsp}
           </p>
         </div>
-      )}
+      ) : company.usp ? (
+        <EmptyInline label={PLACEHOLDER_LANG} />
+      ) : null}
 
       {/* Tone of Voice */}
-      {company.tone_of_voice && (
+      {cleanTone ? (
         <div
           style={{
             background: TOKENS.color.bgCard,
@@ -251,10 +264,12 @@ export default function AnalyseTab({ company }: { company: Company }) {
               lineHeight: 1.6,
             }}
           >
-            {company.tone_of_voice}
+            {cleanTone}
           </div>
         </div>
-      )}
+      ) : company.tone_of_voice ? (
+        <EmptyInline label={PLACEHOLDER_LANG} />
+      ) : null}
 
       {/* Core Services */}
       {coreServices.length > 0 && (
@@ -296,7 +311,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
       )}
 
       {/* Target Customers */}
-      {company.target_customers && (
+      {cleanTargetCustomers ? (
         <div
           style={{
             background: TOKENS.color.bgCard,
@@ -307,13 +322,15 @@ export default function AnalyseTab({ company }: { company: Company }) {
         >
           <SectionHeader label="Zielkunden" dotColor={TOKENS.color.textTertiary} />
           <p style={{ fontSize: 13.5, color: TOKENS.color.textSecondary, lineHeight: 1.6, margin: 0 }}>
-            {company.target_customers}
+            {cleanTargetCustomers}
           </p>
         </div>
-      )}
+      ) : company.target_customers ? (
+        <EmptyInline label={PLACEHOLDER_LANG} />
+      ) : null}
 
       {/* Website Highlights + Partner URLs */}
-      {(company.website_highlights || partnerUrls.length > 0) && (
+      {(cleanWebHighlights || partnerUrls.length > 0) && (
         <div
           style={{
             background: TOKENS.color.bgCard,
@@ -325,11 +342,11 @@ export default function AnalyseTab({ company }: { company: Company }) {
             gap: 14,
           }}
         >
-          {company.website_highlights && (
+          {cleanWebHighlights && (
             <>
               <SectionHeader label="Website-Highlights" dotColor={TOKENS.color.green} />
               <p style={{ fontSize: 13, color: TOKENS.color.textSecondary, lineHeight: 1.6, margin: 0 }}>
-                {company.website_highlights}
+                {cleanWebHighlights}
               </p>
             </>
           )}

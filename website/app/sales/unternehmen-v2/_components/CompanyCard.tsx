@@ -18,7 +18,7 @@ function ScoreRing({ score }: { score: number | null }) {
   const offset = circ * (1 - pct);
 
   const ringColor =
-    s.value >= 70 ? TOKENS.color.indigo : s.value >= 40 ? 'rgba(107,122,255,0.55)' : 'rgba(255,255,255,0.3)';
+    s.value >= 70 ? TOKENS.color.indigo : s.value >= 40 ? 'rgba(107,122,255,0.55)' : 'rgba(242,243,247,0.3)';
 
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
@@ -73,7 +73,7 @@ function TierBadge({ tier }: { tier: string | null }) {
           padding: '3px 10px',
           borderRadius: TOKENS.radius.chip,
           background: `linear-gradient(135deg, ${TOKENS.color.indigo} 0%, #8B9AFF 100%)`,
-          color: '#0a0a0a',
+          color: TOKENS.color.textOnAccent,
           boxShadow: '0 0 12px rgba(107,122,255,0.3)',
         }}
       >
@@ -168,7 +168,7 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? '#121212' : TOKENS.color.bgCard,
+        background: hovered ? TOKENS.color.bgSubtle : TOKENS.color.bgCard,
         border: `0.5px solid ${borderColor}`,
         borderRadius: TOKENS.radius.card,
         padding: '16px 18px',

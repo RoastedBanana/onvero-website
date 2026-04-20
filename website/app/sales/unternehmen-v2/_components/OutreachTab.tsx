@@ -196,7 +196,7 @@ function DraftCard({
               borderRadius: TOKENS.radius.button,
               background: TOKENS.color.indigo,
               border: 'none',
-              color: '#0a0a0a',
+              color: TOKENS.color.textOnAccent,
               fontSize: 12,
               fontWeight: 600,
               cursor: 'pointer',

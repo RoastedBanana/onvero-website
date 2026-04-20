@@ -82,9 +82,9 @@ export default function RolePicker({
                 borderRadius: TOKENS.radius.button,
                 cursor: 'pointer',
                 fontFamily: TOKENS.font.family,
-                border: active ? `0.5px solid ${TOKENS.color.indigo}` : '0.5px solid rgba(255,255,255,0.1)',
-                background: active ? TOKENS.color.indigo : 'rgba(255,255,255,0.04)',
-                color: active ? '#0a0a0a' : 'rgba(255,255,255,0.75)',
+                border: active ? `0.5px solid ${TOKENS.color.indigo}` : `0.5px solid ${TOKENS.color.borderDefault}`,
+                background: active ? TOKENS.color.indigo : TOKENS.color.indigoBgSubtle,
+                color: active ? TOKENS.color.textOnAccent : 'rgba(242,243,247,0.75)',
                 boxShadow: active ? '0 0 0 3px rgba(107,122,255,0.15), 0 4px 12px rgba(107,122,255,0.25)' : 'none',
                 transition: 'all 0.15s ease',
               }}
@@ -109,8 +109,8 @@ export default function RolePicker({
             flex: 1,
             padding: '12px 14px',
             borderRadius: TOKENS.radius.button,
-            background: '#0d0d0d',
-            border: '0.5px solid rgba(255,255,255,0.1)',
+            background: TOKENS.color.bgInset,
+            border: `0.5px solid ${TOKENS.color.borderDefault}`,
             color: TOKENS.color.textPrimary,
             fontSize: 13.5,
             fontFamily: TOKENS.font.family,
@@ -130,7 +130,7 @@ export default function RolePicker({
               ? TOKENS.color.bgSubtle
               : `linear-gradient(135deg, ${TOKENS.color.indigo} 0%, #7A89FF 100%)`,
             border: searchLoading ? `0.5px solid ${TOKENS.color.borderSubtle}` : 'none',
-            color: searchLoading ? TOKENS.color.textMuted : '#0a0a0a',
+            color: searchLoading ? TOKENS.color.textMuted : TOKENS.color.textOnAccent,
             fontSize: 13,
             fontWeight: 600,
             cursor: searchLoading ? 'default' : 'pointer',
@@ -145,7 +145,7 @@ export default function RolePicker({
             <span
               style={{
                 background: 'rgba(0,0,0,0.2)',
-                color: '#0a0a0a',
+                color: TOKENS.color.textOnAccent,
                 fontFamily: TOKENS.font.mono,
                 fontSize: 10.5,
                 fontWeight: 600,

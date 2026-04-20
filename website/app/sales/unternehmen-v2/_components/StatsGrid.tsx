@@ -28,7 +28,7 @@ export default function StatsGrid(props: StatsGridProps) {
       dotColor: TOKENS.color.indigo,
       dotGlow: true,
       dotBorder: false,
-      bg: 'linear-gradient(135deg, #0f0f0f 0%, #151628 100%)',
+      bg: `linear-gradient(135deg, ${TOKENS.color.bgCard} 0%, #151a2e 100%)`,
       border: 'rgba(107,122,255,0.25)',
       valueColor: TOKENS.color.textPrimary,
       labelColor: TOKENS.color.indigoLight,
@@ -36,7 +36,7 @@ export default function StatsGrid(props: StatsGridProps) {
     {
       label: 'WARM',
       value: props.warm,
-      dotColor: 'rgba(107,122,255,0.4)',
+      dotColor: TOKENS.color.warm,
       dotGlow: false,
       dotBorder: false,
       bg: TOKENS.color.bgCard,
