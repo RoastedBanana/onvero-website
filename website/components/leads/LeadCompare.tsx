@@ -265,7 +265,13 @@ export default function LeadCompare({ isOpen, onClose, leads }: Props) {
                   border: '1px solid rgba(255,255,255,0.06)',
                 }}
               >
-                <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="lg" />
+                <LeadAvatar
+                  website={lead.website}
+                  companyName={lead.company}
+                  score={lead.score}
+                  size="lg"
+                  logoUrl={lead.logoUrl}
+                />
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{lead.company}</div>
                   <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{lead.name}</div>

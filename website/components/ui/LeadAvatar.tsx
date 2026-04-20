@@ -7,6 +7,7 @@ interface LeadAvatarProps {
   companyName: string;
   score?: number;
   size?: 'sm' | 'md' | 'lg';
+  logoUrl?: string | null;
 }
 
 const getDomain = (url: string | null | undefined): string | null => {
@@ -44,14 +45,22 @@ const SIZES = { sm: 24, md: 32, lg: 48 };
 // ─── Module-level cache: remembers which domains have working favicons ──────
 const _cache = new Map<string, 'ok' | 'fail'>();
 
-export default function LeadAvatar({ website, companyName, score, size = 'md' }: LeadAvatarProps) {
+export default function LeadAvatar({ website, companyName, score, size = 'md', logoUrl }: LeadAvatarProps) {
   const px = SIZES[size];
   const domain = getDomain(website);
   const cached = domain ? _cache.get(domain) : null;
 
+  // If we have a direct logoUrl, prefer it over favicon
+  const [logoFailed, setLogoFailed] = useState(false);
+  const hasLogo = !!logoUrl && !logoFailed;
+
   // Skip loading if we already know this domain fails
   const initialStatus = !domain || cached === 'fail' ? 'initials' : cached === 'ok' ? 'loaded' : 'loading';
   const [status, setStatus] = useState<'loading' | 'loaded' | 'initials'>(initialStatus);
+
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [logoUrl]);
 
   useEffect(() => {
     const d = getDomain(website);
@@ -88,6 +97,32 @@ export default function LeadAvatar({ website, companyName, score, size = 'md' }:
     </div>
   );
 
+  // 1. Direct logo from DB (Apollo/Zenprospect) — best quality
+  if (hasLogo) {
+    return (
+      <div style={{ position: 'relative', width: px, height: px, flexShrink: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logoUrl!}
+          alt={companyName}
+          width={px}
+          height={px}
+          onError={() => setLogoFailed(true)}
+          style={{
+            width: px,
+            height: px,
+            borderRadius: '50%',
+            objectFit: 'contain',
+            background: '#fff',
+            border: `1px solid rgba(255,255,255,0.1)`,
+            flexShrink: 0,
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 2. Fallback: favicon from website domain
   if (status === 'initials' || !domain) return initialsEl;
 
   return (

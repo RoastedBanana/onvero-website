@@ -750,7 +750,7 @@ export default function LeadsTable({
                   }}
                 />
               )}
-              <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} />
+              <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} logoUrl={lead.logoUrl} />
               <div style={{ minWidth: 0 }}>
                 <div
                   style={{

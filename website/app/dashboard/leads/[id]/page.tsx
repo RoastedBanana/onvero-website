@@ -313,7 +313,13 @@ export default function LeadDetailPage() {
             ← Zurück zu Leads
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="lg" />
+            <LeadAvatar
+              website={lead.website}
+              companyName={lead.company}
+              score={lead.score}
+              size="lg"
+              logoUrl={lead.logoUrl}
+            />
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{lead.company}</h1>

@@ -485,7 +485,13 @@ export default function LeadDetailPanel({ lead, onClose }: LeadDetailPanelProps)
                 flexShrink: 0,
               }}
             >
-              <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="lg" />
+              <LeadAvatar
+                website={lead.website}
+                companyName={lead.company}
+                score={lead.score}
+                size="lg"
+                logoUrl={lead.logoUrl}
+              />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{

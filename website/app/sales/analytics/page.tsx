@@ -138,7 +138,8 @@ function AreaChart({
   label: string;
   formatY?: (v: number) => string;
 }) {
-  const maxY = Math.max(...data.map((d) => d.y)) * 1.15;
+  if (!data.length) return null;
+  const maxY = Math.max(...data.map((d) => d.y)) * 1.15 || 1;
   const W = 900;
   const H = height;
   const padL = 40;
@@ -379,7 +380,8 @@ function ModernBarChart({
   height?: number;
   formatY?: (v: number) => string;
 }) {
-  const maxY = Math.max(...data.map((d) => d.y)) * 1.15;
+  if (!data.length) return null;
+  const maxY = Math.max(...data.map((d) => d.y)) * 1.15 || 1;
   const W = 900;
   const H = height;
   const padL = 40;
@@ -1298,6 +1300,7 @@ const PERIODS = [
   { value: '3mo', label: '3 Monate' },
   { value: '6mo', label: '6 Monate' },
   { value: '1y', label: '1 Jahr' },
+  { value: 'all', label: 'Gesamt' },
 ] as const;
 
 type Period = (typeof PERIODS)[number]['value'];
@@ -1310,7 +1313,7 @@ function MeetingsAnalyticsTab() {
 
 export default function AnalyticsPage() {
   const [tab, setTab] = useState<Tab>('overview');
-  const [period, setPeriod] = useState<Period>('30d');
+  const [period, setPeriod] = useState<Period>('all');
   const [loading, setLoading] = useState(true);
   const [leadsData, setLeadsData] = useState<LeadsData | null>(null);
   const [trendData, setTrendData] = useState<TrendData | null>(null);
@@ -1341,7 +1344,7 @@ export default function AnalyticsPage() {
       fetch(`/api/analytics/leads?period=${period}`)
         .then((r) => (r.ok ? r.json() : emptyLeads))
         .catch(() => emptyLeads),
-      fetch('/api/analytics/trend')
+      fetch(`/api/analytics/trend?period=${period}`)
         .then((r) => (r.ok ? r.json() : emptyTrend))
         .catch(() => emptyTrend),
       fetch('/api/analytics/activity')

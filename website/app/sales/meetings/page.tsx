@@ -873,6 +873,7 @@ type LiveState = {
   meetingId: string;
   phase: 'live' | 'post';
   audioBlob: Blob | null;
+  systemAudioBlob: Blob | null;
   notes: { id: string; text: string; timestamp: number; phaseId: string; phaseName: string }[];
   durationSeconds: number;
 };
@@ -903,11 +904,16 @@ export default function MeetingsPage() {
   };
 
   const handleStartLive = (meetingId: string) => {
-    setLiveState({ meetingId, phase: 'live', audioBlob: null, notes: [], durationSeconds: 0 });
+    setLiveState({ meetingId, phase: 'live', audioBlob: null, systemAudioBlob: null, notes: [], durationSeconds: 0 });
     setTab('record');
   };
 
-  const handleEndLive = (data: { audioBlob: Blob | null; notes: LiveState['notes']; durationSeconds: number }) => {
+  const handleEndLive = (data: {
+    audioBlob: Blob | null;
+    systemAudioBlob: Blob | null;
+    notes: LiveState['notes'];
+    durationSeconds: number;
+  }) => {
     if (liveState) {
       setLiveState({ ...liveState, phase: 'post', ...data });
     }
@@ -955,6 +961,7 @@ export default function MeetingsPage() {
             notes={liveState.notes}
             durationSeconds={liveState.durationSeconds}
             audioBlob={liveState.audioBlob}
+            systemAudioBlob={liveState.systemAudioBlob}
           />
         )}
         {tab === 'record' && !liveState && <RecordView onSelectMeeting={handleStartLive} meetings={meetings} />}

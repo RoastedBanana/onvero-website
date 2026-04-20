@@ -486,13 +486,32 @@ function LeadTable({
                         companyName={lead.company}
                         score={lead.score ?? undefined}
                         size="md"
+                        logoUrl={lead.logoUrl}
                       />
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: C.text1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: C.text1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {lead.company}
                         </div>
                         {(lead.primaryDomain ?? lead.website) && (
-                          <div style={{ fontSize: 10, color: C.text3, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: C.text3,
+                              marginTop: 2,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             {lead.primaryDomain ?? lead.website?.replace(/^https?:\/\//, '').replace(/\/$/, '')}
                           </div>
                         )}
@@ -502,30 +521,26 @@ function LeadTable({
 
                   {/* Industry */}
                   <td style={{ padding: '14px 18px' }}>
-                    <span style={{ fontSize: 11.5, color: C.text2 }}>
-                      {lead.industry}
-                    </span>
+                    <span style={{ fontSize: 11.5, color: C.text2 }}>{lead.industry}</span>
                   </td>
 
                   {/* Employees */}
                   <td style={{ padding: '14px 18px' }}>
-                    <span style={{ fontSize: 11.5, color: C.text2, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
+                    <span
+                      style={{ fontSize: 11.5, color: C.text2, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}
+                    >
                       {lead.employeeCount
                         ? lead.employeeCount.toLocaleString('de-DE')
-                        : lead.employees !== 'Unbekannt' ? lead.employees : '—'}
+                        : lead.employees !== 'Unbekannt'
+                          ? lead.employees
+                          : '—'}
                     </span>
                   </td>
 
                   {/* Location */}
                   <td style={{ padding: '14px 18px' }}>
-                    <div style={{ fontSize: 11.5, color: C.text2 }}>
-                      {lead.city}
-                    </div>
-                    {(lead.country) && (
-                      <div style={{ fontSize: 10, color: C.text3, marginTop: 1 }}>
-                        {lead.country}
-                      </div>
-                    )}
+                    <div style={{ fontSize: 11.5, color: C.text2 }}>{lead.city}</div>
+                    {lead.country && <div style={{ fontSize: 10, color: C.text3, marginTop: 1 }}>{lead.country}</div>}
                   </td>
 
                   {/* Status */}
@@ -711,6 +726,7 @@ function KanbanBoard({
                       companyName={lead.company}
                       score={lead.score ?? undefined}
                       size="md"
+                      logoUrl={lead.logoUrl}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div

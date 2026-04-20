@@ -175,7 +175,13 @@ export default function KanbanBoard({ leads, onStatusChange, onLeadDeleted }: Pr
                   >
                     {/* Card Header: Avatar + Name */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <LeadAvatar website={lead.website} companyName={lead.company} score={lead.score} size="sm" />
+                      <LeadAvatar
+                        website={lead.website}
+                        companyName={lead.company}
+                        score={lead.score}
+                        size="sm"
+                        logoUrl={lead.logoUrl}
+                      />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{

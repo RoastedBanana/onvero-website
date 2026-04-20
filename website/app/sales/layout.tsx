@@ -310,13 +310,21 @@ function ProfileDropdown() {
   const ref = useRef<HTMLButtonElement>(null);
   const [user, setUser] = useState<{ email: string; initials: string; name: string } | null>(null);
   const [quota, setQuota] = useState<QuotaData | null>(_quotaCache);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   // Load quota once at mount (cached at module level, reused across dropdown opens)
   useEffect(() => {
-    if (_quotaCache) { setQuota(_quotaCache); return; }
+    if (_quotaCache) {
+      setQuota(_quotaCache);
+      return;
+    }
     let cancelled = false;
-    loadQuotaOnce().then((d) => { if (!cancelled && d) setQuota(d); });
-    return () => { cancelled = true; };
+    loadQuotaOnce().then((d) => {
+      if (!cancelled && d) setQuota(d);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -359,6 +367,14 @@ function ProfileDropdown() {
         }
       })
       .catch(() => {});
+
+    // Fetch company logo
+    fetch('/api/integrations')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.logo_url) setLogoUrl(d.logo_url);
+      })
+      .catch(() => {});
   }, []);
 
   async function handleLogout() {
@@ -392,23 +408,37 @@ function ProfileDropdown() {
           background: 'rgba(255,255,255,0.02)',
         }}
       >
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 7,
-            background: 'linear-gradient(135deg, #6366F1, #818CF8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 10,
-            fontWeight: 600,
-            color: '#fff',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)',
-          }}
-        >
-          {user?.initials ?? '..'}
-        </div>
+        {logoUrl ? (
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 7,
+              backgroundImage: `url(${logoUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              flexShrink: 0,
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 7,
+              background: 'linear-gradient(135deg, #6366F1, #818CF8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 10,
+              fontWeight: 600,
+              color: '#fff',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)',
+            }}
+          >
+            {user?.initials ?? '..'}
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontSize: 11.5, fontWeight: 500, color: C.text1, lineHeight: 1.2 }}>
             {user?.name ?? 'Laden...'}
@@ -434,9 +464,32 @@ function ProfileDropdown() {
       <PortalDropdown open={open} onClose={() => setOpen(false)} anchorRef={ref} width={260}>
         <div style={{ padding: 4 }}>
           {/* User info */}
-          <div style={{ padding: '10px 12px', borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{user?.name}</div>
-            <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{user?.email}</div>
+          <div
+            style={{
+              padding: '10px 12px',
+              borderBottom: `1px solid ${C.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            {logoUrl && (
+              <img
+                src={logoUrl}
+                alt=""
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 6,
+                  objectFit: 'cover',
+                  flexShrink: 0,
+                }}
+              />
+            )}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: C.text1 }}>{user?.name}</div>
+              <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{user?.email}</div>
+            </div>
           </div>
 
           {/* Credits + Plan */}
@@ -561,11 +614,7 @@ function loadQuotaOnce(): Promise<QuotaData | null> {
 
 function CreditsPanel({ data }: { data: QuotaData | null }) {
   if (!data) {
-    return (
-      <div style={{ padding: '12px', fontSize: 10, color: C.text3, textAlign: 'center' }}>
-        Lade Plan…
-      </div>
-    );
+    return <div style={{ padding: '12px', fontSize: 10, color: C.text3, textAlign: 'center' }}>Lade Plan…</div>;
   }
 
   const { tenant, credits } = data;
@@ -658,27 +707,36 @@ function CreditsPanel({ data }: { data: QuotaData | null }) {
       {/* Numbers */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: C.text1, fontFamily: 'ui-monospace, SFMono-Regular, monospace' }}>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: C.text1,
+              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+            }}
+          >
             {remaining.toLocaleString('de-DE')}
           </span>
-          <span style={{ fontSize: 10, color: C.text3, marginLeft: 4 }}>
-            / {total.toLocaleString('de-DE')} Credits
-          </span>
+          <span style={{ fontSize: 10, color: C.text3, marginLeft: 4 }}>/ {total.toLocaleString('de-DE')} Credits</span>
         </div>
-        <span style={{ fontSize: 9, color: C.text3, letterSpacing: '0.04em' }}>
-          {Math.round(percent)}% frei
-        </span>
+        <span style={{ fontSize: 9, color: C.text3, letterSpacing: '0.04em' }}>{Math.round(percent)}% frei</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 8 }}>
         {resetDate && (
-          <span style={{ fontSize: 9.5, color: C.text3, letterSpacing: '0.02em' }}>
-            Reset am {resetDate}
-          </span>
+          <span style={{ fontSize: 9.5, color: C.text3, letterSpacing: '0.02em' }}>Reset am {resetDate}</span>
         )}
         {planInfo.overage && (
-          <span style={{ fontSize: 9, color: overageUsed > 0 ? '#FBBF24' : C.text3, letterSpacing: '0.02em', fontWeight: 500 }}>
-            {planInfo.overage}{overageUsed > 0 ? ` · ${overageUsed} genutzt` : ''}
+          <span
+            style={{
+              fontSize: 9,
+              color: overageUsed > 0 ? '#FBBF24' : C.text3,
+              letterSpacing: '0.02em',
+              fontWeight: 500,
+            }}
+          >
+            {planInfo.overage}
+            {overageUsed > 0 ? ` · ${overageUsed} genutzt` : ''}
           </span>
         )}
       </div>
@@ -726,12 +784,13 @@ function Topbar() {
           alignItems: 'center',
           gap: 0,
           padding: '2px 0',
+          marginLeft: 2,
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <span
             style={{
-              fontSize: 16,
+              fontSize: 26,
               fontWeight: 600,
               color: '#fff',
               letterSpacing: '-0.03em',
@@ -742,7 +801,7 @@ function Topbar() {
           </span>
           <span
             style={{
-              fontSize: 8.5,
+              fontSize: 11.5,
               fontWeight: 600,
               letterSpacing: '0.18em',
               color: 'rgba(165,180,252,0.7)',

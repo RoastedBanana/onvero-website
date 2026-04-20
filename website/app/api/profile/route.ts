@@ -93,8 +93,13 @@ export async function PATCH(req: NextRequest) {
     if (key in body) sanitized[key] = body[key];
   }
 
-  const { error } = await client.from('tenant_ai_profile').update(sanitized).eq('tenant_id', ctx.tenantId);
+  const { data, error } = await client
+    .from('tenant_ai_profile')
+    .update(sanitized)
+    .eq('tenant_id', ctx.tenantId)
+    .select()
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ profile: data });
 }

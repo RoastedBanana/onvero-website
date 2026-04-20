@@ -30,68 +30,150 @@ function formatTimestamp(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-// ─── AUDIO RECORDER HOOK ────────────────────────────────────────────────────
+// ─── DUAL-TRACK AUDIO RECORDER HOOK ────────────────────────────────────────
+// Records mic (Du) and system audio (Gegenüber) as separate tracks.
+// System audio is captured via getDisplayMedia — the user picks a tab/screen.
 
-function useAudioRecorder() {
+interface DualRecorderResult {
+  micBlob: Blob | null;
+  systemBlob: Blob | null;
+}
+
+function useDualAudioRecorder() {
   const [recording, setRecording] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const mediaRecorder = useRef<MediaRecorder | null>(null);
-  const chunks = useRef<Blob[]>([]);
-  const onStopResolve = useRef<((blob: Blob) => void) | null>(null);
+  const [micActive, setMicActive] = useState(false);
+  const [systemActive, setSystemActive] = useState(false);
+  const [micBlob, setMicBlob] = useState<Blob | null>(null);
+  const [systemBlob, setSystemBlob] = useState<Blob | null>(null);
+  const [micUrl, setMicUrl] = useState<string | null>(null);
+  const [systemUrl, setSystemUrl] = useState<string | null>(null);
 
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Pick a supported MIME type
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm')
-          ? 'audio/webm'
-          : '';
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      chunks.current = [];
+  const micRecorder = useRef<MediaRecorder | null>(null);
+  const systemRecorder = useRef<MediaRecorder | null>(null);
+  const micChunks = useRef<Blob[]>([]);
+  const systemChunks = useRef<Blob[]>([]);
+  const micStream = useRef<MediaStream | null>(null);
+  const systemStream = useRef<MediaStream | null>(null);
+  const onStopResolve = useRef<((result: DualRecorderResult) => void) | null>(null);
+  const stoppedCount = useRef(0);
+  const expectedStops = useRef(0);
+  const finalMicBlob = useRef<Blob | null>(null);
+  const finalSystemBlob = useRef<Blob | null>(null);
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.current.push(e.data);
-      };
+  const pickMimeType = () =>
+    MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : '';
 
-      recorder.onstop = () => {
-        const type = recorder.mimeType || 'audio/webm';
-        const blob = new Blob(chunks.current, { type });
-        setAudioBlob(blob);
-        setAudioUrl(URL.createObjectURL(blob));
-        stream.getTracks().forEach((t) => t.stop());
-        // Resolve the promise so stopRecording can return the blob
-        if (onStopResolve.current) {
-          onStopResolve.current(blob);
-          onStopResolve.current = null;
-        }
-      };
-
-      mediaRecorder.current = recorder;
-      recorder.start(1000); // collect chunks every second
-      setRecording(true);
-      showToast('Aufnahme gestartet', 'success');
-    } catch {
-      showToast('Mikrofon-Zugriff verweigert', 'error');
+  const handleRecorderStop = useCallback(() => {
+    stoppedCount.current += 1;
+    if (stoppedCount.current >= expectedStops.current && onStopResolve.current) {
+      onStopResolve.current({ micBlob: finalMicBlob.current, systemBlob: finalSystemBlob.current });
+      onStopResolve.current = null;
     }
   }, []);
 
-  // Returns a promise that resolves with the Blob once recording fully stops
-  const stopRecording = useCallback((): Promise<Blob | null> => {
-    return new Promise((resolve) => {
-      if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
-        onStopResolve.current = resolve;
-        mediaRecorder.current.stop();
-        setRecording(false);
-      } else {
-        resolve(audioBlob);
-      }
-    });
-  }, [audioBlob]);
+  const startRecording = useCallback(async () => {
+    const mimeType = pickMimeType();
+    const opts = mimeType ? { mimeType } : undefined;
 
-  return { recording, audioUrl, audioBlob, startRecording, stopRecording };
+    // 1. Mic recording
+    try {
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStream.current = mic;
+      micChunks.current = [];
+      const rec = new MediaRecorder(mic, opts);
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) micChunks.current.push(e.data);
+      };
+      rec.onstop = () => {
+        const type = rec.mimeType || 'audio/webm';
+        const blob = new Blob(micChunks.current, { type });
+        finalMicBlob.current = blob;
+        setMicBlob(blob);
+        setMicUrl(URL.createObjectURL(blob));
+        mic.getTracks().forEach((t) => t.stop());
+        setMicActive(false);
+        handleRecorderStop();
+      };
+      micRecorder.current = rec;
+      rec.start(1000);
+      setMicActive(true);
+    } catch {
+      showToast('Mikrofon-Zugriff verweigert', 'error');
+      return;
+    }
+
+    // 2. System audio recording (optional — user can skip)
+    try {
+      const display = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+      // We only need audio — stop video track immediately
+      display.getVideoTracks().forEach((t) => t.stop());
+      const audioTracks = display.getAudioTracks();
+      if (audioTracks.length === 0) {
+        showToast('Kein System-Audio ausgewählt — nur Mikrofon wird aufgenommen', 'info');
+      } else {
+        const audioOnly = new MediaStream(audioTracks);
+        systemStream.current = audioOnly;
+        systemChunks.current = [];
+        const sysRec = new MediaRecorder(audioOnly, opts);
+        sysRec.ondataavailable = (e) => {
+          if (e.data.size > 0) systemChunks.current.push(e.data);
+        };
+        sysRec.onstop = () => {
+          const type = sysRec.mimeType || 'audio/webm';
+          const blob = new Blob(systemChunks.current, { type });
+          finalSystemBlob.current = blob;
+          setSystemBlob(blob);
+          setSystemUrl(URL.createObjectURL(blob));
+          audioOnly.getTracks().forEach((t) => t.stop());
+          setSystemActive(false);
+          handleRecorderStop();
+        };
+        // If the user stops sharing, auto-stop system recorder
+        audioTracks[0].onended = () => {
+          if (sysRec.state !== 'inactive') sysRec.stop();
+        };
+        systemRecorder.current = sysRec;
+        sysRec.start(1000);
+        setSystemActive(true);
+      }
+    } catch {
+      // User cancelled display picker — that's fine, mic-only recording
+      showToast('System-Audio übersprungen — nur Mikrofon aktiv', 'info');
+    }
+
+    setRecording(true);
+    stoppedCount.current = 0;
+    finalMicBlob.current = null;
+    finalSystemBlob.current = null;
+    showToast(
+      systemRecorder.current ? 'Dual-Aufnahme gestartet (Mikro + System)' : 'Aufnahme gestartet (nur Mikro)',
+      'success'
+    );
+  }, [handleRecorderStop]);
+
+  const stopRecording = useCallback((): Promise<DualRecorderResult> => {
+    return new Promise((resolve) => {
+      const micActive = micRecorder.current && micRecorder.current.state !== 'inactive';
+      const sysActive = systemRecorder.current && systemRecorder.current.state !== 'inactive';
+      expectedStops.current = (micActive ? 1 : 0) + (sysActive ? 1 : 0);
+
+      if (expectedStops.current === 0) {
+        resolve({ micBlob, systemBlob });
+        return;
+      }
+
+      onStopResolve.current = resolve;
+      if (micActive) micRecorder.current!.stop();
+      if (sysActive) systemRecorder.current!.stop();
+      setRecording(false);
+    });
+  }, [micBlob, systemBlob]);
+
+  return { recording, micActive, systemActive, micBlob, systemBlob, micUrl, systemUrl, startRecording, stopRecording };
 }
 
 // ─── PHASE TRACKER ──────────────────────────────────────────────────────────
@@ -631,7 +713,12 @@ export default function LiveMeeting({
 }: {
   meeting: Meeting;
   lead?: Lead | null;
-  onEnd: (data: { audioBlob: Blob | null; notes: TimestampedNote[]; durationSeconds: number }) => void;
+  onEnd: (data: {
+    audioBlob: Blob | null;
+    systemAudioBlob: Blob | null;
+    notes: TimestampedNote[];
+    durationSeconds: number;
+  }) => void;
 }) {
   const [started, setStarted] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -639,7 +726,8 @@ export default function LiveMeeting({
   const [manualPhaseIndex, setManualPhaseIndex] = useState(0);
   const [notes, setNotes] = useState<TimestampedNote[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { recording, audioUrl, audioBlob, startRecording, stopRecording } = useAudioRecorder();
+  const { recording, micActive, systemActive, micBlob, systemBlob, micUrl, systemUrl, startRecording, stopRecording } =
+    useDualAudioRecorder();
 
   // Timer
   useEffect(() => {
@@ -681,9 +769,14 @@ export default function LiveMeeting({
   };
 
   const handleEnd = async () => {
-    const blob = await stopRecording();
+    const result = await stopRecording();
     setStarted(false);
-    onEnd({ audioBlob: blob, notes, durationSeconds: elapsed });
+    onEnd({
+      audioBlob: result.micBlob,
+      systemAudioBlob: result.systemBlob,
+      notes,
+      durationSeconds: elapsed,
+    });
   };
 
   const addNote = (note: TimestampedNote) => {
@@ -809,28 +902,49 @@ export default function LiveMeeting({
           />
         )}
 
-        {/* Live dot */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: recording && !paused ? '#F87171' : C.text3,
-              animation: recording && !paused ? 'pulse-live 1.5s ease-in-out infinite' : 'none',
-              boxShadow: recording && !paused ? '0 0 12px rgba(248,113,113,0.4)' : 'none',
-            }}
-          />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: recording && !paused ? '#F87171' : C.text3,
-              letterSpacing: '0.08em',
-            }}
-          >
-            {paused ? 'PAUSIERT' : recording ? 'AUFNAHME' : 'GESTOPPT'}
-          </span>
+        {/* Track indicators */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {/* Mic track */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: micActive && !paused ? '#F87171' : C.text3,
+                animation: micActive && !paused ? 'pulse-live 1.5s ease-in-out infinite' : 'none',
+                boxShadow: micActive && !paused ? '0 0 8px rgba(248,113,113,0.4)' : 'none',
+              }}
+            />
+            <span
+              style={{ fontSize: 10, fontWeight: 600, color: micActive ? '#F87171' : C.text3, letterSpacing: '0.06em' }}
+            >
+              MIKRO
+            </span>
+          </div>
+          {/* System audio track */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: systemActive && !paused ? '#38BDF8' : C.text3,
+                animation: systemActive && !paused ? 'pulse-live 1.5s ease-in-out infinite' : 'none',
+                boxShadow: systemActive && !paused ? '0 0 8px rgba(56,189,248,0.4)' : 'none',
+              }}
+            />
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: systemActive ? '#38BDF8' : C.text3,
+                letterSpacing: '0.06em',
+              }}
+            >
+              {systemActive ? 'SYSTEM' : 'SYSTEM —'}
+            </span>
+          </div>
         </div>
 
         {/* Timer: actual vs planned */}
@@ -971,7 +1085,7 @@ export default function LiveMeeting({
       </div>
 
       {/* Audio recorded indicator */}
-      {audioUrl && !recording && (
+      {(micUrl || systemUrl) && !recording && (
         <div
           style={{
             padding: '14px 18px',
@@ -979,14 +1093,29 @@ export default function LiveMeeting({
             background: C.successBg,
             border: `1px solid ${C.successBorder}`,
             display: 'flex',
-            alignItems: 'center',
+            flexDirection: 'column',
             gap: 10,
             animation: 'fadeInUp 0.3s ease both',
           }}
         >
-          <SvgIcon d={ICONS.check} size={14} color={C.success} />
-          <span style={{ fontSize: 13, color: C.success, fontWeight: 500 }}>Aufnahme gespeichert</span>
-          <audio src={audioUrl} controls style={{ marginLeft: 'auto', height: 32 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <SvgIcon d={ICONS.check} size={14} color={C.success} />
+            <span style={{ fontSize: 13, color: C.success, fontWeight: 500 }}>
+              {micUrl && systemUrl ? '2 Spuren aufgenommen' : 'Aufnahme gespeichert'}
+            </span>
+          </div>
+          {micUrl && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 11, color: '#F87171', fontWeight: 600, minWidth: 60 }}>Mikro</span>
+              <audio src={micUrl} controls style={{ flex: 1, height: 32 }} />
+            </div>
+          )}
+          {systemUrl && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 11, color: '#38BDF8', fontWeight: 600, minWidth: 60 }}>System</span>
+              <audio src={systemUrl} controls style={{ flex: 1, height: 32 }} />
+            </div>
+          )}
         </div>
       )}
     </div>

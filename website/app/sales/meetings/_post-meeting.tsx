@@ -132,19 +132,45 @@ type PostTab = 'summary' | 'actions' | 'followup' | 'transcript';
 
 // ─── COMPONENT ──────────────────────────────────────────────────────────────
 
+// ─── HELPERS: merge two timestamped segment arrays into a dialogue ─────────
+
+interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+  speaker: string;
+}
+
+function formatSegmentTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function mergeSegments(micSegments: TranscriptSegment[], sysSegments: TranscriptSegment[]): string {
+  const all = [...micSegments, ...sysSegments].sort((a, b) => a.start - b.start);
+  if (all.length === 0) return '';
+  return all.map((s) => `[${formatSegmentTime(s.start)}] ${s.speaker}: ${s.text}`).join('\n');
+}
+
+// ─── COMPONENT ──────────────────────────────────────────────────────────────
+
 export default function PostMeeting({
   meeting,
   lead,
   notes,
   durationSeconds,
   audioBlob,
+  systemAudioBlob,
 }: {
   meeting: Meeting;
   lead: Lead | null;
   notes: TimestampedNote[];
   durationSeconds: number;
   audioBlob: Blob | null;
+  systemAudioBlob?: Blob | null;
 }) {
+  const hasDualTrack = !!(audioBlob && systemAudioBlob);
   const [activeTab, setActiveTab] = useState<PostTab>('summary');
   const [winLoss, setWinLoss] = useState<WinLoss>(null);
   const [actions, setActions] = useState<ActionItem[]>(generateMockActions(meeting));
@@ -152,6 +178,7 @@ export default function PostMeeting({
   const [emailTo, setEmailTo] = useState(lead?.email ?? '');
   const [emailSubject, setEmailSubject] = useState(`Follow-Up: ${meeting.title}`);
   const [transcribing, setTranscribing] = useState(false);
+  const [transcribeProgress, setTranscribeProgress] = useState('');
   const [transcript, setTranscript] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
@@ -179,6 +206,19 @@ export default function PostMeeting({
     setActions((prev) => prev.map((a) => (a.id === id ? { ...a, done: !a.done } : a)));
   };
 
+  // Transcribe a single blob, returning segments (timestamped) or plain text
+  const transcribeBlob = async (
+    blob: Blob,
+    fileName: string,
+    useSegments: boolean
+  ): Promise<{ text?: string; segments?: { start: number; end: number; text: string }[] }> => {
+    const formData = new FormData();
+    formData.append('audio', blob, fileName);
+    if (useSegments) formData.append('format', 'verbose_json');
+    const res = await fetch('/api/meetings/transcribe', { method: 'POST', body: formData });
+    return res.json();
+  };
+
   const handleTranscribe = async () => {
     if (!audioBlob) {
       showToast('Keine Aufnahme vorhanden', 'error');
@@ -186,25 +226,48 @@ export default function PostMeeting({
     }
     setTranscribing(true);
     try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
+      if (hasDualTrack) {
+        // ── Dual-track: transcribe both with timestamps, then merge ──
+        setTranscribeProgress('Mikrofon-Spur wird transkribiert…');
+        const micResult = await transcribeBlob(audioBlob, 'mic.webm', true);
 
-      const res = await fetch('/api/meetings/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
+        setTranscribeProgress('System-Audio wird transkribiert…');
+        const sysResult = await transcribeBlob(systemAudioBlob!, 'system.webm', true);
 
-      if (data.transcript) {
-        setTranscript(data.transcript);
-        showToast('Transkription erstellt', 'success');
-        // Auto-trigger KI-Analyse
-        triggerAnalysis(data.transcript);
+        const micSegs: TranscriptSegment[] = (micResult.segments ?? []).map((s) => ({
+          ...s,
+          speaker: 'Du',
+        }));
+        const sysSegs: TranscriptSegment[] = (sysResult.segments ?? []).map((s) => ({
+          ...s,
+          speaker: 'Gegenüber',
+        }));
+
+        const merged = mergeSegments(micSegs, sysSegs);
+        setTranscript(merged || 'Keine Sprache erkannt.');
+        setTranscribeProgress('');
+        showToast('Dual-Transkription erstellt', 'success');
+        triggerAnalysis(merged);
       } else {
-        showToast(data.error || 'Transkription fehlgeschlagen', 'error');
+        // ── Single-track: plain text like before ──
+        setTranscribeProgress('Transkription läuft…');
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recording.webm');
+        const res = await fetch('/api/meetings/transcribe', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.transcript) {
+          setTranscript(data.transcript);
+          showToast('Transkription erstellt', 'success');
+          triggerAnalysis(data.transcript);
+        } else {
+          showToast(data.error || 'Transkription fehlgeschlagen', 'error');
+        }
+        setTranscribeProgress('');
       }
     } catch {
       showToast('Transkription fehlgeschlagen', 'error');
+      setTranscribeProgress('');
     } finally {
       setTranscribing(false);
     }
@@ -503,8 +566,23 @@ export default function PostMeeting({
                   }}
                 />
                 <span style={{ fontSize: 12, color: C.accentBright }}>
-                  {transcribing ? 'Transkription läuft…' : 'KI-Analyse läuft…'}
+                  {transcribing ? transcribeProgress || 'Transkription läuft…' : 'KI-Analyse läuft…'}
                 </span>
+                {hasDualTrack && transcribing && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: C.text3,
+                      marginLeft: 4,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      background: 'rgba(56,189,248,0.08)',
+                      border: '1px solid rgba(56,189,248,0.15)',
+                    }}
+                  >
+                    2 Spuren
+                  </span>
+                )}
               </div>
             )}
 

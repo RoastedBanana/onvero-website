@@ -299,7 +299,7 @@ function QuickActions() {
   const actions = [
     { label: 'Lead generieren', icon: ICONS.zap, color: '#818CF8', href: '/sales/generate' },
     { label: 'Meeting planen', icon: ICONS.calendar, color: '#38BDF8', href: '/sales/meetings' },
-    { label: 'Prospects checken', icon: ICONS.target, color: '#34D399', href: '/sales/prospects' },
+    { label: 'Network', icon: ICONS.globe, color: '#34D399', href: '/sales/network' },
     { label: 'Analytics', icon: ICONS.chart, color: '#FBBF24', href: '/sales/analytics' },
   ];
   return (
@@ -404,7 +404,10 @@ export default function SalesV2HomePage() {
     <>
       <Breadcrumbs items={[{ label: 'Onvero Sales', href: '/sales' }, { label: 'Home' }]} />
 
-      <PageHeader title={`Willkommen zurück, ${ACCOUNT.senderName.split(' ')[0]}`} subtitle={ACCOUNT.companyName} />
+      <PageHeader
+        title={`Willkommen zurück, ${ACCOUNT.senderName.split(' ')[0]}`}
+        subtitle={dateStr || ACCOUNT.companyName}
+      />
 
       {/* KPI Metric Cards — real data */}
       {loading ? (
@@ -485,26 +488,44 @@ export default function SalesV2HomePage() {
                 >
                   {i + 1}
                 </span>
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    background: `linear-gradient(135deg, ${C.surface2}, ${C.surface3})`,
-                    border: `1px solid ${C.border}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: C.text2,
-                  }}
-                >
-                  {lead.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')}
-                </div>
+                {lead.logoUrl ? (
+                  <img
+                    src={lead.logoUrl}
+                    alt=""
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      objectFit: 'contain',
+                      background: '#fff',
+                      border: `1px solid ${C.border}`,
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: `linear-gradient(135deg, ${C.surface2}, ${C.surface3})`,
+                      border: `1px solid ${C.border}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: C.text2,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {lead.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)}
+                  </div>
+                )}
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: C.text1 }}>{lead.name}</div>
                   <div style={{ fontSize: 11, color: C.text3, marginTop: 1 }}>
@@ -698,21 +719,37 @@ export default function SalesV2HomePage() {
                 color: 'inherit',
               }}
             >
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: 'rgba(99,102,241,0.08)',
-                  border: '1px solid rgba(99,102,241,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <SvgIcon d={ICONS.mail} size={14} color={C.accent} />
-              </div>
+              {lead.logoUrl ? (
+                <img
+                  src={lead.logoUrl}
+                  alt=""
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    objectFit: 'contain',
+                    background: '#fff',
+                    border: '1px solid rgba(99,102,241,0.15)',
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    background: 'rgba(99,102,241,0.08)',
+                    border: '1px solid rgba(99,102,241,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <SvgIcon d={ICONS.mail} size={14} color={C.accent} />
+                </div>
+              )}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12.5, color: C.text1 }}>
                   {lead.name} ({lead.company}) — Score {lead.score}, E-Mail bereit
