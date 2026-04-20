@@ -135,7 +135,8 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
         padding: '16px 18px',
         cursor: 'pointer',
         fontFamily: TOKENS.font.family,
-        transition: 'border-color 0.15s',
+        transition: 'border-color 0.15s, transform 0.15s',
+        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
@@ -286,19 +287,33 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
             </span>
           </div>
         ) : (
-          <span
-            style={{
-              fontSize: 11,
-              color: TOKENS.color.indigo,
-              fontWeight: 500,
-              padding: '2px 8px',
-              borderRadius: TOKENS.radius.chip,
-              background: TOKENS.color.indigoBgSubtle,
-              border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
-            }}
-          >
-            + Finden
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11, color: TOKENS.color.textMuted }}>Noch keine geladen</span>
+            <div
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: TOKENS.color.indigoBgSubtle,
+                border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={TOKENS.color.indigo}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </div>
+          </div>
         )}
       </div>
     </div>
