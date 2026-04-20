@@ -12,7 +12,9 @@ import TabBar from '../_components/TabBar';
 import type { TabKey } from '../_components/TabBar';
 import UebersichtTab from '../_components/UebersichtTab';
 import ContactsTab from '../_components/ContactsTab';
-import PlaceholderTab from '../_components/PlaceholderTab';
+import AnalyseTab from '../_components/AnalyseTab';
+import OutreachTab from '../_components/OutreachTab';
+import AktivitaetTab from '../_components/AktivitaetTab';
 
 const VALID_TABS: TabKey[] = ['uebersicht', 'analyse', 'kontakte', 'outreach', 'aktivitaet'];
 
@@ -162,7 +164,7 @@ function DetailInner({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { company, loading, error } = useCompany(id);
-  const { contacts } = useContacts(id);
+  const { contacts, refetch: refetchContacts } = useContacts(id);
 
   const tabParam = searchParams.get('tab') ?? 'uebersicht';
   const activeTab: TabKey = VALID_TABS.includes(tabParam as TabKey) ? (tabParam as TabKey) : 'uebersicht';
@@ -218,10 +220,17 @@ function DetailInner({ id }: { id: string }) {
       <TabBar activeTab={activeTab} onTabChange={setTab} contactsCount={contacts.length} />
 
       {activeTab === 'uebersicht' && <UebersichtTab company={company} onOutreachClick={() => setTab('outreach')} />}
-      {activeTab === 'analyse' && <PlaceholderTab title="KI-Analyse" phase="Phase 5" />}
+      {activeTab === 'analyse' && <AnalyseTab company={company} />}
       {activeTab === 'kontakte' && <ContactsTab leadId={company.id} />}
-      {activeTab === 'outreach' && <PlaceholderTab title="Outreach" phase="Phase 5" />}
-      {activeTab === 'aktivitaet' && <PlaceholderTab title="Aktivität" phase="Phase 5" />}
+      {activeTab === 'outreach' && (
+        <OutreachTab
+          company={company}
+          contacts={contacts}
+          refetchContacts={refetchContacts}
+          onTabChange={(t) => setTab(t as TabKey)}
+        />
+      )}
+      {activeTab === 'aktivitaet' && <AktivitaetTab company={company} contacts={contacts} />}
     </>
   );
 }
