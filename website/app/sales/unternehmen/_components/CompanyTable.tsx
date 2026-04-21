@@ -80,7 +80,7 @@ export default function CompanyTable({
               total={companies.length}
               isSelected={selected.has(c.id)}
               onToggle={() => onToggle(c.id)}
-              onClick={() => router.push(`/sales/unternehmen-v2/${c.id}?tab=uebersicht`)}
+              onClick={() => router.push(`/sales/unternehmen/${c.id}?tab=uebersicht`)}
             />
           ))}
         </tbody>

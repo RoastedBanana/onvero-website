@@ -57,19 +57,13 @@ function buildNav(
       items: [
         {
           label: 'Unternehmen',
-          href: '/sales/unternehmen-v2',
-          icon: ICONS.list,
-          badge: 'v2',
-        },
-        {
-          label: 'Unternehmen (legacy)',
-          href: '/sales/leads',
+          href: '/sales/unternehmen',
           icon: ICONS.list,
           badge: `${leadCount}`,
           children: [
-            { label: `Neu heute (${neuHeute})`, href: '/sales/leads?filter=neu-heute' },
-            { label: `Qualifiziert (${qualifiziert})`, href: '/sales/leads?filter=qualifiziert' },
-            { label: `In Kontakt (${inKontakt})`, href: '/sales/leads?filter=kontakt' },
+            { label: `Neu heute (${neuHeute})`, href: '/sales/unternehmen?filter=neu-heute' },
+            { label: `Qualifiziert (${qualifiziert})`, href: '/sales/unternehmen?filter=qualifiziert' },
+            { label: `In Kontakt (${inKontakt})`, href: '/sales/unternehmen?filter=kontakt' },
           ],
         },
         { label: 'People', href: '/sales/people', icon: ICONS.users },

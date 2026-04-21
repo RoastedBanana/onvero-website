@@ -791,7 +791,7 @@ export default function NetworkPage() {
           onRemove={() => removeNode(node.id)}
           onToggleDropdown={() => setDropdownNodeId((p) => p === node.id ? null : node.id)}
           onSelectCategory={(cat) => handleSelectCategory(node.id, cat)}
-          onDoubleClick={() => { if (node.lead_id) router.push(`/sales/leads/${node.lead_id}`); }}
+          onDoubleClick={() => { if (node.lead_id) router.push(`/sales/unternehmen/${node.lead_id}`); }}
         />
       ))}
     </div>

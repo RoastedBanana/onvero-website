@@ -1298,7 +1298,7 @@ export default function GeneratePage() {
       <Breadcrumbs
         items={[
           { label: 'Onvero Sales', href: '/sales' },
-          { label: 'Leads', href: '/sales/leads' },
+          { label: 'Leads', href: '/sales/unternehmen' },
           { label: 'Lead Generator' },
         ]}
       />
@@ -1316,7 +1316,7 @@ export default function GeneratePage() {
           const profilePct = Math.round(
             ((PROFILE_REQUIRED.length - profileMissing.length) / PROFILE_REQUIRED.length) * 100
           );
-          const canSubmit = form.freetext.length >= 100;
+          const canSubmit = form.freetext.trim().length > 0;
 
           return (
             <div style={{ animation: 'fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both' }}>
@@ -1509,7 +1509,21 @@ export default function GeneratePage() {
                     marginTop: 14,
                   }}
                 >
-                  <span style={{ fontSize: 11, color: C.text3 }}>{form.freetext.length}/100 Zeichen minimum</span>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 11,
+                      color: C.text3,
+                      maxWidth: '70%',
+                    }}
+                  >
+                    <SvgIcon d={ICONS.spark} size={11} color={C.text3} />
+                    <span>
+                      Mehr Kontext = <strong style={{ color: C.text2, fontWeight: 500 }}>präzisere Ergebnisse</strong> · Zielgruppe, Branche, Standort, Pain Points, Größe
+                    </span>
+                  </span>
 
                   <button
                     onClick={handleSubmit}
@@ -1537,6 +1551,24 @@ export default function GeneratePage() {
                   >
                     <SvgIcon d={ICONS.spark} size={15} />
                     Generate &rarr;
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: '0.04em',
+                        padding: '2px 7px',
+                        borderRadius: 999,
+                        background: canSubmit ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.04)',
+                        color: canSubmit ? '#fff' : C.text3,
+                        border: canSubmit ? '1px solid rgba(255,255,255,0.22)' : `1px solid ${C.border}`,
+                        marginLeft: 4,
+                      }}
+                    >
+                      5 Cr
+                    </span>
                   </button>
                 </div>
               </div>
@@ -2340,7 +2372,7 @@ export default function GeneratePage() {
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             <Link
-              href="/sales/leads"
+              href="/sales/unternehmen"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

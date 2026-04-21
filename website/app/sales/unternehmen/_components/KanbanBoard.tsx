@@ -438,7 +438,7 @@ export default function KanbanBoard({
                   isDragging={dragId === c.id}
                   onDragStart={() => setDragId(c.id)}
                   onDragEnd={() => setDragId(null)}
-                  onClick={() => router.push(`/sales/unternehmen-v2/${c.id}?tab=uebersicht`)}
+                  onClick={() => router.push(`/sales/unternehmen/${c.id}?tab=uebersicht`)}
                 />
               ))}
 
