@@ -86,6 +86,7 @@ export function useCompanies() {
   const fetchCompanies = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setCompanies([]);
     try {
       const tid = await getTenantId();
       if (!tid) {
@@ -95,8 +96,7 @@ export function useCompanies() {
 
       const sb = getSupabase();
 
-      // Fetch leads — select only columns used by the list view
-      // (avoids heavy jsonb like raw_apollo_organization)
+      // Columns used by the list view (avoids heavy jsonb like raw_apollo_organization)
       const LIST_COLS = [
         'id', 'tenant_id', 'company_name', 'website', 'city', 'country', 'industry',
         'status', 'source', 'fit_score', 'tier', 'is_excluded', 'created_at', 'updated_at',
@@ -105,47 +105,72 @@ export function useCompanies() {
         'linkedin_url', 'company_description', 'target_customers',
       ].join(', ');
 
-      const { data, error: queryError } = await sb
-        .from('leads')
-        .select(LIST_COLS)
-        .eq('tenant_id', tid)
-        .order('fit_score', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false })
-        .limit(200);
+      const CHUNK_SIZE = 20;
+      const MAX_LEADS = 200;
 
-      if (queryError) {
-        console.error('[useCompanies] query error:', JSON.stringify(queryError), queryError);
-        setError(queryError.message || 'Unbekannter Fehler beim Laden der Unternehmen');
+      // Helper: enrich a batch with contact counts and append to state
+      async function loadChunk(from: number, to: number, isFirst: boolean) {
+        const { data, error: queryError } = await sb
+          .from('leads')
+          .select(LIST_COLS)
+          .eq('tenant_id', tid!)
+          .order('fit_score', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
+          .range(from, to);
+
+        if (queryError) {
+          console.error('[useCompanies] chunk error:', JSON.stringify(queryError), queryError);
+          if (isFirst) setError(queryError.message || 'Unbekannter Fehler beim Laden der Unternehmen');
+          return 0;
+        }
+
+        const rows = data ?? [];
+        if (rows.length === 0) return 0;
+
+        // Fetch contact counts for this chunk only
+        const ids = rows.map((r: Record<string, unknown>) => r.id as string);
+        const { data: contactRows } = await sb
+          .from('lead_contacts')
+          .select('lead_id')
+          .in('lead_id', ids);
+        const countByLead: Record<string, number> = {};
+        (contactRows ?? []).forEach((row: { lead_id: string }) => {
+          countByLead[row.lead_id] = (countByLead[row.lead_id] ?? 0) + 1;
+        });
+
+        const mapped: CompanyWithContacts[] = rows.map((row: Record<string, unknown>) => ({
+          ...row,
+          enriched_contacts_count: countByLead[row.id as string] ?? 0,
+        } as CompanyWithContacts));
+
+        // Append — user sees rows progressively
+        setCompanies((prev) => [...prev, ...mapped]);
+
+        // First chunk is enough to stop the skeleton; subsequent chunks append
+        if (isFirst) setLoading(false);
+
+        return rows.length;
+      }
+
+      // Load first chunk synchronously (user sees first 20 asap)
+      const firstLen = await loadChunk(0, CHUNK_SIZE - 1, true);
+
+      // If fewer than a full chunk returned, we're done
+      if (firstLen < CHUNK_SIZE) {
         setLoading(false);
         return;
       }
 
-      // Fetch contact counts in parallel (separate query — avoids RLS/join issues)
-      const leadIds = (data ?? []).map((r: Record<string, unknown>) => r.id as string);
-      let contactCountByLead: Record<string, number> = {};
-      if (leadIds.length > 0) {
-        const { data: contactRows } = await sb
-          .from('lead_contacts')
-          .select('lead_id')
-          .in('lead_id', leadIds);
-        if (contactRows) {
-          contactCountByLead = contactRows.reduce((acc: Record<string, number>, row: { lead_id: string }) => {
-            acc[row.lead_id] = (acc[row.lead_id] ?? 0) + 1;
-            return acc;
-          }, {});
-        }
+      // Continue loading the rest in the background
+      let offset = CHUNK_SIZE;
+      while (offset < MAX_LEADS) {
+        const got = await loadChunk(offset, offset + CHUNK_SIZE - 1, false);
+        if (got < CHUNK_SIZE) break;
+        offset += CHUNK_SIZE;
       }
-
-      const mapped: CompanyWithContacts[] = (data ?? []).map((row: Record<string, unknown>) => {
-        const id = row.id as string;
-        return { ...row, enriched_contacts_count: contactCountByLead[id] ?? 0 } as CompanyWithContacts;
-      });
-
-      setCompanies(mapped);
     } catch (err) {
       console.error('[useCompanies] failed:', err);
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
-    } finally {
       setLoading(false);
     }
   }, []);

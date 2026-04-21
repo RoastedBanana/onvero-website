@@ -22,6 +22,7 @@ type NavItem = {
   icon: string;
   badge?: string;
   children?: { label: string; href: string }[];
+  comingSoon?: boolean;
 };
 
 type NavSection = {
@@ -49,7 +50,7 @@ function buildNav(
         { label: 'Lead Generator', href: '/sales/generate', icon: ICONS.spark },
         // { label: 'Outreach-Ideen', href: '/sales/outreach', icon: ICONS.mail },
         // { label: 'Monitoring', href: '/sales/monitoring', icon: ICONS.eye },
-        { label: 'Network', href: '/sales/network', icon: ICONS.network },
+        { label: 'Network', href: '/sales/network', icon: ICONS.network, comingSoon: true },
       ],
     },
     {
@@ -963,6 +964,52 @@ function Sidebar() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {section.items.map((item) => {
               const active = isActive(item.href);
+              if (item.comingSoon) {
+                return (
+                  <div key={item.label}>
+                    <div
+                      aria-disabled="true"
+                      title="Coming Soon"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        background: 'transparent',
+                        color: C.text3,
+                        fontSize: 12.5,
+                        fontWeight: 400,
+                        position: 'relative',
+                        fontFamily: 'inherit',
+                        cursor: 'not-allowed',
+                        opacity: 0.5,
+                        userSelect: 'none',
+                      }}
+                    >
+                      <SvgIcon d={item.icon} color={C.text3} />
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '2px 7px',
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: 4,
+                          fontSize: 9,
+                          fontWeight: 600,
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                          color: C.text3,
+                        }}
+                      >
+                        Bald
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={item.label}>
                   <Link
