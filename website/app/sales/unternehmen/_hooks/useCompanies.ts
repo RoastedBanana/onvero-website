@@ -95,7 +95,7 @@ export function useCompanies() {
 
       const sb = getSupabase();
 
-      // Fetch leads with contact count — select only columns used by the list view
+      // Fetch leads — select only columns used by the list view
       // (avoids heavy jsonb like raw_apollo_organization)
       const LIST_COLS = [
         'id', 'tenant_id', 'company_name', 'website', 'city', 'country', 'industry',
@@ -107,24 +107,38 @@ export function useCompanies() {
 
       const { data, error: queryError } = await sb
         .from('leads')
-        .select(`${LIST_COLS}, lead_contacts(count)`)
+        .select(LIST_COLS)
         .eq('tenant_id', tid)
         .order('fit_score', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(200);
 
       if (queryError) {
-        console.error('[useCompanies] query error:', queryError);
-        setError(queryError.message);
+        console.error('[useCompanies] query error:', JSON.stringify(queryError), queryError);
+        setError(queryError.message || 'Unbekannter Fehler beim Laden der Unternehmen');
         setLoading(false);
         return;
       }
 
+      // Fetch contact counts in parallel (separate query — avoids RLS/join issues)
+      const leadIds = (data ?? []).map((r: Record<string, unknown>) => r.id as string);
+      let contactCountByLead: Record<string, number> = {};
+      if (leadIds.length > 0) {
+        const { data: contactRows } = await sb
+          .from('lead_contacts')
+          .select('lead_id')
+          .in('lead_id', leadIds);
+        if (contactRows) {
+          contactCountByLead = contactRows.reduce((acc: Record<string, number>, row: { lead_id: string }) => {
+            acc[row.lead_id] = (acc[row.lead_id] ?? 0) + 1;
+            return acc;
+          }, {});
+        }
+      }
+
       const mapped: CompanyWithContacts[] = (data ?? []).map((row: Record<string, unknown>) => {
-        const contactArr = row.lead_contacts as { count: number }[] | undefined;
-        const contactCount = contactArr?.[0]?.count ?? 0;
-        const { lead_contacts: _, ...rest } = row;
-        return { ...rest, enriched_contacts_count: contactCount } as CompanyWithContacts;
+        const id = row.id as string;
+        return { ...row, enriched_contacts_count: contactCountByLead[id] ?? 0 } as CompanyWithContacts;
       });
 
       setCompanies(mapped);
