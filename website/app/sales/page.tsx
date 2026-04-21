@@ -456,7 +456,7 @@ export default function SalesV2HomePage() {
             {topLeads.map((lead, i) => (
               <Link
                 key={lead.id}
-                href={`/sales/leads/${lead.id}`}
+                href={`/sales/unternehmen-v2/${lead.id}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -701,7 +701,7 @@ export default function SalesV2HomePage() {
           {topUnanswered.map((lead, i) => (
             <Link
               key={lead.id}
-              href={`/sales/leads/${lead.id}`}
+              href={`/sales/unternehmen-v2/${lead.id}`}
               className="s-bento"
               style={{
                 display: 'flex',

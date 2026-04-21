@@ -2,8 +2,79 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { C, SvgIcon, ICONS, StatusBadge, ScoreBar } from '../_shared';
-import { useLeads } from '../_use-leads';
+import { useCompanies } from '../unternehmen-v2/_hooks/useCompanies';
+import type { Company } from '../unternehmen-v2/_types';
 import type { Lead } from '../_lead-data';
+
+// ─── MAP v2 Company → legacy Lead shape (keeps _create-meeting unchanged) ───
+
+function mapStatus(s: string | null): Lead['status'] {
+  if (s === 'contacted') return 'In Kontakt';
+  if (s === 'qualified') return 'Qualifiziert';
+  if (s === 'lost') return 'Verloren';
+  return 'Neu';
+}
+
+function companyToLead(c: Company): Lead {
+  const name = c.company_name ?? '';
+  return {
+    id: c.id,
+    company: name,
+    name,
+    city: c.city ?? '',
+    country: c.country ?? null,
+    status: mapStatus(c.status),
+    lastActivity: c.updated_at ?? c.created_at,
+    industry: c.industry ?? c.apollo_industry ?? '',
+    employees: c.estimated_num_employees ? String(c.estimated_num_employees) : '',
+    website: c.website,
+    linkedinUrl: c.linkedin_url,
+    logoUrl: c.logo_url,
+    primaryDomain: c.primary_domain,
+    foundedYear: c.founded_year,
+    annualRevenuePrinted: c.annual_revenue_printed,
+    companySize: null,
+    companyType: null,
+    tier: c.tier,
+    summary: c.summary,
+    strengths: c.strengths ?? [],
+    concerns: c.concerns ?? [],
+    nextAction: c.next_action,
+    tags: c.tags ?? [],
+    technologyNames: c.technology_names ?? [],
+    source: c.source ?? '',
+    createdAt: c.created_at,
+    phone: c.phone,
+    companyDescription: c.company_description,
+    usp: c.usp,
+    coreServices: c.core_services,
+    targetCustomers: c.target_customers,
+    painPoints: c.pain_points,
+    automationPotential: c.automation_potential,
+    automationOpportunities: c.automation_opportunities,
+    growthSignals: c.growth_signals,
+    companySizeSignals: c.company_size_signals,
+    toneOfVoice: c.tone_of_voice,
+    personalizationHooks: c.personalization_hooks,
+    websiteHighlights: c.website_highlights,
+    techStack: c.tech_stack,
+    partnerCustomerUrls: c.partner_customer_urls,
+    websiteScrapedAt: c.website_scraped_at,
+    followUpContext: c.follow_up_context,
+    twitterUrl: c.twitter_url,
+    facebookUrl: c.facebook_url,
+    score: c.fit_score,
+    fitScore: c.fit_score,
+    contactQualityScore: null,
+    decisionMakerScore: null,
+    scoreBreakdown: [],
+    industryApollo: c.apollo_industry,
+    apolloOrganizationId: c.apollo_organization_id,
+    aiSummary: c.summary,
+    aiTags: c.tags ?? [],
+    isExcluded: c.is_excluded ?? false,
+  } as Lead;
+}
 
 // ─── LEAD PREVIEW CARD ──────────────────────────────────────────────────────
 
@@ -201,7 +272,8 @@ export default function LeadPicker({
   selectedLeadId: string | null;
   onSelect: (lead: Lead | null) => void;
 }) {
-  const { leads, loading } = useLeads();
+  const { companies, loading } = useCompanies();
+  const leads = companies.map(companyToLead);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

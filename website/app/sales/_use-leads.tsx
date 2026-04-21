@@ -141,13 +141,86 @@ async function initLeadsStore() {
     }
     setStore({ tenantId: tid });
 
-    const supabase = getSupabase();
+    // Bypass Web Locks deadlock (supabase-js #2013/#2111) by querying PostgREST
+    // directly via fetch — supabase-js auth machinery never runs, no locks acquired.
+    const stored = readSessionFromStorage();
+    if (!stored) {
+      console.warn('[useLeads] no session in localStorage, cannot fetch leads');
+      setStore({ loading: false });
+      return;
+    }
 
-    // Discover actual columns — select all to handle schema changes
-    const result = (await withTimeout(
-      supabase.from('leads').select('*').eq('tenant_id', tid).order('created_at', { ascending: false }).limit(200),
+    // Columns verified against DB schema (2026-04-21)
+    const LEAD_COLS = [
+      'id',
+      'tenant_id',
+      'company_name',
+      'phone',
+      'city',
+      'country',
+      'status',
+      'source',
+      'created_at',
+      'industry',
+      'apollo_industry',
+      'company_size',
+      'estimated_num_employees',
+      'website',
+      'linkedin_url',
+      'twitter_url',
+      'facebook_url',
+      'logo_url',
+      'primary_domain',
+      'founded_year',
+      'annual_revenue_printed',
+      'company_type',
+      'tier',
+      'summary',
+      'strengths',
+      'concerns',
+      'next_action',
+      'tags',
+      'technology_names',
+      'company_description',
+      'usp',
+      'core_services',
+      'target_customers',
+      'pain_points',
+      'automation_potential',
+      'automation_opportunities',
+      'growth_signals',
+      'company_size_signals',
+      'tone_of_voice',
+      'personalization_hooks',
+      'website_highlights',
+      'tech_stack',
+      'partner_customer_urls',
+      'website_scraped_at',
+      'follow_up_context',
+      'fit_score',
+      'is_excluded',
+      'apollo_organization_id',
+    ].join(',');
+
+    const leadsUrl =
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/leads` +
+      `?select=${encodeURIComponent(LEAD_COLS)}` +
+      `&tenant_id=eq.${encodeURIComponent(tid)}` +
+      `&order=created_at.desc&limit=200`;
+
+    const res = await withTimeout(
+      fetch(leadsUrl, {
+        headers: {
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          Authorization: `Bearer ${stored.accessToken}`,
+        },
+      }),
       10000
-    )) as { data: DbLead[] | null; error: { message: string } | null };
+    );
+
+    const result: { data: DbLead[] | null; error: { message: string } | null } = res.ok
+      ? { data: await res.json(), error: null }
+      : { data: null, error: { message: await res.text() } };
 
     if (result.error) {
       console.error('[useLeads] query failed:', result.error.message);
@@ -214,7 +287,11 @@ type DbLead = Record<string, unknown>;
 function parseFollowUpContext(raw: any): Lead['followUpContext'] {
   if (!raw) return null;
   if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch { return null; }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
   return raw as Lead['followUpContext'];
 }
@@ -297,11 +374,7 @@ function dbToLead(r: DbLead): Lead {
     apolloOrganizationId: (r.apollo_organization_id as string) ?? null,
     // Compat: map fitScore to score for UI components
     score: fitScore ?? null,
-    scoreBreakdown: fitScore
-      ? [
-          { label: 'Unternehmensfit', value: fitScore ?? 0, max: 100 },
-        ]
-      : [],
+    scoreBreakdown: fitScore ? [{ label: 'Unternehmensfit', value: fitScore ?? 0, max: 100 }] : [],
     name: company,
     // Legacy compat — empty defaults
     firstName: '',
@@ -335,7 +408,6 @@ function dbToLead(r: DbLead): Lead {
     hasNewsSignal: false,
   };
 }
-
 
 function timeAgo(dateStr: string): string {
   const d = new Date(dateStr);

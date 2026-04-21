@@ -10,13 +10,12 @@ import Breadcrumbs from '../_components/Breadcrumbs';
 import HeroCard from '../_components/HeroCard';
 import TabBar from '../_components/TabBar';
 import type { TabKey } from '../_components/TabBar';
-import UebersichtTab from '../_components/UebersichtTab';
 import ContactsTab from '../_components/ContactsTab';
 import AnalyseTab from '../_components/AnalyseTab';
 import OutreachTab from '../_components/OutreachTab';
 import AktivitaetTab from '../_components/AktivitaetTab';
 
-const VALID_TABS: TabKey[] = ['uebersicht', 'analyse', 'kontakte', 'outreach', 'aktivitaet'];
+const VALID_TABS: TabKey[] = ['analyse', 'kontakte', 'outreach', 'aktivitaet'];
 
 // ─── SKELETON ───────────────────────────────────────────────────────────────
 
@@ -178,8 +177,8 @@ function DetailInner({ id }: { id: string }) {
   const prevId = currentIdx > 0 ? navIds[currentIdx - 1] : null;
   const nextId = currentIdx !== -1 && currentIdx < navIds.length - 1 ? navIds[currentIdx + 1] : null;
 
-  const tabParam = searchParams.get('tab') ?? 'uebersicht';
-  const activeTab: TabKey = VALID_TABS.includes(tabParam as TabKey) ? (tabParam as TabKey) : 'uebersicht';
+  const tabParam = searchParams.get('tab') ?? 'analyse';
+  const activeTab: TabKey = VALID_TABS.includes(tabParam as TabKey) ? (tabParam as TabKey) : 'analyse';
 
   function setTab(tab: TabKey) {
     router.replace(`/sales/unternehmen-v2/${id}?tab=${tab}`);
@@ -376,10 +375,9 @@ function DetailInner({ id }: { id: string }) {
 
       <TabBar activeTab={activeTab} onTabChange={setTab} contactsCount={contacts.length} />
 
-      {activeTab === 'uebersicht' && (
-        <UebersichtTab company={company} onOutreachClick={() => setTab('outreach')} onStatusChange={updateStatus} />
+      {activeTab === 'analyse' && (
+        <AnalyseTab company={company} onOutreachClick={() => setTab('outreach')} onStatusChange={updateStatus} />
       )}
-      {activeTab === 'analyse' && <AnalyseTab company={company} />}
       {activeTab === 'kontakte' && <ContactsTab leadId={company.id} />}
       {activeTab === 'outreach' && (
         <OutreachTab

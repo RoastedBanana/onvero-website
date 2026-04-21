@@ -2,11 +2,10 @@
 
 import { TOKENS } from '../_tokens';
 
-export type TabKey = 'uebersicht' | 'analyse' | 'kontakte' | 'outreach' | 'aktivitaet';
+export type TabKey = 'analyse' | 'kontakte' | 'outreach' | 'aktivitaet';
 
 const TABS: { key: TabKey; label: string; badgeKey?: 'contacts' }[] = [
-  { key: 'uebersicht', label: 'Übersicht' },
-  { key: 'analyse', label: 'KI-Analyse' },
+  { key: 'analyse', label: 'Business Analyse' },
   { key: 'kontakte', label: 'Ansprechpartner', badgeKey: 'contacts' },
   { key: 'outreach', label: 'Outreach' },
   { key: 'aktivitaet', label: 'Aktivität' },
