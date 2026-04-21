@@ -57,7 +57,7 @@ export default function UnternehmenV2Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view');
-  const { companies, loading, refetch, updateStatus } = useCompanies();
+  const { companies, loading, loadingMore, refetch, updateStatus } = useCompanies();
 
   // View state — URL param wins, then localStorage, then default 'cards'
   const [view, setView] = useState<'cards' | 'table' | 'kanban'>(() => {
@@ -217,8 +217,44 @@ export default function UnternehmenV2Page() {
           >
             Unternehmen
           </h1>
-          <p style={{ fontSize: 13, color: TOKENS.color.textTertiary, margin: '4px 0 0' }}>
-            {loading ? 'Laden...' : `${companies.length} Unternehmen`}
+          <p style={{ fontSize: 13, color: TOKENS.color.textTertiary, margin: '4px 0 0', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            {loading ? (
+              'Laden...'
+            ) : (
+              <>
+                <span>{companies.length} Unternehmen</span>
+                {loadingMore && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                      background: 'rgba(99,102,241,0.12)',
+                      border: '1px solid rgba(99,102,241,0.22)',
+                      color: '#A5B4FC',
+                      fontSize: 10.5,
+                      fontWeight: 500,
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        border: '1.5px solid rgba(165,180,252,0.25)',
+                        borderTopColor: '#A5B4FC',
+                        animation: 'spinLoader 0.8s linear infinite',
+                        display: 'inline-block',
+                      }}
+                    />
+                    lädt weitere…
+                  </span>
+                )}
+              </>
+            )}
           </p>
         </div>
 

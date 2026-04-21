@@ -68,7 +68,7 @@ function buildNav(
           ],
         },
         { label: 'People', href: '/sales/people', icon: ICONS.users },
-        { label: 'Kunden', href: '/sales/kunden', icon: ICONS.check },
+        { label: 'Kunden', href: '/sales/kunden', icon: ICONS.check, comingSoon: true },
       ],
     },
     {
