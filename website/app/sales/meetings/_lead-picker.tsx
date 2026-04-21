@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { C, SvgIcon, ICONS, StatusBadge, ScoreBar } from '../_shared';
-import { useCompanies } from '../unternehmen-v2/_hooks/useCompanies';
-import type { Company } from '../unternehmen-v2/_types';
+import { useCompanies } from '../unternehmen/_hooks/useCompanies';
+import type { Company } from '../unternehmen/_types';
 import type { Lead } from '../_lead-data';
 
 // ─── MAP v2 Company → legacy Lead shape (keeps _create-meeting unchanged) ───
