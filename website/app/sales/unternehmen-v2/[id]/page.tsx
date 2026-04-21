@@ -1,6 +1,6 @@
 'use client';
 
-import { use, Suspense } from 'react';
+import { use, Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TOKENS } from '../_tokens';
 import { fmt } from '../_lib/formatters';
@@ -163,8 +163,20 @@ function ErrorCard({ message, onBack }: { message: string; onBack: () => void })
 function DetailInner({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { company, loading, error } = useCompany(id);
+  const { company, loading, error, updateStatus } = useCompany(id);
   const { contacts, refetch: refetchContacts } = useContacts(id);
+
+  const [navIds, setNavIds] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('unternehmen-v2-nav-ids');
+      if (raw) setNavIds(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const currentIdx = navIds.indexOf(id);
+  const prevId = currentIdx > 0 ? navIds[currentIdx - 1] : null;
+  const nextId = currentIdx !== -1 && currentIdx < navIds.length - 1 ? navIds[currentIdx + 1] : null;
 
   const tabParam = searchParams.get('tab') ?? 'uebersicht';
   const activeTab: TabKey = VALID_TABS.includes(tabParam as TabKey) ? (tabParam as TabKey) : 'uebersicht';
@@ -207,19 +219,166 @@ function DetailInner({ id }: { id: string }) {
 
   return (
     <>
-      <Breadcrumbs
-        segments={[
-          { label: 'Onvero Sales', href: '/sales' },
-          { label: 'Unternehmen', href: '/sales/unternehmen-v2' },
-          { label: fmt.text(company.company_name, 'Unbenannt') },
-        ]}
-      />
+      {/* Top nav row: back button + prev/next */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        {/* Back */}
+        <button
+          onClick={() => router.back()}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px 6px 8px',
+            borderRadius: TOKENS.radius.button,
+            border: `1px solid ${TOKENS.color.borderSubtle}`,
+            background: 'transparent',
+            color: TOKENS.color.textTertiary,
+            fontSize: 13,
+            fontWeight: 400,
+            cursor: 'pointer',
+            fontFamily: TOKENS.font.family,
+            transition: 'border-color 0.15s, color 0.15s',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = TOKENS.color.textSecondary;
+            (e.currentTarget as HTMLButtonElement).style.borderColor = TOKENS.color.borderDefault;
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.color = TOKENS.color.textTertiary;
+            (e.currentTarget as HTMLButtonElement).style.borderColor = TOKENS.color.borderSubtle;
+          }}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          Zurück
+        </button>
 
-      <HeroCard company={company} contactsCount={contacts.length} onOutreachClick={() => setTab('outreach')} />
+        {/* Prev / Next */}
+        {navIds.length > 0 && currentIdx !== -1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: TOKENS.font.family }}>
+            <button
+              onClick={() => prevId && router.push(`/sales/unternehmen-v2/${prevId}`)}
+              disabled={!prevId}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 30,
+                height: 30,
+                borderRadius: TOKENS.radius.button,
+                border: `1px solid ${TOKENS.color.borderSubtle}`,
+                background: 'transparent',
+                color: prevId ? TOKENS.color.textTertiary : TOKENS.color.textMuted,
+                cursor: prevId ? 'pointer' : 'default',
+                opacity: prevId ? 1 : 0.35,
+                transition: 'border-color 0.15s, color 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                if (prevId) {
+                  (e.currentTarget as HTMLButtonElement).style.color = TOKENS.color.textSecondary;
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = TOKENS.color.borderDefault;
+                }
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color = prevId
+                  ? TOKENS.color.textTertiary
+                  : TOKENS.color.textMuted;
+                (e.currentTarget as HTMLButtonElement).style.borderColor = TOKENS.color.borderSubtle;
+              }}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <span
+              style={{
+                fontSize: 12,
+                color: TOKENS.color.textMuted,
+                minWidth: 52,
+                textAlign: 'center',
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {currentIdx + 1} / {navIds.length}
+            </span>
+            <button
+              onClick={() => nextId && router.push(`/sales/unternehmen-v2/${nextId}`)}
+              disabled={!nextId}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 30,
+                height: 30,
+                borderRadius: TOKENS.radius.button,
+                border: `1px solid ${TOKENS.color.borderSubtle}`,
+                background: 'transparent',
+                color: nextId ? TOKENS.color.textTertiary : TOKENS.color.textMuted,
+                cursor: nextId ? 'pointer' : 'default',
+                opacity: nextId ? 1 : 0.35,
+                transition: 'border-color 0.15s, color 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                if (nextId) {
+                  (e.currentTarget as HTMLButtonElement).style.color = TOKENS.color.textSecondary;
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = TOKENS.color.borderDefault;
+                }
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color = nextId
+                  ? TOKENS.color.textTertiary
+                  : TOKENS.color.textMuted;
+                (e.currentTarget as HTMLButtonElement).style.borderColor = TOKENS.color.borderSubtle;
+              }}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+
+      <HeroCard
+        company={company}
+        contactsCount={contacts.length}
+        onOutreachClick={() => setTab('outreach')}
+        onStatusChange={updateStatus}
+      />
 
       <TabBar activeTab={activeTab} onTabChange={setTab} contactsCount={contacts.length} />
 
-      {activeTab === 'uebersicht' && <UebersichtTab company={company} onOutreachClick={() => setTab('outreach')} />}
+      {activeTab === 'uebersicht' && (
+        <UebersichtTab company={company} onOutreachClick={() => setTab('outreach')} onStatusChange={updateStatus} />
+      )}
       {activeTab === 'analyse' && <AnalyseTab company={company} />}
       {activeTab === 'kontakte' && <ContactsTab leadId={company.id} />}
       {activeTab === 'outreach' && (

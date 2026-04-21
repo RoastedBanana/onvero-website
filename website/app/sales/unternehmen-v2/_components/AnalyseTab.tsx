@@ -20,7 +20,7 @@ function SectionHeader({ label, dotColor, count }: { label: string; dotColor: st
       <div style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
       <span
         style={{
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 600,
           letterSpacing: '0.06em',
           color: TOKENS.color.textMuted,
@@ -32,7 +32,7 @@ function SectionHeader({ label, dotColor, count }: { label: string; dotColor: st
       {count !== undefined && count > 0 && (
         <span
           style={{
-            fontSize: 9,
+            fontSize: 10,
             fontWeight: 500,
             padding: '1px 6px',
             borderRadius: 4,
@@ -89,7 +89,7 @@ function CardShell({ children, borderLeft }: { children: React.ReactNode; border
 
 export default function AnalyseTab({ company }: { company: Company }) {
   const [keywordsOpen, setKeywordsOpen] = useState(false);
-  const industry = company.apollo_industry ?? company.industry;
+  const industry = fmt.industry(company.apollo_industry ?? company.industry);
   const painPoints = sanitizeArrayForDisplay(company.pain_points);
   const hooks = sanitizeArrayForDisplay(company.personalization_hooks);
   const coreServices = sanitizeArrayForDisplay(company.core_services);
@@ -142,7 +142,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
           <div>
             <span
               style={{
-                fontSize: 9,
+                fontSize: 10,
                 fontWeight: 500,
                 letterSpacing: '0.06em',
                 color: TOKENS.color.textMuted,
@@ -169,7 +169,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {painPoints.map((p, i) => (
                 <CardShell key={i} borderLeft={TOKENS.color.amber}>
-                  <span style={{ fontSize: 13, color: TOKENS.color.textSecondary, lineHeight: 1.5 }}>{p}</span>
+                  <span style={{ fontSize: 14, color: TOKENS.color.textSecondary, lineHeight: 1.5 }}>{p}</span>
                 </CardShell>
               ))}
             </div>
@@ -185,7 +185,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {hooks.map((h, i) => (
                 <CardShell key={i} borderLeft={TOKENS.color.indigo}>
-                  <span style={{ fontSize: 13, color: TOKENS.color.textSecondary, lineHeight: 1.5 }}>{h}</span>
+                  <span style={{ fontSize: 14, color: TOKENS.color.textSecondary, lineHeight: 1.5 }}>{h}</span>
                 </CardShell>
               ))}
             </div>
@@ -259,7 +259,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
             style={{
               paddingLeft: 14,
               borderLeft: `2px solid ${TOKENS.color.indigo}`,
-              fontSize: 13.5,
+              fontSize: 14.5,
               color: TOKENS.color.textSecondary,
               lineHeight: 1.6,
             }}
@@ -283,7 +283,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 5,
-                  fontSize: 12,
+                  fontSize: 13,
                   padding: '5px 12px',
                   borderRadius: TOKENS.radius.pill,
                   background: TOKENS.color.indigoBgSubtle,
@@ -321,7 +321,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
           }}
         >
           <SectionHeader label="Zielkunden" dotColor={TOKENS.color.textTertiary} />
-          <p style={{ fontSize: 13.5, color: TOKENS.color.textSecondary, lineHeight: 1.6, margin: 0 }}>
+          <p style={{ fontSize: 14.5, color: TOKENS.color.textSecondary, lineHeight: 1.6, margin: 0 }}>
             {cleanTargetCustomers}
           </p>
         </div>
@@ -345,7 +345,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
           {cleanWebHighlights && (
             <>
               <SectionHeader label="Website-Highlights" dotColor={TOKENS.color.green} />
-              <p style={{ fontSize: 13, color: TOKENS.color.textSecondary, lineHeight: 1.6, margin: 0 }}>
+              <p style={{ fontSize: 14, color: TOKENS.color.textSecondary, lineHeight: 1.6, margin: 0 }}>
                 {cleanWebHighlights}
               </p>
             </>
@@ -354,7 +354,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
             <div>
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: 10,
                   fontWeight: 600,
                   letterSpacing: '0.06em',
                   color: TOKENS.color.textMuted,
@@ -377,7 +377,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        fontSize: 11,
+                        fontSize: 12,
                         padding: '3px 10px',
                         borderRadius: TOKENS.radius.pill,
                         background: TOKENS.color.bgSubtle,
@@ -421,7 +421,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
               fontFamily: TOKENS.font.family,
             }}
           >
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', color: TOKENS.color.textMuted }}>
+            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.04em', color: TOKENS.color.textMuted }}>
               APOLLO KEYWORDS ({keywords.length})
             </span>
             <svg
@@ -443,7 +443,7 @@ export default function AnalyseTab({ company }: { company: Company }) {
                 <span
                   key={i}
                   style={{
-                    fontSize: 11,
+                    fontSize: 12,
                     padding: '3px 9px',
                     borderRadius: TOKENS.radius.chip,
                     background: TOKENS.color.bgSubtle,

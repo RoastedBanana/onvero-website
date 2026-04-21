@@ -33,7 +33,7 @@ function CardShell({ children, label }: { children: React.ReactNode; label: stri
     >
       <span
         style={{
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 600,
           letterSpacing: '0.06em',
           color: TOKENS.color.textMuted,
@@ -59,36 +59,44 @@ function AutomationCard({ items }: { items: string[] | null }) {
       {!items || items.length === 0 ? (
         <EmptyInline label={PLACEHOLDER_LANG} />
       ) : (
-        <ol
-          style={{
-            margin: 0,
-            padding: 0,
-            listStyle: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-          }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {items.map((item, i) => (
-            <li
+            <div
               key={i}
               style={{
                 display: 'flex',
-                gap: 10,
-                fontSize: 12.5,
-                color: TOKENS.color.textSecondary,
-                lineHeight: 1.5,
-                paddingLeft: 10,
-                borderLeft: `2px solid ${TOKENS.color.indigoBorderSoft}`,
+                gap: 12,
+                alignItems: 'flex-start',
+                padding: '10px 12px',
+                borderRadius: 8,
+                background: TOKENS.color.indigoBgSubtle,
+                border: `0.5px solid ${TOKENS.color.indigoBorderSoft}`,
               }}
             >
-              <span style={{ color: TOKENS.color.indigo, fontFamily: TOKENS.font.mono, fontSize: 11, flexShrink: 0 }}>
-                {i + 1}.
+              <span
+                style={{
+                  minWidth: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  background: TOKENS.color.indigoBgSoft,
+                  border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: TOKENS.color.indigoLight,
+                  fontFamily: TOKENS.font.mono,
+                  flexShrink: 0,
+                  marginTop: 1,
+                }}
+              >
+                {i + 1}
               </span>
-              {item}
-            </li>
+              <span style={{ fontSize: 13.5, color: TOKENS.color.textSecondary, lineHeight: 1.55 }}>{item}</span>
+            </div>
           ))}
-        </ol>
+        </div>
       )}
     </CardShell>
   );
@@ -104,18 +112,33 @@ function GrowthCard({ items }: { items: string[] | null }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {items.map((item, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: '50%',
-                  background: TOKENS.color.green,
-                  marginTop: 6,
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ fontSize: 12.5, color: TOKENS.color.textSecondary, lineHeight: 1.5 }}>{item}</span>
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                gap: 10,
+                alignItems: 'flex-start',
+                padding: '9px 12px',
+                borderRadius: 8,
+                background: 'rgba(52,211,153,0.04)',
+                border: `0.5px solid rgba(52,211,153,0.15)`,
+                borderLeft: `2px solid ${TOKENS.color.green}`,
+              }}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={TOKENS.color.green}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ flexShrink: 0, marginTop: 2 }}
+              >
+                <path d="M18 20V10M12 20V4M6 20v-6" />
+              </svg>
+              <span style={{ fontSize: 13.5, color: TOKENS.color.textSecondary, lineHeight: 1.55 }}>{item}</span>
             </div>
           ))}
         </div>
@@ -139,7 +162,7 @@ function TechCard({ techStack, hooks }: { techStack: string[] | null; hooks: str
               <span
                 key={t}
                 style={{
-                  fontSize: 10.5,
+                  fontSize: 12,
                   padding: '3px 8px',
                   borderRadius: TOKENS.radius.chip,
                   background: known ? TOKENS.color.indigoBgSubtle : TOKENS.color.bgSubtle,
@@ -162,7 +185,7 @@ function TechCard({ techStack, hooks }: { techStack: string[] | null; hooks: str
           <div>
             <span
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: '0.06em',
                 color: TOKENS.color.textMuted,
@@ -183,7 +206,7 @@ function TechCard({ techStack, hooks }: { techStack: string[] | null; hooks: str
                     border: `0.5px solid ${TOKENS.color.indigoBorderSoft}`,
                     borderLeft: `2px solid ${TOKENS.color.indigo}`,
                     borderRadius: '0 8px 8px 0',
-                    fontSize: 12.5,
+                    fontSize: 13.5,
                     lineHeight: 1.5,
                     color: TOKENS.color.textSecondary,
                   }}
@@ -218,6 +241,7 @@ export default function InsightsTripleCard({
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: 12,
+        alignItems: 'start',
       }}
     >
       <AutomationCard items={automationOpportunities} />

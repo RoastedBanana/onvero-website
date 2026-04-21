@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, StatusBar } from './_shared';
 import { openCommandPalette } from './_command-palette';
-import { useLeads, getSupabase, readSessionFromStorage } from './_use-leads';
+import { getSupabase, readSessionFromStorage } from './_use-leads';
 import { useActivities, formatActivityTime, getActivityStyle } from './_activities';
 
 const CommandPalette = dynamic(() => import('./_command-palette').then((m) => m.CommandPalette), { ssr: false });
@@ -916,32 +916,8 @@ function Topbar() {
 
 function Sidebar() {
   const pathname = usePathname();
-  const { leads } = useLeads();
-
-  // Compute counts from live data — memoized to avoid re-filtering on every render
-  const { neuHeute, qualifiziert, inKontakt, mitEmail } = useMemo(() => {
-    const todayStr = new Date().toDateString();
-    let neu = 0,
-      qual = 0,
-      kontakt = 0,
-      email = 0;
-    for (const l of leads) {
-      if (l.status === 'Qualifiziert') qual++;
-      if (l.status === 'In Kontakt') kontakt++;
-      if (l.emailDraftBody) email++;
-      try {
-        const created = new Date(l.createdAt.replace(/(\d+)\. (\w+) (\d+)/, '$2 $1, $3'));
-        if (created.toDateString() === todayStr) neu++;
-      } catch {
-        /* skip invalid dates */
-      }
-    }
-    return { neuHeute: neu, qualifiziert: qual, inKontakt: kontakt, mitEmail: email };
-  }, [leads]);
-  const NAV = useMemo(
-    () => buildNav(leads.length, neuHeute, qualifiziert, inKontakt, mitEmail),
-    [leads.length, neuHeute, qualifiziert, inKontakt, mitEmail]
-  );
+  // Static counts — avoids loading the full leads dataset just for badge numbers
+  const NAV = useMemo(() => buildNav(0, 0, 0, 0, 0), []);
 
   function isActive(href: string) {
     if (href === '/sales') return pathname === '/sales';

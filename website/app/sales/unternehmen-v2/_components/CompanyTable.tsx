@@ -9,7 +9,7 @@ import type { CompanyWithContacts } from '../_hooks/useCompanies';
 const TH: React.CSSProperties = {
   textAlign: 'left',
   padding: '10px 14px',
-  fontSize: 10,
+  fontSize: 11,
   letterSpacing: '0.06em',
   color: TOKENS.color.textMuted,
   fontWeight: 500,
@@ -20,7 +20,7 @@ const TH: React.CSSProperties = {
 
 const TD: React.CSSProperties = {
   padding: '12px 14px',
-  fontSize: 12,
+  fontSize: 13,
   fontFamily: TOKENS.font.family,
   color: TOKENS.color.textSecondary,
 };
@@ -47,7 +47,7 @@ export default function CompanyTable({
         background: TOKENS.color.bgCard,
         border: `1px solid ${TOKENS.color.borderSubtle}`,
         borderRadius: TOKENS.radius.cardLarge,
-        overflow: 'hidden',
+        overflow: 'clip',
       }}
     >
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -177,7 +177,7 @@ function Row({
           <div style={{ minWidth: 0 }}>
             <div
               style={{
-                fontSize: 12.5,
+                fontSize: 13.5,
                 fontWeight: 500,
                 color: TOKENS.color.textPrimary,
                 overflow: 'hidden',
@@ -188,7 +188,7 @@ function Row({
             >
               {fmt.text(c.company_name, 'Unbenannt')}
             </div>
-            <div style={{ fontSize: 10, color: TOKENS.color.textMuted, marginTop: 1 }}>
+            <div style={{ fontSize: 11, color: TOKENS.color.textMuted, marginTop: 1 }}>
               {fmt.domain(c.website, c.primary_domain)}
             </div>
           </div>
@@ -213,7 +213,7 @@ function Row({
         {tier !== 'UNRATED' ? (
           <span
             style={{
-              fontSize: 9,
+              fontSize: 10,
               fontWeight: 600,
               letterSpacing: '0.04em',
               padding: '2px 7px',

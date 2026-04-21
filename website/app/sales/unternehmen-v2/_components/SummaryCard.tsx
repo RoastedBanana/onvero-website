@@ -10,7 +10,7 @@ function SectionLabel({ label, dotColor }: { label: string; dotColor: string }) 
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
       <span
         style={{
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 600,
           letterSpacing: '0.06em',
           color: TOKENS.color.textMuted,
@@ -38,31 +38,41 @@ function ChipList({
     return <span style={{ fontSize: 12, color: TOKENS.color.textMuted, fontStyle: 'italic' }}>Keine Einträge</span>;
   }
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       {items.map((item, i) => {
         const cleaned = item.replace(
           /^[\u2705\u26A0\uFE0F\uD83D\uDD25\u274C\u2714\u2716\u26A1\u2B50\uD83D\uDCA1\uD83D\uDCCA\uD83C\uDFAF]\s*/u,
           ''
         );
         return (
-          <span
+          <div
             key={i}
             style={{
-              fontSize: 11.5,
-              padding: '4px 10px',
-              borderRadius: TOKENS.radius.pill,
+              fontSize: 13,
+              padding: '8px 12px',
+              borderRadius: 8,
               background: bgColor,
-              border: `1px solid ${borderColor}`,
+              border: `0.5px solid ${borderColor}`,
+              borderLeft: `2px solid ${color}`,
               color,
-              lineHeight: 1.4,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
+              lineHeight: 1.5,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 9,
             }}
           >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: color,
+                flexShrink: 0,
+                marginTop: 5,
+              }}
+            />
             {cleaned}
-          </span>
+          </div>
         );
       })}
     </div>
@@ -102,7 +112,7 @@ export default function SummaryCard({
       <div>
         <span
           style={{
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 600,
             letterSpacing: '0.06em',
             color: TOKENS.color.textMuted,
@@ -116,7 +126,7 @@ export default function SummaryCard({
         {text ? (
           <p
             style={{
-              fontSize: 14,
+              fontSize: 15,
               lineHeight: 1.65,
               color: TOKENS.color.textSecondary,
               margin: 0,
@@ -134,7 +144,7 @@ export default function SummaryCard({
       </div>
 
       {/* Strengths / Concerns grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
         <div>
           <SectionLabel label="Stärken" dotColor={TOKENS.color.warm} />
           <ChipList

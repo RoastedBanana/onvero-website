@@ -51,20 +51,40 @@ export function useContacts(leadId: string) {
         setLoading(false);
         return;
       }
-      const { data, error: e } = await sb()
-        .from('lead_contacts')
-        .select('*')
-        .eq('lead_id', leadId)
-        .eq('tenant_id', t)
-        .order('is_primary', { ascending: false, nullsFirst: false })
-        .order('decision_maker_score', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: true });
-      if (e) {
-        setError(e.message);
+
+      // Query both tables — legacy data lives in lead_contact_enrichments,
+      // new pipeline data goes into lead_contacts. Merge and deduplicate by id.
+      const [r1, r2] = await Promise.all([
+        sb()
+          .from('lead_contacts')
+          .select('*')
+          .eq('lead_id', leadId)
+          .eq('tenant_id', t)
+          .order('is_primary', { ascending: false, nullsFirst: false })
+          .order('decision_maker_score', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: true }),
+        sb()
+          .from('lead_contact_enrichments')
+          .select('*')
+          .eq('lead_id', leadId)
+          .order('created_at', { ascending: false }),
+      ]);
+
+      if (r1.error && r2.error) {
+        setError(r1.error.message);
         setLoading(false);
         return;
       }
-      setContacts((data ?? []) as Contact[]);
+
+      const seen = new Set<string>();
+      const merged: Contact[] = [];
+      for (const row of [...(r1.data ?? []), ...(r2.data ?? [])]) {
+        if (!seen.has(row.id)) {
+          seen.add(row.id);
+          merged.push(row as Contact);
+        }
+      }
+      setContacts(merged);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler');
     } finally {

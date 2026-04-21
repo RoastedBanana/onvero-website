@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import type { Company } from '../_types';
+import type { Company, CompanyStatus } from '../_types';
 
 // ─── SUPABASE CLIENT (reuse singleton from _use-leads if available) ─────────
 
@@ -130,5 +130,17 @@ export function useCompanies() {
     fetchCompanies();
   }, [fetchCompanies]);
 
-  return { companies, loading, error, refetch: fetchCompanies };
+  const updateStatus = useCallback(async (id: string, status: CompanyStatus) => {
+    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
+    try {
+      const tid = await getTenantId();
+      if (!tid) return;
+      const sb = getSupabase();
+      await sb.from('leads').update({ status }).eq('id', id).eq('tenant_id', tid);
+    } catch (err) {
+      console.error('[useCompanies] updateStatus failed:', err);
+    }
+  }, []);
+
+  return { companies, loading, error, refetch: fetchCompanies, updateStatus };
 }

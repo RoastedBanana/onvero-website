@@ -29,7 +29,6 @@ export default function NextActionBanner({
           alignItems: 'flex-start',
           gap: 14,
           fontFamily: TOKENS.font.family,
-          marginBottom: 16,
           animation: 'bannerPulse 3s ease-in-out infinite',
         }}
       >
@@ -64,7 +63,7 @@ export default function NextActionBanner({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 600,
               letterSpacing: '0.06em',
               color: TOKENS.color.indigoLight,
@@ -73,7 +72,7 @@ export default function NextActionBanner({
           >
             NÄCHSTER SCHRITT (KI-EMPFEHLUNG)
           </div>
-          <div style={{ fontSize: 13.5, color: TOKENS.color.textSecondary, lineHeight: 1.55 }}>{nextAction}</div>
+          <div style={{ fontSize: 14.5, color: TOKENS.color.textSecondary, lineHeight: 1.55 }}>{nextAction}</div>
         </div>
 
         {/* CTA */}
@@ -85,7 +84,7 @@ export default function NextActionBanner({
             background: TOKENS.color.indigoBgSoft,
             border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
             color: TOKENS.color.indigoLight,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 500,
             cursor: 'pointer',
             fontFamily: TOKENS.font.family,

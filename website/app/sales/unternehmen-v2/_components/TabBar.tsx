@@ -41,7 +41,7 @@ export default function TabBar({
             onClick={() => onTabChange(tab.key)}
             style={{
               padding: '10px 18px',
-              fontSize: 12.5,
+              fontSize: 13.5,
               fontWeight: active ? 500 : 400,
               color: active ? TOKENS.color.textPrimary : TOKENS.color.textTertiary,
               background: 'transparent',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TOKENS } from './_tokens';
 import type { TierKey } from './_tokens';
@@ -13,8 +13,10 @@ import FilterBar from './_components/FilterBar';
 import type { EmployeeRange, ScoreRange, SortBy } from './_components/FilterBar';
 import CompanyCard from './_components/CompanyCard';
 import CompanyTable from './_components/CompanyTable';
+import KanbanBoard from './_components/KanbanBoard';
 import EmptyState from './_components/EmptyState';
 import SkeletonGrid from './_components/SkeletonGrid';
+import type { CompanyStatus } from './_types';
 
 // ─── FILTER LOGIC ───────────────────────────────────────────────────────────
 
@@ -55,10 +57,17 @@ export default function UnternehmenV2Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view');
-  const { companies, loading, refetch } = useCompanies();
+  const { companies, loading, refetch, updateStatus } = useCompanies();
 
-  // View state
-  const [view, setView] = useState<'cards' | 'table'>(viewParam === 'table' ? 'table' : 'cards');
+  // View state — URL param wins, then localStorage, then default 'cards'
+  const [view, setView] = useState<'cards' | 'table' | 'kanban'>(() => {
+    if (viewParam === 'table' || viewParam === 'kanban' || viewParam === 'cards') return viewParam;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('unternehmen-v2-view');
+      if (saved === 'table' || saved === 'kanban' || saved === 'cards') return saved;
+    }
+    return 'cards';
+  });
 
   // Filter state
   const [search, setSearch] = useState('');
@@ -72,11 +81,12 @@ export default function UnternehmenV2Page() {
   // Table selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Derived options for dropdowns
+  // Derived options for dropdowns (formatted German labels, deduplicated)
   const industryOptions = useMemo(() => {
     const set = new Set<string>();
     companies.forEach((c) => {
-      if (c.industry) set.add(c.industry);
+      const label = fmt.industry(c.industry);
+      if (label) set.add(label);
     });
     return Array.from(set).sort();
   }, [companies]);
@@ -123,7 +133,7 @@ export default function UnternehmenV2Page() {
     }
 
     if (industryFilter) {
-      result = result.filter((c) => c.industry === industryFilter);
+      result = result.filter((c) => fmt.industry(c.industry) === industryFilter);
     }
 
     if (countryFilter) {
@@ -140,6 +150,11 @@ export default function UnternehmenV2Page() {
 
     return sortCompanies(result, sortBy);
   }, [companies, search, tierFilter, industryFilter, countryFilter, employeeRange, scoreRange, sortBy]);
+
+  // Persist nav IDs for prev/next in detail page
+  useEffect(() => {
+    sessionStorage.setItem('unternehmen-v2-nav-ids', JSON.stringify(filteredCompanies.map((c) => c.id)));
+  }, [filteredCompanies]);
 
   // Has any filter active?
   const hasActiveFilters =
@@ -168,8 +183,9 @@ export default function UnternehmenV2Page() {
     else setSelected(new Set(filteredCompanies.map((c) => c.id)));
   }
 
-  function switchView(v: 'cards' | 'table') {
+  function switchView(v: 'cards' | 'table' | 'kanban') {
     setView(v);
+    localStorage.setItem('unternehmen-v2-view', v);
     const url = new URL(window.location.href);
     url.searchParams.set('view', v);
     window.history.replaceState(null, '', url.toString());
@@ -218,7 +234,7 @@ export default function UnternehmenV2Page() {
               border: `1px solid ${TOKENS.color.borderSubtle}`,
             }}
           >
-            {(['cards', 'table'] as const).map((m) => (
+            {(['cards', 'table', 'kanban'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => switchView(m)}
@@ -235,7 +251,7 @@ export default function UnternehmenV2Page() {
                   transition: 'all 0.15s',
                 }}
               >
-                {m === 'cards' ? 'Karten' : 'Tabelle'}
+                {m === 'cards' ? 'Karten' : m === 'table' ? 'Tabelle' : 'Kanban'}
               </button>
             ))}
           </div>
@@ -267,6 +283,7 @@ export default function UnternehmenV2Page() {
         onSearchChange={setSearch}
         tierFilter={tierFilter}
         onTierChange={setTierFilter}
+        tierCounts={{ hot: stats.hot, warm: stats.warm, cold: stats.cold }}
         industryFilter={industryFilter}
         industryOptions={industryOptions}
         onIndustryChange={setIndustryFilter}
@@ -310,13 +327,15 @@ export default function UnternehmenV2Page() {
             <CompanyCard key={c.id} company={c} />
           ))}
         </div>
-      ) : (
+      ) : view === 'table' ? (
         <CompanyTable
           companies={filteredCompanies}
           selected={selected}
           onToggle={toggleSelect}
           onToggleAll={toggleAll}
         />
+      ) : (
+        <KanbanBoard companies={filteredCompanies} onStatusChange={updateStatus} />
       )}
     </>
   );

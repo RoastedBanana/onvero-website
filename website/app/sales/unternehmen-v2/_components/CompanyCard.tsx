@@ -90,9 +90,9 @@ function TierBadge({ tier }: { tier: string | null }) {
           letterSpacing: '0.04em',
           padding: '3px 10px',
           borderRadius: TOKENS.radius.chip,
-          background: 'rgba(107,122,255,0.2)',
-          color: 'rgba(185,194,255,0.95)',
-          border: `0.5px solid rgba(107,122,255,0.3)`,
+          background: 'rgba(245,169,127,0.10)',
+          color: TOKENS.color.warm,
+          border: `0.5px solid rgba(245,169,127,0.30)`,
         }}
       >
         WARM
@@ -124,9 +124,9 @@ function TagChip({ label }: { label: string }) {
   return (
     <span
       style={{
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 400,
-        padding: '2px 7px',
+        padding: '2px 8px',
         borderRadius: TOKENS.radius.chip,
         background: TOKENS.color.bgSubtle,
         color: TOKENS.color.textTertiary,
@@ -148,13 +148,16 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
   const tier = fmt.tier(company.tier);
   const isHot = tier === 'HOT';
   const isWarm = tier === 'WARM';
+  const isCold = tier === 'COLD';
   const borderColor = hovered
     ? 'rgba(107,122,255,0.3)'
     : isHot
       ? 'rgba(107,122,255,0.4)'
       : isWarm
-        ? 'rgba(107,122,255,0.18)'
-        : TOKENS.color.borderSubtle;
+        ? 'rgba(245,169,127,0.22)'
+        : isCold
+          ? 'rgba(147,197,253,0.14)'
+          : TOKENS.color.borderSubtle;
 
   const summaryText = company.summary ?? company.apollo_short_description ?? null;
   const domain = fmt.domain(company.website, company.primary_domain);
@@ -229,7 +232,7 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: 500,
               color: TOKENS.color.textPrimary,
               overflow: 'hidden',
@@ -241,7 +244,7 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
           </div>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 12,
               color: TOKENS.color.textMuted,
               marginTop: 2,
               overflow: 'hidden',
@@ -263,14 +266,14 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
       {/* Tags row */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
         <TierBadge tier={company.tier} />
-        {company.industry && <TagChip label={company.industry} />}
+        {company.industry && <TagChip label={fmt.industry(company.industry)} />}
         {empLabel && <TagChip label={empLabel} />}
       </div>
 
       {/* Summary */}
       <div
         style={{
-          fontSize: 12.5,
+          fontSize: 13,
           lineHeight: 1.55,
           color: TOKENS.color.textTertiary,
           display: '-webkit-box',
@@ -291,7 +294,7 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span
           style={{
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 500,
             letterSpacing: '0.04em',
             color: TOKENS.color.textMuted,
@@ -326,13 +329,13 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
                 </div>
               ))}
             </div>
-            <span style={{ fontSize: 11, color: TOKENS.color.textTertiary }}>
+            <span style={{ fontSize: 12, color: TOKENS.color.textTertiary }}>
               {company.enriched_contacts_count} enriched
             </span>
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: TOKENS.color.textMuted }}>Noch keine geladen</span>
+            <span style={{ fontSize: 12, color: TOKENS.color.textMuted }}>Noch keine geladen</span>
             <div
               style={{
                 width: 20,
