@@ -167,7 +167,7 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
 
   return (
     <div
-      onClick={() => router.push(`/sales/unternehmen-v2/${company.id}?tab=uebersicht`)}
+      onClick={() => router.push(`/sales/unternehmen/${company.id}?tab=uebersicht`)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

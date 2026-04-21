@@ -495,7 +495,7 @@ export default function DeepResearchTab({ tenantId }: { tenantId: string | null 
 
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
         <Link
-          href="/sales/leads"
+          href="/sales/unternehmen"
           style={{
             display: 'inline-flex',
             alignItems: 'center',

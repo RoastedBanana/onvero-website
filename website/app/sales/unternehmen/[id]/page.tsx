@@ -182,7 +182,7 @@ function DetailInner({ id }: { id: string }) {
   const activeTab: TabKey = VALID_TABS.includes(tabParam as TabKey) ? (tabParam as TabKey) : 'uebersicht';
 
   function setTab(tab: TabKey) {
-    router.replace(`/sales/unternehmen-v2/${id}?tab=${tab}`);
+    router.replace(`/sales/unternehmen/${id}?tab=${tab}`);
   }
 
   if (loading) return <DetailSkeleton />;
@@ -193,11 +193,11 @@ function DetailInner({ id }: { id: string }) {
         <Breadcrumbs
           segments={[
             { label: 'Onvero Sales', href: '/sales' },
-            { label: 'Unternehmen', href: '/sales/unternehmen-v2' },
+            { label: 'Unternehmen', href: '/sales/unternehmen' },
             { label: 'Fehler' },
           ]}
         />
-        <ErrorCard message={error} onBack={() => router.push('/sales/unternehmen-v2')} />
+        <ErrorCard message={error} onBack={() => router.push('/sales/unternehmen')} />
       </>
     );
   }
@@ -208,11 +208,11 @@ function DetailInner({ id }: { id: string }) {
         <Breadcrumbs
           segments={[
             { label: 'Onvero Sales', href: '/sales' },
-            { label: 'Unternehmen', href: '/sales/unternehmen-v2' },
+            { label: 'Unternehmen', href: '/sales/unternehmen' },
             { label: 'Nicht gefunden' },
           ]}
         />
-        <ErrorCard message="Unternehmen nicht gefunden" onBack={() => router.push('/sales/unternehmen-v2')} />
+        <ErrorCard message="Unternehmen nicht gefunden" onBack={() => router.push('/sales/unternehmen')} />
       </>
     );
   }
@@ -267,7 +267,7 @@ function DetailInner({ id }: { id: string }) {
         {navIds.length > 0 && currentIdx !== -1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: TOKENS.font.family }}>
             <button
-              onClick={() => prevId && router.push(`/sales/unternehmen-v2/${prevId}`)}
+              onClick={() => prevId && router.push(`/sales/unternehmen/${prevId}`)}
               disabled={!prevId}
               style={{
                 display: 'inline-flex',
@@ -321,7 +321,7 @@ function DetailInner({ id }: { id: string }) {
               {currentIdx + 1} / {navIds.length}
             </span>
             <button
-              onClick={() => nextId && router.push(`/sales/unternehmen-v2/${nextId}`)}
+              onClick={() => nextId && router.push(`/sales/unternehmen/${nextId}`)}
               disabled={!nextId}
               style={{
                 display: 'inline-flex',

@@ -456,7 +456,7 @@ export default function SalesV2HomePage() {
             {topLeads.map((lead, i) => (
               <Link
                 key={lead.id}
-                href={`/sales/leads/${lead.id}`}
+                href={`/sales/unternehmen/${lead.id}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -611,7 +611,7 @@ export default function SalesV2HomePage() {
         <BentoCard
           span={1}
           delay={0.3}
-          href="/sales/leads"
+          href="/sales/unternehmen"
           gradient="radial-gradient(ellipse at 80% 100%, rgba(248,113,113,0.04) 0%, transparent 50%)"
         >
           <SectionLabel icon={ICONS.mail} label="Kontaktdaten-Übersicht" color="#FBBF24" />
@@ -701,7 +701,7 @@ export default function SalesV2HomePage() {
           {topUnanswered.map((lead, i) => (
             <Link
               key={lead.id}
-              href={`/sales/leads/${lead.id}`}
+              href={`/sales/unternehmen/${lead.id}`}
               className="s-bento"
               style={{
                 display: 'flex',

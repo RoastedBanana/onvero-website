@@ -143,10 +143,26 @@ async function initLeadsStore() {
 
     const supabase = getSupabase();
 
-    // Discover actual columns — select all to handle schema changes
+    // Select only columns actually used by the UI (avoids heavy jsonb fields)
+    const LEADS_COLUMNS = [
+      'id', 'tenant_id', 'company_name', 'phone', 'website', 'city', 'country',
+      'status', 'source', 'ai_scored_at', 'created_at', 'updated_at',
+      'apollo_organization_id', 'fit_score', 'is_excluded',
+      'tags', 'company_size', 'company_type', 'industry', 'summary',
+      'strengths', 'concerns', 'next_action', 'linkedin_url', 'twitter_url',
+      'facebook_url', 'logo_url', 'primary_domain', 'founded_year',
+      'estimated_num_employees', 'annual_revenue_printed', 'apollo_industry',
+      'apollo_keywords', 'apollo_short_description', 'technology_names',
+      'company_description', 'core_services', 'target_customers', 'pain_points',
+      'automation_potential', 'tech_stack', 'growth_signals', 'company_size_signals',
+      'tone_of_voice', 'usp', 'personalization_hooks', 'automation_opportunities',
+      'website_highlights', 'partner_customer_urls', 'cloudflare_blocked',
+      'website_scraped_at', 'tier', 'follow_up_context',
+    ].join(', ');
+
     const result = (await withTimeout(
-      supabase.from('leads').select('*').eq('tenant_id', tid).order('created_at', { ascending: false }).limit(200),
-      10000
+      supabase.from('leads').select(LEADS_COLUMNS).eq('tenant_id', tid).order('created_at', { ascending: false }).limit(200),
+      30000
     )) as { data: DbLead[] | null; error: { message: string } | null };
 
     if (result.error) {
@@ -295,13 +311,6 @@ function dbToLead(r: DbLead): Lead {
     isExcluded: (r.is_excluded as boolean) ?? false,
     exclusionReason: (r.exclusion_reason as string) ?? null,
     apolloOrganizationId: (r.apollo_organization_id as string) ?? null,
-    // Compat: map fitScore to score for UI components
-    score: fitScore ?? null,
-    scoreBreakdown: fitScore
-      ? [
-          { label: 'Unternehmensfit', value: fitScore ?? 0, max: 100 },
-        ]
-      : [],
     name: company,
     // Legacy compat — empty defaults
     firstName: '',

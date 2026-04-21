@@ -95,13 +95,23 @@ export function useCompanies() {
 
       const sb = getSupabase();
 
-      // Fetch leads with contact count via subquery
+      // Fetch leads with contact count — select only columns used by the list view
+      // (avoids heavy jsonb like raw_apollo_organization)
+      const LIST_COLS = [
+        'id', 'tenant_id', 'company_name', 'website', 'city', 'country', 'industry',
+        'status', 'source', 'fit_score', 'tier', 'is_excluded', 'created_at', 'updated_at',
+        'logo_url', 'primary_domain', 'company_size', 'estimated_num_employees', 'founded_year',
+        'summary', 'tags', 'strengths', 'concerns', 'next_action', 'ai_scored_at',
+        'linkedin_url', 'company_description', 'target_customers',
+      ].join(', ');
+
       const { data, error: queryError } = await sb
         .from('leads')
-        .select('*, lead_contacts(count)')
+        .select(`${LIST_COLS}, lead_contacts(count)`)
         .eq('tenant_id', tid)
         .order('fit_score', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (queryError) {
         console.error('[useCompanies] query error:', queryError);

@@ -1,0 +1,145 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - link "Onvero SALES" [ref=e5] [cursor=pointer]:
+        - /url: /sales-v2
+        - img [ref=e9]
+        - generic [ref=e16]:
+          - generic [ref=e17]: Onvero
+          - generic [ref=e18]: SALES
+      - button "Leads, Firmen, Kontakte suchen... ⌘ K" [ref=e19] [cursor=pointer]:
+        - img [ref=e20]
+        - generic [ref=e22]: Leads, Firmen, Kontakte suchen...
+        - generic [ref=e23]:
+          - generic [ref=e24]: ⌘
+          - generic [ref=e25]: K
+      - generic [ref=e26]:
+        - generic [ref=e31]: LIVE
+        - button [ref=e33] [cursor=pointer]:
+          - img [ref=e34]
+        - button "JF jan fahlbusch smartparcel.com" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: JF
+          - generic [ref=e39]:
+            - generic [ref=e40]: jan fahlbusch
+            - generic [ref=e41]: smartparcel.com
+          - img [ref=e42]
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: ÜBERSICHT
+          - link "Home" [ref=e50] [cursor=pointer]:
+            - /url: /sales-v2
+            - img [ref=e51]
+            - generic [ref=e53]: Home
+        - generic [ref=e54]:
+          - generic [ref=e55]: PROSPECTS
+          - generic [ref=e56]:
+            - link "Market Intent 0" [ref=e58] [cursor=pointer]:
+              - /url: /sales-v2/prospects
+              - img [ref=e59]
+              - generic [ref=e61]: Market Intent
+              - generic [ref=e62]: "0"
+            - link "Outreach-Ideen" [ref=e64] [cursor=pointer]:
+              - /url: /sales-v2/outreach
+              - img [ref=e65]
+              - generic [ref=e67]: Outreach-Ideen
+            - link "Monitoring" [ref=e69] [cursor=pointer]:
+              - /url: /sales-v2/monitoring
+              - img [ref=e70]
+              - generic [ref=e72]: Monitoring
+            - link "Network" [ref=e74] [cursor=pointer]:
+              - /url: /sales-v2/network
+              - img [ref=e75]
+              - generic [ref=e77]: Network
+        - generic [ref=e78]:
+          - generic [ref=e79]: LEADS & KUNDEN
+          - generic [ref=e80]:
+            - link "Alle Leads 0" [ref=e82] [cursor=pointer]:
+              - /url: /sales-v2/leads
+              - img [ref=e83]
+              - generic [ref=e85]: Alle Leads
+              - generic [ref=e86]: "0"
+            - link "Lead Generator" [ref=e88] [cursor=pointer]:
+              - /url: /sales-v2/generate
+              - img [ref=e90]
+              - generic [ref=e92]: Lead Generator
+        - generic [ref=e93]:
+          - generic [ref=e94]: PRODUKT
+          - generic [ref=e95]:
+            - link "Meetings" [ref=e97] [cursor=pointer]:
+              - /url: /sales-v2/meetings
+              - img [ref=e98]
+              - generic [ref=e100]: Meetings
+            - link "Analytics" [ref=e102] [cursor=pointer]:
+              - /url: /sales-v2/analytics
+              - img [ref=e103]
+              - generic [ref=e105]: Analytics
+        - link "Einstellungen" [ref=e107] [cursor=pointer]:
+          - /url: /sales-v2/settings
+          - img [ref=e108]
+          - generic [ref=e110]: Einstellungen
+      - main [ref=e111]:
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - link "Onvero Sales" [ref=e115] [cursor=pointer]:
+              - /url: /sales-v2
+            - generic [ref=e116]:
+              - img [ref=e117]
+              - link "Leads" [ref=e119] [cursor=pointer]:
+                - /url: /sales-v2/leads
+            - generic [ref=e120]:
+              - img [ref=e121]
+              - generic [ref=e123]: Lead Generator
+          - generic [ref=e126]:
+            - heading "Lead Generator" [level=1] [ref=e127]
+            - paragraph [ref=e128]: KI-gestützte Lead-Recherche
+          - generic [ref=e129]:
+            - generic [ref=e131]:
+              - img [ref=e133]
+              - generic [ref=e135]: Beschreiben
+            - generic [ref=e138]:
+              - img [ref=e140]
+              - generic [ref=e142]: KI-Analyse
+            - generic [ref=e145]:
+              - img [ref=e147]
+              - generic [ref=e149]: Überprüfen
+            - generic [ref=e152]:
+              - img [ref=e154]
+              - generic [ref=e156]: Generieren
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - heading "Beschreibe deine Zielgruppe" [level=2] [ref=e159]:
+                - text: Beschreibe deine Zielgruppe
+                - img [ref=e161]
+              - paragraph [ref=e163]: Unsere KI findet die passenden Entscheider für dich
+            - generic [ref=e164]:
+              - textbox "Beschreibe in natürlicher Sprache, wen du erreichen möchtest. z.B. 'E-Commerce Manager in mittelständischen Modeunternehmen, die ihren Online-Shop optimieren wollen' oder 'Geschäftsführer von Logistikunternehmen mit 50-500 Mitarbeitern in der DACH-Region'" [ref=e165]
+              - generic [ref=e166]:
+                - generic [ref=e167]: 0/100 Zeichen minimum
+                - button "KI-Analyse starten →" [disabled] [ref=e168]:
+                  - img [ref=e169]
+                  - text: KI-Analyse starten →
+            - button "So funktioniert's" [ref=e172] [cursor=pointer]:
+              - img [ref=e173]
+              - heading "So funktioniert's" [level=3] [ref=e175]
+            - generic [ref=e176]:
+              - generic [ref=e177]:
+                - heading "Letzte Suchanfragen" [level=3] [ref=e178]:
+                  - img [ref=e179]
+                  - text: Letzte Suchanfragen
+                - generic [ref=e181]:
+                  - img [ref=e182]
+                  - generic [ref=e184]: Deine Suchanfragen erscheinen hier
+              - generic [ref=e185]:
+                - heading "Profil-Vollständigkeit" [level=3] [ref=e186]:
+                  - img [ref=e187]
+                  - text: Profil-Vollständigkeit
+                - generic [ref=e190]: Laden...
+    - generic [ref=e191]:
+      - generic [ref=e192]:
+        - generic [ref=e195]: Verbunden
+        - generic [ref=e197]: Synchronisiert vor 2 min
+      - generic [ref=e199]: ⌘K Suche
+  - button "Open Next.js Dev Tools" [ref=e206] [cursor=pointer]:
+    - img [ref=e207]
+  - alert [ref=e210]

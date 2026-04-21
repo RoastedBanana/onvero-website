@@ -1,0 +1,690 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "Onvero" [ref=e5] [cursor=pointer]:
+          - /url: /
+          - img "Onvero" [ref=e6]:
+            - generic [ref=e13]: Onvero
+        - generic [ref=e14]:
+          - link "Home" [ref=e15] [cursor=pointer]:
+            - /url: /
+            - text: Home
+          - link "Leistungen" [ref=e19] [cursor=pointer]:
+            - /url: /#leistungen
+          - link "Referenzen" [ref=e20] [cursor=pointer]:
+            - /url: /#projekte
+          - link "Fragen" [ref=e21] [cursor=pointer]:
+            - /url: /#chatbot
+          - link "Über uns" [ref=e22] [cursor=pointer]:
+            - /url: /ueber-uns
+        - generic [ref=e23]:
+          - button "DE · EN" [ref=e24]:
+            - generic [ref=e25]: DE
+            - generic [ref=e26]: ·
+            - generic [ref=e27]: EN
+          - link "Erstgespräch buchen →" [ref=e28] [cursor=pointer]:
+            - /url: /buchen
+          - link "Anmelden" [ref=e29] [cursor=pointer]:
+            - /url: /login
+    - generic [ref=e31]:
+      - generic:
+        - generic:
+          - img "Background Paths"
+        - generic:
+          - img "Background Paths"
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - heading "Dein Unternehmen hat jetzt ein KI-Betriebssystem" [level=1] [ref=e34]:
+            - generic [ref=e36]:
+              - text: Dein Unternehmen hat jetzt ein
+              - emphasis [ref=e37]: KI-Betriebssystem
+          - paragraph [ref=e38]: Keine isolierten Tools mehr. Wir bauen maßgeschneiderte KI-Workflows, die miteinander sprechen — und verbinden sie zu einer Infrastruktur, die dein Unternehmen wirklich voranbringt.
+          - generic [ref=e39]:
+            - link "Kostenloses Erstgespräch →" [ref=e40] [cursor=pointer]:
+              - /url: /buchen
+            - link "Leistungen ansehen ↓" [ref=e42] [cursor=pointer]:
+              - /url: /#leistungen
+        - img "Dashboard Vorschau" [ref=e45]
+    - generic [ref=e48]:
+      - generic [ref=e49]:
+        - heading "Was wir für dich bauen" [level=2] [ref=e50]
+        - paragraph [ref=e51]: KI-Lösungen, die sofort wirken — von der ersten Website bis zum vollautomatischen Prozess.
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - img [ref=e56]
+            - heading "Moderne Websites mit KI" [level=3] [ref=e59]
+            - paragraph [ref=e60]: Professionelle Unternehmenswebsites mit integrierter KI — intelligenter Chatbot, automatisierte Leaderfassung und personalisiertes Nutzererlebnis ab Tag 1.
+          - generic [ref=e61]:
+            - generic [ref=e66]: www.ihrUnternehmen.de
+            - generic [ref=e67]:
+              - img
+              - img
+        - generic [ref=e81]:
+          - img [ref=e84]
+          - generic [ref=e88]:
+            - heading "AI Workflows" [level=3] [ref=e89]
+            - paragraph [ref=e90]: Wiederkehrende Prozesse vollständig automatisieren — Angebote, Rechnungen, E-Mails, Berichte.
+            - generic:
+              - img
+        - generic [ref=e92]:
+          - img [ref=e95]
+          - generic [ref=e97]:
+            - heading "Analyse & Reporting" [level=3] [ref=e98]
+            - paragraph [ref=e99]: Live-Dashboards und automatische Reports — datenbasierte Entscheidungen ohne manuellen Aufwand.
+        - generic [ref=e108]:
+          - img [ref=e111]
+          - generic [ref=e113]:
+            - heading "Customer Support" [level=3] [ref=e114]
+            - paragraph [ref=e115]: KI beantwortet Kundenanfragen rund um die Uhr — präzise, auf Deutsch, nahtlos eskalierbar.
+        - generic [ref=e116]:
+          - img [ref=e119]
+          - generic [ref=e123]:
+            - heading "Lead Generation" [level=3] [ref=e124]
+            - paragraph [ref=e125]: Qualifizierte Leads automatisch erfassen, bewerten und ins CRM übertragen.
+        - generic [ref=e126]:
+          - img [ref=e129]
+          - generic [ref=e132]:
+            - heading "Meeting-Zusammenfassung" [level=3] [ref=e133]
+            - paragraph [ref=e134]: Meetings automatisch transkribieren, zusammenfassen und Aufgaben direkt ins Projektmanagement übergeben.
+          - generic:
+            - generic:
+              - img
+        - generic [ref=e135]:
+          - img [ref=e138]
+          - generic [ref=e141]:
+            - heading "AI-Schulung" [level=3] [ref=e142]
+            - paragraph [ref=e143]: Euer Team lernt, KI-Tools effektiv einzusetzen — praxisnah, auf euer Unternehmen zugeschnitten.
+          - generic:
+            - img
+        - generic [ref=e145]:
+          - img [ref=e148]
+          - generic [ref=e151]:
+            - heading "Maßgeschneiderte Projekte" [level=3] [ref=e152]
+            - paragraph [ref=e153]: Kein Standard-Tool passt? Wir entwickeln genau das, was euer Unternehmen braucht — von der ersten Idee bis zur fertigen Lösung, vollständig auf eure Prozesse zugeschnitten.
+    - generic [ref=e154]:
+      - generic [ref=e156]:
+        - generic [ref=e159]:
+          - generic [ref=e160]:
+            - paragraph [ref=e161]: Infrastruktur · Vernetzung · Skalierung
+            - heading "Dein BusinessOS" [level=2] [ref=e162]:
+              - text: Dein
+              - emphasis [ref=e163]: BusinessOS
+            - generic [ref=e164]:
+              - paragraph [ref=e165]: Jede Lösung, die wir bauen, ist darauf ausgelegt, mit den anderen zu kommunizieren.
+              - paragraph [ref=e166]: Kein Tool-Chaos, kein Datenverlust zwischen Systemen. Alles läuft in eine zentrale Infrastruktur — dein BusinessOS.
+            - list [ref=e167]:
+              - listitem [ref=e168]:
+                - img [ref=e170]
+                - generic [ref=e174]: Alle Systeme verbunden
+              - listitem [ref=e175]:
+                - img [ref=e177]
+                - generic [ref=e179]: Daten fließen automatisch
+              - listitem [ref=e180]:
+                - img [ref=e182]
+                - generic [ref=e185]: Skaliert mit deinem Unternehmen
+          - img [ref=e187]:
+            - generic [ref=e200]:
+              - img [ref=e204]
+              - generic [ref=e207]: Website
+            - generic [ref=e209]:
+              - img [ref=e213]
+              - generic [ref=e217]: Workflows
+            - generic [ref=e219]:
+              - img [ref=e223]
+              - generic [ref=e225]: Analyse
+            - generic [ref=e227]:
+              - img [ref=e231]
+              - generic [ref=e233]: Support
+            - generic [ref=e235]:
+              - img [ref=e239]
+              - generic [ref=e243]: Leads
+            - generic [ref=e245]:
+              - img [ref=e249]
+              - generic [ref=e252]: Meetings
+            - generic [ref=e254]:
+              - img [ref=e258]
+              - generic [ref=e261]: Schulung
+            - generic [ref=e263]:
+              - img [ref=e267]
+              - generic [ref=e270]: Custom
+            - generic [ref=e275]: BusinessOS
+        - generic [ref=e277]: scroll
+      - generic [ref=e281]:
+        - generic [ref=e282]:
+          - heading "Integriert in was du bereits nutzt." [level=3] [ref=e283]
+          - paragraph [ref=e284]: Egal welche Tools dein Unternehmen heute einsetzt — wir verbinden sie. Über 400 Integrationen verfügbar, kein technisches Setup nötig.
+        - generic [ref=e285]:
+          - img
+          - generic [ref=e286]:
+            - img "Slack" [ref=e287]
+            - text: Slack
+          - generic [ref=e288]:
+            - img "Gmail" [ref=e289]
+            - text: Gmail
+          - generic [ref=e290]:
+            - img "Google Sheets" [ref=e291]
+            - text: Google Sheets
+          - generic [ref=e292]:
+            - img "Notion" [ref=e293]
+            - text: Notion
+          - generic [ref=e294]:
+            - img "HubSpot" [ref=e295]
+            - text: HubSpot
+          - generic [ref=e296]:
+            - img [ref=e297]
+            - text: Typeform
+          - generic [ref=e300]:
+            - img "Airtable" [ref=e301]
+            - text: Airtable
+          - generic [ref=e302]:
+            - img "Calendly" [ref=e303]
+            - text: Calendly
+          - generic [ref=e304]:
+            - img "Webhooks" [ref=e305]
+            - text: Webhooks
+          - generic [ref=e306]:
+            - img [ref=e307]
+            - text: Stripe
+          - generic [ref=e309]:
+            - img "Shopify" [ref=e310]
+            - text: Shopify
+          - generic [ref=e311]:
+            - img [ref=e312]
+            - text: BusinessOS
+          - generic [ref=e314]:
+            - img "PostgreSQL" [ref=e315]
+            - text: PostgreSQL
+          - generic [ref=e316]:
+            - img "GitHub" [ref=e317]
+            - text: GitHub
+          - generic [ref=e318]:
+            - img "WhatsApp" [ref=e319]
+            - text: WhatsApp
+          - generic [ref=e320]:
+            - img "Salesforce" [ref=e321]
+            - text: Salesforce
+          - generic [ref=e322]:
+            - img "Monday" [ref=e323]
+            - text: Monday
+          - generic [ref=e324]:
+            - img "Zoom" [ref=e325]
+            - text: Zoom
+          - generic [ref=e326]:
+            - img "Twilio" [ref=e327]
+            - text: Twilio
+          - generic [ref=e328]:
+            - img "Mailchimp" [ref=e329]
+            - text: Mailchimp
+          - generic [ref=e330]:
+            - img "Jira" [ref=e331]
+            - text: Jira
+          - generic [ref=e332]:
+            - img "Discord" [ref=e333]
+            - text: Discord
+          - generic [ref=e334]:
+            - img [ref=e335]
+            - text: Telegram
+          - generic [ref=e338]:
+            - img "Microsoft Teams" [ref=e339]
+            - text: Microsoft Teams
+      - generic [ref=e340]:
+        - paragraph [ref=e341]: Über 400 weitere Integrationen.
+        - paragraph [ref=e342]: Über 400 weitere Integrationen.
+      - generic [ref=e345]:
+        - generic [ref=e346]:
+          - heading "Was konkret bei dir rauskommt" [level=2] [ref=e347]:
+            - generic [ref=e348]: Was konkret
+            - generic [ref=e349]: bei dir rauskommt
+          - paragraph [ref=e350]: Keine Versprechen. Nur Ergebnisse, die messbar sind.
+          - generic [ref=e351]:
+            - link "Erstgespräch buchen" [ref=e352] [cursor=pointer]:
+              - /url: /buchen
+            - link "Projekte ansehen" [ref=e353] [cursor=pointer]:
+              - /url: /#projekte
+        - generic [ref=e354]:
+          - generic [ref=e355]:
+            - paragraph [ref=e356]: Zeitersparnis
+            - paragraph [ref=e357]:
+              - generic [ref=e358]: 0h
+            - paragraph [ref=e359]: Pro Mitarbeiter pro Woche durch KI-Automatisierung
+            - link "Mehr erfahren →" [ref=e360] [cursor=pointer]:
+              - /url: /#leistungen
+          - generic [ref=e361]:
+            - paragraph [ref=e362]: Antwortzeit
+            - paragraph [ref=e363]:
+              - generic [ref=e364]: 0s
+            - paragraph [ref=e365]: Statt 4 Stunden — KI-Rezeptionist antwortet sofort
+            - link "Mehr erfahren →" [ref=e366] [cursor=pointer]:
+              - /url: /#leistungen
+          - generic [ref=e367]:
+            - paragraph [ref=e368]: Automatisierbar
+            - paragraph [ref=e369]:
+              - generic [ref=e370]: 0%
+            - paragraph [ref=e371]: Der täglichen Routineaufgaben in typischen KMU-Prozessen
+            - link "Mehr erfahren →" [ref=e372] [cursor=pointer]:
+              - /url: /#leistungen
+          - generic [ref=e373]:
+            - paragraph [ref=e374]: Umsetzung
+            - paragraph [ref=e375]:
+              - generic [ref=e376]: 0w
+            - paragraph [ref=e377]: Von Erstgespräch bis zur ersten laufenden KI-App
+            - link "Mehr erfahren →" [ref=e378] [cursor=pointer]:
+              - /url: /buchen
+          - generic [ref=e379]:
+            - paragraph [ref=e380]: Kostenreduktion
+            - paragraph [ref=e381]:
+              - generic [ref=e382]: 0%
+            - paragraph [ref=e383]: Weniger Aufwand in Dokumenten- und Finanzprozessen
+            - link "Mehr erfahren →" [ref=e384] [cursor=pointer]:
+              - /url: /#leistungen
+          - generic [ref=e385]:
+            - paragraph [ref=e386]: Lead-Quote
+            - paragraph [ref=e387]:
+              - generic [ref=e388]: 0×
+            - paragraph [ref=e389]: Mehr qualifizierte Leads durch KI-gestützte Website und Chatbot
+            - link "Mehr erfahren →" [ref=e390] [cursor=pointer]:
+              - /url: /#projekte
+      - generic [ref=e394]:
+        - generic [ref=e395]:
+          - paragraph [ref=e396]: Referenzen · Ergebnisse · Vertrauen
+          - heading "Unsere Projekte" [level=2] [ref=e397]:
+            - generic [ref=e398]: Unsere
+            - generic [ref=e399]: Projekte
+          - paragraph [ref=e400]: "Jedes Projekt ist ein Beweis: KI funktioniert — wenn sie richtig eingesetzt wird. Hier sind einige der Lösungen, die wir für unsere Kunden gebaut haben."
+          - link "Projekt anfragen →" [ref=e401] [cursor=pointer]:
+            - /url: /buchen
+        - generic [ref=e402]:
+          - generic [ref=e403]:
+            - generic:
+              - link "Uhrmensch +20 % Umsatz · unter 4 Std. Aufwand/Woche E-Commerce · 2025":
+                - /url: /blog/uhrmensch-ai-shop
+                - generic [ref=e404] [cursor=pointer]:
+                  - generic [ref=e405]:
+                    - img [ref=e407]
+                    - paragraph [ref=e411]: Uhrmensch
+                  - paragraph [ref=e412]: +20 % Umsatz · unter 4 Std. Aufwand/Woche
+                  - paragraph [ref=e413]: E-Commerce · 2025
+            - generic:
+              - link "Ferienhaus Wellenreiter +38 % Buchungen · +22 % Durchschnittspreis Tourismus · 2025":
+                - /url: /blog/ferienhaus-wellenreiter
+                - generic [ref=e414] [cursor=pointer]:
+                  - generic [ref=e415]:
+                    - img [ref=e417]
+                    - paragraph [ref=e420]: Ferienhaus Wellenreiter
+                  - paragraph [ref=e421]: +38 % Buchungen · +22 % Durchschnittspreis
+                  - paragraph [ref=e422]: Tourismus · 2025
+            - generic:
+              - link "Berger & Partner 70 % weniger Zeit für Dokumentenarbeit Kanzlei · 2025":
+                - /url: /blog/kanzlei-dokumenten-ki
+                - generic [ref=e423] [cursor=pointer]:
+                  - generic [ref=e424]:
+                    - img [ref=e426]
+                    - paragraph [ref=e431]: Berger & Partner
+                  - paragraph [ref=e432]: 70 % weniger Zeit für Dokumentenarbeit
+                  - paragraph [ref=e433]: Kanzlei · 2025
+            - generic:
+              - link "FitBase +31 % Neuanmeldungen in 90 Tagen Fitness · 2025":
+                - /url: /blog/fitnessstudio-ki-vertrieb
+                - generic [ref=e434] [cursor=pointer]:
+                  - generic [ref=e435]:
+                    - img [ref=e437]
+                    - paragraph [ref=e443]: FitBase
+                  - paragraph [ref=e444]: +31 % Neuanmeldungen in 90 Tagen
+                  - paragraph [ref=e445]: Fitness · 2025
+            - generic:
+              - link "Kanzlei Nowak 60 % weniger Admin-Aufwand Steuerberatung · 2025":
+                - /url: /blog/steuerberater-mandanten-automation
+                - generic [ref=e446] [cursor=pointer]:
+                  - generic [ref=e447]:
+                    - img [ref=e449]
+                    - paragraph [ref=e452]: Kanzlei Nowak
+                  - paragraph [ref=e453]: 60 % weniger Admin-Aufwand
+                  - paragraph [ref=e454]: Steuerberatung · 2025
+          - link "Alle Projekte ansehen →" [ref=e456] [cursor=pointer]:
+            - /url: "#chatbot"
+    - generic [ref=e459]:
+      - generic [ref=e460]:
+        - heading "Gebaut mit den neuesten Tools." [level=2] [ref=e461]:
+          - generic [ref=e462]: Gebaut mit den
+          - generic [ref=e463]: neuesten Tools.
+        - paragraph [ref=e464]: Wir arbeiten ausschließlich mit den fortschrittlichsten KI-Tools — damit deine Infrastruktur immer auf dem neuesten Stand ist.
+      - generic [ref=e465]:
+        - generic [ref=e467]:
+          - img "n8n" [ref=e468]
+          - generic [ref=e469]:
+            - paragraph [ref=e470]: n8n
+            - paragraph [ref=e471]: Workflow-Automatisierung
+        - generic [ref=e473]:
+          - img "Claude Code" [ref=e474]
+          - generic [ref=e475]:
+            - paragraph [ref=e476]: Claude Code
+            - paragraph [ref=e477]: KI-gestützte Entwicklung
+        - generic [ref=e479]:
+          - img "ElevenLabs" [ref=e480]
+          - generic [ref=e481]:
+            - paragraph [ref=e482]: ElevenLabs
+            - paragraph [ref=e483]: KI Voice & Audio
+        - generic [ref=e485]:
+          - img "Supabase" [ref=e486]
+          - generic [ref=e487]:
+            - paragraph [ref=e488]: Supabase
+            - paragraph [ref=e489]: Sichere Datenverwaltung
+        - generic [ref=e491]:
+          - img "Higgsfield" [ref=e492]
+          - generic [ref=e493]:
+            - paragraph [ref=e494]: Higgsfield
+            - paragraph [ref=e495]: KI Video-Generierung
+    - generic [ref=e497]:
+      - generic [ref=e498]:
+        - heading "So arbeiten wir mit dir" [level=2] [ref=e499]:
+          - text: So arbeiten
+          - emphasis [ref=e500]: wir
+          - text: mit dir
+        - paragraph [ref=e501]: Von der ersten Idee bis zum fertigen System — klar strukturiert, schnell umgesetzt.
+      - generic [ref=e502]:
+        - generic [ref=e504]:
+          - heading "Erstgespräch" [level=3] [ref=e508]
+          - generic [ref=e511]:
+            - paragraph [ref=e512]: Wir lernen dein Unternehmen kennen — deine Ziele, Prozesse und Herausforderungen. Kein technisches Vorwissen nötig.
+            - generic [ref=e513]:
+              - generic [ref=e514]: 30 Minuten kostenlos & unverbindlich
+              - generic [ref=e516]: Analyse deiner aktuellen Prozesse
+              - generic [ref=e518]: Erste KI-Potenziale identifizieren
+        - generic [ref=e521]:
+          - heading "Konzept" [level=3] [ref=e525]
+          - generic [ref=e528]:
+            - paragraph [ref=e529]: Wir entwickeln eine maßgeschneiderte KI-Strategie für dein Unternehmen — mit konkretem Umsetzungsplan und Zeitrahmen.
+            - paragraph [ref=e530]: Wir analysieren deine bestehenden Datenstrukturen und Prozesse und bauen das Konzept darauf auf, nicht an ihr vorbei.
+            - generic [ref=e531]:
+              - generic [ref=e532]: Individuelle KI-Roadmap
+              - generic [ref=e534]: Technischer Architekturplan
+              - generic [ref=e536]: Klare Kosten- und Zeitplanung
+        - generic [ref=e539]:
+          - heading "Umsetzung" [level=3] [ref=e543]
+          - generic [ref=e546]:
+            - paragraph [ref=e547]: Unser Team entwickelt und implementiert alle KI-Systeme — schnell, professionell und mit laufenden Updates.
+            - generic [ref=e548]:
+              - generic [ref=e549]: Agile Entwicklung in 2–4 Wochen
+              - generic [ref=e551]: Wöchentliche Status-Updates
+              - generic [ref=e553]: Vollständige Integration in bestehende Systeme
+        - generic [ref=e556]:
+          - heading "Launch & Support" [level=3] [ref=e560]
+          - generic [ref=e563]:
+            - paragraph [ref=e564]: Alle aufgebauten Prozesse werden in dein persönliches BusinessOS zusammengeführt — dein digitaler Business Agent ist ab sofort einsatzbereit.
+            - paragraph [ref=e565]: Du erhältst deine Zugangsdaten für das BusinessOS und kannst sofort loslegen. Wir bleiben an deiner Seite mit persönlichem Support.
+            - generic [ref=e566]:
+              - generic [ref=e567]: Übergabe deines digitalen Business Agenten
+              - generic [ref=e569]: Zugangsdaten & Onboarding ins BusinessOS
+              - generic [ref=e571]: Persönlicher Support & laufende Optimierung
+    - generic [ref=e575]:
+      - generic [ref=e576]:
+        - paragraph [ref=e577]: Kunden · Stimmen · Ergebnisse
+        - generic [ref=e578]:
+          - heading "Was unsere Kunden sagen" [level=2] [ref=e579]:
+            - generic [ref=e580]: Was unsere
+            - generic [ref=e581]: Kunden sagen
+          - generic [ref=e582]:
+            - button [disabled] [ref=e583]:
+              - img [ref=e584]
+            - button [ref=e586] [cursor=pointer]:
+              - img [ref=e587]
+      - generic [ref=e590]:
+        - generic [ref=e592]:
+          - img
+          - generic:
+            - generic [ref=e593]: T
+            - generic [ref=e594]:
+              - paragraph [ref=e595]: Thomas Bergmann
+              - paragraph [ref=e596]: Geschäftsführer — Bergmann Steuerberatung, Hannover
+          - paragraph: „Ich war ehrlich gesagt skeptisch. KI klang nach etwas für große Konzerne, nicht für eine Kanzlei mit 12 Leuten. Aber seit wir den KI-Assistenten auf der Website haben, klingelt das Telefon nur noch für die Dinge die wirklich meine Zeit brauchen. Die ganzen 'Was kostet eine Steuererklärung' Anrufe sind einfach weg."
+          - generic:
+            - generic [ref=e597]: KI-Website
+            - generic [ref=e598]: KI-Chatbot
+        - generic [ref=e600]:
+          - img
+          - generic:
+            - generic [ref=e601]: S
+            - generic [ref=e602]:
+              - paragraph [ref=e603]: Sandra Kühl
+              - paragraph [ref=e604]: Inhaberin — Kühl Physiotherapie, Freiburg
+          - paragraph: „Wir haben jeden Montag eine Stunde damit verbracht Termine zu koordinieren, Absagen zu bearbeiten und Erinnerungen rauszuschicken. Das klingt nach wenig bis man merkt dass das 50 Stunden im Jahr sind. Jetzt läuft das alles von alleine und ich habe das Gefühl meine Praxis ist plötzlich größer als sie ist."
+          - generic [ref=e605]: Workflow-Automatisierung
+        - generic [ref=e607]:
+          - img
+          - generic:
+            - generic [ref=e608]: M
+            - generic [ref=e609]:
+              - paragraph [ref=e610]: Markus Diehl
+              - paragraph [ref=e611]: Vertriebsleiter — Diehl Metallbau GmbH, Stuttgart
+          - paragraph: „Wir bauen Stahlkonstruktionen, keine Software. Ich hätte nie gedacht dass KI für uns relevant ist. Aber unser Angebotsprozess hat sich von zwei Tagen auf zwei Stunden verkürzt. Konkret. Messbar. Ich hab das meinem Chef gezeigt und der hat sofort gefragt wann wir das auf den Rest der Firma ausrollen."
+          - generic:
+            - generic [ref=e612]: Workflow-Automatisierung
+            - generic [ref=e613]: AI Workflows
+        - generic [ref=e615]:
+          - img
+          - generic:
+            - generic [ref=e616]: J
+            - generic [ref=e617]:
+              - paragraph [ref=e618]: Julia Hartmann
+              - paragraph [ref=e619]: Gründerin — Hartmann Coaching & Consulting, München
+          - paragraph: "„Was mich überzeugt hat war nicht die Technologie sondern wie erklärt wurde was die Technologie für mich bedeutet. Kein Fachjargon, keine überflüssigen Features. Einfach: das ist dein Problem, das ist die Lösung, das kostet es, so schnell ist es fertig. Genau so hätte ich es mir gewünscht.\""
+          - generic:
+            - generic [ref=e620]: KI-Website
+            - generic [ref=e621]: KI-Chatbot
+        - generic [ref=e623]:
+          - img
+          - generic:
+            - generic [ref=e624]: R
+            - generic [ref=e625]:
+              - paragraph [ref=e626]: René Bauer
+              - paragraph [ref=e627]: Betriebsleiter — Autohaus Bauer, Kassel
+          - paragraph: „Wir haben im ersten Monat nach der neuen Website 14 Probefahrten gebucht ohne einen einzigen Anruf dafür entgegengenommen zu haben. Der Chatbot hat die Kunden qualifiziert, den Termin gebucht und mir eine Zusammenfassung geschickt bevor ich morgens ins Büro kam. Ich musste kurz nachschauen ob das wirklich funktioniert."
+          - generic:
+            - generic [ref=e628]: KI-Website
+            - generic [ref=e629]: KI-Chatbot
+            - generic [ref=e630]: Lead Generation
+      - generic [ref=e631]:
+        - button [ref=e632] [cursor=pointer]
+        - button [ref=e633] [cursor=pointer]
+        - button [ref=e634] [cursor=pointer]
+    - generic [ref=e637]:
+      - generic [ref=e638]:
+        - heading "Noch Fragen?" [level=2] [ref=e639]
+        - paragraph [ref=e641]: Sprich mit unserem KI-Assistenten
+      - generic [ref=e642]:
+        - generic [ref=e645]:
+          - generic [ref=e646]: KI
+          - paragraph [ref=e647]: Hallo! Wie kann ich dir helfen?
+        - generic [ref=e649]:
+          - button [ref=e650]:
+            - img [ref=e651]
+          - textbox "Schreib eine Nachricht..." [ref=e654]
+          - button [disabled] [ref=e655]:
+            - img [ref=e656]
+    - generic [ref=e658]:
+      - generic [ref=e659]:
+        - paragraph [ref=e660]: Wissen & Einblicke
+        - heading "Aktuelle Artikel" [level=2] [ref=e661]
+        - paragraph [ref=e662]: Einblicke in KI, Automatisierung und den digitalen Mittelstand.
+      - generic [ref=e663]:
+        - 'link "100 Jahre in die Zukunft: Was KI aus unserem Alltag macht Artikel lesen 100 Jahre in die Zukunft: Was KI aus unserem Alltag macht Stellen Sie sich vor, Sie könnten 100 Jahre in die Zukunft reisen. Was würde ein Mittelständler von heute vorfinden? Ein… d de87acf9-23a9-48d1-aabc-3382915d56d0 31. März 2026 3 Min." [ref=e665] [cursor=pointer]':
+          - /url: /blog/a9344ebf-dc84-4cd4-bf2e-f9fa845668e6
+          - generic [ref=e666]:
+            - generic [ref=e667]:
+              - 'img "100 Jahre in die Zukunft: Was KI aus unserem Alltag macht" [ref=e668]'
+              - button "Artikel lesen" [ref=e671]:
+                - img [ref=e672]
+                - text: Artikel lesen
+            - generic [ref=e674]:
+              - generic [ref=e675]:
+                - 'heading "100 Jahre in die Zukunft: Was KI aus unserem Alltag macht" [level=3] [ref=e676]'
+                - paragraph [ref=e677]: Stellen Sie sich vor, Sie könnten 100 Jahre in die Zukunft reisen. Was würde ein Mittelständler von heute vorfinden? Ein…
+              - generic [ref=e678]:
+                - generic [ref=e679]:
+                  - generic [ref=e681]: d
+                  - generic [ref=e682]:
+                    - generic [ref=e683]: de87acf9-23a9-48d1-aabc-3382915d56d0
+                    - generic [ref=e684]: 31. März 2026
+                - generic [ref=e685]:
+                  - img [ref=e686]
+                  - generic [ref=e689]: 3 Min.
+        - 'link "Künstliche Intelligenz rettet Arten: Wie KI-Systeme Tiere und Ökosysteme schützen Artikel lesen Künstliche Intelligenz rettet Arten: Wie KI-Systeme Tiere und Ökosysteme schützen Künstliche Intelligenz ist längst nicht mehr nur Thema für Büros und Unternehmen. Im Naturschutz passiert gerade eine st… d de87acf9-23a9-48d1-aabc-3382915d56d0 31. März 2026 2 Min." [ref=e691] [cursor=pointer]':
+          - /url: /blog/ba586462-5736-4c29-b7c5-86afbb2bbfe1
+          - generic [ref=e692]:
+            - generic [ref=e693]:
+              - 'img "Künstliche Intelligenz rettet Arten: Wie KI-Systeme Tiere und Ökosysteme schützen" [ref=e694]'
+              - button "Artikel lesen" [ref=e697]:
+                - img [ref=e698]
+                - text: Artikel lesen
+            - generic [ref=e700]:
+              - generic [ref=e701]:
+                - 'heading "Künstliche Intelligenz rettet Arten: Wie KI-Systeme Tiere und Ökosysteme schützen" [level=3] [ref=e702]'
+                - paragraph [ref=e703]: Künstliche Intelligenz ist längst nicht mehr nur Thema für Büros und Unternehmen. Im Naturschutz passiert gerade eine st…
+              - generic [ref=e704]:
+                - generic [ref=e705]:
+                  - generic [ref=e707]: d
+                  - generic [ref=e708]:
+                    - generic [ref=e709]: de87acf9-23a9-48d1-aabc-3382915d56d0
+                    - generic [ref=e710]: 31. März 2026
+                - generic [ref=e711]:
+                  - img [ref=e712]
+                  - generic [ref=e715]: 2 Min.
+        - 'link "Künstliche Intelligenz trifft Tierwelt: Wie KI den Artenschutz revolutioniert Artikel lesen Künstliche Intelligenz trifft Tierwelt: Wie KI den Artenschutz revolutioniert Die Tierwelt verändert sich rasant. Nicht nur durch den Klimawandel, sondern auch durch eine völlig neue Technologie, di… d de87acf9-23a9-48d1-aabc-3382915d56d0 31. März 2026 2 Min." [ref=e717] [cursor=pointer]':
+          - /url: /blog/6ccb4b7f-6957-47ef-ac2b-e3bbd33ba287
+          - generic [ref=e718]:
+            - generic [ref=e719]:
+              - 'img "Künstliche Intelligenz trifft Tierwelt: Wie KI den Artenschutz revolutioniert" [ref=e720]'
+              - button "Artikel lesen" [ref=e723]:
+                - img [ref=e724]
+                - text: Artikel lesen
+            - generic [ref=e726]:
+              - generic [ref=e727]:
+                - 'heading "Künstliche Intelligenz trifft Tierwelt: Wie KI den Artenschutz revolutioniert" [level=3] [ref=e728]'
+                - paragraph [ref=e729]: Die Tierwelt verändert sich rasant. Nicht nur durch den Klimawandel, sondern auch durch eine völlig neue Technologie, di…
+              - generic [ref=e730]:
+                - generic [ref=e731]:
+                  - generic [ref=e733]: d
+                  - generic [ref=e734]:
+                    - generic [ref=e735]: de87acf9-23a9-48d1-aabc-3382915d56d0
+                    - generic [ref=e736]: 31. März 2026
+                - generic [ref=e737]:
+                  - img [ref=e738]
+                  - generic [ref=e741]: 2 Min.
+        - 'link "Das Business Operating System — Wie wir KI-Infrastruktur für den Mittelstand entwickeln Artikel lesen Das Business Operating System — Wie wir KI-Infrastruktur für den Mittelstand entwickeln Was ist ein Business Operating System überhaupt? Stellen Sie sich vor: Alle Ihre Systeme, Daten und Prozesse arbeiten z… d de87acf9-23a9-48d1-aabc-3382915d56d0 31. März 2026 3 Min." [ref=e743] [cursor=pointer]':
+          - /url: /blog/36211273-14fa-4a36-ac46-93469ca53d27
+          - generic [ref=e744]:
+            - generic [ref=e745]:
+              - img "Das Business Operating System — Wie wir KI-Infrastruktur für den Mittelstand entwickeln" [ref=e746]
+              - button "Artikel lesen" [ref=e749]:
+                - img [ref=e750]
+                - text: Artikel lesen
+            - generic [ref=e752]:
+              - generic [ref=e753]:
+                - heading "Das Business Operating System — Wie wir KI-Infrastruktur für den Mittelstand entwickeln" [level=3] [ref=e754]
+                - paragraph [ref=e755]: "Was ist ein Business Operating System überhaupt? Stellen Sie sich vor: Alle Ihre Systeme, Daten und Prozesse arbeiten z…"
+              - generic [ref=e756]:
+                - generic [ref=e757]:
+                  - generic [ref=e759]: d
+                  - generic [ref=e760]:
+                    - generic [ref=e761]: de87acf9-23a9-48d1-aabc-3382915d56d0
+                    - generic [ref=e762]: 31. März 2026
+                - generic [ref=e763]:
+                  - img [ref=e764]
+                  - generic [ref=e767]: 3 Min.
+        - link "Die Entwicklung des Onvero Business OS Artikel lesen Die Entwicklung des Onvero Business OS Das Business Operating System — kein Standard-Template, keine generische Plattform, sondern eine maßgeschneiderte KI-Inf… d de87acf9-23a9-48d1-aabc-3382915d56d0 31. März 2026 3 Min." [ref=e769] [cursor=pointer]:
+          - /url: /blog/6b9065fe-b364-4510-a297-1fc962974c7b
+          - generic [ref=e770]:
+            - generic [ref=e771]:
+              - img "Die Entwicklung des Onvero Business OS" [ref=e772]
+              - button "Artikel lesen" [ref=e775]:
+                - img [ref=e776]
+                - text: Artikel lesen
+            - generic [ref=e778]:
+              - generic [ref=e779]:
+                - heading "Die Entwicklung des Onvero Business OS" [level=3] [ref=e780]
+                - paragraph [ref=e781]: Das Business Operating System — kein Standard-Template, keine generische Plattform, sondern eine maßgeschneiderte KI-Inf…
+              - generic [ref=e782]:
+                - generic [ref=e783]:
+                  - generic [ref=e785]: d
+                  - generic [ref=e786]:
+                    - generic [ref=e787]: de87acf9-23a9-48d1-aabc-3382915d56d0
+                    - generic [ref=e788]: 31. März 2026
+                - generic [ref=e789]:
+                  - img [ref=e790]
+                  - generic [ref=e793]: 3 Min.
+        - 'link "Wie Onvero ein Business Operating System entwickelt Artikel lesen Wie Onvero ein Business Operating System entwickelt Ein Business Operating System klingt abstrakt. Doch am Ende bedeutet es einfach: Alle Systeme im Unternehmen arbeiten zu… d de87acf9-23a9-48d1-aabc-3382915d56d0 31. März 2026 3 Min." [ref=e795] [cursor=pointer]':
+          - /url: /blog/40d82f01-f622-4cf3-9345-3ddbcae5b830
+          - generic [ref=e796]:
+            - generic [ref=e797]:
+              - img "Wie Onvero ein Business Operating System entwickelt" [ref=e798]
+              - button "Artikel lesen" [ref=e801]:
+                - img [ref=e802]
+                - text: Artikel lesen
+            - generic [ref=e804]:
+              - generic [ref=e805]:
+                - heading "Wie Onvero ein Business Operating System entwickelt" [level=3] [ref=e806]
+                - paragraph [ref=e807]: "Ein Business Operating System klingt abstrakt. Doch am Ende bedeutet es einfach: Alle Systeme im Unternehmen arbeiten zu…"
+              - generic [ref=e808]:
+                - generic [ref=e809]:
+                  - generic [ref=e811]: d
+                  - generic [ref=e812]:
+                    - generic [ref=e813]: de87acf9-23a9-48d1-aabc-3382915d56d0
+                    - generic [ref=e814]: 31. März 2026
+                - generic [ref=e815]:
+                  - img [ref=e816]
+                  - generic [ref=e819]: 3 Min.
+    - generic [ref=e821]:
+      - generic [ref=e823]:
+        - generic [ref=e824]:
+          - link "Onvero" [ref=e825] [cursor=pointer]:
+            - /url: /
+            - img "Onvero" [ref=e826]:
+              - generic [ref=e833]: Onvero
+          - paragraph [ref=e834]: KI-Infrastruktur für dein Unternehmen — von der Website bis zum internen Tool. Einfach wirksam.
+          - generic [ref=e835]:
+            - generic [ref=e836]: DSGVO
+            - generic [ref=e837]: Made in DE
+          - generic [ref=e838]:
+            - link "info@onvero.de" [ref=e839] [cursor=pointer]:
+              - /url: mailto:info@onvero.de
+            - link "+49 163 8981544" [ref=e840] [cursor=pointer]:
+              - /url: tel:+491638981544
+          - group "Sprache wählen" [ref=e841]:
+            - button "DE" [ref=e842]
+            - button "EN" [ref=e843] [cursor=pointer]
+        - generic [ref=e845]:
+          - list [ref=e846]:
+            - listitem [ref=e847]: Unternehmen
+            - listitem [ref=e848] [cursor=pointer]:
+              - link "Über uns" [ref=e849]:
+                - /url: /ueber-uns
+              - img [ref=e851]
+            - listitem [ref=e853] [cursor=pointer]:
+              - link "Erstgespräch buchen" [ref=e854]:
+                - /url: /erstgespraech-buchen
+              - img [ref=e856]
+          - list [ref=e858]:
+            - listitem [ref=e859]: Rechtliches
+            - listitem [ref=e860] [cursor=pointer]:
+              - link "Datenschutz" [ref=e861]:
+                - /url: /datenschutz
+              - img [ref=e863]
+            - listitem [ref=e865] [cursor=pointer]:
+              - link "Impressum" [ref=e866]:
+                - /url: /impressum
+              - img [ref=e868]
+      - generic [ref=e874]:
+        - paragraph [ref=e875]: © 2025 Onvero. Alle Rechte vorbehalten.
+        - paragraph [ref=e876]: Gebaut mit KI. Für Unternehmen.
+  - alert [ref=e877]
+  - generic [ref=e878]:
+    - paragraph [ref=e879]:
+      - text: Wir verwenden technisch notwendige Cookies, um die Website funktionsfähig zu halten. Weitere Informationen findest du in unserer
+      - link "Datenschutzerklärung" [ref=e880] [cursor=pointer]:
+        - /url: /datenschutz
+      - text: .
+    - generic [ref=e881]:
+      - button "Nur notwendige" [ref=e882] [cursor=pointer]
+      - button "Alle akzeptieren" [ref=e883] [cursor=pointer]

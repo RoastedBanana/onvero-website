@@ -88,7 +88,7 @@ export function CommandPalette() {
       description: `${leads.length} Einträge`,
       icon: ICONS.list,
       color: '#818CF8',
-      action: () => router.push('/sales/leads'),
+      action: () => router.push('/sales/unternehmen'),
       section: 'Navigation',
     },
     {
@@ -161,7 +161,7 @@ export function CommandPalette() {
       description: `${l.company} · ${l.city}${l.score ? ` · Score ${l.score}` : ''}`,
       icon: ICONS.users,
       color: (l.score ?? 0) >= 70 ? '#818CF8' : (l.score ?? 0) >= 50 ? '#FBBF24' : '#4E5170',
-      action: () => router.push(`/sales/leads/${l.id}`),
+      action: () => router.push(`/sales/unternehmen/${l.id}`),
       section: 'Leads',
     }));
 

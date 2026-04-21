@@ -332,7 +332,7 @@ function PersonDetail({ contact, onClose }: { contact: Contact; onClose: () => v
                   </div>
                 )}
                 <div>
-                  <Link href={`/sales/leads/${contact.lead_id}`} style={{ fontSize: 14, fontWeight: 600, color: C.text1, textDecoration: 'none' }}
+                  <Link href={`/sales/unternehmen/${contact.lead_id}`} style={{ fontSize: 14, fontWeight: 600, color: C.text1, textDecoration: 'none' }}
                     onMouseEnter={(e) => { e.currentTarget.style.color = C.accentBright; }}
                     onMouseLeave={(e) => { e.currentTarget.style.color = C.text1; }}
                   >
