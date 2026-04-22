@@ -60,11 +60,7 @@ function buildNav(
           href: '/sales/unternehmen',
           icon: ICONS.list,
           badge: `${leadCount}`,
-          children: [
-            { label: `Neu heute (${neuHeute})`, href: '/sales/unternehmen?filter=neu-heute' },
-            { label: `Qualifiziert (${qualifiziert})`, href: '/sales/unternehmen?filter=qualifiziert' },
-            { label: `In Kontakt (${inKontakt})`, href: '/sales/unternehmen?filter=kontakt' },
-          ],
+          children: [],
         },
         { label: 'People', href: '/sales/people', icon: ICONS.users },
         { label: 'Kunden', href: '/sales/kunden', icon: ICONS.check, comingSoon: true },
