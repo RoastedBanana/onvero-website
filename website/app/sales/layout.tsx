@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { C, GLOBAL_STYLES, SvgIcon, ParallaxBackground, ICONS, ToastContainer, StatusBar } from './_shared';
 import { openCommandPalette } from './_command-palette';
-import { getSupabase, readSessionFromStorage } from './_use-leads';
+import { getSupabase, readSessionFromStorage, useLeads } from './_use-leads';
 import { useActivities, formatActivityTime, getActivityStyle } from './_activities';
 
 const CommandPalette = dynamic(() => import('./_command-palette').then((m) => m.CommandPalette), { ssr: false });
@@ -911,8 +911,18 @@ function Topbar() {
 
 function Sidebar() {
   const pathname = usePathname();
-  // Static counts — avoids loading the full leads dataset just for badge numbers
-  const NAV = useMemo(() => buildNav(0, 0, 0, 0, 0), []);
+  const { leads } = useLeads();
+  const NAV = useMemo(
+    () =>
+      buildNav(
+        leads.length,
+        leads.filter((l) => l.lastActivity.includes('h') || l.lastActivity.includes('eben')).length,
+        leads.filter((l) => l.status === 'Qualifiziert').length,
+        leads.filter((l) => l.status === 'In Kontakt').length,
+        leads.filter((l) => l.email).length
+      ),
+    [leads]
+  );
 
   function isActive(href: string) {
     if (href === '/sales') return pathname === '/sales';
