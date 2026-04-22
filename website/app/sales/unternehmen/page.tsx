@@ -51,13 +51,16 @@ function SelectionBar({
   onExport,
   onDelete,
   onClear,
+  onSelectAll,
+  allSelected,
 }: {
   count: number;
   onExport: () => void;
   onDelete: () => void;
   onClear: () => void;
+  onSelectAll: () => void;
+  allSelected: boolean;
 }) {
-  if (count === 0) return null;
   return (
     <div
       style={{
@@ -87,7 +90,27 @@ function SelectionBar({
         }
       `}</style>
 
-      <span style={{ fontSize: 13, fontWeight: 500, color: TOKENS.color.textPrimary }}>{count} ausgewählt</span>
+      <span style={{ fontSize: 13, fontWeight: 500, color: TOKENS.color.textPrimary }}>
+        {count > 0 ? `${count} ausgewählt` : 'Nichts ausgewählt'}
+      </span>
+
+      <button
+        onClick={onSelectAll}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: TOKENS.color.indigoLight,
+          fontSize: 12,
+          cursor: 'pointer',
+          padding: '2px 6px',
+          borderRadius: 5,
+          fontFamily: TOKENS.font.family,
+        }}
+      >
+        {allSelected ? 'Alle abwählen' : 'Alle auswählen'}
+      </button>
+
+      <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
 
       <button
         onClick={onClear}
@@ -733,7 +756,16 @@ export default function UnternehmenV2Page() {
         />
       )}
 
-      <SelectionBar count={selected.size} onExport={handleExport} onDelete={handleDelete} onClear={exitSelectionMode} />
+      {selectionMode && (
+        <SelectionBar
+          count={selected.size}
+          onExport={handleExport}
+          onDelete={handleDelete}
+          onClear={exitSelectionMode}
+          onSelectAll={toggleAll}
+          allSelected={filteredCompanies.length > 0 && filteredCompanies.every((c) => selected.has(c.id))}
+        />
+      )}
 
       {showDeleteModal && (
         <DeleteConfirmModal
