@@ -45,28 +45,7 @@ const STEPS: Step[] = [
 ];
 
 export function OnboardingTour() {
-  const [active, setActive] = useState(false);
-  const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    const seen = sessionStorage.getItem('onvero-tour-seen');
-    if (!seen) {
-      const timer = setTimeout(() => setActive(true), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  function dismiss() {
-    setActive(false);
-    sessionStorage.setItem('onvero-tour-seen', '1');
-  }
-
-  function next() {
-    if (step < STEPS.length - 1) setStep(step + 1);
-    else dismiss();
-  }
-
-  if (!active) return null;
+  return null;
 
   const s = STEPS[step];
 
