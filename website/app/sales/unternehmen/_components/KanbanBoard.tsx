@@ -126,12 +126,18 @@ function KanbanCard({
   onDragStart,
   onDragEnd,
   onClick,
+  selected,
+  onToggle,
+  selectionMode,
 }: {
   company: CompanyWithContacts;
   isDragging: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
   onClick: () => void;
+  selected?: boolean;
+  onToggle?: () => void;
+  selectionMode?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const tier = fmt.tier(c.tier);
@@ -140,17 +146,38 @@ function KanbanCard({
   const employees = c.estimated_num_employees ? fmt.employees(c.estimated_num_employees) : null;
   const summary = c.summary ?? c.apollo_short_description ?? null;
 
+  const borderColor = selected
+    ? 'rgba(107,122,255,0.45)'
+    : tier === 'HOT'
+      ? 'rgba(107,122,255,0.35)'
+      : TOKENS.color.borderSubtle;
+
+  function handleClick() {
+    if (selectionMode) {
+      onToggle?.();
+    } else {
+      onClick();
+    }
+  }
+
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onClick={onClick}
+      draggable={!selectionMode}
+      onDragStart={!selectionMode ? onDragStart : undefined}
+      onDragEnd={!selectionMode ? onDragEnd : undefined}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: isDragging ? 'transparent' : hovered ? TOKENS.color.bgSubtle : TOKENS.color.bgCard,
-        border: `0.5px solid ${tier === 'HOT' ? 'rgba(107,122,255,0.35)' : TOKENS.color.borderSubtle}`,
+        position: 'relative',
+        backgroundColor: isDragging
+          ? 'transparent'
+          : selected
+            ? TOKENS.color.indigoBgSubtle
+            : hovered
+              ? TOKENS.color.bgSubtle
+              : TOKENS.color.bgCard,
+        border: `0.5px solid ${borderColor}`,
         borderRadius: TOKENS.radius.card,
         padding: '14px 16px',
         cursor: isDragging ? 'grabbing' : 'grab',
@@ -166,41 +193,85 @@ function KanbanCard({
     >
       {/* Header: logo + name + ring */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
-        {c.logo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={c.logo_url}
-            alt=""
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              objectFit: 'contain',
-              background: '#fff',
-              flexShrink: 0,
-              border: `1px solid ${TOKENS.color.borderSubtle}`,
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              background: TOKENS.color.indigoBgSoft,
-              border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 13,
-              fontWeight: 600,
-              color: TOKENS.color.indigoLight,
-              flexShrink: 0,
-            }}
-          >
-            {fmt.initials(c.company_name)}
-          </div>
-        )}
+        {/* Logo with select overlay */}
+        <div
+          style={{ position: 'relative', width: 38, height: 38, flexShrink: 0 }}
+          onClick={(e) => {
+            if (onToggle) {
+              e.stopPropagation();
+              onToggle();
+            }
+          }}
+        >
+          {c.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={c.logo_url}
+              alt=""
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                objectFit: 'contain',
+                background: '#fff',
+                border: `1px solid ${TOKENS.color.borderSubtle}`,
+                display: 'block',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                background: TOKENS.color.indigoBgSoft,
+                border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 13,
+                fontWeight: 600,
+                color: TOKENS.color.indigoLight,
+              }}
+            >
+              {fmt.initials(c.company_name)}
+            </div>
+          )}
+          {onToggle && (selectionMode || hovered || selected) && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 8,
+                backgroundColor: selected ? TOKENS.color.indigo : 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background-color 0.15s',
+              }}
+            >
+              {selected ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <div
+                  style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.8)' }}
+                />
+              )}
+            </div>
+          )}
+        </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
@@ -333,9 +404,15 @@ function KanbanCard({
 export default function KanbanBoard({
   companies,
   onStatusChange,
+  selected,
+  onToggle,
+  selectionMode,
 }: {
   companies: CompanyWithContacts[];
   onStatusChange: (id: string, status: CompanyStatus) => void;
+  selected?: Set<string>;
+  onToggle?: (id: string) => void;
+  selectionMode?: boolean;
 }) {
   const router = useRouter();
   const [dragId, setDragId] = useState<string | null>(null);
@@ -438,7 +515,12 @@ export default function KanbanBoard({
                   isDragging={dragId === c.id}
                   onDragStart={() => setDragId(c.id)}
                   onDragEnd={() => setDragId(null)}
-                  onClick={() => router.push(`/sales/unternehmen/${c.id}?tab=uebersicht`)}
+                  onClick={() => {
+                    if (!selectionMode) router.push(`/sales/unternehmen/${c.id}?tab=uebersicht`);
+                  }}
+                  selected={selected?.has(c.id)}
+                  onToggle={onToggle ? () => onToggle(c.id) : undefined}
+                  selectionMode={selectionMode}
                 />
               ))}
 

@@ -27,6 +27,8 @@ export interface FilterBarProps {
   onScoreRangeChange: (v: ScoreRange) => void;
   sortBy: SortBy;
   onSortChange: (v: SortBy) => void;
+  selectionMode?: boolean;
+  onToggleSelectionMode?: () => void;
 }
 
 // ─── TIER CONFIG ────────────────────────────────────────────────────────────
@@ -342,48 +344,105 @@ export default function FilterBar(props: FilterBarProps) {
           <option value="80+">80+</option>
         </select>
 
+        {/* Spacer pushes right-side buttons to the end */}
+        <div style={{ flex: 1 }} />
+
         {/* Clear all active filters */}
         {activeFilterCount > 0 && (
-          <>
-            <div style={{ flex: 1 }} />
-            <button
-              onClick={() => {
-                props.onTierChange('all');
-                props.onIndustryChange(null);
-                props.onCountryChange(null);
-                props.onEmployeeRangeChange(null);
-                props.onScoreRangeChange(null);
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-                padding: '5px 10px',
-                borderRadius: TOKENS.radius.pill,
-                border: `1px solid ${TOKENS.color.borderSubtle}`,
-                background: 'transparent',
-                color: TOKENS.color.textMuted,
-                fontSize: 12,
-                cursor: 'pointer',
-                fontFamily: TOKENS.font.family,
-                transition: 'all 0.15s',
-                whiteSpace: 'nowrap',
-              }}
+          <button
+            onClick={() => {
+              props.onTierChange('all');
+              props.onIndustryChange(null);
+              props.onCountryChange(null);
+              props.onEmployeeRangeChange(null);
+              props.onScoreRangeChange(null);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '5px 10px',
+              borderRadius: TOKENS.radius.pill,
+              border: `1px solid ${TOKENS.color.borderSubtle}`,
+              background: 'transparent',
+              color: TOKENS.color.textMuted,
+              fontSize: 12,
+              cursor: 'pointer',
+              fontFamily: TOKENS.font.family,
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
             >
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-              {activeFilterCount} Filter
-            </button>
-          </>
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+            {activeFilterCount} Filter
+          </button>
+        )}
+
+        {/* Auswählen toggle */}
+        {props.onToggleSelectionMode && (
+          <button
+            onClick={props.onToggleSelectionMode}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '5px 12px',
+              borderRadius: TOKENS.radius.pill,
+              border: `1px solid ${props.selectionMode ? TOKENS.color.indigoBorderSoft : TOKENS.color.borderSubtle}`,
+              background: props.selectionMode ? TOKENS.color.indigoBgSoft : 'transparent',
+              color: props.selectionMode ? TOKENS.color.indigoLight : TOKENS.color.textMuted,
+              fontSize: 12,
+              fontWeight: props.selectionMode ? 500 : 400,
+              cursor: 'pointer',
+              fontFamily: TOKENS.font.family,
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {props.selectionMode ? (
+              <>
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+                Abbrechen
+              </>
+            ) : (
+              <>
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                </svg>
+                Auswählen
+              </>
+            )}
+          </button>
         )}
       </div>
     </div>

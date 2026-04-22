@@ -12,7 +12,6 @@ import { useActivities, formatActivityTime, getActivityStyle } from './_activiti
 
 const CommandPalette = dynamic(() => import('./_command-palette').then((m) => m.CommandPalette), { ssr: false });
 const AIChatWidget = dynamic(() => import('./_ai-chat').then((m) => m.AIChatWidget), { ssr: false });
-const OnboardingTour = dynamic(() => import('./_onboarding').then((m) => m.OnboardingTour), { ssr: false });
 
 // ─── NAV CONFIG ──────────────────────────────────────────────────────────────
 
@@ -1206,7 +1205,7 @@ export default function SalesV2Layout({ children }: { children: React.ReactNode 
         <ToastContainer />
         <CommandPalette />
         {/* <AIChatWidget /> */}
-        <OnboardingTour />
+
         <Topbar />
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', zIndex: 1 }}>
           <Sidebar />

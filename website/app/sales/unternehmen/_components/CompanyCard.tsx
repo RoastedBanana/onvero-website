@@ -141,7 +141,17 @@ function TagChip({ label }: { label: string }) {
 
 // ─── COMPANY CARD ───────────────────────────────────────────────────────────
 
-export default function CompanyCard({ company }: { company: CompanyWithContacts }) {
+export default function CompanyCard({
+  company,
+  selected,
+  onToggle,
+  selectionMode,
+}: {
+  company: CompanyWithContacts;
+  selected?: boolean;
+  onToggle?: () => void;
+  selectionMode?: boolean;
+}) {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
 
@@ -149,15 +159,17 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
   const isHot = tier === 'HOT';
   const isWarm = tier === 'WARM';
   const isCold = tier === 'COLD';
-  const borderColor = hovered
-    ? 'rgba(107,122,255,0.3)'
-    : isHot
-      ? 'rgba(107,122,255,0.4)'
-      : isWarm
-        ? 'rgba(245,169,127,0.22)'
-        : isCold
-          ? 'rgba(147,197,253,0.14)'
-          : TOKENS.color.borderSubtle;
+  const borderColor = selected
+    ? 'rgba(107,122,255,0.45)'
+    : hovered
+      ? 'rgba(107,122,255,0.3)'
+      : isHot
+        ? 'rgba(107,122,255,0.4)'
+        : isWarm
+          ? 'rgba(245,169,127,0.22)'
+          : isCold
+            ? 'rgba(147,197,253,0.14)'
+            : TOKENS.color.borderSubtle;
 
   const summaryText = company.summary ?? company.apollo_short_description ?? null;
   const domain = fmt.domain(company.website, company.primary_domain);
@@ -165,20 +177,29 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
   const empLabel =
     company.estimated_num_employees !== null ? `${fmt.employees(company.estimated_num_employees)} MA` : null;
 
+  function handleClick() {
+    if (selectionMode) {
+      onToggle?.();
+    } else {
+      router.push(`/sales/unternehmen/${company.id}?tab=uebersicht`);
+    }
+  }
+
   return (
     <div
-      onClick={() => router.push(`/sales/unternehmen/${company.id}?tab=uebersicht`)}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? TOKENS.color.bgSubtle : TOKENS.color.bgCard,
+        position: 'relative',
+        backgroundColor: selected ? TOKENS.color.indigoBgSubtle : hovered ? TOKENS.color.bgSubtle : TOKENS.color.bgCard,
         border: `0.5px solid ${borderColor}`,
         borderRadius: TOKENS.radius.card,
         padding: '16px 18px',
         cursor: 'pointer',
         fontFamily: TOKENS.font.family,
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        transform: hovered && !selectionMode ? 'translateY(-2px)' : 'translateY(0)',
         boxShadow: isHot
           ? hovered
             ? '0 8px 24px rgba(107,122,255,0.15), inset 0 1px 0 0 rgba(107,122,255,0.2)'
@@ -191,42 +212,86 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
     >
       {/* Header: Logo + Name + Score */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* Logo */}
-        {company.logo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={company.logo_url}
-            alt=""
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: TOKENS.radius.button,
-              objectFit: 'contain',
-              background: '#fff',
-              flexShrink: 0,
-              border: `1px solid ${TOKENS.color.borderSubtle}`,
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: TOKENS.radius.button,
-              background: TOKENS.color.bgSubtle,
-              border: `1px solid ${TOKENS.color.borderSubtle}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 13,
-              fontWeight: 500,
-              color: TOKENS.color.textTertiary,
-              flexShrink: 0,
-            }}
-          >
-            {fmt.initials(company.company_name)}
-          </div>
-        )}
+        {/* Logo with select overlay */}
+        <div
+          style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}
+          onClick={(e) => {
+            if (onToggle) {
+              e.stopPropagation();
+              onToggle();
+            }
+          }}
+        >
+          {company.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={company.logo_url}
+              alt=""
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: TOKENS.radius.button,
+                objectFit: 'contain',
+                background: '#fff',
+                border: `1px solid ${TOKENS.color.borderSubtle}`,
+                display: 'block',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: TOKENS.radius.button,
+                background: TOKENS.color.bgSubtle,
+                border: `1px solid ${TOKENS.color.borderSubtle}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 13,
+                fontWeight: 500,
+                color: TOKENS.color.textTertiary,
+              }}
+            >
+              {fmt.initials(company.company_name)}
+            </div>
+          )}
+          {/* Select overlay — always visible in selectionMode, hover-only otherwise */}
+          {onToggle && (selectionMode || hovered || selected) && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: TOKENS.radius.button,
+                backgroundColor: selected ? TOKENS.color.indigo : 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background-color 0.15s',
+              }}
+            >
+              {selected ? (
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <div
+                  style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.8)' }}
+                />
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Name + domain + location */}
         <div style={{ flex: 1, minWidth: 0 }}>
