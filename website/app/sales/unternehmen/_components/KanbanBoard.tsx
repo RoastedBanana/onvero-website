@@ -181,61 +181,87 @@ function KanbanCard({
         gap: 11,
       }}
     >
-      {/* Checkbox — visible when selected or when hovered with onToggle provided */}
-      {(selected || (hovered && onToggle)) && (
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle?.();
-          }}
-          style={{ position: 'absolute', top: 12, left: 12, zIndex: 2 }}
-        >
-          <input
-            type="checkbox"
-            checked={!!selected}
-            onChange={() => {}}
-            style={{ accentColor: TOKENS.color.indigo, cursor: 'pointer', width: 14, height: 14 }}
-          />
-        </div>
-      )}
-
       {/* Header: logo + name + ring */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
-        {c.logo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={c.logo_url}
-            alt=""
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              objectFit: 'contain',
-              background: '#fff',
-              flexShrink: 0,
-              border: `1px solid ${TOKENS.color.borderSubtle}`,
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 8,
-              background: TOKENS.color.indigoBgSoft,
-              border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 13,
-              fontWeight: 600,
-              color: TOKENS.color.indigoLight,
-              flexShrink: 0,
-            }}
-          >
-            {fmt.initials(c.company_name)}
-          </div>
-        )}
+        {/* Logo with select overlay */}
+        <div
+          style={{ position: 'relative', width: 38, height: 38, flexShrink: 0 }}
+          onClick={(e) => {
+            if (onToggle) {
+              e.stopPropagation();
+              onToggle();
+            }
+          }}
+        >
+          {c.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={c.logo_url}
+              alt=""
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                objectFit: 'contain',
+                background: '#fff',
+                border: `1px solid ${TOKENS.color.borderSubtle}`,
+                display: 'block',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 8,
+                background: TOKENS.color.indigoBgSoft,
+                border: `1px solid ${TOKENS.color.indigoBorderSoft}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 13,
+                fontWeight: 600,
+                color: TOKENS.color.indigoLight,
+              }}
+            >
+              {fmt.initials(c.company_name)}
+            </div>
+          )}
+          {onToggle && (hovered || selected) && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 8,
+                backgroundColor: selected ? TOKENS.color.indigo : 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'background-color 0.15s',
+              }}
+            >
+              {selected ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <div
+                  style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.8)' }}
+                />
+              )}
+            </div>
+          )}
+        </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
