@@ -53,7 +53,6 @@ function SelectionBar({
   onClear,
   onSelectAll,
   allSelected,
-  visible,
 }: {
   count: number;
   onExport: () => void;
@@ -61,9 +60,7 @@ function SelectionBar({
   onClear: () => void;
   onSelectAll: () => void;
   allSelected: boolean;
-  visible: boolean;
 }) {
-  if (!visible) return null;
   return (
     <div
       style={{
@@ -479,9 +476,7 @@ export default function UnternehmenV2Page() {
     }
 
     if (employeeRange) {
-      result = result.filter((c) =>
-        matchesEmployeeRange(c.estimated_num_employees, c.company_size ?? null, employeeRange)
-      );
+      result = result.filter((c) => matchesEmployeeRange(c.estimated_num_employees, null, employeeRange));
     }
 
     if (scoreRange) {
@@ -759,15 +754,16 @@ export default function UnternehmenV2Page() {
         />
       )}
 
-      <SelectionBar
-        visible={selectionMode}
-        count={selected.size}
-        onExport={handleExport}
-        onDelete={handleDelete}
-        onClear={exitSelectionMode}
-        onSelectAll={toggleAll}
-        allSelected={filteredCompanies.length > 0 && filteredCompanies.every((c) => selected.has(c.id))}
-      />
+      {selectionMode && (
+        <SelectionBar
+          count={selected.size}
+          onExport={handleExport}
+          onDelete={handleDelete}
+          onClear={exitSelectionMode}
+          onSelectAll={toggleAll}
+          allSelected={filteredCompanies.length > 0 && filteredCompanies.every((c) => selected.has(c.id))}
+        />
+      )}
 
       {showDeleteModal && (
         <DeleteConfirmModal
