@@ -141,7 +141,15 @@ function TagChip({ label }: { label: string }) {
 
 // ─── COMPANY CARD ───────────────────────────────────────────────────────────
 
-export default function CompanyCard({ company }: { company: CompanyWithContacts }) {
+export default function CompanyCard({
+  company,
+  selected,
+  onToggle,
+}: {
+  company: CompanyWithContacts;
+  selected?: boolean;
+  onToggle?: () => void;
+}) {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
 
@@ -149,15 +157,17 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
   const isHot = tier === 'HOT';
   const isWarm = tier === 'WARM';
   const isCold = tier === 'COLD';
-  const borderColor = hovered
-    ? 'rgba(107,122,255,0.3)'
-    : isHot
-      ? 'rgba(107,122,255,0.4)'
-      : isWarm
-        ? 'rgba(245,169,127,0.22)'
-        : isCold
-          ? 'rgba(147,197,253,0.14)'
-          : TOKENS.color.borderSubtle;
+  const borderColor = selected
+    ? 'rgba(107,122,255,0.45)'
+    : hovered
+      ? 'rgba(107,122,255,0.3)'
+      : isHot
+        ? 'rgba(107,122,255,0.4)'
+        : isWarm
+          ? 'rgba(245,169,127,0.22)'
+          : isCold
+            ? 'rgba(147,197,253,0.14)'
+            : TOKENS.color.borderSubtle;
 
   const summaryText = company.summary ?? company.apollo_short_description ?? null;
   const domain = fmt.domain(company.website, company.primary_domain);
@@ -171,7 +181,8 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? TOKENS.color.bgSubtle : TOKENS.color.bgCard,
+        position: 'relative',
+        backgroundColor: selected ? TOKENS.color.indigoBgSubtle : hovered ? TOKENS.color.bgSubtle : TOKENS.color.bgCard,
         border: `0.5px solid ${borderColor}`,
         borderRadius: TOKENS.radius.card,
         padding: '16px 18px',
@@ -189,6 +200,24 @@ export default function CompanyCard({ company }: { company: CompanyWithContacts 
         gap: 12,
       }}
     >
+      {/* Checkbox — visible when selected or when hovered with onToggle provided */}
+      {(selected || (hovered && onToggle)) && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle?.();
+          }}
+          style={{ position: 'absolute', top: 12, left: 12, zIndex: 2 }}
+        >
+          <input
+            type="checkbox"
+            checked={!!selected}
+            onChange={() => {}}
+            style={{ accentColor: TOKENS.color.indigo, cursor: 'pointer', width: 14, height: 14 }}
+          />
+        </div>
+      )}
+
       {/* Header: Logo + Name + Score */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {/* Logo */}

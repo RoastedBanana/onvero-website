@@ -126,12 +126,16 @@ function KanbanCard({
   onDragStart,
   onDragEnd,
   onClick,
+  selected,
+  onToggle,
 }: {
   company: CompanyWithContacts;
   isDragging: boolean;
   onDragStart: () => void;
   onDragEnd: () => void;
   onClick: () => void;
+  selected?: boolean;
+  onToggle?: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const tier = fmt.tier(c.tier);
@@ -139,6 +143,12 @@ function KanbanCard({
   const location = fmt.countryCity(c.country, c.city);
   const employees = c.estimated_num_employees ? fmt.employees(c.estimated_num_employees) : null;
   const summary = c.summary ?? c.apollo_short_description ?? null;
+
+  const borderColor = selected
+    ? 'rgba(107,122,255,0.45)'
+    : tier === 'HOT'
+      ? 'rgba(107,122,255,0.35)'
+      : TOKENS.color.borderSubtle;
 
   return (
     <div
@@ -149,8 +159,15 @@ function KanbanCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: isDragging ? 'transparent' : hovered ? TOKENS.color.bgSubtle : TOKENS.color.bgCard,
-        border: `0.5px solid ${tier === 'HOT' ? 'rgba(107,122,255,0.35)' : TOKENS.color.borderSubtle}`,
+        position: 'relative',
+        backgroundColor: isDragging
+          ? 'transparent'
+          : selected
+            ? TOKENS.color.indigoBgSubtle
+            : hovered
+              ? TOKENS.color.bgSubtle
+              : TOKENS.color.bgCard,
+        border: `0.5px solid ${borderColor}`,
         borderRadius: TOKENS.radius.card,
         padding: '14px 16px',
         cursor: isDragging ? 'grabbing' : 'grab',
@@ -164,6 +181,24 @@ function KanbanCard({
         gap: 11,
       }}
     >
+      {/* Checkbox — visible when selected or when hovered with onToggle provided */}
+      {(selected || (hovered && onToggle)) && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle?.();
+          }}
+          style={{ position: 'absolute', top: 12, left: 12, zIndex: 2 }}
+        >
+          <input
+            type="checkbox"
+            checked={!!selected}
+            onChange={() => {}}
+            style={{ accentColor: TOKENS.color.indigo, cursor: 'pointer', width: 14, height: 14 }}
+          />
+        </div>
+      )}
+
       {/* Header: logo + name + ring */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 11 }}>
         {c.logo_url ? (
@@ -333,9 +368,13 @@ function KanbanCard({
 export default function KanbanBoard({
   companies,
   onStatusChange,
+  selected,
+  onToggle,
 }: {
   companies: CompanyWithContacts[];
   onStatusChange: (id: string, status: CompanyStatus) => void;
+  selected?: Set<string>;
+  onToggle?: (id: string) => void;
 }) {
   const router = useRouter();
   const [dragId, setDragId] = useState<string | null>(null);
@@ -439,6 +478,8 @@ export default function KanbanBoard({
                   onDragStart={() => setDragId(c.id)}
                   onDragEnd={() => setDragId(null)}
                   onClick={() => router.push(`/sales/unternehmen/${c.id}?tab=uebersicht`)}
+                  selected={selected?.has(c.id)}
+                  onToggle={onToggle ? () => onToggle(c.id) : undefined}
                 />
               ))}
 

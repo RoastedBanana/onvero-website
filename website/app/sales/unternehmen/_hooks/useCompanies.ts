@@ -109,11 +109,34 @@ export function useCompanies() {
 
       // Columns used by the list view (avoids heavy jsonb like raw_apollo_organization)
       const LIST_COLS = [
-        'id', 'tenant_id', 'company_name', 'website', 'city', 'country', 'industry',
-        'status', 'source', 'fit_score', 'tier', 'is_excluded', 'created_at', 'updated_at',
-        'logo_url', 'primary_domain', 'company_size', 'estimated_num_employees', 'founded_year',
-        'summary', 'tags', 'strengths', 'concerns', 'next_action', 'ai_scored_at',
-        'linkedin_url', 'company_description', 'target_customers',
+        'id',
+        'tenant_id',
+        'company_name',
+        'website',
+        'city',
+        'country',
+        'industry',
+        'status',
+        'source',
+        'fit_score',
+        'tier',
+        'is_excluded',
+        'created_at',
+        'updated_at',
+        'logo_url',
+        'primary_domain',
+        'company_size',
+        'estimated_num_employees',
+        'founded_year',
+        'summary',
+        'tags',
+        'strengths',
+        'concerns',
+        'next_action',
+        'ai_scored_at',
+        'linkedin_url',
+        'company_description',
+        'target_customers',
       ].join(', ');
 
       const CHUNK_SIZE = 20;
@@ -143,10 +166,7 @@ export function useCompanies() {
 
         // Fetch contact counts for this chunk only
         const ids = rows.map((r: Record<string, unknown>) => r.id as string);
-        const { data: contactRows } = await sb
-          .from('lead_contacts')
-          .select('lead_id')
-          .in('lead_id', ids);
+        const { data: contactRows } = await sb.from('lead_contacts').select('lead_id').in('lead_id', ids);
         if (runId !== _currentRunId) return -1;
 
         const countByLead: Record<string, number> = {};
@@ -154,10 +174,13 @@ export function useCompanies() {
           countByLead[row.lead_id] = (countByLead[row.lead_id] ?? 0) + 1;
         });
 
-        const mapped: CompanyWithContacts[] = rows.map((row: Record<string, unknown>) => ({
-          ...row,
-          enriched_contacts_count: countByLead[row.id as string] ?? 0,
-        } as CompanyWithContacts));
+        const mapped: CompanyWithContacts[] = rows.map(
+          (row: Record<string, unknown>) =>
+            ({
+              ...row,
+              enriched_contacts_count: countByLead[row.id as string] ?? 0,
+            }) as CompanyWithContacts
+        );
 
         // Append — user sees rows progressively. Dedupe by id in case of re-entry.
         setCompanies((prev) => {
@@ -217,5 +240,28 @@ export function useCompanies() {
     }
   }, []);
 
-  return { companies, loading, loadingMore, error, refetch: fetchCompanies, updateStatus };
+  const deleteCompanies = useCallback(
+    async (ids: string[]) => {
+      // Optimistically remove from state immediately
+      setCompanies((prev) => prev.filter((c) => !ids.includes(c.id)));
+      try {
+        const tid = await getTenantId();
+        if (!tid) return;
+        const sb = getSupabase();
+        const { error: deleteError } = await sb.from('leads').delete().in('id', ids).eq('tenant_id', tid);
+        if (deleteError) {
+          console.error('[useCompanies] deleteCompanies failed:', deleteError);
+          // Restore state on error
+          await fetchCompanies();
+        }
+      } catch (err) {
+        console.error('[useCompanies] deleteCompanies failed:', err);
+        // Restore state on error
+        await fetchCompanies();
+      }
+    },
+    [fetchCompanies]
+  );
+
+  return { companies, loading, loadingMore, error, refetch: fetchCompanies, updateStatus, deleteCompanies };
 }

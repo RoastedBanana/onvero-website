@@ -18,6 +18,166 @@ import EmptyState from './_components/EmptyState';
 import SkeletonGrid from './_components/SkeletonGrid';
 import type { CompanyStatus } from './_types';
 
+// ─── CSV EXPORT ─────────────────────────────────────────────────────────────
+
+function exportCSV(companies: CompanyWithContacts[]) {
+  const headers = ['Name', 'Domain', 'Branche', 'Stadt', 'Land', 'Tier', 'Score', 'Mitarbeiter', 'Status', 'Erstellt'];
+  const rows = companies.map((c) => [
+    c.company_name ?? '',
+    fmt.domain(c.website, c.primary_domain),
+    fmt.industry(c.industry),
+    c.city ?? '',
+    c.country ?? '',
+    fmt.tier(c.tier),
+    c.fit_score?.toString() ?? '',
+    c.estimated_num_employees?.toString() ?? '',
+    c.status ?? '',
+    c.created_at ? new Date(c.created_at).toLocaleDateString('de-DE') : '',
+  ]);
+  const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `unternehmen-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── SELECTION BAR ───────────────────────────────────────────────────────────
+
+function SelectionBar({
+  count,
+  onExport,
+  onDelete,
+  onClear,
+}: {
+  count: number;
+  onExport: () => void;
+  onDelete: () => void;
+  onClear: () => void;
+}) {
+  if (count === 0) return null;
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 28,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 500,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '10px 14px',
+        borderRadius: 12,
+        background: 'rgba(15,15,20,0.96)',
+        border: '1px solid rgba(107,122,255,0.25)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(107,122,255,0.1)',
+        backdropFilter: 'blur(12px)',
+        fontFamily: TOKENS.font.family,
+        whiteSpace: 'nowrap',
+        animation: 'slideUpBar 0.2s cubic-bezier(0.22, 1, 0.36, 1) both',
+      }}
+    >
+      <style>{`
+        @keyframes slideUpBar {
+          from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
+
+      <span style={{ fontSize: 13, fontWeight: 500, color: TOKENS.color.textPrimary }}>{count} ausgewählt</span>
+
+      <button
+        onClick={onClear}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: TOKENS.color.textMuted,
+          fontSize: 12,
+          cursor: 'pointer',
+          padding: '2px 6px',
+          borderRadius: 5,
+          fontFamily: TOKENS.font.family,
+        }}
+      >
+        Abwählen
+      </button>
+
+      <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+
+      <button
+        onClick={onExport}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '7px 13px',
+          borderRadius: 8,
+          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'rgba(255,255,255,0.04)',
+          color: TOKENS.color.textSecondary,
+          fontSize: 12.5,
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: TOKENS.font.family,
+          transition: 'background 0.15s',
+        }}
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+        </svg>
+        CSV Export
+      </button>
+
+      <button
+        onClick={onDelete}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '7px 13px',
+          borderRadius: 8,
+          border: '1px solid rgba(239,68,68,0.3)',
+          background: 'rgba(239,68,68,0.08)',
+          color: '#F87171',
+          fontSize: 12.5,
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: TOKENS.font.family,
+          transition: 'background 0.15s',
+        }}
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+          <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+        </svg>
+        Löschen
+      </button>
+    </div>
+  );
+}
+
 // ─── FILTER LOGIC ───────────────────────────────────────────────────────────
 
 // estimated_num_employees is often null — parse a representative number from
@@ -76,7 +236,7 @@ export default function UnternehmenV2Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view');
-  const { companies, loading, loadingMore, refetch, updateStatus } = useCompanies();
+  const { companies, loading, loadingMore, refetch, updateStatus, deleteCompanies } = useCompanies();
 
   // View state — start with URL param or default ('cards') for SSR consistency.
   // LocalStorage is applied in a useEffect after mount to avoid hydration mismatch.
@@ -209,6 +369,18 @@ export default function UnternehmenV2Page() {
   function toggleAll() {
     if (filteredCompanies.every((c) => selected.has(c.id))) setSelected(new Set());
     else setSelected(new Set(filteredCompanies.map((c) => c.id)));
+  }
+
+  async function handleDelete() {
+    const ids = Array.from(selected);
+    if (!window.confirm(`${ids.length} Unternehmen wirklich löschen?`)) return;
+    await deleteCompanies(ids);
+    setSelected(new Set());
+  }
+
+  function handleExport() {
+    const toExport = filteredCompanies.filter((c) => selected.has(c.id));
+    exportCSV(toExport);
   }
 
   function switchView(v: 'cards' | 'table' | 'kanban') {
@@ -397,7 +569,7 @@ export default function UnternehmenV2Page() {
           }}
         >
           {filteredCompanies.map((c) => (
-            <CompanyCard key={c.id} company={c} />
+            <CompanyCard key={c.id} company={c} selected={selected.has(c.id)} onToggle={() => toggleSelect(c.id)} />
           ))}
         </div>
       ) : view === 'table' ? (
@@ -408,8 +580,20 @@ export default function UnternehmenV2Page() {
           onToggleAll={toggleAll}
         />
       ) : (
-        <KanbanBoard companies={filteredCompanies} onStatusChange={updateStatus} />
+        <KanbanBoard
+          companies={filteredCompanies}
+          onStatusChange={updateStatus}
+          selected={selected}
+          onToggle={toggleSelect}
+        />
       )}
+
+      <SelectionBar
+        count={selected.size}
+        onExport={handleExport}
+        onDelete={handleDelete}
+        onClear={() => setSelected(new Set())}
+      />
     </>
   );
 }
