@@ -79,7 +79,13 @@ export interface Lead {
   googleMapsUrl?: string | null;
   notes?: string[];
   timeline?: { action: string; time: string; color: string }[];
-  employmentHistory?: { title: string; company: string; startDate: string | null; endDate: string | null; current: boolean }[];
+  employmentHistory?: {
+    title: string;
+    company: string;
+    startDate: string | null;
+    endDate: string | null;
+    current: boolean;
+  }[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   websiteData?: Record<string, unknown> | null;
   organisation?: Record<string, unknown> | null;
@@ -1072,9 +1078,10 @@ export const LEADS: Lead[] = RAW_LEADS.map((r) => {
 export function getLeadStats(leads: Lead[]) {
   const total = leads.length;
   const scored = leads.filter((l) => l.score !== null).length;
-  const hot = leads.filter((l) => (l.score ?? 0) >= 70).length;
-  const warm = leads.filter((l) => (l.score ?? 0) >= 50 && (l.score ?? 0) < 70).length;
-  const cold = leads.filter((l) => (l.score ?? 0) < 50).length;
+  const tierOf = (t: string | null) => (t ?? '').toUpperCase().trim();
+  const hot = leads.filter((l) => tierOf(l.tier).startsWith('HOT')).length;
+  const warm = leads.filter((l) => tierOf(l.tier).startsWith('WARM')).length;
+  const cold = leads.filter((l) => tierOf(l.tier).startsWith('COLD')).length;
   const avgScore =
     scored > 0 ? Math.round(leads.filter((l) => l.score !== null).reduce((a, l) => a + (l.score ?? 0), 0) / scored) : 0;
   return { total, scored, hot, warm, cold, avgScore };
