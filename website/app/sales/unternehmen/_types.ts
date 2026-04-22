@@ -24,6 +24,10 @@ export interface Company {
   estimated_num_employees: number | null;
   annual_revenue: number | null;
   annual_revenue_printed: string | null;
+  // Scraped/deep-research fields (text ranges, arrays)
+  estimated_employees_scraped: string | null;
+  estimated_revenue_scraped: string | null;
+  locations_scraped: string[] | null;
   apollo_industry: string | null;
   industry: string | null;
   apollo_keywords: string[] | null;

@@ -392,9 +392,15 @@ export default function AnalyseTab({
   const cleanAutomationPotential = sanitizeForDisplay(company.automation_potential);
 
   const industry = fmt.industry(company.apollo_industry ?? company.industry);
-  const location = fmt.countryCity(company.country, company.city);
-  const revenue = fmt.revenue(company.annual_revenue_printed, company.annual_revenue ?? null);
-  const employees = company.estimated_num_employees ? fmt.employees(company.estimated_num_employees) : null;
+  // Prefer scraped fields (deep research), fall back to Apollo data
+  const locsScraped = (company.locations_scraped ?? []).filter((s) => s && s.trim());
+  const location = locsScraped.length > 0
+    ? (locsScraped.length > 1 ? `${locsScraped[0]} +${locsScraped.length - 1}` : locsScraped[0])
+    : fmt.countryCity(company.country, company.city);
+  const revenue = company.estimated_revenue_scraped ||
+    fmt.revenue(company.annual_revenue_printed, company.annual_revenue ?? null);
+  const employees = company.estimated_employees_scraped ||
+    (company.estimated_num_employees ? fmt.employees(company.estimated_num_employees) : null);
   const domain = fmt.domain(company.website, company.primary_domain);
   const scoredAt = company.ai_scored_at
     ? new Date(company.ai_scored_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })

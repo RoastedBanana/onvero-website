@@ -103,6 +103,10 @@ export const GLOBAL_STYLES = `
     0%, 100% { transform: scale(1); opacity: 0.6; }
     50% { transform: scale(1.15); opacity: 1; }
   }
+  @keyframes breatheGlow {
+    0%, 100% { box-shadow: 0 2px 16px rgba(99,102,241,0.25), 0 0 24px rgba(99,102,241,0.1); }
+    50% { box-shadow: 0 2px 24px rgba(99,102,241,0.4), 0 0 40px rgba(99,102,241,0.2); }
+  }
   @keyframes toast-in {
     from { opacity: 0; transform: translateX(40px) scale(0.95); }
     to { opacity: 1; transform: translateX(0) scale(1); }

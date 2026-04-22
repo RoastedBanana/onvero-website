@@ -151,15 +151,32 @@ function FactPills({ company, contactsCount }: { company: Company; contactsCount
   const industry = fmt.industry(company.industry);
   if (industry) facts.push({ label: 'Branche', value: industry });
 
-  const loc = fmt.countryCity(company.country, company.city);
-  if (loc !== '—') facts.push({ label: 'Standort', value: loc });
+  // Prefer scraped locations (deep research) over Apollo city/country
+  const locsScraped = (company.locations_scraped ?? []).filter((s) => s && s.trim());
+  if (locsScraped.length > 0) {
+    const primary = locsScraped[0];
+    // Show first location, hint at more
+    const value = locsScraped.length > 1 ? `${primary} +${locsScraped.length - 1}` : primary;
+    facts.push({ label: 'Standort', value });
+  } else {
+    const loc = fmt.countryCity(company.country, company.city);
+    if (loc !== '—') facts.push({ label: 'Standort', value: loc });
+  }
 
-  if (company.estimated_num_employees) {
+  // Prefer scraped employee range over Apollo number
+  if (company.estimated_employees_scraped) {
+    facts.push({ label: 'Mitarbeiter', value: company.estimated_employees_scraped, mono: true });
+  } else if (company.estimated_num_employees) {
     facts.push({ label: 'Mitarbeiter', value: fmt.employees(company.estimated_num_employees), mono: true });
   }
 
-  const revenue = fmt.revenue(company.annual_revenue_printed, company.annual_revenue ?? null);
-  if (revenue !== '—') facts.push({ label: 'Umsatz', value: revenue, highlight: true, mono: true });
+  // Prefer scraped revenue range over Apollo printed/number
+  if (company.estimated_revenue_scraped) {
+    facts.push({ label: 'Umsatz', value: company.estimated_revenue_scraped, highlight: true, mono: true });
+  } else {
+    const revenue = fmt.revenue(company.annual_revenue_printed, company.annual_revenue ?? null);
+    if (revenue !== '—') facts.push({ label: 'Umsatz', value: revenue, highlight: true, mono: true });
+  }
 
   if (company.founded_year) facts.push({ label: 'Gegründet', value: String(company.founded_year), mono: true });
 

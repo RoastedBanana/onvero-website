@@ -4,20 +4,29 @@ import { getSessionTenantId } from '@/lib/tenant-server';
 export const dynamic = 'force-dynamic';
 
 // Per-tenant progress: which leads have been scored so far
+type ScoredLead = {
+  lead_id: string;
+  company_name?: string;
+  fit_score?: number;
+  is_excluded?: boolean;
+  scored_at?: string;
+};
+
 type ProgressEntry = {
   scored_lead_ids: Set<string>;
+  scored_leads: ScoredLead[]; // ordered (newest last), de-duplicated
   total_items: number;
-  last_lead: { company_name?: string; fit_score?: number; is_excluded?: boolean; scored_at?: string } | null;
+  started_at: number;
   updated_at: number;
 };
 
 const progressMap = new Map<string, ProgressEntry>();
 
-// Clean up stale entries older than 10 minutes
+// Clean up stale entries older than 30 minutes
 function cleanup() {
   const now = Date.now();
   for (const [key, val] of progressMap) {
-    if (now - val.updated_at > 10 * 60 * 1000) {
+    if (now - val.updated_at > 30 * 60 * 1000) {
       progressMap.delete(key);
     }
   }
@@ -30,14 +39,23 @@ export async function GET() {
 
   const entry = progressMap.get(tenantId);
   if (!entry) {
-    return NextResponse.json({ scored_count: 0, total_items: 0, status: 'waiting', last_lead: null });
+    return NextResponse.json({
+      scored_count: 0,
+      total_items: 0,
+      status: 'waiting',
+      scored_leads: [],
+      started_at: null,
+    });
   }
 
+  const done = entry.total_items > 0 && entry.scored_lead_ids.size >= entry.total_items;
   return NextResponse.json({
     scored_count: entry.scored_lead_ids.size,
     total_items: entry.total_items,
-    status: entry.total_items > 0 && entry.scored_lead_ids.size >= entry.total_items ? 'done' : 'in_progress',
-    last_lead: entry.last_lead,
+    status: done ? 'done' : 'in_progress',
+    scored_leads: entry.scored_leads,
+    last_lead: entry.scored_leads[entry.scored_leads.length - 1] ?? null,
+    started_at: new Date(entry.started_at).toISOString(),
   });
 }
 
@@ -58,8 +76,9 @@ export async function POST(req: NextRequest) {
     const total = typeof item.total_items === 'number' ? item.total_items : 0;
     progressMap.set(tenantId, {
       scored_lead_ids: new Set(),
+      scored_leads: [],
       total_items: total,
-      last_lead: null,
+      started_at: Date.now(),
       updated_at: Date.now(),
     });
     return NextResponse.json({ ok: true });
@@ -68,20 +87,28 @@ export async function POST(req: NextRequest) {
   // Get or create entry
   const existing = progressMap.get(tenantId) ?? {
     scored_lead_ids: new Set<string>(),
+    scored_leads: [] as ScoredLead[],
     total_items: 0,
-    last_lead: null,
+    started_at: Date.now(),
     updated_at: Date.now(),
   };
 
-  // Individual lead scored
-  if (item.status === 'scored' && item.lead_id) {
-    existing.scored_lead_ids.add(String(item.lead_id));
-    existing.last_lead = {
-      company_name: item.company_name,
-      fit_score: item.fit_score,
-      is_excluded: item.is_excluded,
-      scored_at: item.scored_at,
-    };
+  // Accept both new "event: lead_scored" and legacy "status: scored"
+  const isScoredEvent =
+    item.event === 'lead_scored' || item.status === 'scored';
+
+  if (isScoredEvent && item.lead_id) {
+    const id = String(item.lead_id);
+    if (!existing.scored_lead_ids.has(id)) {
+      existing.scored_lead_ids.add(id);
+      existing.scored_leads.push({
+        lead_id: id,
+        company_name: item.company_name,
+        fit_score: typeof item.fit_score === 'number' ? item.fit_score : undefined,
+        is_excluded: item.is_excluded,
+        scored_at: item.scored_at ?? new Date().toISOString(),
+      });
+    }
     existing.updated_at = Date.now();
     progressMap.set(tenantId, existing);
     return NextResponse.json({ ok: true, scored_count: existing.scored_lead_ids.size });

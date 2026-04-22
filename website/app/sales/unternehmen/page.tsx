@@ -59,15 +59,22 @@ export default function UnternehmenV2Page() {
   const viewParam = searchParams.get('view');
   const { companies, loading, loadingMore, refetch, updateStatus } = useCompanies();
 
-  // View state — URL param wins, then localStorage, then default 'cards'
+  // View state — start with URL param or default ('cards') for SSR consistency.
+  // LocalStorage is applied in a useEffect after mount to avoid hydration mismatch.
   const [view, setView] = useState<'cards' | 'table' | 'kanban'>(() => {
     if (viewParam === 'table' || viewParam === 'kanban' || viewParam === 'cards') return viewParam;
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('unternehmen-v2-view');
-      if (saved === 'table' || saved === 'kanban' || saved === 'cards') return saved;
-    }
     return 'cards';
   });
+
+  // Hydrate saved view from localStorage after mount (only if URL didn't specify one)
+  useEffect(() => {
+    if (viewParam === 'table' || viewParam === 'kanban' || viewParam === 'cards') return;
+    try {
+      const saved = localStorage.getItem('unternehmen-v2-view');
+      if (saved === 'table' || saved === 'kanban' || saved === 'cards') setView(saved);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Filter state
   const [search, setSearch] = useState('');

@@ -968,6 +968,9 @@ export default function GeneratePage() {
   const [requestTime, setRequestTime] = useState<string | null>(null);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [creditBlocked, setCreditBlocked] = useState(false);
+  const [scoredList, setScoredList] = useState<
+    { lead_id: string; company_name?: string; fit_score?: number; is_excluded?: boolean; scored_at?: string }[]
+  >([]);
 
   // ─── Restore form + history from localStorage on mount ─────────────────
   useEffect(() => {
@@ -1026,78 +1029,93 @@ export default function GeneratePage() {
     return () => clearInterval(t);
   }, [phase]);
 
-  // ─── Track scored leads via Supabase Realtime (+ polling fallback) ────
-  // Counts rows in `leads` where ai_scored_at IS NOT NULL, created after request_time.
+  // ─── Poll /api/generate/progress for lead_scored callbacks ────────────
   useEffect(() => {
     if (phase !== 'strategy' && phase !== 'scoring') return;
-    if (!tenantId || !requestTime) return;
-
-    const supabase = getSupabase();
     let cancelled = false;
 
-    const recount = async () => {
-      const { count } = (await supabase
-        .from('leads')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId)
-        .gte('created_at', requestTime)
-        .not('ai_scored_at', 'is', null)) as { count: number | null };
-      if (cancelled) return;
-      const n = count ?? 0;
-      setScoredLeads(n);
-      if (n > 0 && totalLeads > 0 && n >= totalLeads) {
-        setPhase('done');
-        window.dispatchEvent(new Event('vero:new-leads'));
+    const tick = async () => {
+      try {
+        const res = await fetch('/api/generate/progress', { cache: 'no-store' });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+
+        const total = typeof data.total_items === 'number' && data.total_items > 0 ? data.total_items : 10;
+        const count = typeof data.scored_count === 'number' ? data.scored_count : 0;
+
+        setTotalLeads(total);
+        setScoredLeads(count);
+        if (Array.isArray(data.scored_leads)) {
+          setScoredList(data.scored_leads);
+        }
+
+        if (data.status === 'done' || (count > 0 && count >= total)) {
+          setPhase('done');
+          window.dispatchEvent(new Event('vero:new-leads'));
+        }
+      } catch {
+        /* ignore */
       }
     };
 
-    recount();
-
-    // Realtime subscription: INSERT + UPDATE where ai_scored_at gets set
-    const channel = supabase
-      .channel(`leads-scoring-${requestTime}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'leads', filter: `tenant_id=eq.${tenantId}` },
-        (payload: { new: Record<string, unknown> }) => {
-          const row = payload.new;
-          if (
-            row &&
-            typeof row.created_at === 'string' &&
-            row.created_at >= requestTime &&
-            row.ai_scored_at
-          ) {
-            recount();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'leads', filter: `tenant_id=eq.${tenantId}` },
-        (payload: { new: Record<string, unknown> }) => {
-          const row = payload.new;
-          if (
-            row &&
-            typeof row.created_at === 'string' &&
-            row.created_at >= requestTime &&
-            row.ai_scored_at
-          ) {
-            recount();
-          }
-        }
-      )
-      .subscribe();
-
-    // Polling fallback every 3s in case Realtime misses events
-    const poll = setInterval(recount, 3000);
-
+    tick();
+    const poll = setInterval(tick, 2000);
     return () => {
       cancelled = true;
       clearInterval(poll);
-      supabase.removeChannel(channel);
     };
+  }, [phase]);
+
+  // ─── Resume loading state on mount (survives reload + tab switch) ─────
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/generate/progress', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        // Only resume if there's an active in-progress run
+        if (
+          data.status === 'in_progress' &&
+          typeof data.total_items === 'number' &&
+          data.total_items > 0 &&
+          typeof data.scored_count === 'number' &&
+          data.scored_count < data.total_items
+        ) {
+          setTotalLeads(data.total_items);
+          setScoredLeads(data.scored_count);
+          if (Array.isArray(data.scored_leads)) setScoredList(data.scored_leads);
+          if (data.started_at) setRequestTime(data.started_at);
+          setPhase('scoring');
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, tenantId, requestTime, totalLeads]);
+  }, []);
+
+  // ─── Cancel current scoring run ────────────────────────────────────────
+  const handleCancel = useCallback(async () => {
+    if (!tenantId) return;
+    if (!confirm('Lead-Generierung wirklich abbrechen? Bereits gefundene Leads bleiben gespeichert.')) return;
+    try {
+      await fetch('/api/generate/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: tenantId, status: 'reset', total_items: 0 }),
+      });
+    } catch {
+      /* ignore */
+    }
+    setPhase('form');
+    setScoredLeads(0);
+    setTotalLeads(10);
+    setScoredList([]);
+    setRequestTime(null);
+    setReasoning(null);
+    setElapsed(0);
+    showToast('Lead-Generierung abgebrochen', 'info');
+  }, [tenantId]);
 
   // ─── Submit form: webhook → strategy → scoring ────────────────────────
   const handleSubmit = useCallback(async () => {
@@ -1148,7 +1166,12 @@ export default function GeneratePage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        console.error('[generate] webhook failed', res.status, err);
+        const msg =
+          err?.error ||
+          (typeof err?.detail === 'string' ? err.detail : null) ||
+          `Webhook-Fehler (HTTP ${res.status})`;
+        throw new Error(msg);
       }
 
       const data = await res.json();
@@ -2326,6 +2349,143 @@ export default function GeneratePage() {
                   : 'Fertig!'}
             </span>
           </div>
+
+          {/* Cancel button */}
+          {scoredLeads < totalLeads && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+              <button
+                onClick={handleCancel}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '7px 16px',
+                  borderRadius: 8,
+                  background: 'transparent',
+                  border: `1px solid ${C.border}`,
+                  color: C.text3,
+                  fontSize: 11.5,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(248,113,113,0.35)';
+                  e.currentTarget.style.color = C.danger;
+                  e.currentTarget.style.background = 'rgba(248,113,113,0.04)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = C.border;
+                  e.currentTarget.style.color = C.text3;
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+                Abbrechen
+              </button>
+            </div>
+          )}
+
+          {/* Scored leads list */}
+          {scoredList.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  color: C.text3,
+                  textTransform: 'uppercase',
+                  marginBottom: 10,
+                }}
+              >
+                Bewertete Leads ({scoredList.length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {scoredList
+                  .slice()
+                  .reverse()
+                  .map((l, i) => {
+                    const score = typeof l.fit_score === 'number' ? l.fit_score : null;
+                    const scoreColor =
+                      score === null
+                        ? C.text3
+                        : score >= 70
+                          ? C.success
+                          : score >= 45
+                            ? C.warning
+                            : C.danger;
+                    return (
+                      <div
+                        key={l.lead_id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 14px',
+                          borderRadius: 9,
+                          background: C.surface,
+                          border: `1px solid ${C.border}`,
+                          animation: i === 0 ? 'fadeInUp 0.3s cubic-bezier(0.22,1,0.36,1) both' : 'none',
+                        }}
+                      >
+                        <SvgIcon d={ICONS.check} size={12} color={C.success} />
+                        <span
+                          style={{
+                            flex: 1,
+                            fontSize: 13,
+                            color: C.text1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {l.company_name ?? 'Unbekanntes Unternehmen'}
+                        </span>
+                        {l.is_excluded && (
+                          <span
+                            style={{
+                              fontSize: 9,
+                              padding: '2px 7px',
+                              borderRadius: 5,
+                              background: 'rgba(248,113,113,0.08)',
+                              border: '1px solid rgba(248,113,113,0.2)',
+                              color: C.danger,
+                              fontWeight: 600,
+                              letterSpacing: '0.04em',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            Excluded
+                          </span>
+                        )}
+                        {score !== null && (
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                              color: scoreColor,
+                              background: `${scoreColor}14`,
+                              border: `1px solid ${scoreColor}30`,
+                              padding: '3px 9px',
+                              borderRadius: 7,
+                              minWidth: 40,
+                              textAlign: 'center',
+                            }}
+                          >
+                            {score}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
