@@ -6,8 +6,45 @@ import { TOKENS } from '../_tokens';
 import { useContacts } from '../_hooks/useContacts';
 import { useContactSearch } from '../_hooks/useContactSearch';
 import { useContactEnrich } from '../_hooks/useContactEnrich';
-import type { ApolloPerson } from '../_types';
+import type { ApolloPerson, Contact as DbContact } from '../_types';
+import { PersonDetail, type Contact as ModalContact } from '../../_components/PersonDetailModal';
 import EnrichedContactCard from './EnrichedContactCard';
+
+// Map a DB Contact (from lead_contacts / lead_contact_enrichments) to the
+// shape expected by the shared PersonDetailModal.
+function toModalContact(c: DbContact): ModalContact {
+  return {
+    id: c.id,
+    lead_id: c.lead_id,
+    lead_contact_id: (c as unknown as { lead_contact_id?: string | null }).lead_contact_id ?? null,
+    full_name: c.full_name ?? null,
+    first_name: c.first_name ?? null,
+    last_name: c.last_name ?? null,
+    title: c.title ?? null,
+    headline: (c as unknown as { headline?: string | null }).headline ?? null,
+    seniority: c.seniority ?? null,
+    email: c.email ?? null,
+    email_status: c.email_status ?? null,
+    phone: c.phone ?? null,
+    mobile_phone: c.mobile_phone ?? null,
+    linkedin_url: c.linkedin_url ?? null,
+    twitter_url: (c as unknown as { twitter_url?: string | null }).twitter_url ?? null,
+    facebook_url: (c as unknown as { facebook_url?: string | null }).facebook_url ?? null,
+    github_url: (c as unknown as { github_url?: string | null }).github_url ?? null,
+    photo_url: c.photo_url ?? null,
+    city: c.city ?? null,
+    state: (c as unknown as { state?: string | null }).state ?? null,
+    country: c.country ?? null,
+    departments: c.departments ?? null,
+    functions: (c as unknown as { functions?: string[] | null }).functions ?? null,
+    status: c.status ?? null,
+    created_at: c.created_at ?? '',
+    email_draft_subject: c.email_draft_subject ?? null,
+    email_draft_body: c.email_draft_body ?? null,
+    employment_history: (c.employment_history as unknown as ModalContact['employment_history']) ?? null,
+    leads: null,
+  };
+}
 
 export default function ContactsTab({ leadId }: { leadId: string }) {
   const { contacts: savedContacts, refetch: refetchContacts } = useContacts(leadId);
@@ -19,6 +56,7 @@ export default function ContactsTab({ leadId }: { leadId: string }) {
   const [opts, setOpts] = useState({ get_email: true, get_telephone: false, generate_email: true });
   const [enriching, setEnriching] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [openedContact, setOpenedContact] = useState<ModalContact | null>(null);
 
   // Open the modal and start the search
   async function handleOpenFinder() {
@@ -214,16 +252,24 @@ export default function ContactsTab({ leadId }: { leadId: string }) {
             }}
           >
             {savedContacts.map((c) => (
-              <EnrichedContactCard
+              <div
                 key={c.id}
-                contact={c}
-                onGenerateEmail={() => handleGenerateEmail(c)}
-                onOpenMail={() => handleOpenMail(c)}
-              />
+                onClick={() => setOpenedContact(toModalContact(c))}
+                style={{ cursor: 'pointer' }}
+              >
+                <EnrichedContactCard
+                  contact={c}
+                  onGenerateEmail={() => handleGenerateEmail(c)}
+                  onOpenMail={() => handleOpenMail(c)}
+                />
+              </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* Person detail modal (shared with /sales/people) */}
+      {openedContact && <PersonDetail contact={openedContact} onClose={() => setOpenedContact(null)} />}
 
       {/* Modal */}
       {modalOpen && (

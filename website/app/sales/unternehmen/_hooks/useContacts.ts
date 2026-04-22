@@ -53,7 +53,7 @@ export function useContacts(leadId: string) {
       }
 
       // Query both tables — legacy data lives in lead_contact_enrichments,
-      // new pipeline data goes into lead_contacts. Merge and deduplicate by id.
+      // new pipeline data goes into lead_contacts. Merge and deduplicate by apollo_person_id.
       const [r1, r2] = await Promise.all([
         sb()
           .from('lead_contacts')
@@ -76,15 +76,44 @@ export function useContacts(leadId: string) {
         return;
       }
 
-      const seen = new Set<string>();
-      const merged: Contact[] = [];
-      for (const row of [...(r1.data ?? []), ...(r2.data ?? [])]) {
-        if (!seen.has(row.id)) {
-          seen.add(row.id);
-          merged.push(row as Contact);
+      // Dedup by apollo_person_id (same across both tables); prefer enrichment
+      // (has email/phone/draft after the enrich step). Fall back to row.id if
+      // apollo_person_id is missing.
+      const byPerson = new Map<string, Contact>();
+      const addRow = (row: Record<string, unknown>, source: 'contact' | 'enrichment') => {
+        const c = row as unknown as Contact;
+        const raw = (c.raw_apollo_person ?? (c as unknown as { raw_apollo_response?: Record<string, unknown> }).raw_apollo_response) as Record<string, unknown> | null;
+        // Fall back to Apollo's obfuscated last_name if ours is missing
+        if (!c.last_name && raw) {
+          const obf = (raw['last_name_obfuscated'] ?? raw['last_name']) as string | null | undefined;
+          if (obf) c.last_name = obf;
         }
-      }
-      setContacts(merged);
+        if (!c.full_name) {
+          const full = [c.first_name, c.last_name].filter(Boolean).join(' ');
+          if (full) c.full_name = full;
+        }
+        const key = (c.apollo_person_id && String(c.apollo_person_id)) || `id:${c.id}`;
+        const existing = byPerson.get(key);
+        if (!existing) {
+          byPerson.set(key, c);
+          return;
+        }
+        // Enrichment wins over contact (richer data), but merge missing fields from other side
+        const preferred = source === 'enrichment' ? c : existing;
+        const secondary = source === 'enrichment' ? existing : c;
+        const merged = { ...secondary, ...preferred } as Contact;
+        // Preserve non-null fields
+        if (!merged.email) merged.email = secondary.email ?? preferred.email;
+        if (!merged.phone) merged.phone = secondary.phone ?? preferred.phone;
+        if (!merged.last_name) merged.last_name = secondary.last_name ?? preferred.last_name;
+        if (!merged.full_name) merged.full_name = secondary.full_name ?? preferred.full_name;
+        byPerson.set(key, merged);
+      };
+
+      (r1.data ?? []).forEach((row: Record<string, unknown>) => addRow(row, 'contact'));
+      (r2.data ?? []).forEach((row: Record<string, unknown>) => addRow(row, 'enrichment'));
+
+      setContacts(Array.from(byPerson.values()));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler');
     } finally {
