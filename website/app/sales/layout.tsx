@@ -784,11 +784,11 @@ function Topbar() {
           display: 'flex',
           alignItems: 'center',
           gap: 0,
-          padding: '2px 0',
+          padding: 0,
           marginLeft: 2,
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <span
             style={{
               fontSize: 26,
