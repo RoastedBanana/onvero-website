@@ -20,12 +20,31 @@ import type { CompanyStatus } from './_types';
 
 // ─── FILTER LOGIC ───────────────────────────────────────────────────────────
 
-function matchesEmployeeRange(count: number | null, range: EmployeeRange): boolean {
-  if (!range || count === null) return !range;
-  if (range === '<10') return count < 10;
-  if (range === '10-50') return count >= 10 && count <= 50;
-  if (range === '50-200') return count >= 50 && count <= 200;
-  if (range === '200+') return count > 200;
+// estimated_num_employees is often null — parse a representative number from
+// the free-text company_size string (e.g. "Mittelstand (80–150 Mitarbeiter)" → 115)
+function resolveEmployeeCount(count: number | null, sizeStr: string | null): number | null {
+  if (count !== null) return count;
+  if (!sizeStr) return null;
+  const rangeMatch = sizeStr.match(/(\d+)[–\-](\d+)/);
+  if (rangeMatch) return Math.round((parseInt(rangeMatch[1]) + parseInt(rangeMatch[2])) / 2);
+  const singleMatch = sizeStr.match(/(\d{2,})/);
+  if (singleMatch) return parseInt(singleMatch[1]);
+  const s = sizeStr.toLowerCase();
+  if (s.includes('micro') || s.includes('startup')) return 5;
+  if (s.includes('klein')) return 20;
+  if (s.includes('mittelstand') || s.includes('mittelständ') || s.includes('kmu')) return 100;
+  if (s.includes('groß') || s.includes('konzern')) return 500;
+  return null;
+}
+
+function matchesEmployeeRange(count: number | null, sizeStr: string | null, range: EmployeeRange): boolean {
+  if (!range) return true;
+  const n = resolveEmployeeCount(count, sizeStr);
+  if (n === null) return false;
+  if (range === '<10') return n < 10;
+  if (range === '10-50') return n >= 10 && n < 50;
+  if (range === '50-200') return n >= 50 && n < 200;
+  if (range === '200+') return n >= 200;
   return true;
 }
 
@@ -148,7 +167,9 @@ export default function UnternehmenV2Page() {
     }
 
     if (employeeRange) {
-      result = result.filter((c) => matchesEmployeeRange(c.estimated_num_employees, employeeRange));
+      result = result.filter((c) =>
+        matchesEmployeeRange(c.estimated_num_employees, c.company_size ?? null, employeeRange)
+      );
     }
 
     if (scoreRange) {
@@ -224,7 +245,16 @@ export default function UnternehmenV2Page() {
           >
             Unternehmen
           </h1>
-          <p style={{ fontSize: 13, color: TOKENS.color.textTertiary, margin: '4px 0 0', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <p
+            style={{
+              fontSize: 13,
+              color: TOKENS.color.textTertiary,
+              margin: '4px 0 0',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
             {loading ? (
               'Laden...'
             ) : (
