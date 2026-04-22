@@ -141,14 +141,7 @@ async function initLeadsStore() {
     }
     setStore({ tenantId: tid });
 
-    // Bypass Web Locks deadlock (supabase-js #2013/#2111) by querying PostgREST
-    // directly via fetch — supabase-js auth machinery never runs, no locks acquired.
-    const stored = readSessionFromStorage();
-    if (!stored) {
-      console.warn('[useLeads] no session in localStorage, cannot fetch leads');
-      setStore({ loading: false });
-      return;
-    }
+    const supabase = getSupabase();
 
     // Columns verified against DB schema — avoids heavy jsonb fields like raw_apollo_organization
     const LEAD_COLS = [
@@ -205,27 +198,17 @@ async function initLeadsStore() {
       'website_scraped_at',
       'tier',
       'follow_up_context',
-    ].join(',');
+    ].join(', ');
 
-    const leadsUrl =
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/leads` +
-      `?select=${LEAD_COLS}` +
-      `&tenant_id=eq.${tid}` +
-      `&order=created_at.desc&limit=200`;
-
-    const res = await withTimeout(
-      fetch(leadsUrl, {
-        headers: {
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          Authorization: `Bearer ${stored.accessToken}`,
-        },
-      }),
-      10000
-    );
-
-    const result: { data: DbLead[] | null; error: { message: string } | null } = res.ok
-      ? { data: await res.json(), error: null }
-      : { data: null, error: { message: await res.text() } };
+    const result = (await withTimeout(
+      supabase
+        .from('leads')
+        .select(LEAD_COLS)
+        .eq('tenant_id', tid)
+        .order('created_at', { ascending: false })
+        .limit(200),
+      30000
+    )) as { data: DbLead[] | null; error: { message: string } | null };
 
     if (result.error) {
       console.error('[useLeads] query failed:', result.error.message);
