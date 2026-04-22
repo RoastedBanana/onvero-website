@@ -1095,26 +1095,30 @@ export default function GeneratePage() {
     };
   }, [phase]);
 
-  // ─── Resume loading state on mount (survives reload + tab switch) ─────
+  // ─── Resume state on mount (survives reload + sidebar nav) ─────────────
+  // in_progress → show scoring view. done → show done view. Only cancel or
+  // "Neue Suche" wipes server state, so returning mid-run picks up progress.
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch('/api/generate/progress', { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
-        // Only resume if there's an active in-progress run
-        if (
-          data.status === 'in_progress' &&
-          typeof data.total_items === 'number' &&
-          data.total_items > 0 &&
-          typeof data.scored_count === 'number' &&
-          data.scored_count < data.total_items
-        ) {
-          setTotalLeads(data.total_items);
-          setScoredLeads(data.scored_count);
+        const total = typeof data.total_items === 'number' ? data.total_items : 0;
+        const count = typeof data.scored_count === 'number' ? data.scored_count : 0;
+
+        if (data.status === 'in_progress' && total > 0 && count < total) {
+          setTotalLeads(total);
+          setScoredLeads(count);
           if (Array.isArray(data.scored_leads)) setScoredList(data.scored_leads);
           if (data.started_at) setRequestTime(data.started_at);
           setPhase('scoring');
+        } else if (data.status === 'done' && total > 0 && count > 0) {
+          setTotalLeads(total);
+          setScoredLeads(count);
+          if (Array.isArray(data.scored_leads)) setScoredList(data.scored_leads);
+          if (data.started_at) setRequestTime(data.started_at);
+          setPhase('done');
         }
       } catch {
         /* ignore */
@@ -2585,12 +2589,20 @@ export default function GeneratePage() {
             </Link>
             <button
               onClick={() => {
+                if (tenantId) {
+                  fetch('/api/generate/progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant_id: tenantId, status: 'reset', total_items: 0 }),
+                  }).catch(() => {});
+                }
                 setPhase('form');
                 setForm({ freetext: '' });
                 setReasoning(null);
                 setElapsed(0);
                 setScoredLeads(0);
                 setTotalLeads(0);
+                setScoredList([]);
               }}
               style={{
                 padding: '12px 24px',
