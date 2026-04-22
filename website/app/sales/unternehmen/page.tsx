@@ -505,6 +505,7 @@ export default function UnternehmenV2Page() {
   }
 
   function toggleSelect(id: string) {
+    setSelectionMode(true);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -512,6 +513,10 @@ export default function UnternehmenV2Page() {
       return next;
     });
   }
+
+  useEffect(() => {
+    if (selectionMode && selected.size === 0) setSelectionMode(false);
+  }, [selected, selectionMode]);
 
   function toggleAll() {
     if (filteredCompanies.every((c) => selected.has(c.id))) setSelected(new Set());
