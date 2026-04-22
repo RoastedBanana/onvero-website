@@ -1,16 +1,37 @@
 import type { Company, Contact } from '../_types';
 
+export type LeadActivity = {
+  id: string;
+  type: string;
+  title: string;
+  content: string | null;
+  created_at: string;
+};
+
 export type ActivityEvent = {
   id: string;
   timestamp: Date;
-  type: 'created' | 'scored' | 'scraped' | 'enriched' | 'drafted' | 'contacted';
+  type: 'created' | 'scored' | 'scraped' | 'enriched' | 'drafted' | 'contacted' | 'status_change' | 'note' | 'other';
   title: string;
   subtitle?: string;
   badge?: { text: string; color: 'indigo' | 'green' | 'amber' | 'gray' };
   dotColor: 'indigo' | 'green' | 'amber' | 'gray';
 };
 
-export function buildActivityFeed(company: Company, contacts: Contact[]): ActivityEvent[] {
+function dotColorForType(type: string): ActivityEvent['dotColor'] {
+  if (type === 'status_change') return 'indigo';
+  if (type === 'email_sent') return 'green';
+  if (type === 'email_draft') return 'amber';
+  if (type === 'note_added') return 'amber';
+  if (type === 'meeting_scheduled') return 'green';
+  return 'gray';
+}
+
+export function buildActivityFeed(
+  company: Company,
+  contacts: Contact[],
+  dbActivities: LeadActivity[] = []
+): ActivityEvent[] {
   const events: ActivityEvent[] = [];
 
   // Company created
@@ -91,6 +112,18 @@ export function buildActivityFeed(company: Company, contacts: Contact[]): Activi
         dotColor: 'green',
       });
     }
+  }
+
+  // DB activities (status changes, notes, emails, meetings…)
+  for (const a of dbActivities) {
+    events.push({
+      id: `db-${a.id}`,
+      timestamp: new Date(a.created_at),
+      type: (a.type as ActivityEvent['type']) ?? 'other',
+      title: a.title,
+      subtitle: a.content ?? undefined,
+      dotColor: dotColorForType(a.type),
+    });
   }
 
   // Sort DESC (newest first)

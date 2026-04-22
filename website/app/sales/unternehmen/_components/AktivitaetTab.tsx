@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 import { TOKENS } from '../_tokens';
 import { buildActivityFeed } from '../_lib/activity-builder';
-import type { ActivityEvent } from '../_lib/activity-builder';
+import type { ActivityEvent, LeadActivity } from '../_lib/activity-builder';
 import { formatRelativeTime } from '../_lib/relative-time';
 import type { Company, Contact } from '../_types';
 
@@ -86,7 +87,21 @@ function EventRow({ event, isLast }: { event: ActivityEvent; isLast: boolean }) 
 }
 
 export default function AktivitaetTab({ company, contacts }: { company: Company; contacts: Contact[] }) {
-  const events = useMemo(() => buildActivityFeed(company, contacts), [company, contacts]);
+  const [dbActivities, setDbActivities] = useState<LeadActivity[]>([]);
+
+  useEffect(() => {
+    const sb = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+    sb.from('lead_activities')
+      .select('id, type, title, content, created_at')
+      .eq('lead_id', company.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        if (data) setDbActivities(data as LeadActivity[]);
+      });
+  }, [company.id]);
+
+  const events = useMemo(() => buildActivityFeed(company, contacts, dbActivities), [company, contacts, dbActivities]);
 
   if (events.length <= 1) {
     return (
