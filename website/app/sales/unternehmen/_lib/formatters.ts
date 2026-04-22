@@ -62,9 +62,9 @@ export const fmt = {
   tier(tier: string | null): 'HOT' | 'WARM' | 'COLD' | 'UNRATED' {
     if (!tier) return 'UNRATED';
     const upper = tier.toUpperCase().trim();
-    if (upper === 'HOT') return 'HOT';
-    if (upper === 'WARM') return 'WARM';
-    if (upper === 'COLD') return 'COLD';
+    if (upper.startsWith('HOT')) return 'HOT';
+    if (upper.startsWith('WARM')) return 'WARM';
+    if (upper.startsWith('COLD')) return 'COLD';
     return 'UNRATED';
   },
 
