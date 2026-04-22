@@ -254,7 +254,7 @@ function LeadPreview({ lead }: { lead: Lead }) {
             }}
           >
             <SvgIcon d={ICONS.spark} size={11} color={C.accent} />
-            <span style={{ fontSize: 10, fontWeight: 500, color: C.accent, letterSpacing: '0.06em' }}>KI-ANALYSE</span>
+            <span style={{ fontSize: 10, fontWeight: 500, color: C.accent, letterSpacing: '0.06em' }}>ANALYSE</span>
           </div>
           <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.6 }}>{lead.aiSummary}</div>
         </div>

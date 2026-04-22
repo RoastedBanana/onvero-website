@@ -646,9 +646,9 @@ export default function AnalyseTab({
           value={company.website_scraped_at ? 'Ja' : null}
           present={!!company.website_scraped_at}
         />
-        <SignalRow label="KI-Analyse" value={scoredAt} present={!!scoredAt} mono />
+        <SignalRow label="Analyse" value={scoredAt} present={!!scoredAt} mono />
         <div style={{ fontSize: 10, color: TOKENS.color.textMuted, marginTop: 10, textAlign: 'center' as const }}>
-          KI-Bewertung auf Basis öffentlicher Daten
+          Bewertung auf Basis öffentlicher Daten
         </div>
       </Section>
 

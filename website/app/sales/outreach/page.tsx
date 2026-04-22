@@ -57,9 +57,9 @@ const IDEAS: OutreachIdea[] = [
     role: 'VP Sales',
     channel: 'linkedin',
     score: 92,
-    hook: 'CRM-Evaluation: Warum KI-Scoring den Unterschied macht',
+    hook: 'CRM-Evaluation: Warum dynamisches Scoring den Unterschied macht',
     preview:
-      'Hi Laura,\n\nich habe euren LinkedIn-Post über die CRM-Evaluation gesehen. Spannend! Die meisten Tools bewerten Leads statisch — wir machen das anders.\n\nOnvero scored Leads in Echtzeit mit KI basierend auf 40+ Signalen...',
+      'Hi Laura,\n\nich habe euren LinkedIn-Post über die CRM-Evaluation gesehen. Spannend! Die meisten Tools bewerten Leads statisch — wir machen das anders.\n\nOnvero scored Leads in Echtzeit basierend auf 40+ Signalen...',
     reasoning:
       'Laura hat öffentlich über CRM-Suche gepostet. Als VP Sales ist sie die Hauptentscheiderin. Direct Intent-Signal, hohe Relevanz.',
     basedOn: 'Market Intent Signal: CRM-Suche',
@@ -91,7 +91,7 @@ const IDEAS: OutreachIdea[] = [
     score: 85,
     hook: 'Euer wachsendes Sales-Team braucht Struktur',
     preview:
-      'Talking Points:\n• Greenfield stellt gerade 4 Sales-Leute ein → perfekter Zeitpunkt für Tool-Einführung\n• Pain Point: Onboarding neuer SDRs dauert zu lang\n• Onvero kann Ramp-up-Zeit um 40% reduzieren durch KI-gestützte Lead-Priorisierung',
+      'Talking Points:\n• Greenfield stellt gerade 4 Sales-Leute ein → perfekter Zeitpunkt für Tool-Einführung\n• Pain Point: Onboarding neuer SDRs dauert zu lang\n• Onvero kann Ramp-up-Zeit um 40% reduzieren durch automatische Lead-Priorisierung',
     reasoning:
       '4 offene Sales-Stellen auf LinkedIn. CEO ist bei <100 MA oft direkt im Buying Process. Telefon-Outreach passt zu seiner LinkedIn-Aktivität (wenig digital, viel Networking).',
     basedOn: 'Hiring Signal + Company Size',
@@ -423,7 +423,7 @@ function IdeaCard({ idea, index }: { idea: OutreachIdea; index: number }) {
               >
                 <SvgIcon d={ICONS.spark} size={11} color={C.accent} />
                 <span style={{ fontSize: 10, fontWeight: 500, color: C.accent, letterSpacing: '0.06em' }}>
-                  KI-BEGRÜNDUNG
+                  BEGRÜNDUNG
                 </span>
               </div>
               <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.65 }}>{idea.reasoning}</div>
@@ -461,7 +461,7 @@ export default function OutreachPage() {
       />
       <PageHeader
         title="Outreach-Ideen"
-        subtitle="KI-generierte Nachrichten basierend auf echten Signalen"
+        subtitle="Generierte Nachrichten basierend auf echten Signalen"
         actions={
           <>
             <GhostButton>Einstellungen</GhostButton>

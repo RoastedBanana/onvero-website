@@ -156,6 +156,7 @@ export async function GET(req: Request) {
 
   const scored = all.filter((l) => l.fit_score !== null);
   const contacted = all.filter((l) => l.status === 'contacted' || l.status === 'qualified');
+  const qualified = all.filter((l) => l.status === 'qualified');
 
   return NextResponse.json({
     total: all.length,
@@ -166,6 +167,7 @@ export async function GET(req: Request) {
     withEmail: all.filter((l) => l.linkedin_url).length,
     scored: scored.length,
     contacted: contacted.length,
+    qualified: qualified.length,
     avgDataQuality,
     scoreRanges,
     industries,

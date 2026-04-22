@@ -264,7 +264,7 @@ export default function EnrichedContactCard({
             'E-Mail öffnen'
           ) : (
             <>
-              KI-Email schreiben
+              E-Mail schreiben
               <span
                 style={{
                   fontSize: 9,

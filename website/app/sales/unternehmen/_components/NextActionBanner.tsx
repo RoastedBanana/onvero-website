@@ -70,7 +70,7 @@ export default function NextActionBanner({
               marginBottom: 4,
             }}
           >
-            NÄCHSTER SCHRITT (KI-EMPFEHLUNG)
+            NÄCHSTER SCHRITT (EMPFEHLUNG)
           </div>
           <div style={{ fontSize: 14.5, color: TOKENS.color.textSecondary, lineHeight: 1.55 }}>{nextAction}</div>
         </div>

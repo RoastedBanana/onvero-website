@@ -1357,7 +1357,7 @@ export default function GeneratePage() {
       />
 
       <div style={{ marginTop: 16 }}>
-        <PageHeader title="Lead Generator" subtitle="KI-gestützte Lead-Recherche" />
+        <PageHeader title="Lead Generator" subtitle="Automatische Lead-Recherche" />
       </div>
 
       <>
@@ -1452,7 +1452,7 @@ export default function GeneratePage() {
                   </span>
                 </h2>
                 <p style={{ fontSize: 14, color: C.text2, margin: '10px 0 0', fontWeight: 400 }}>
-                  Unsere KI findet die passenden Entscheider f&uuml;r dich
+                  Finde die passenden Entscheider f&uuml;r dich
                 </p>
               </div>
 
@@ -1706,19 +1706,19 @@ export default function GeneratePage() {
                         icon: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z',
                         step: '01',
                         title: 'Beschreiben',
-                        desc: 'Du sagst der KI in eigenen Worten wen du suchst \u2014 Branche, Rolle, Region, Technologie.',
+                        desc: 'Du beschreibst in eigenen Worten wen du suchst \u2014 Branche, Rolle, Region, Technologie.',
                       },
                       {
                         icon: ICONS.spark,
                         step: '02',
-                        title: 'KI analysiert',
-                        desc: 'Die KI verfeinert deine Kriterien, baut die optimale Suche und zeigt dir die Strategie.',
+                        title: 'Analyse',
+                        desc: 'Deine Kriterien werden verfeinert, die optimale Suche gebaut und die Strategie angezeigt.',
                       },
                       {
                         icon: ICONS.zap,
                         step: '03',
                         title: 'Leads erscheinen',
-                        desc: 'In ~2 Minuten werden deine Leads generiert, KI-gescored und mit E-Mail-Drafts versehen.',
+                        desc: 'In ~2 Minuten werden deine Leads generiert, gescored und mit E-Mail-Drafts versehen.',
                       },
                     ].map((item, i) => (
                       <div

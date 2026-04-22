@@ -1053,7 +1053,7 @@ export const LEADS: Lead[] = RAW_LEADS.map((r) => {
       ...(r.score
         ? [
             {
-              action: `KI-Score berechnet: ${r.score}`,
+              action: `Score berechnet: ${r.score}`,
               time: new Date(r.created_at).toLocaleDateString('de-DE'),
               color: '#38BDF8',
             },

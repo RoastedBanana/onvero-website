@@ -654,7 +654,7 @@ function LivePrepPanel({
                       border: `1px solid ${C.accent}10`,
                     }}
                   >
-                    <div style={{ fontSize: 9, color: C.accent, fontWeight: 600, marginBottom: 4 }}>KI-ANALYSE</div>
+                    <div style={{ fontSize: 9, color: C.accent, fontWeight: 600, marginBottom: 4 }}>ANALYSE</div>
                     <p style={{ fontSize: 11, color: C.text2, lineHeight: 1.5, margin: 0 }}>{lead.aiSummary}</p>
                   </div>
                 )}

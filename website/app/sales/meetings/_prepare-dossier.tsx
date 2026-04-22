@@ -400,7 +400,7 @@ export default function PrepareDossier({ meeting, lead }: { meeting: Meeting; le
             >
               <SvgIcon d={ICONS.spark} size={13} color={C.accent} />
             </div>
-            <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em' }}>KI-ANALYSE</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em' }}>ANALYSE</span>
           </div>
           <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.7, margin: 0 }}>{lead.aiSummary}</p>
 

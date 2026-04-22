@@ -68,7 +68,7 @@ function MeetingStats({ meetings }: { meetings: Meeting[] }) {
       gradient: 'radial-gradient(ellipse at 80% 0%, rgba(167,139,250,0.12) 0%, transparent 60%)',
     },
     {
-      label: 'KI-ANALYSEN',
+      label: 'ANALYSEN',
       value: String(withSummary),
       color: '#34D399',
       gradient: 'radial-gradient(ellipse at 30% 0%, rgba(52,211,153,0.10) 0%, transparent 60%)',
@@ -333,7 +333,7 @@ function UpcomingMeetings({
           <p style={{ fontSize: 12, color: C.text3, margin: '0 0 16px', lineHeight: 1.6 }}>
             {filter !== 'all'
               ? 'Wechsle den Filter oder erstelle ein neues Meeting.'
-              : 'Erstelle dein erstes Meeting oder warte auf einen KI-Vorschlag aus deinen E-Mails.'}
+              : 'Erstelle dein erstes Meeting oder warte auf einen Vorschlag aus deinen E-Mails.'}
           </p>
           {filter !== 'all' && (
             <button
@@ -829,7 +829,7 @@ function RecordView({ onSelectMeeting, meetings }: { onSelectMeeting: (id: strin
               },
               {
                 icon: ICONS.spark,
-                label: 'KI-Zusammenfassung',
+                label: 'Zusammenfassung',
                 desc: 'Automatische Zusammenfassung + Action Items',
                 color: '#34D399',
               },

@@ -52,7 +52,7 @@ export function buildActivityFeed(
       id: 'scored',
       timestamp: new Date(company.ai_scored_at),
       type: 'scored',
-      title: 'KI-Scoring durchgeführt',
+      title: 'Scoring durchgeführt',
       badge: company.fit_score !== null ? { text: `Score: ${company.fit_score}`, color: 'indigo' } : undefined,
       dotColor: 'indigo',
     });

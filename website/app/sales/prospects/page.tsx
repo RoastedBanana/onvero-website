@@ -255,7 +255,7 @@ function SignalCard({ signal, index }: { signal: IntentSignal; index: number }) 
               }}
             >
               <div style={{ fontSize: 10, fontWeight: 500, color: C.text3, letterSpacing: '0.06em', marginBottom: 6 }}>
-                KI-ANALYSE
+                ANALYSE
               </div>
               {signal.details}
             </div>
@@ -375,7 +375,7 @@ export default function ProspectsPage() {
       />
       <PageHeader
         title="Market Intent"
-        subtitle="KI-erkannte Kaufsignale aus dem deutschsprachigen Markt"
+        subtitle="Erkannte Kaufsignale aus dem deutschsprachigen Markt"
         actions={
           <>
             <GhostButton>Signal-Quellen</GhostButton>

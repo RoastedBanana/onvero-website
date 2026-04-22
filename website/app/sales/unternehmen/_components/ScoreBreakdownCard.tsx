@@ -331,11 +331,11 @@ export default function ScoreBreakdownCard({
         present={!!company.website_scraped_at}
       />
       <div style={{ borderBottom: 'none' }}>
-        <SignalRow label="KI-Analyse" value={scoredAt} present={!!scoredAt} mono />
+        <SignalRow label="Analyse" value={scoredAt} present={!!scoredAt} mono />
       </div>
 
       <div style={{ fontSize: 10, color: TOKENS.color.textMuted, marginTop: 10, textAlign: 'center' }}>
-        KI-Bewertung auf Basis öffentlicher Daten
+        Bewertung auf Basis öffentlicher Daten
       </div>
     </div>
   );

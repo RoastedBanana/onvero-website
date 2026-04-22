@@ -35,7 +35,7 @@ function buildMetrics(leads: import('./_lead-data').Lead[]) {
       sparkline: scoredLeads.slice(0, 7).map((l) => l.score ?? 0),
     },
     {
-      label: 'KI-SCORE Ø',
+      label: 'SCORE Ø',
       value: `${stats.avgScore}`,
       delta: `${stats.hot} Hot Leads`,
       deltaType: 'up' as const,
@@ -747,7 +747,7 @@ export default function SalesV2HomePage() {
         </BentoCard>
       </div>
 
-      {/* AI Suggested Actions — from real lead data */}
+      {/* Suggested Actions — from real lead data */}
       {topUnanswered.length > 0 && (
         <div
           style={{
@@ -772,7 +772,7 @@ export default function SalesV2HomePage() {
             >
               <SvgIcon d={ICONS.spark} size={13} color="#A78BFA" />
             </div>
-            <span style={{ fontSize: 12, fontWeight: 500, color: C.text2 }}>KI-Empfehlungen</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: C.text2 }}>Empfehlungen</span>
           </div>
           {topUnanswered.map((lead, i) => (
             <Link

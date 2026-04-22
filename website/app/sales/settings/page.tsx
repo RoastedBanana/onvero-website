@@ -509,7 +509,7 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <SectionCard
         title="Basis-Informationen"
-        description="Diese Daten nutzt die KI um deine Leads besser zu qualifizieren."
+        description="Diese Daten helfen, deine Leads besser zu qualifizieren."
       >
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -644,7 +644,7 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
         </Field>
       </SectionCard>
 
-      <SectionCard title="Zielgruppe & ICP" description="Je präziser, desto besser der KI-Score.">
+      <SectionCard title="Zielgruppe & ICP" description="Je präziser, desto besser der Fit-Score.">
         <Field label="Zielkunden">
           <TextArea value={profile.target_customers} onChange={(v) => upd('target_customers', v)} rows={2} />
         </Field>
@@ -696,8 +696,8 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
       </SectionCard>
 
       <SectionCard
-        title="KI-Personalisierung"
-        description="Eigene Prompts für die KI-gestützte Lead-Suche und Bewertung. Optional."
+        title="Personalisierung"
+        description="Eigene Prompts für die Lead-Suche und Bewertung. Optional."
         collapsible
         defaultOpen={false}
       >
@@ -712,7 +712,7 @@ function ProfilSection({ profile, onChange }: { profile: ProfileData; onChange: 
             placeholder="z.B. Suche nach B2B SaaS-Unternehmen im DACH-Raum mit 50-500 Mitarbeitern, die aktiv wachsen..."
           />
         </Field>
-        <Field label="Scoring-Prompt" hint="Wird für die KI-basierte Lead-Bewertung verwendet.">
+        <Field label="Scoring-Prompt" hint="Wird für die Lead-Bewertung verwendet.">
           <TextArea
             value={profile.ai_scoring_prompt}
             onChange={(v) => upd('ai_scoring_prompt', v)}
@@ -924,9 +924,9 @@ function IntegrationenSection() {
             <SvgIcon d={ICONS.spark} size={16} color="#818CF8" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: C.text1 }}>Onvero KI-Engine</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: C.text1 }}>Onvero Engine</div>
             <div style={{ fontSize: 11, color: C.text3, marginTop: 1 }}>
-              Automatische Lead-Suche, Enrichment & KI-Scoring
+              Automatische Lead-Suche, Enrichment & Scoring
             </div>
           </div>
           <span
@@ -951,7 +951,7 @@ function IntegrationenSection() {
       {/* Meetings & Transkription */}
       <SectionCard
         title="Meetings & Transkription"
-        description="Meeting-Aufnahmen werden automatisch transkribiert und von der KI analysiert."
+        description="Meeting-Aufnahmen werden automatisch transkribiert und analysiert."
       >
         <div
           style={{
@@ -1671,9 +1671,9 @@ const CREDIT_ACTIONS = [
 ];
 
 const FREE_AI_FEATURES = [
-  { label: 'KI-Scoring & Re-Scoring',       desc: 'Automatische Bewertung eines Leads' },
+  { label: 'Scoring & Re-Scoring',          desc: 'Automatische Bewertung eines Leads' },
   { label: 'Website-Analyse',               desc: 'Zusammenfassung & Insights zur Company-Website' },
-  { label: 'E-Mail-Drafts',                 desc: 'KI-generierte personalisierte Outreach-Entwürfe' },
+  { label: 'E-Mail-Drafts',                 desc: 'Personalisierte Outreach-Entwürfe' },
   { label: 'Meeting-Analyse',               desc: 'Transkription, Zusammenfassung, Action Items' },
 ];
 
@@ -1805,7 +1805,7 @@ function PlanSection() {
           Jeder Plan enthält ein monatliches Credit-Budget. Credits werden verbraucht, wenn du{' '}
           <strong style={{ color: C.text1 }}>Leads generierst</strong> oder{' '}
           <strong style={{ color: C.text1 }}>Kontaktpersonen anreicherst</strong> (E-Mail, Telefon).{' '}
-          <strong style={{ color: C.success }}>Alle KI-Funktionen sind kostenlos</strong> — limitiert auf{' '}
+          <strong style={{ color: C.success }}>Alle Smart-Funktionen sind kostenlos</strong> — limitiert auf{' '}
           <strong style={{ color: C.text1 }}>100 Nutzungen pro Tag</strong>. Nicht verbrauchte Credits verfallen am
           Ende des Monats.
         </p>
@@ -1865,9 +1865,9 @@ function PlanSection() {
         </div>
       </SectionCard>
 
-      {/* Free AI features */}
+      {/* Free Smart features */}
       <SectionCard
-        title="KI-Funktionen — kostenlos"
+        title="Smart-Funktionen — kostenlos"
         description="100 Nutzungen pro Tag pro Funktion. Nutze sie so oft du willst — Credits werden nicht verbraucht."
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -1951,7 +1951,7 @@ function PlanSection() {
       {/* Plans */}
       <SectionCard
         title="Verfügbare Pläne"
-        description="Alle Pläne inklusive KI-Funktionen (100/Tag), unbegrenzt Meetings, E-Mails & Analytics."
+        description="Alle Pläne inklusive Smart-Funktionen (100/Tag), unbegrenzt Meetings, E-Mails & Analytics."
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {(['basic', 'business', 'enterprise'] as const).map((key) => {

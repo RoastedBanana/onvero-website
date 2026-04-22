@@ -188,7 +188,7 @@ export default function AnalyticsView({ meetings }: { meetings: Meeting[] }) {
           delay={0.06}
         />
         <StatCard
-          label="KI-ANALYSEN"
+          label="ANALYSEN"
           value={String(data?.analysisCount ?? 0)}
           subtext="Gespräche analysiert"
           color="#A78BFA"
@@ -515,7 +515,7 @@ export default function AnalyticsView({ meetings }: { meetings: Meeting[] }) {
         </div>
       </div>
 
-      {/* KI-Erkenntnisse aus allen Gesprächen */}
+      {/* Erkenntnisse aus allen Gesprächen */}
       {data?.recentInsights && data.recentInsights.length > 0 && (
         <div
           style={{
@@ -528,7 +528,7 @@ export default function AnalyticsView({ meetings }: { meetings: Meeting[] }) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <SvgIcon d={ICONS.spark} size={13} color={C.accent} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>KI-Erkenntnisse aus deinen Gesprächen</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.text1 }}>Erkenntnisse aus deinen Gesprächen</span>
             <span style={{ fontSize: 11, color: C.text3, marginLeft: 'auto' }}>
               {data.recentInsights.length} Insights
             </span>

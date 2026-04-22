@@ -44,9 +44,9 @@ function formatDuration(seconds: number): string {
 function generateMockSummary(meeting: Meeting, notes: TimestampedNote[]): string {
   const noteTexts = notes.map((n) => n.text).join('; ');
   if (notes.length > 0) {
-    return `Gespräch mit ${meeting.contact} von ${meeting.company} zum Thema "${meeting.title}". Wichtigste Punkte: ${noteTexts}. Das Meeting dauerte ${meeting.duration} Minuten. Starte die Transkription für eine detaillierte KI-Analyse.`;
+    return `Gespräch mit ${meeting.contact} von ${meeting.company} zum Thema "${meeting.title}". Wichtigste Punkte: ${noteTexts}. Das Meeting dauerte ${meeting.duration} Minuten. Starte die Transkription für eine detaillierte Analyse.`;
   }
-  return `Gespräch mit ${meeting.contact} von ${meeting.company} zum Thema "${meeting.title}". Dauer: ${meeting.duration} Minuten, ${meeting.phases.length} Phasen. Starte die Transkription für eine detaillierte KI-Analyse.`;
+  return `Gespräch mit ${meeting.contact} von ${meeting.company} zum Thema "${meeting.title}". Dauer: ${meeting.duration} Minuten, ${meeting.phases.length} Phasen. Starte die Transkription für eine detaillierte Analyse.`;
 }
 
 function generateMockActions(meeting: Meeting): ActionItem[] {
@@ -340,9 +340,9 @@ export default function PostMeeting({
         );
       }
 
-      showToast('KI-Analyse abgeschlossen', 'success');
+      showToast('Analyse abgeschlossen', 'success');
     } catch {
-      showToast('KI-Analyse fehlgeschlagen', 'error');
+      showToast('Analyse fehlgeschlagen', 'error');
     } finally {
       setAnalyzing(false);
     }
@@ -539,7 +539,7 @@ export default function PostMeeting({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <SvgIcon d={ICONS.spark} size={13} color={C.accent} />
               <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em' }}>
-                KI-ZUSAMMENFASSUNG
+                ZUSAMMENFASSUNG
               </span>
             </div>
             {/* Status indicators */}
@@ -566,7 +566,7 @@ export default function PostMeeting({
                   }}
                 />
                 <span style={{ fontSize: 12, color: C.accentBright }}>
-                  {transcribing ? transcribeProgress || 'Transkription läuft…' : 'KI-Analyse läuft…'}
+                  {transcribing ? transcribeProgress || 'Transkription läuft…' : 'Analyse läuft…'}
                 </span>
                 {hasDualTrack && transcribing && (
                   <span
@@ -634,7 +634,7 @@ export default function PostMeeting({
                 }}
               >
                 <SvgIcon d={ICONS.spark} size={13} color="#fff" />
-                {audioBlob ? 'Transkription + KI-Analyse starten' : 'KI-Analyse starten'}
+                {audioBlob ? 'Transkription + Analyse starten' : 'Analyse starten'}
               </button>
             )}
 

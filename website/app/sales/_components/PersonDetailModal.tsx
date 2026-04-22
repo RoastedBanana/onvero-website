@@ -474,7 +474,7 @@ export function PersonDetail({ contact, onClose }: { contact: Contact; onClose: 
                         animation: 'spinLoader 0.8s linear infinite',
                       }}
                     />
-                    KI schreibt…
+                    Wird geschrieben…
                   </div>
                 </>
               )}
@@ -688,10 +688,10 @@ export function PersonDetail({ contact, onClose }: { contact: Contact; onClose: 
                       <SvgIcon d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" size={13} />
                     </button>
 
-                    {/* KI-Spark — AI rewrite */}
+                    {/* Rewrite spark */}
                     <button
                       onClick={() => setShowRewrite(true)}
-                      title="Mit KI umschreiben"
+                      title="Umschreiben"
                       style={{
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         width: 30, height: 30, borderRadius: 8,
@@ -748,7 +748,7 @@ export function PersonDetail({ contact, onClose }: { contact: Contact; onClose: 
                         <SvgIcon d={ICONS.spark} size={15} color="#A5B4FC" />
                       </div>
                       <div>
-                        <h3 style={{ fontSize: 14, fontWeight: 600, color: C.text1, margin: 0 }}>E-Mail mit KI umschreiben</h3>
+                        <h3 style={{ fontSize: 14, fontWeight: 600, color: C.text1, margin: 0 }}>E-Mail umschreiben</h3>
                         <p style={{ fontSize: 11, color: C.text3, margin: '2px 0 0' }}>Was möchtest du ändern?</p>
                       </div>
                     </div>

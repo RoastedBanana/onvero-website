@@ -29,6 +29,7 @@ interface LeadsData {
   scored: number;
   avgDataQuality: number;
   contacted?: number;
+  qualified?: number;
   scoreRanges: Record<string, number>;
   industries: { name: string; count: number; avgScore: number }[];
   topCities: { name: string; count: number }[];
@@ -228,20 +229,29 @@ function AreaChart({
           </g>
         ))}
 
-        {/* X labels */}
-        {data.map((d, i) => (
-          <text
-            key={d.x}
-            x={padL + (i / (data.length - 1)) * cW}
-            y={H - 4}
-            textAnchor="middle"
-            fill={C.text3}
-            fontSize="9"
-            fontFamily="system-ui"
-          >
-            {d.x}
-          </text>
-        ))}
+        {/* X labels — thinned so ~10 ticks max, always keep first & last */}
+        {(() => {
+          const MAX_TICKS = 10;
+          const step = Math.max(1, Math.ceil(data.length / MAX_TICKS));
+          return data.map((d, i) => {
+            const isLast = i === data.length - 1;
+            const show = i === 0 || isLast || i % step === 0;
+            if (!show) return null;
+            return (
+              <text
+                key={d.x}
+                x={padL + (i / (data.length - 1)) * cW}
+                y={H - 4}
+                textAnchor={i === 0 ? 'start' : isLast ? 'end' : 'middle'}
+                fill={C.text3}
+                fontSize="9"
+                fontFamily="system-ui"
+              >
+                {d.x}
+              </text>
+            );
+          });
+        })()}
 
         {/* Last value label */}
         <text
@@ -651,7 +661,7 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
       glowColor: 'rgba(52,211,153,0.25)',
     },
     {
-      label: 'KI-SCORE Ø',
+      label: 'SCORE Ø',
       value: String(Math.round(leadsData.avgScore)),
       delta: null,
       deltaType: null,
@@ -682,10 +692,9 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
   // Build funnel from real data
   const funnel = [
     { stage: 'Generiert', count: leadsData.total, color: '#4E5170' },
-    { stage: 'KI-bewertet', count: leadsData.scored, color: '#818CF8' },
     { stage: 'Hot Leads', count: leadsData.hot, color: '#38BDF8' },
-    { stage: 'Mit E-Mail', count: leadsData.withEmail, color: '#FBBF24' },
     { stage: 'Kontaktiert', count: leadsData.contacted ?? 0, color: '#34D399' },
+    { stage: 'Qualifiziert', count: leadsData.qualified ?? 0, color: '#A78BFA' },
   ];
 
   // Weekly bar chart: last 7 entries from trend
@@ -710,7 +719,7 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
         {overviewMetrics.map((m, i) => (
           <MetricCard key={m.label} {...m} index={i} />
         ))}
@@ -731,7 +740,7 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
         )}
       </Panel>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
         {/* Conversion funnel */}
         <Panel title="Conversion Funnel" icon={ICONS.chart} color="#818CF8" delay={0.3}>
           <SankeyFlow funnel={funnel} />
@@ -747,7 +756,7 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
         </Panel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* Lead Sources -- donut */}
         <Panel title="Lead-Quellen" icon={ICONS.globe} color="#A78BFA" delay={0.3}>
           {sourceSegments.length > 0 ? (
@@ -801,7 +810,7 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
       </div>
 
       {/* Bottom row -- progress rings */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
         <Panel title="Datenqualität" icon={ICONS.trending} color="#34D399" delay={0.4}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '12px 0' }}>
             <ProgressRing
@@ -835,7 +844,7 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
           </div>
         </Panel>
 
-        <Panel title="KI-bewertet" icon={ICONS.clock} color="#FBBF24" delay={0.5}>
+        <Panel title="Bewertet" icon={ICONS.clock} color="#FBBF24" delay={0.5}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '12px 0' }}>
             <ProgressRing
               value={scoredRate}
@@ -849,7 +858,7 @@ function OverviewTab({ leadsData, trendData }: { leadsData: LeadsData; trendData
               <div style={{ fontSize: 13, color: C.text1, fontWeight: 500, marginBottom: 4 }}>
                 {leadsData.scored} von {leadsData.total} Leads
               </div>
-              <div style={{ fontSize: 12, color: scoredRate >= 80 ? C.success : C.text2 }}>mit KI-Score bewertet</div>
+              <div style={{ fontSize: 12, color: scoredRate >= 80 ? C.success : C.text2 }}>mit Score bewertet</div>
             </div>
           </div>
         </Panel>
@@ -894,11 +903,11 @@ function LeadsTab({ leadsData, trendData }: { leadsData: LeadsData; trendData: T
 
   const totalLabel = leadsData.total >= 1000 ? `${(leadsData.total / 1000).toFixed(1)}k` : String(leadsData.total);
 
-  // KI-Score Trend from trend data (hot leads over time)
+  // Score trend from trend data (hot leads over time)
   const scoreTrendData = trendData.trend.map((item) => ({ x: item.label, y: item.hot }));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
       {/* Score Distribution -- horizontal bar chart */}
       <Panel title="Score-Verteilung" icon={ICONS.chart} color="#818CF8" delay={0.1}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -985,8 +994,8 @@ function LeadsTab({ leadsData, trendData }: { leadsData: LeadsData; trendData: T
         )}
       </Panel>
 
-      {/* KI-Score Trend -- full width area chart */}
-      <Panel title="KI-Score Trend (Woche)" icon={ICONS.spark} color="#818CF8" span={2} delay={0.2}>
+      {/* Score trend -- full width area chart */}
+      <Panel title="Score-Trend (Woche)" icon={ICONS.spark} color="#818CF8" span={2} delay={0.2}>
         {scoreTrendData.length > 1 ? (
           <AreaChart
             data={scoreTrendData}
@@ -1015,7 +1024,7 @@ function ActivityTab({ activityData, trendData }: { activityData: ActivityData; 
   const dailyBarData = last7.map((item) => ({ x: item.label, y: item.total }));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
       <Panel title="Aktivitäts-Timeline" icon={ICONS.clock} color="#A78BFA" delay={0.1}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }}>
           <div
@@ -1379,7 +1388,7 @@ export default function AnalyticsPage() {
       {loading || !leadsData || !trendData || !activityData ? (
         <LoadingSpinner />
       ) : (
-        <div key={tab} className="tab-content-enter">
+        <div key={tab} className="tab-content-enter" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {tab === 'overview' && <OverviewTab leadsData={leadsData} trendData={trendData} />}
           {tab === 'leads' && <LeadsTab leadsData={leadsData} trendData={trendData} />}
           {tab === 'meetings' && <MeetingsAnalyticsTab />}

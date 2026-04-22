@@ -21,7 +21,7 @@ const DEMO_RESPONSES: Record<string, string> = {
   meeting:
     'Dein nächstes Meeting: Discovery Call mit Stackbase GmbH heute um 14:00 (Video). Morgen: Demo mit Axflow AG um 10:30.',
   score:
-    'Der durchschnittliche KI-Score liegt bei 84.2 — das ist +2.1 Punkte über dem Vormonat. 23 Leads wurden heute neu bewertet.',
+    'Der durchschnittliche Score liegt bei 84.2 — das ist +2.1 Punkte über dem Vormonat. 23 Leads wurden heute neu bewertet.',
   outreach:
     'Es gibt 6 neue Outreach-Ideen. Die beste: E-Mail an Marcus Weber (Stackbase) — Relevanz-Score 96. Soll ich die Nachricht zeigen?',
 };
@@ -276,7 +276,7 @@ export function AIChatWidget() {
           flexWrap: 'wrap',
         }}
       >
-        {['Zeig mir meine Leads', 'KI-Score Analyse', 'Nächstes Meeting'].map((s) => (
+        {['Zeig mir meine Leads', 'Score Analyse', 'Nächstes Meeting'].map((s) => (
           <button
             key={s}
             onClick={() => {

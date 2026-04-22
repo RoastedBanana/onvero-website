@@ -55,7 +55,7 @@ function buildAutoNotes(lead: Lead): string {
   const parts: string[] = [];
   if (lead.nextAction) parts.push(`Nächster Schritt: ${lead.nextAction}`);
   if (lead.emailDraftSubject) parts.push(`Letzte E-Mail: "${lead.emailDraftSubject}"`);
-  if (lead.aiSummary) parts.push(`KI-Analyse: ${lead.aiSummary}`);
+  if (lead.aiSummary) parts.push(`Analyse: ${lead.aiSummary}`);
   return parts.join('\n\n');
 }
 
@@ -111,7 +111,7 @@ export default function CreateMeetingModal({
     if (prefill && open) {
       setMeetingType(prefill.suggestedType);
       setDuration(prefill.suggestedDuration);
-      setNotes(`KI-Vorschlag: ${prefill.reason}`);
+      setNotes(`Vorschlag: ${prefill.reason}`);
       setTitle(`Gespräch — ${prefill.company}`);
     }
   }, [prefill, open]);
@@ -369,7 +369,7 @@ export default function CreateMeetingModal({
               Neues Meeting
             </h2>
             <p style={{ fontSize: 12, color: C.text3, margin: '4px 0 0' }}>
-              {prefill ? 'Aus KI-Vorschlag erstellt' : 'Meeting manuell planen'}
+              {prefill ? 'Aus Vorschlag erstellt' : 'Meeting manuell planen'}
             </p>
           </div>
           <button

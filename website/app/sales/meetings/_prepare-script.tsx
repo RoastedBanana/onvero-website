@@ -229,7 +229,7 @@ export default function PrepareScript({ meeting, lead }: { meeting: Meeting; lea
         >
           <SvgIcon d={ICONS.spark} size={13} color={C.accent} />
           <div>
-            <span style={{ fontSize: 10, fontWeight: 600, color: C.accent, letterSpacing: '0.06em' }}>KI-KONTEXT </span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: C.accent, letterSpacing: '0.06em' }}>KONTEXT </span>
             <span style={{ fontSize: 12.5, color: C.text2, lineHeight: 1.6 }}>{lead.aiSummary}</span>
           </div>
         </div>
