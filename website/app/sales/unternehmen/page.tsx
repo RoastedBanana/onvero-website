@@ -53,6 +53,7 @@ function SelectionBar({
   onClear,
   onSelectAll,
   allSelected,
+  visible,
 }: {
   count: number;
   onExport: () => void;
