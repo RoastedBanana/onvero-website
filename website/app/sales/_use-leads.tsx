@@ -209,8 +209,8 @@ async function initLeadsStore() {
 
     const leadsUrl =
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/leads` +
-      `?select=${encodeURIComponent(LEAD_COLS)}` +
-      `&tenant_id=eq.${encodeURIComponent(tid)}` +
+      `?select=${LEAD_COLS}` +
+      `&tenant_id=eq.${tid}` +
       `&order=created_at.desc&limit=200`;
 
     const res = await withTimeout(
