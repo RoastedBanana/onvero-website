@@ -300,49 +300,107 @@ function QuickActions() {
     { label: 'Unternehmen', icon: ICONS.list, color: '#818CF8', href: '/sales/unternehmen' },
     { label: 'Lead generieren', icon: ICONS.zap, color: '#A78BFA', href: '/sales/generate' },
     { label: 'Meeting planen', icon: ICONS.calendar, color: '#38BDF8', href: '/sales/meetings' },
-    { label: 'Network', icon: ICONS.globe, color: '#34D399', href: '/sales/network' },
+    { label: 'Network', icon: ICONS.globe, color: '#34D399', href: null },
     { label: 'Analytics', icon: ICONS.chart, color: '#FBBF24', href: '/sales/analytics' },
   ];
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
-      {actions.map((a, i) => (
-        <Link
-          key={a.label}
-          href={a.href}
-          className="s-card"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 10,
-            padding: '18px 12px',
-            borderRadius: 10,
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            textDecoration: 'none',
-            color: 'inherit',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)',
-            animation: 'scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
-            animationDelay: `${0.1 + i * 0.05}s`,
-          }}
-        >
-          <div
+      {actions.map((a, i) =>
+        a.href ? (
+          <Link
+            key={a.label}
+            href={a.href}
+            className="s-card"
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 9,
-              background: `${a.color}10`,
-              border: `1px solid ${a.color}18`,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: 10,
+              padding: '18px 12px',
+              borderRadius: 10,
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              textDecoration: 'none',
+              color: 'inherit',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)',
+              animation: 'scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
+              animationDelay: `${0.1 + i * 0.05}s`,
             }}
           >
-            <SvgIcon d={a.icon} size={16} color={a.color} />
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 9,
+                background: `${a.color}10`,
+                border: `1px solid ${a.color}18`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SvgIcon d={a.icon} size={16} color={a.color} />
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 500, color: C.text2 }}>{a.label}</span>
+          </Link>
+        ) : (
+          <div
+            key={a.label}
+            className="s-card"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 10,
+              padding: '18px 12px',
+              borderRadius: 10,
+              background: 'rgba(255,255,255,0.015)',
+              border: `1px dashed ${C.border}`,
+              cursor: 'default',
+              position: 'relative',
+              overflow: 'hidden',
+              animation: 'scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
+              animationDelay: `${0.1 + i * 0.05}s`,
+              opacity: 0.6,
+            }}
+          >
+            {/* "Bald verfügbar" badge */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 7,
+                right: -18,
+                background: 'linear-gradient(90deg, #34D39920, #34D39940)',
+                border: '1px solid #34D39930',
+                color: '#34D399',
+                fontSize: 8.5,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                padding: '2px 22px',
+                transform: 'rotate(35deg)',
+                textTransform: 'uppercase',
+              }}
+            >
+              Bald
+            </div>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 9,
+                background: `${a.color}08`,
+                border: `1px solid ${a.color}12`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SvgIcon d={a.icon} size={16} color={`${a.color}60`} />
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 500, color: C.text3 }}>{a.label}</span>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 500, color: C.text2 }}>{a.label}</span>
-        </Link>
-      ))}
+        )
+      )}
     </div>
   );
 }
