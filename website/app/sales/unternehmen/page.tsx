@@ -60,7 +60,9 @@ function SelectionBar({
   onClear: () => void;
   onSelectAll: () => void;
   allSelected: boolean;
+  visible: boolean;
 }) {
+  if (!visible) return null;
   return (
     <div
       style={{
@@ -756,16 +758,15 @@ export default function UnternehmenV2Page() {
         />
       )}
 
-      {selectionMode && (
-        <SelectionBar
-          count={selected.size}
-          onExport={handleExport}
-          onDelete={handleDelete}
-          onClear={exitSelectionMode}
-          onSelectAll={toggleAll}
-          allSelected={filteredCompanies.length > 0 && filteredCompanies.every((c) => selected.has(c.id))}
-        />
-      )}
+      <SelectionBar
+        visible={selectionMode}
+        count={selected.size}
+        onExport={handleExport}
+        onDelete={handleDelete}
+        onClear={exitSelectionMode}
+        onSelectAll={toggleAll}
+        allSelected={filteredCompanies.length > 0 && filteredCompanies.every((c) => selected.has(c.id))}
+      />
 
       {showDeleteModal && (
         <DeleteConfirmModal
