@@ -77,11 +77,12 @@ export function LeadsDashboardClient({ leads: initialLeads, stats: initialStats 
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
+      const ls = l.score ?? 0;
       if (statusFilter !== 'all' && l.status !== statusFilter) return false;
       if (industryFilter && l.industry !== industryFilter) return false;
-      if (tierFilter === 'hot' && l.score < 70) return false;
-      if (tierFilter === 'warm' && (l.score < 45 || l.score >= 70)) return false;
-      if (tierFilter === 'cold' && l.score >= 45) return false;
+      if (tierFilter === 'hot' && ls < 70) return false;
+      if (tierFilter === 'warm' && (ls < 45 || ls >= 70)) return false;
+      if (tierFilter === 'cold' && ls >= 45) return false;
       if (search) {
         const q = search.toLowerCase();
         return (

@@ -79,7 +79,7 @@ export type Lead = {
   aiSummary?: string | null;
   aiTags?: string[];
   aiNextAction?: string | null;
-  aiSources?: unknown[];
+  aiSources?: { label: string; url: string; info?: string }[];
   redFlags?: string[];
   buyingSignals?: string[];
   googleRating?: number | null;

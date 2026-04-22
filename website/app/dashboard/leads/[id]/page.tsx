@@ -278,8 +278,9 @@ export default function LeadDetailPage() {
     );
   }
 
-  const scoreColor = lead.score >= 70 ? '#FF5C2E' : lead.score >= 45 ? '#F59E0B' : '#6B7AFF';
-  const tierLabel = lead.tier?.toUpperCase() ?? (lead.score >= 70 ? 'HOT' : lead.score >= 45 ? 'WARM' : 'COLD');
+  const leadScore = lead.score ?? 0;
+  const scoreColor = leadScore >= 70 ? '#FF5C2E' : leadScore >= 45 ? '#F59E0B' : '#6B7AFF';
+  const tierLabel = lead.tier?.toUpperCase() ?? (leadScore >= 70 ? 'HOT' : leadScore >= 45 ? 'WARM' : 'COLD');
   const bd = lead.scoreBreakdown;
   const st = STATUS_OPTIONS.find((o) => o.value === lead.status) ?? STATUS_OPTIONS[0];
 
@@ -846,10 +847,10 @@ export default function LeadDetailPage() {
             )}
 
             {/* Strengths & Concerns */}
-            {(lead.strengths.length > 0 || lead.concerns.length > 0 || lead.redFlags.length > 0) && (
+            {(lead.strengths.length > 0 || lead.concerns.length > 0 || (lead.redFlags ?? []).length > 0) && (
               <Card title="Stärken & Bedenken">
                 {lead.strengths.length > 0 && (
-                  <div style={{ marginBottom: lead.concerns.length > 0 || lead.redFlags.length > 0 ? 12 : 0 }}>
+                  <div style={{ marginBottom: lead.concerns.length > 0 || (lead.redFlags ?? []).length > 0 ? 12 : 0 }}>
                     <div
                       style={{
                         fontSize: 10,
@@ -880,7 +881,7 @@ export default function LeadDetailPage() {
                     ))}
                   </div>
                 )}
-                {(lead.concerns.length > 0 || lead.redFlags.length > 0) && (
+                {(lead.concerns.length > 0 || (lead.redFlags ?? []).length > 0) && (
                   <div>
                     <div
                       style={{
@@ -894,7 +895,7 @@ export default function LeadDetailPage() {
                     >
                       Bedenken
                     </div>
-                    {[...lead.concerns, ...lead.redFlags].map((c, i) => (
+                    {[...lead.concerns, ...(lead.redFlags ?? [])].map((c, i) => (
                       <div
                         key={i}
                         style={{
@@ -992,10 +993,10 @@ export default function LeadDetailPage() {
             )}
 
             {/* Tags */}
-            {lead.aiTags.length > 0 && (
+            {(lead.aiTags ?? []).length > 0 && (
               <Card title="Tags">
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {lead.aiTags.map((tag) => (
+                  {(lead.aiTags ?? []).map((tag) => (
                     <span
                       key={tag}
                       style={{
@@ -1447,9 +1448,9 @@ export default function LeadDetailPage() {
             onClose={() => setScoreExplanationOpen(false)}
             lead={{
               company: lead.company,
-              score: lead.score,
+              score: lead.score ?? 0,
               scoreBreakdown: lead.scoreBreakdown,
-              aiSummary: lead.aiSummary,
+              aiSummary: lead.aiSummary ?? undefined,
               strengths: lead.strengths,
               concerns: lead.concerns,
             }}
