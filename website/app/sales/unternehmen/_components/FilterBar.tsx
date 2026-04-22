@@ -78,16 +78,16 @@ function selectStyle(active: boolean): React.CSSProperties {
     fontFamily: TOKENS.font.family,
     padding: '6px 28px 6px 11px',
     borderRadius: TOKENS.radius.button,
-    background: active ? TOKENS.color.indigoBgSubtle : TOKENS.color.bgSubtle,
+    backgroundColor: active ? TOKENS.color.indigoBgSubtle : TOKENS.color.bgSubtle,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(255,255,255,0.35)' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 9px center',
     border: `1px solid ${active ? TOKENS.color.indigoBorderSoft : TOKENS.color.borderSubtle}`,
     color: active ? TOKENS.color.indigoLight : TOKENS.color.textSecondary,
     cursor: 'pointer',
     outline: 'none',
     appearance: 'none' as const,
     WebkitAppearance: 'none' as const,
-    backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(255,255,255,0.35)' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 9px center',
   };
 }
 
