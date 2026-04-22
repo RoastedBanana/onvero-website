@@ -3,11 +3,12 @@ import { getSessionContext } from '@/lib/tenant-server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-const WEBHOOK_URL = 'https://n8n.srv1223027.hstgr.cloud/webhook/apollo-people-agent';
+const WEBHOOK_URL = process.env.N8N_WEBHOOK_APOLLO_PEOPLE_AGENT ?? '';
 
 export async function POST(req: NextRequest) {
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!WEBHOOK_URL) return NextResponse.json({ error: 'N8N_WEBHOOK_APOLLO_PEOPLE_AGENT not configured' }, { status: 500 });
 
   const body = await req.json();
 

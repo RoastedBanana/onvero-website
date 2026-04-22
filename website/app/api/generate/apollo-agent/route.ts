@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionContext } from '@/lib/tenant-server';
 
-const WEBHOOK_URL = 'https://n8n.srv1223027.hstgr.cloud/webhook/apollo-org-agent';
+const WEBHOOK_URL = process.env.N8N_WEBHOOK_APOLLO_ORG_AGENT ?? '';
 
 export async function POST(req: NextRequest) {
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!WEBHOOK_URL) return NextResponse.json({ error: 'N8N_WEBHOOK_APOLLO_ORG_AGENT not configured' }, { status: 500 });
 
   const body = await req.json();
   const requestedAt = new Date().toISOString();

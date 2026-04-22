@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionContext, getAdminClient } from '@/lib/tenant-server';
 
-const WEBHOOK_URL = 'https://n8n.srv1223027.hstgr.cloud/webhook/c2e0c1c2-7787-467f-bd23-fefbaf45b66c';
+const WEBHOOK_URL = process.env.N8N_WEBHOOK_SEND_OUTREACH_EMAIL ?? '';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!WEBHOOK_URL) return NextResponse.json({ error: 'N8N_WEBHOOK_SEND_OUTREACH_EMAIL not configured' }, { status: 500 });
 
   const body = await req.json();
   const admin = getAdminClient();
