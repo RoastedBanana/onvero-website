@@ -266,7 +266,7 @@ function DetailInner({ id }: { id: string }) {
         {navIds.length > 0 && currentIdx !== -1 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: TOKENS.font.family }}>
             <button
-              onClick={() => prevId && router.push(`/sales/unternehmen/${prevId}`)}
+              onClick={() => prevId && router.replace(`/sales/unternehmen/${prevId}`)}
               disabled={!prevId}
               style={{
                 display: 'inline-flex',
@@ -320,7 +320,7 @@ function DetailInner({ id }: { id: string }) {
               {currentIdx + 1} / {navIds.length}
             </span>
             <button
-              onClick={() => nextId && router.push(`/sales/unternehmen/${nextId}`)}
+              onClick={() => nextId && router.replace(`/sales/unternehmen/${nextId}`)}
               disabled={!nextId}
               style={{
                 display: 'inline-flex',
