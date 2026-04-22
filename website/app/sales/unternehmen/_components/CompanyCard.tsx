@@ -145,10 +145,12 @@ export default function CompanyCard({
   company,
   selected,
   onToggle,
+  selectionMode,
 }: {
   company: CompanyWithContacts;
   selected?: boolean;
   onToggle?: () => void;
+  selectionMode?: boolean;
 }) {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
@@ -175,9 +177,17 @@ export default function CompanyCard({
   const empLabel =
     company.estimated_num_employees !== null ? `${fmt.employees(company.estimated_num_employees)} MA` : null;
 
+  function handleClick() {
+    if (selectionMode) {
+      onToggle?.();
+    } else {
+      router.push(`/sales/unternehmen/${company.id}?tab=uebersicht`);
+    }
+  }
+
   return (
     <div
-      onClick={() => router.push(`/sales/unternehmen/${company.id}?tab=uebersicht`)}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -189,7 +199,7 @@ export default function CompanyCard({
         cursor: 'pointer',
         fontFamily: TOKENS.font.family,
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
+        transform: hovered && !selectionMode ? 'translateY(-2px)' : 'translateY(0)',
         boxShadow: isHot
           ? hovered
             ? '0 8px 24px rgba(107,122,255,0.15), inset 0 1px 0 0 rgba(107,122,255,0.2)'
@@ -246,8 +256,8 @@ export default function CompanyCard({
               {fmt.initials(company.company_name)}
             </div>
           )}
-          {/* Select overlay — shows on hover or when selected */}
-          {onToggle && (hovered || selected) && (
+          {/* Select overlay — always visible in selectionMode, hover-only otherwise */}
+          {onToggle && (selectionMode || hovered || selected) && (
             <div
               style={{
                 position: 'absolute',

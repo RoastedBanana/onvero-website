@@ -102,7 +102,7 @@ function SelectionBar({
           fontFamily: TOKENS.font.family,
         }}
       >
-        Abwählen
+        Auswahl abbrechen
       </button>
 
       <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
@@ -175,6 +175,130 @@ function SelectionBar({
         Löschen
       </button>
     </div>
+  );
+}
+
+// ─── DELETE CONFIRM MODAL ───────────────────────────────────────────────────
+
+function DeleteConfirmModal({
+  count,
+  onConfirm,
+  onCancel,
+}: {
+  count: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <>
+      <div
+        onClick={onCancel}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 600,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(4px)',
+        }}
+      />
+      <div
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 601,
+          width: 420,
+          backgroundColor: TOKENS.color.bgCard,
+          border: '1px solid rgba(239,68,68,0.25)',
+          borderRadius: 14,
+          padding: '28px 28px 24px',
+          fontFamily: TOKENS.font.family,
+          boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+        }}
+      >
+        {/* Icon */}
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            backgroundColor: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 16,
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#F87171"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </div>
+
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: TOKENS.color.textPrimary, margin: '0 0 10px' }}>
+          {count} {count === 1 ? 'Unternehmen' : 'Unternehmen'} wirklich löschen?
+        </h2>
+        <p
+          style={{
+            fontSize: 13,
+            color: TOKENS.color.textTertiary,
+            lineHeight: 1.65,
+            margin: '0 0 24px',
+          }}
+        >
+          Achtung — diese Aktion ist <strong style={{ color: TOKENS.color.textSecondary }}>nicht rückgängig</strong> zu
+          machen. Die {count === 1 ? 'das ausgewählte Unternehmen wird' : `${count} ausgewählten Unternehmen werden`}{' '}
+          vollständig aus dem System entfernt, inklusive aller verknüpften Kontakte, Aktivitäten und Notizen.
+        </p>
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '8px 16px',
+              borderRadius: TOKENS.radius.button,
+              border: `1px solid ${TOKENS.color.borderSubtle}`,
+              background: 'transparent',
+              color: TOKENS.color.textSecondary,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: TOKENS.font.family,
+            }}
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '8px 18px',
+              borderRadius: TOKENS.radius.button,
+              border: '1px solid rgba(239,68,68,0.5)',
+              backgroundColor: 'rgba(239,68,68,0.15)',
+              color: '#F87171',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: TOKENS.font.family,
+            }}
+          >
+            Ja, endgültig löschen
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -264,8 +388,10 @@ export default function UnternehmenV2Page() {
   const [scoreRange, setScoreRange] = useState<ScoreRange>(null);
   const [sortBy, setSortBy] = useState<SortBy>('score_desc');
 
-  // Table selection
+  // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Derived options for dropdowns (formatted German labels, deduplicated)
   const industryOptions = useMemo(() => {
@@ -371,11 +497,21 @@ export default function UnternehmenV2Page() {
     else setSelected(new Set(filteredCompanies.map((c) => c.id)));
   }
 
-  async function handleDelete() {
+  function handleDelete() {
+    setShowDeleteModal(true);
+  }
+
+  async function confirmDelete() {
     const ids = Array.from(selected);
-    if (!window.confirm(`${ids.length} Unternehmen wirklich löschen?`)) return;
     await deleteCompanies(ids);
     setSelected(new Set());
+    setSelectionMode(false);
+    setShowDeleteModal(false);
+  }
+
+  function exitSelectionMode() {
+    setSelected(new Set());
+    setSelectionMode(false);
   }
 
   function handleExport() {
@@ -541,6 +677,8 @@ export default function UnternehmenV2Page() {
         onScoreRangeChange={setScoreRange}
         sortBy={sortBy}
         onSortChange={setSortBy}
+        selectionMode={selectionMode}
+        onToggleSelectionMode={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
       />
 
       {/* Content */}
@@ -569,7 +707,13 @@ export default function UnternehmenV2Page() {
           }}
         >
           {filteredCompanies.map((c) => (
-            <CompanyCard key={c.id} company={c} selected={selected.has(c.id)} onToggle={() => toggleSelect(c.id)} />
+            <CompanyCard
+              key={c.id}
+              company={c}
+              selected={selected.has(c.id)}
+              onToggle={() => toggleSelect(c.id)}
+              selectionMode={selectionMode}
+            />
           ))}
         </div>
       ) : view === 'table' ? (
@@ -585,15 +729,19 @@ export default function UnternehmenV2Page() {
           onStatusChange={updateStatus}
           selected={selected}
           onToggle={toggleSelect}
+          selectionMode={selectionMode}
         />
       )}
 
-      <SelectionBar
-        count={selected.size}
-        onExport={handleExport}
-        onDelete={handleDelete}
-        onClear={() => setSelected(new Set())}
-      />
+      <SelectionBar count={selected.size} onExport={handleExport} onDelete={handleDelete} onClear={exitSelectionMode} />
+
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          count={selected.size}
+          onConfirm={confirmDelete}
+          onCancel={() => setShowDeleteModal(false)}
+        />
+      )}
     </>
   );
 }

@@ -128,6 +128,7 @@ function KanbanCard({
   onClick,
   selected,
   onToggle,
+  selectionMode,
 }: {
   company: CompanyWithContacts;
   isDragging: boolean;
@@ -136,6 +137,7 @@ function KanbanCard({
   onClick: () => void;
   selected?: boolean;
   onToggle?: () => void;
+  selectionMode?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const tier = fmt.tier(c.tier);
@@ -150,12 +152,20 @@ function KanbanCard({
       ? 'rgba(107,122,255,0.35)'
       : TOKENS.color.borderSubtle;
 
+  function handleClick() {
+    if (selectionMode) {
+      onToggle?.();
+    } else {
+      onClick();
+    }
+  }
+
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onClick={onClick}
+      draggable={!selectionMode}
+      onDragStart={!selectionMode ? onDragStart : undefined}
+      onDragEnd={!selectionMode ? onDragEnd : undefined}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -227,7 +237,7 @@ function KanbanCard({
               {fmt.initials(c.company_name)}
             </div>
           )}
-          {onToggle && (hovered || selected) && (
+          {onToggle && (selectionMode || hovered || selected) && (
             <div
               style={{
                 position: 'absolute',
@@ -396,11 +406,13 @@ export default function KanbanBoard({
   onStatusChange,
   selected,
   onToggle,
+  selectionMode,
 }: {
   companies: CompanyWithContacts[];
   onStatusChange: (id: string, status: CompanyStatus) => void;
   selected?: Set<string>;
   onToggle?: (id: string) => void;
+  selectionMode?: boolean;
 }) {
   const router = useRouter();
   const [dragId, setDragId] = useState<string | null>(null);
@@ -503,9 +515,12 @@ export default function KanbanBoard({
                   isDragging={dragId === c.id}
                   onDragStart={() => setDragId(c.id)}
                   onDragEnd={() => setDragId(null)}
-                  onClick={() => router.push(`/sales/unternehmen/${c.id}?tab=uebersicht`)}
+                  onClick={() => {
+                    if (!selectionMode) router.push(`/sales/unternehmen/${c.id}?tab=uebersicht`);
+                  }}
                   selected={selected?.has(c.id)}
                   onToggle={onToggle ? () => onToggle(c.id) : undefined}
+                  selectionMode={selectionMode}
                 />
               ))}
 
