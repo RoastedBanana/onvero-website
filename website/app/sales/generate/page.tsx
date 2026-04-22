@@ -367,9 +367,10 @@ type FormData = {
 };
 
 type SearchHistoryEntry = {
-  text: string;
-  date: string;
-  favorite?: boolean;
+  id: string;          // DB row id
+  text: string;        // query
+  date: string;        // last_used_at ISO
+  favorite: boolean;
 };
 
 // ─── PROFILE FIELD LABELS ──────────────────────────────────────────────────
@@ -883,32 +884,60 @@ const PROFILE_REQUIRED = [
 // ─── LOCAL STORAGE KEYS ─────────────────────────────────────────────────────
 
 const LS_KEY = 'onvero_generate_last_input';
-const LS_HISTORY_KEY = 'onvero_generate_history';
 
-// ─── SEARCH HISTORY HELPERS ─────────────────────────────────────────────────
+// ─── SEARCH HISTORY HELPERS (server-side via /api/sales/search-history) ────
 
-function loadHistory(): SearchHistoryEntry[] {
-  try {
-    const raw = localStorage.getItem(LS_HISTORY_KEY);
-    if (raw) return (JSON.parse(raw) as SearchHistoryEntry[]).filter((e) => typeof e.text === 'string');
-  } catch {}
-  return [];
+type HistoryApiRow = { id: string; query: string; is_favorite: boolean; last_used_at: string };
+
+function mapRow(r: HistoryApiRow): SearchHistoryEntry {
+  return { id: r.id, text: r.query, favorite: r.is_favorite, date: r.last_used_at };
 }
 
-function saveHistory(entries: SearchHistoryEntry[]) {
+async function fetchHistory(): Promise<SearchHistoryEntry[]> {
   try {
-    localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(entries.slice(0, 10)));
-  } catch {}
+    const res = await fetch('/api/sales/search-history', { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const rows: HistoryApiRow[] = data.history ?? [];
+    return rows.map(mapRow);
+  } catch {
+    return [];
+  }
 }
 
-function addToHistory(text: string): SearchHistoryEntry[] {
-  const existing = loadHistory();
-  const entry: SearchHistoryEntry = { text, date: new Date().toISOString() };
-  // Remove duplicate if exists
-  const filtered = existing.filter((e) => e.text !== text);
-  const updated = [entry, ...filtered].slice(0, 10);
-  saveHistory(updated);
-  return updated;
+async function recordSearch(query: string): Promise<SearchHistoryEntry | null> {
+  try {
+    const res = await fetch('/api/sales/search-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.entry ? mapRow(data.entry) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function toggleFavoriteRemote(id: string, is_favorite: boolean): Promise<void> {
+  try {
+    await fetch(`/api/sales/search-history/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_favorite }),
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+async function deleteHistoryRemote(id: string): Promise<void> {
+  try {
+    await fetch(`/api/sales/search-history/${id}`, { method: 'DELETE' });
+  } catch {
+    /* ignore */
+  }
 }
 
 function formatRelativeDate(isoDate: string): string {
@@ -981,7 +1010,7 @@ export default function GeneratePage() {
         setForm((prev) => ({ ...prev, ...parsed }));
       }
     } catch {}
-    setHistory(loadHistory());
+    fetchHistory().then(setHistory);
   }, []);
 
   // Save form to localStorage on change
@@ -1142,10 +1171,11 @@ export default function GeneratePage() {
       body: JSON.stringify({ tenant_id: tenantId, status: 'reset', total_items: 10 }),
     }).catch(() => {});
 
-    // Add to search history
+    // Record search in server-side history (fire-and-forget, then refresh)
     if (form.freetext.trim()) {
-      const updated = addToHistory(form.freetext.trim());
-      setHistory(updated);
+      recordSearch(form.freetext.trim()).then(() => {
+        fetchHistory().then(setHistory);
+      });
     }
 
     try {
@@ -1826,11 +1856,10 @@ export default function GeneratePage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const updated = history.map((h) =>
-                                  h.date === entry.date && h.text === entry.text ? { ...h, favorite: !h.favorite } : h
-                                );
-                                setHistory(updated);
-                                saveHistory(updated);
+                                const next = !entry.favorite;
+                                // Optimistic update
+                                setHistory((prev) => prev.map((h) => (h.id === entry.id ? { ...h, favorite: next } : h)));
+                                toggleFavoriteRemote(entry.id, next);
                               }}
                               title={entry.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
                               style={{
@@ -1880,11 +1909,9 @@ export default function GeneratePage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const updated = history.filter(
-                                  (h) => !(h.date === entry.date && h.text === entry.text)
-                                );
-                                setHistory(updated);
-                                saveHistory(updated);
+                                // Optimistic remove
+                                setHistory((prev) => prev.filter((h) => h.id !== entry.id));
+                                deleteHistoryRemote(entry.id);
                                 showToast('Suchanfrage gelöscht', 'info');
                               }}
                               title="Löschen"

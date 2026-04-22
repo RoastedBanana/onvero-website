@@ -419,29 +419,46 @@ function FinderModal({
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', color: TOKENS.color.textMuted, marginBottom: 8 }}>
               WAS MÖCHTEST DU BEKOMMEN?
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 12 }}>
-              <OptionToggle
-                label="E-Mail"
-                credits={2}
-                checked={opts.get_email}
-                onChange={(v) => onOptsChange((s) => ({ ...s, get_email: v }))}
-                disabled={enriching}
-              />
-              <OptionToggle
-                label="Telefon"
-                credits={8}
-                checked={opts.get_telephone}
-                onChange={(v) => onOptsChange((s) => ({ ...s, get_telephone: v }))}
-                disabled={enriching}
-              />
-              <OptionToggle
-                label="E-Mail-Entwurf"
-                credits={0}
-                checked={opts.generate_email}
-                onChange={(v) => onOptsChange((s) => ({ ...s, generate_email: v }))}
-                disabled={enriching}
-              />
-            </div>
+            {(() => {
+              // Phone is only available if Apollo flags it. When no person is
+              // selected yet we keep the option enabled (user hasn't chosen).
+              const raw = selectedPerson?.raw_apollo_person as Record<string, unknown> | null | undefined;
+              const hasPhone = selectedPerson
+                ? !!selectedPerson.phone ||
+                  (raw?.has_direct_phone === 'Yes' ||
+                    (typeof raw?.has_direct_phone === 'string' && (raw.has_direct_phone as string).length > 0))
+                : true;
+              const hasEmail = selectedPerson
+                ? !!selectedPerson.email || raw?.has_email === true
+                : true;
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 12 }}>
+                  <OptionToggle
+                    label="E-Mail"
+                    credits={2}
+                    checked={opts.get_email && hasEmail}
+                    onChange={(v) => onOptsChange((s) => ({ ...s, get_email: v }))}
+                    disabled={enriching || !hasEmail}
+                    unavailable={!hasEmail}
+                  />
+                  <OptionToggle
+                    label="Telefon"
+                    credits={8}
+                    checked={opts.get_telephone && hasPhone}
+                    onChange={(v) => onOptsChange((s) => ({ ...s, get_telephone: v }))}
+                    disabled={enriching || !hasPhone}
+                    unavailable={!hasPhone}
+                  />
+                  <OptionToggle
+                    label="E-Mail-Entwurf"
+                    credits={0}
+                    checked={opts.generate_email}
+                    onChange={(v) => onOptsChange((s) => ({ ...s, generate_email: v }))}
+                    disabled={enriching}
+                  />
+                </div>
+              );
+            })()}
             <button
               onClick={onEnrich}
               disabled={!canEnrich}
@@ -594,25 +611,28 @@ function OptionToggle({
   checked,
   onChange,
   disabled,
+  unavailable,
 }: {
   label: string;
   credits: number;
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  unavailable?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
+      title={unavailable ? 'Für diese Person nicht verfügbar' : undefined}
       style={{
         padding: '8px 10px',
         borderRadius: 8,
         border: `1px solid ${checked ? 'rgba(99,102,241,0.45)' : TOKENS.color.borderSubtle}`,
         background: checked ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.02)',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.6 : 1,
+        opacity: unavailable ? 0.35 : disabled ? 0.6 : 1,
         textAlign: 'left',
         fontFamily: TOKENS.font.family,
         transition: 'all 0.15s ease',
@@ -637,20 +657,20 @@ function OptionToggle({
         )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11.5, fontWeight: 600, color: checked ? '#A5B4FC' : TOKENS.color.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: checked ? '#A5B4FC' : TOKENS.color.textSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: unavailable ? 'line-through' : 'none' }}>
           {label}
         </div>
         <div
           style={{
             fontSize: 9.5,
-            color: credits === 0 ? '#34D399' : TOKENS.color.textMuted,
-            fontFamily: credits === 0 ? TOKENS.font.family : 'ui-monospace, SFMono-Regular, monospace',
-            fontWeight: credits === 0 ? 600 : 400,
-            letterSpacing: credits === 0 ? '0.04em' : 'normal',
-            textTransform: credits === 0 ? 'uppercase' : 'none',
+            color: unavailable ? TOKENS.color.textMuted : credits === 0 ? '#34D399' : TOKENS.color.textMuted,
+            fontFamily: credits === 0 && !unavailable ? TOKENS.font.family : 'ui-monospace, SFMono-Regular, monospace',
+            fontWeight: credits === 0 && !unavailable ? 600 : 400,
+            letterSpacing: credits === 0 && !unavailable ? '0.04em' : 'normal',
+            textTransform: credits === 0 && !unavailable ? 'uppercase' : 'none',
           }}
         >
-          {credits === 0 ? 'Gratis' : `${credits} Cr`}
+          {unavailable ? 'Nicht verfügbar' : credits === 0 ? 'Gratis' : `${credits} Cr`}
         </div>
       </div>
     </button>

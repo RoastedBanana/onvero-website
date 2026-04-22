@@ -55,6 +55,7 @@ export async function proxy(request: NextRequest) {
       '/api/profile',
       '/api/people',
       '/api/tenant-quota',
+      '/api/sales/',
     ];
     const isPublic = PUBLIC_API.some((r) => pathname.startsWith(r));
     if (!isPublic) {
