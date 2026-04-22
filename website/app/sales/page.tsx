@@ -297,13 +297,14 @@ function LiveActivityFeed() {
 
 function QuickActions() {
   const actions = [
-    { label: 'Lead generieren', icon: ICONS.zap, color: '#818CF8', href: '/sales/generate' },
+    { label: 'Unternehmen', icon: ICONS.list, color: '#818CF8', href: '/sales/unternehmen' },
+    { label: 'Lead generieren', icon: ICONS.zap, color: '#A78BFA', href: '/sales/generate' },
     { label: 'Meeting planen', icon: ICONS.calendar, color: '#38BDF8', href: '/sales/meetings' },
     { label: 'Network', icon: ICONS.globe, color: '#34D399', href: '/sales/network' },
     { label: 'Analytics', icon: ICONS.chart, color: '#FBBF24', href: '/sales/analytics' },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
       {actions.map((a, i) => (
         <Link
           key={a.label}
@@ -544,6 +545,23 @@ export default function SalesV2HomePage() {
               </Link>
             ))}
           </div>
+          <Link
+            href="/sales/unternehmen"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 4,
+              marginTop: 12,
+              fontSize: 11,
+              color: 'rgba(129,140,248,0.7)',
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}
+          >
+            Alle Unternehmen anzeigen
+            <SvgIcon d={ICONS.chevRight} size={11} color="rgba(129,140,248,0.7)" />
+          </Link>
         </BentoCard>
 
         {/* ── Activity Feed — LIVE from Supabase Realtime ── */}
