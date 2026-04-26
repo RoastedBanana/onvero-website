@@ -674,6 +674,187 @@ export function PostGrid({
   );
 }
 
+// ─── BLOG PREVIEW (matches apps/marketing/blog/[documentId] layout) ─────────
+
+export function BlogPreview({
+  form,
+  createdAt,
+}: {
+  form: FormState;
+  createdAt?: string;
+}) {
+  const previewImage = form.imageFile
+    ? URL.createObjectURL(form.imageFile)
+    : form.existingImageUrl;
+
+  const dateStr = (() => {
+    const iso = createdAt ?? new Date().toISOString();
+    try {
+      return new Date(iso).toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch {
+      return iso;
+    }
+  })();
+
+  const readTime = form.content.trim() ? calcReadTime(form.content) : '— min Lesezeit';
+
+  return (
+    <div
+      style={{
+        position: 'sticky',
+        top: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          color: C.text3,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          fontWeight: 600,
+          paddingLeft: 4,
+        }}
+      >
+        Vorschau
+      </div>
+      <div
+        style={{
+          background: '#0f0f0f',
+          border: `1px solid ${C.border}`,
+          borderRadius: 14,
+          overflow: 'hidden',
+          color: '#fff',
+          maxHeight: 'calc(100vh - 180px)',
+          overflowY: 'auto',
+        }}
+      >
+        {previewImage && (
+          <div style={{ width: '100%', height: 200, position: 'relative', overflow: 'hidden' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewImage}
+              alt={form.title || 'Cover'}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(to bottom, transparent 60%, #0f0f0f 100%)',
+              }}
+            />
+          </div>
+        )}
+
+        <div style={{ padding: previewImage ? '20px 24px 32px' : '40px 24px 32px' }}>
+          {form.tags.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+              {form.tags.map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    fontSize: 10.5,
+                    padding: '2px 9px',
+                    borderRadius: 6,
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.7)',
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <h1
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              lineHeight: 1.25,
+              letterSpacing: '-0.02em',
+              margin: '0 0 16px',
+              color: form.title ? '#fff' : 'rgba(255,255,255,0.3)',
+            }}
+          >
+            {form.title || 'Titel deines Beitrags'}
+          </h1>
+
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 14,
+              alignItems: 'center',
+              fontSize: 11.5,
+              color: 'rgba(255,255,255,0.45)',
+              paddingBottom: 18,
+              marginBottom: 22,
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" />
+              </svg>
+              {form.author || 'Autor'}
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {dateStr}
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {readTime}
+            </span>
+          </div>
+
+          <div
+            style={{
+              fontSize: 13.5,
+              lineHeight: 1.75,
+              color: form.content ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)',
+              whiteSpace: 'pre-wrap',
+              fontStyle: form.content ? 'normal' : 'italic',
+            }}
+          >
+            {form.content || 'Der Inhalt deines Beitrags erscheint hier in der Vorschau, wie er später auf onvero.de angezeigt wird.'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SPLIT LAYOUT (form left, preview right) ─────────────────────────────────
+
+export function SplitLayout({ form, preview }: { form: React.ReactNode; preview: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
+        gap: 22,
+        alignItems: 'start',
+      }}
+    >
+      <div>{form}</div>
+      <div>{preview}</div>
+    </div>
+  );
+}
+
 // ─── BANNERS ─────────────────────────────────────────────────────────────────
 
 export function SuccessBanner({ text }: { text: string }) {

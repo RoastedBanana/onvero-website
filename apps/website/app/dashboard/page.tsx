@@ -5,9 +5,11 @@ import { Confetti } from '@onvero/ui/effects/confetti';
 import { C, PageHeader } from './_shared';
 import {
   BlogForm,
+  BlogPreview,
   ErrorBanner,
   emptyForm,
   polishWithAI,
+  SplitLayout,
   SuccessBanner,
   useAuthorFromCookie,
   type FormState,
@@ -59,27 +61,31 @@ export default function CreateBlogPostPage() {
 
       {errorMsg && <ErrorBanner text={errorMsg} />}
 
-      <div
-        style={{
-          background: C.surface,
-          border: `1px solid ${C.border}`,
-          borderRadius: 14,
-          padding: 24,
-          maxWidth: 720,
-          animation: 'tabIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both',
-        }}
-      >
-        {submitState === 'success' && <SuccessBanner text="Beitrag wurde erfolgreich erstellt." />}
-        <BlogForm
-          form={form}
-          setForm={setForm}
-          onSubmit={submit}
-          submitting={submitState === 'loading'}
-          submitLabel="Beitrag erstellen"
-          onAiPolish={() => polishWithAI(form, setForm, setAiPolishing, setErrorMsg)}
-          aiPolishing={aiPolishing}
-        />
-      </div>
+      <SplitLayout
+        form={
+          <div
+            style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 14,
+              padding: 24,
+              animation: 'tabIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both',
+            }}
+          >
+            {submitState === 'success' && <SuccessBanner text="Beitrag wurde erfolgreich erstellt." />}
+            <BlogForm
+              form={form}
+              setForm={setForm}
+              onSubmit={submit}
+              submitting={submitState === 'loading'}
+              submitLabel="Beitrag erstellen"
+              onAiPolish={() => polishWithAI(form, setForm, setAiPolishing, setErrorMsg)}
+              aiPolishing={aiPolishing}
+            />
+          </div>
+        }
+        preview={<BlogPreview form={form} />}
+      />
     </>
   );
 }

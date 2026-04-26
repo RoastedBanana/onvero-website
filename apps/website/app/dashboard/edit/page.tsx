@@ -5,12 +5,14 @@ import { Confetti } from '@onvero/ui/effects/confetti';
 import { C, GhostButton, PageHeader } from '../_shared';
 import {
   BlogForm,
+  BlogPreview,
   ErrorBanner,
   emptyForm,
   getImageUrl,
   mapRawPost,
   polishWithAI,
   PostGrid,
+  SplitLayout,
   SuccessBanner,
   type BlogPost,
   type FormState,
@@ -21,7 +23,11 @@ export default function EditBlogPostPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
-  const [selectedRaw, setSelectedRaw] = useState<{ id: string | number; image_id: string | null } | null>(null);
+  const [selectedRaw, setSelectedRaw] = useState<{
+    id: string | number;
+    image_id: string | null;
+    created_at: string | null;
+  } | null>(null);
 
   const [form, setForm] = useState<FormState>(emptyForm());
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
@@ -62,6 +68,7 @@ export default function EditBlogPostPage() {
       setSelectedRaw({
         id: (r.id as string | number) ?? '',
         image_id: (r.cover_image_id as string | null) ?? null,
+        created_at: (r.created_at as string | null) ?? null,
       });
       setForm({
         title: (r.title as string) ?? '',
@@ -150,27 +157,31 @@ export default function EditBlogPostPage() {
       )}
 
       {selectedDocId && (
-        <div
-          style={{
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: 14,
-            padding: 24,
-            maxWidth: 720,
-            animation: 'tabIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both',
-          }}
-        >
-          {submitState === 'success' && <SuccessBanner text="Beitrag wurde aktualisiert." />}
-          <BlogForm
-            form={form}
-            setForm={setForm}
-            onSubmit={submit}
-            submitting={submitState === 'loading'}
-            submitLabel="Änderungen speichern"
-            onAiPolish={() => polishWithAI(form, setForm, setAiPolishing, setErrorMsg)}
-            aiPolishing={aiPolishing}
-          />
-        </div>
+        <SplitLayout
+          form={
+            <div
+              style={{
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 14,
+                padding: 24,
+                animation: 'tabIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both',
+              }}
+            >
+              {submitState === 'success' && <SuccessBanner text="Beitrag wurde aktualisiert." />}
+              <BlogForm
+                form={form}
+                setForm={setForm}
+                onSubmit={submit}
+                submitting={submitState === 'loading'}
+                submitLabel="Änderungen speichern"
+                onAiPolish={() => polishWithAI(form, setForm, setAiPolishing, setErrorMsg)}
+                aiPolishing={aiPolishing}
+              />
+            </div>
+          }
+          preview={<BlogPreview form={form} createdAt={selectedRaw?.created_at ?? undefined} />}
+        />
       )}
     </>
   );
