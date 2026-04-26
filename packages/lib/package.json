@@ -1,0 +1,41 @@
+{
+  "name": "@onvero/lib",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    "./utils": "./src/utils.ts",
+    "./design-tokens": "./src/design-tokens.ts",
+    "./supabase": "./src/supabase.ts",
+    "./supabase-server": "./src/supabase-server.ts",
+    "./tenant-server": "./src/tenant-server.ts",
+    "./csrf": "./src/csrf.ts",
+    "./rate-limit": "./src/rate-limit.ts",
+    "./leads-client": "./src/leads-client.ts",
+    "./leads-api": "./src/leads-api.ts",
+    "./mock-leads": "./src/mock-leads.ts",
+    "./plausible": "./src/plausible.ts",
+    "./webhook-sign": "./src/webhook-sign.ts",
+    "./validate": "./src/validate.ts",
+    "./chat-config": "./src/chat-config.ts",
+    "./language-context": "./src/language-context.tsx",
+    "./hooks/useTenant": "./src/hooks/useTenant.ts"
+  },
+  "peerDependencies": {
+    "next": "^16",
+    "react": "^19"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.100.1",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

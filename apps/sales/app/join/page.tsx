@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Card } from '@onvero/ui/primitives/card';
 import { Button } from '@onvero/ui/primitives/button';
-import { cn } from '@/lib/utils';
+import { cn } from '@onvero/lib/utils';
 import { Lock, Eye, EyeOff, User, Mail, Check, X, Loader2 } from 'lucide-react';
 import { OnveroLogo } from '@onvero/ui/marketing/onvero-logo';
 

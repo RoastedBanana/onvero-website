@@ -4,9 +4,9 @@ import { ChevronRightIcon } from '@radix-ui/react-icons';
 import * as Color from 'color-bits';
 import Link from 'next/link';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@onvero/lib/utils';
 import { OnveroLogo } from '../marketing/onvero-logo';
-import { useTranslation, useLanguage, type Lang } from '@/lib/language-context';
+import { useTranslation, useLanguage, type Lang } from '@onvero/lib/language-context';
 
 export const getRGBA = (cssColor: React.CSSProperties['color'], fallback: string = 'rgba(180, 180, 180)'): string => {
   if (typeof window === 'undefined') return fallback;

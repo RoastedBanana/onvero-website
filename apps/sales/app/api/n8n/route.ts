@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext } from '@/lib/tenant-server';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   const ctx = await getSessionContext();
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const author = body.get('author') as string;
   const imageFile = body.get('image') as File | null;
 
-  const supabase = (await import('@/lib/supabase-server')).createServerSupabaseClient;
+  const supabase = (await import('@onvero/lib/supabase-server')).createServerSupabaseClient;
   const client = await supabase();
 
   // Upload cover image if provided

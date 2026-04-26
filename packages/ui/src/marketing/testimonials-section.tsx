@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },

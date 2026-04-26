@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSignedHeaders } from '@/lib/webhook-sign';
-import { getSessionContext } from '@/lib/tenant-server';
+import { getSignedHeaders } from '@onvero/lib/webhook-sign';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 
 export async function GET() {
   try {

@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Button } from "../primitives/button";
 import { OnveroLogo, OnveroIcon } from "../marketing/onvero-logo";
-import { useLanguage, useTranslation } from "@/lib/language-context";
+import { useLanguage, useTranslation } from "@onvero/lib/language-context";
 
 function parseCookieUser(): { firstName: string; lastName: string; email?: string } | null {
   if (typeof document === "undefined") return null;

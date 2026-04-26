@@ -3,14 +3,14 @@
 import { useState, useRef, useEffect, FormEvent } from "react";
 import { motion } from "framer-motion";
 import { ArrowUp, Mic } from "lucide-react";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 import {
   WEBHOOK_URL,
   MAX_MESSAGES_PER_WINDOW,
   getUsedCount,
   recordSend,
   isRateLimited,
-} from "@/lib/chat-config";
+} from "@onvero/lib/chat-config";
 import { TextShimmer } from "../effects/text-shimmer";
 
 const fadeUp = (delay = 0) => ({

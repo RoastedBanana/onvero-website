@@ -6,7 +6,7 @@ import { Mail, Bot } from "lucide-react";
 import { Navbar } from "@onvero/ui/marketing/navbar";
 import { FooterComponent } from "@onvero/ui/marketing/flickering-footer";
 import { FlippingCard } from "@onvero/ui/marketing/flipping-card";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 
 // ── Floating stars decoration ─────────────────────────────────────────────────
 function Stars() {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext } from '@/lib/tenant-server';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 

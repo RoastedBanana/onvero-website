@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext, getAdminClient, isAdmin } from '@/lib/tenant-server';
+import { getSessionContext, getAdminClient, isAdmin } from '@onvero/lib/tenant-server';
 
 // ─── DELETE: Revoke a pending invitation ─────────────────────────────────────
 

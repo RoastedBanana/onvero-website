@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
 
 export async function GET(req: NextRequest) {
   // Validate actual Supabase session, don't trust cookie alone

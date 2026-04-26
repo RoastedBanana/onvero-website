@@ -6,7 +6,7 @@ import {
   motion,
 } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 
 interface TimelineEntry {
   title: string;

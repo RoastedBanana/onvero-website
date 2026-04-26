@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@onvero/lib/utils"
 import { getLocalTimeZone, today } from "@internationalized/date"
 import { ComponentProps } from "react"
 import {

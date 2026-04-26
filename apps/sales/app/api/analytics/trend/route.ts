@@ -1,5 +1,5 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { getSessionTenantId } from '@/lib/tenant-server';
+import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
+import { getSessionTenantId } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';

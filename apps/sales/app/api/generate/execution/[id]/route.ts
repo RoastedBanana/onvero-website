@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isUUID } from '@/lib/validate';
-import { getSessionContext, getAdminClient } from '@/lib/tenant-server';
+import { isUUID } from '@onvero/lib/validate';
+import { getSessionContext, getAdminClient } from '@onvero/lib/tenant-server';
 
 export const dynamic = 'force-dynamic';
 

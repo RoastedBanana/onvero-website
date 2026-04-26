@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { ClipboardList, CreditCard, Send, Command } from "lucide-react";
 import type { LucideProps } from "lucide-react";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 
 // ── Node data ─────────────────────────────────────────────────────────────────
 type NodeDef = {

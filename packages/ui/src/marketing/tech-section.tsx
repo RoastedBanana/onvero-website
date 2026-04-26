@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { SpotlightCard } from "../marketing/spotlight-card";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },

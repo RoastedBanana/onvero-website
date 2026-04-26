@@ -4,7 +4,7 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+import { cn } from "@onvero/lib/utils";
 import { X } from "lucide-react";
 
 // ── Layout variants ────────────────────────────────────────────────────────────

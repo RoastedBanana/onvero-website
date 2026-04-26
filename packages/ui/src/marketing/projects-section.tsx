@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { ShoppingBag, Home, Scale, Dumbbell, Receipt } from "lucide-react";
 import DisplayCards from "../marketing/display-cards";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },

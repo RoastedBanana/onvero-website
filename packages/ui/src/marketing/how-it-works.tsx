@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@onvero/lib/utils';
 import { useState, useEffect } from 'react';
 import { ChevronDown, X, Lightbulb } from 'lucide-react';
 import type React from 'react';

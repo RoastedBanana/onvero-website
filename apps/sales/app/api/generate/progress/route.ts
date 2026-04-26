@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionTenantId } from '@/lib/tenant-server';
+import { getSessionTenantId } from '@onvero/lib/tenant-server';
 
 export const dynamic = 'force-dynamic';
 

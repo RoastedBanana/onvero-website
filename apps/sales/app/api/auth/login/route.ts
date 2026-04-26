@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {

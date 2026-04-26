@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext, getSessionTenantId, getAdminClient, isAdmin } from '@/lib/tenant-server';
+import { getSessionContext, getSessionTenantId, getAdminClient, isAdmin } from '@onvero/lib/tenant-server';
 
 const getAdmin = getAdminClient;
 

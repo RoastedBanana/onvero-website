@@ -1,6 +1,6 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server';
-import { getSessionTenantId } from '@/lib/tenant-server';
-import { plausibleStats, plausibleTimeseries } from '@/lib/plausible';
+import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
+import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { plausibleStats, plausibleTimeseries } from '@onvero/lib/plausible';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';

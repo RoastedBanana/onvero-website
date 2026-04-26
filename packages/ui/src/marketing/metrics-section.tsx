@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "../primitives/button";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 
 // ── CountUp ───────────────────────────────────────────────────────────────────
 function parseValue(value: string): { num: number; suffix: string; decimals: number } {

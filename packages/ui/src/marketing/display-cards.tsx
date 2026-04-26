@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@onvero/lib/utils";
 
 interface DisplayCardProps {
   className?: string;

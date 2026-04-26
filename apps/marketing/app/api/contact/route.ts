@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { validateCsrf } from '@/lib/csrf';
+import { rateLimit, getClientIp } from '@onvero/lib/rate-limit';
+import { validateCsrf } from '@onvero/lib/csrf';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALLOWED_FIELDS = [

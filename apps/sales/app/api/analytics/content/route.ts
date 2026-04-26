@@ -1,6 +1,6 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
 import { NextResponse } from 'next/server';
-import { getSessionContext } from '@/lib/tenant-server';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 
 export const dynamic = 'force-dynamic';
 

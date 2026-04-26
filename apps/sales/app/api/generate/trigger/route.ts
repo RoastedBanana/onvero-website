@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isUUID } from '@/lib/validate';
-import { getSessionContext } from '@/lib/tenant-server';
+import { isUUID } from '@onvero/lib/validate';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   try {

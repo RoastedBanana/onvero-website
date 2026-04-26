@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext } from '@/lib/tenant-server';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 
 // Allow longer execution for large files with multiple chunks
 export const maxDuration = 300;

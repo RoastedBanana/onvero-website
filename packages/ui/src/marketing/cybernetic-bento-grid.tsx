@@ -348,7 +348,7 @@ function WebsiteMockup({ hovered }: { hovered: boolean }) {
     </div>
   );
 }
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 import {
   Globe,
   GitBranch,

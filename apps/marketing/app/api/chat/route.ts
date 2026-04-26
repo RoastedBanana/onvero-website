@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { validateCsrf } from '@/lib/csrf';
-import { getSessionContext } from '@/lib/tenant-server';
+import { rateLimit, getClientIp } from '@onvero/lib/rate-limit';
+import { validateCsrf } from '@onvero/lib/csrf';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   try {

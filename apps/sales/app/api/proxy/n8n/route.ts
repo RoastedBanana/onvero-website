@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit, getClientIp } from '@/lib/rate-limit';
-import { getSessionContext } from '@/lib/tenant-server';
+import { rateLimit, getClientIp } from '@onvero/lib/rate-limit';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 
 // Map of allowed action names to env var keys
 const WEBHOOK_MAP: Record<string, string> = {

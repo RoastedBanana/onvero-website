@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { GlassBlogCard } from '../marketing/glass-blog-card';
-import { calcReadTime } from '@/lib/utils';
+import { calcReadTime } from '@onvero/lib/utils';
 
 interface BlogPost {
   id: number;

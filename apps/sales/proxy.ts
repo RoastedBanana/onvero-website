@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { ensureCsrfCookie } from '@/lib/csrf';
+import { ensureCsrfCookie } from '@onvero/lib/csrf';
 
 // ─── FAST AUTH CHECK — cookie-only, no Supabase network calls ───────────────
 // The old approach called supabase.auth.getSession() on EVERY request which

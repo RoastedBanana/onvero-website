@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSessionContext, getAdminClient } from '@/lib/tenant-server';
+import { getSessionContext, getAdminClient } from '@onvero/lib/tenant-server';
 
 export async function GET() {
   const ctx = await getSessionContext();

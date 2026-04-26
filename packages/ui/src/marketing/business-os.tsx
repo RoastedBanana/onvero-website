@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 import { IntegrationMap } from "../marketing/integration-map";
 import { MetricsSection } from "../marketing/metrics-section";
 import { ProjectsSection } from "../marketing/projects-section";

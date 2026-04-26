@@ -1,7 +1,7 @@
 "use client";
 
 import { Timeline } from "../marketing/timeline";
-import { useTranslation } from "@/lib/language-context";
+import { useTranslation } from "@onvero/lib/language-context";
 
 export function TimelineSection() {
   const { t } = useTranslation();

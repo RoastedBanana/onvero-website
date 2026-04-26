@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { Textarea } from '../primitives/textarea';
-import { cn } from '@/lib/utils';
+import { cn } from '@onvero/lib/utils';
 import {
   BarChart2,
   GitBranch,

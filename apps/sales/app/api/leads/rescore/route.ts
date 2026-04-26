@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateCsrf } from '@/lib/csrf';
-import { isUUID } from '@/lib/validate';
-import { getSignedHeaders } from '@/lib/webhook-sign';
-import { getSessionContext } from '@/lib/tenant-server';
+import { validateCsrf } from '@onvero/lib/csrf';
+import { isUUID } from '@onvero/lib/validate';
+import { getSignedHeaders } from '@onvero/lib/webhook-sign';
+import { getSessionContext } from '@onvero/lib/tenant-server';
 
 export async function POST(req: NextRequest) {
   try {

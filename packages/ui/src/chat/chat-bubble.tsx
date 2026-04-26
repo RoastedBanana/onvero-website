@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@onvero/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../primitives/avatar";
 import { Button } from "../primitives/button";
 import { MessageLoading } from "../chat/message-loading";

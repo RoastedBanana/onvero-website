@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { ensureCsrfCookie } from '@/lib/csrf';
+import { ensureCsrfCookie } from '@onvero/lib/csrf';
 
 export async function proxy(request: NextRequest) {
   return ensureCsrfCookie(request, NextResponse.next({ request }));

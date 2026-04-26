@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext, getAdminClient } from '@/lib/tenant-server';
+import { getSessionContext, getAdminClient } from '@onvero/lib/tenant-server';
 
 const WEBHOOK_URL = process.env.N8N_WEBHOOK_SEND_OUTREACH_EMAIL ?? '';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
