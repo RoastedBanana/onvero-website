@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+@import "@onvero/tailwind-preset/tokens.css";
+@import "@onvero/tailwind-preset/theme.css";
+@import "@onvero/tailwind-preset/base.css";
