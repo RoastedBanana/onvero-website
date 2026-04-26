@@ -1,0 +1,10 @@
+{
+  "name": "@onvero/tailwind-preset",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./theme.css": "./theme.css",
+    "./base.css": "./base.css"
+  }
+}
