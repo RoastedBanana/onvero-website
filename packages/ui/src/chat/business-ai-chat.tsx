@@ -4,10 +4,10 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { Textarea } from '../primitives/textarea';
 import { cn } from '@onvero/lib/utils';
 import {
-  BarChart2,
-  GitBranch,
-  Globe,
-  Headphones,
+  Search,
+  PenLine,
+  FileText,
+  Hash,
   ArrowUpIcon,
   Mic,
   Paperclip,
@@ -623,7 +623,10 @@ export function BusinessAIChat() {
               <div ref={messagesEndRef} />
             </div>
           ) : (
-            <h1 className="text-3xl font-bold text-white mb-8">Wie kann ich Ihnen helfen?</h1>
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-white mb-2">Wie kann ich dir mit deiner Website helfen?</h1>
+              <p className="text-sm text-white/45">SEO-Insights · Blog-Posts schreiben · Content optimieren</p>
+            </div>
           )}
 
           {/* Input */}
@@ -668,7 +671,7 @@ export function BusinessAIChat() {
                     adjustHeight();
                   }}
                   onKeyDown={handleKeyDown}
-                  placeholder="Stell eine Frage an deine Business AI…"
+                  placeholder="Frag zu SEO, einem neuen Blog-Post oder Content-Edits…"
                   className={cn(
                     'w-full px-4 py-4 resize-none bg-transparent border-none text-white text-sm',
                     'focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
@@ -739,24 +742,32 @@ export function BusinessAIChat() {
             {!hasMessages && (
               <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
                 <SuggestionButton
-                  icon={<BarChart2 className="w-3.5 h-3.5" />}
-                  label="Umsatz diese Woche"
-                  onClick={() => sendMessage('Wie war der Umsatz diese Woche?')}
+                  icon={<Search className="w-3.5 h-3.5" />}
+                  label="SEO checken"
+                  onClick={() =>
+                    sendMessage('Mach einen SEO-Check für meine Website und nenn die wichtigsten Verbesserungen.')
+                  }
                 />
                 <SuggestionButton
-                  icon={<Globe className="w-3.5 h-3.5" />}
-                  label="Website Performance"
-                  onClick={() => sendMessage('Wie performt unsere Website aktuell?')}
+                  icon={<PenLine className="w-3.5 h-3.5" />}
+                  label="Blog-Post schreiben"
+                  onClick={() =>
+                    sendMessage('Schlag mir 3 konkrete Blog-Themen vor, die zu unserer Positionierung passen.')
+                  }
                 />
                 <SuggestionButton
-                  icon={<GitBranch className="w-3.5 h-3.5" />}
-                  label="Offene Workflows"
-                  onClick={() => sendMessage('Welche Workflows sind gerade offen?')}
+                  icon={<FileText className="w-3.5 h-3.5" />}
+                  label="Content optimieren"
+                  onClick={() =>
+                    sendMessage('Welche Texte auf der Website sollten überarbeitet werden und warum?')
+                  }
                 />
                 <SuggestionButton
-                  icon={<Headphones className="w-3.5 h-3.5" />}
-                  label="Support-Tickets"
-                  onClick={() => sendMessage('Zeig mir die aktuellen Support-Tickets.')}
+                  icon={<Hash className="w-3.5 h-3.5" />}
+                  label="Keyword-Ideen"
+                  onClick={() =>
+                    sendMessage('Welche Keywords sollten wir für unsere SEO-Strategie targeten?')
+                  }
                 />
               </div>
             )}

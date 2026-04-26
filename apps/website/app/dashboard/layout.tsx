@@ -41,7 +41,7 @@ const NAV: NavSection[] = [
   },
   {
     title: 'KI-AGENT',
-    items: [{ label: 'Business Chat', href: '/dashboard/business-ai', icon: ICONS.spark }],
+    items: [{ label: 'Website Agent', href: '/dashboard/business-ai', icon: ICONS.spark }],
   },
   {
     title: 'SEO',
