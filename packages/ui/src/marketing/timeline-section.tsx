@@ -1,6 +1,6 @@
 "use client";
 
-import { Timeline } from "@/components/ui/timeline";
+import { Timeline } from "../marketing/timeline";
 import { useTranslation } from "@/lib/language-context";
 
 export function TimelineSection() {

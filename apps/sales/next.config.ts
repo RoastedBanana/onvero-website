@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname, '../..'),
   },
+  transpilePackages: ['@onvero/ui'],
   // Safety net during monorepo migration; remove once Step 5 (packages/lib)
   // is complete and import paths are verified.
   typescript: {

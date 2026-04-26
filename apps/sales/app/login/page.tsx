@@ -3,8 +3,8 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { OnveroLogo } from '@/components/ui/onvero-logo';
-import UniqueLoading from '@/components/ui/grid-loading';
+import { OnveroLogo } from '@onvero/ui/marketing/onvero-logo';
+import UniqueLoading from '@onvero/ui/effects/grid-loading';
 
 function LoginForm() {
   const searchParams = useSearchParams();

@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { Clock, Calendar, User } from 'lucide-react';
 import { BackButton } from './back-button';
 import { calcReadTime } from '@/lib/utils';
-import { Navbar } from '@/components/ui/navbar';
-import { FooterComponent } from '@/components/ui/flickering-footer';
-import { Badge } from '@/components/ui/badge';
+import { Navbar } from '@onvero/ui/marketing/navbar';
+import { FooterComponent } from '@onvero/ui/marketing/flickering-footer';
+import { Badge } from '@onvero/ui/primitives/badge';
 
 interface BlogPost {
   id: number;

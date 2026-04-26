@@ -1,30 +1,30 @@
 import dynamic from "next/dynamic";
-import { Navbar } from "@/components/ui/navbar";
-import { BackgroundPaths } from "@/components/ui/background-paths";
+import { Navbar } from "@onvero/ui/marketing/navbar";
+import { BackgroundPaths } from "@onvero/ui/effects/background-paths";
 
 const CyberneticBentoGrid = dynamic(() =>
-  import("@/components/ui/cybernetic-bento-grid").then((m) => m.CyberneticBentoGrid)
+  import("@onvero/ui/marketing/cybernetic-bento-grid").then((m) => m.CyberneticBentoGrid)
 );
 const BusinessOS = dynamic(() =>
-  import("@/components/ui/business-os").then((m) => m.BusinessOS)
+  import("@onvero/ui/marketing/business-os").then((m) => m.BusinessOS)
 );
 const TechSection = dynamic(() =>
-  import("@/components/ui/tech-section").then((m) => m.TechSection)
+  import("@onvero/ui/marketing/tech-section").then((m) => m.TechSection)
 );
 const TimelineSection = dynamic(() =>
-  import("@/components/ui/timeline-section").then((m) => m.TimelineSection)
+  import("@onvero/ui/marketing/timeline-section").then((m) => m.TimelineSection)
 );
 const TestimonialsSection = dynamic(() =>
-  import("@/components/ui/testimonials-section").then((m) => m.TestimonialsSection)
+  import("@onvero/ui/marketing/testimonials-section").then((m) => m.TestimonialsSection)
 );
 const ChatSection = dynamic(() =>
-  import("@/components/ui/chat-section").then((m) => m.ChatSection)
+  import("@onvero/ui/chat/chat-section").then((m) => m.ChatSection)
 );
 const FooterComponent = dynamic(() =>
-  import("@/components/ui/flickering-footer").then((m) => m.FooterComponent)
+  import("@onvero/ui/marketing/flickering-footer").then((m) => m.FooterComponent)
 );
 const BlogSection = dynamic(() =>
-  import("@/components/ui/blog-section").then((m) => m.BlogSection)
+  import("@onvero/ui/marketing/blog-section").then((m) => m.BlogSection)
 );
 
 export default function Home() {

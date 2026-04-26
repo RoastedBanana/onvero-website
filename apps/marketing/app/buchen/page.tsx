@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Mail, Bot } from "lucide-react";
-import { Navbar } from "@/components/ui/navbar";
-import { FooterComponent } from "@/components/ui/flickering-footer";
-import { FlippingCard } from "@/components/ui/flipping-card";
+import { Navbar } from "@onvero/ui/marketing/navbar";
+import { FooterComponent } from "@onvero/ui/marketing/flickering-footer";
+import { FlippingCard } from "@onvero/ui/marketing/flipping-card";
 import { useTranslation } from "@/lib/language-context";
 
 // ── Floating stars decoration ─────────────────────────────────────────────────

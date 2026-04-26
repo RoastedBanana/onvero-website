@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Button } from "../primitives/button";
 import { useTranslation } from "@/lib/language-context";
 
 function FloatingPaths({ position }: { position: number }) {

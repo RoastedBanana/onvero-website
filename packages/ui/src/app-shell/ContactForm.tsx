@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { MultiStepForm } from "@/components/ui/multi-step-form";
+import { MultiStepForm } from "../marketing/multi-step-form";
 import { AnimatePresence } from "framer-motion";
 
 // ── Types ──────────────────────────────────────────────────────────────────────

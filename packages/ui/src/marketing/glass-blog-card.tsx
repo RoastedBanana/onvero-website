@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../primitives/avatar";
+import { Badge } from "../primitives/badge";
+import { Card } from "../primitives/card";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { BookOpen, Clock } from "lucide-react";

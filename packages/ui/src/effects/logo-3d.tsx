@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
-import { OnveroLogo } from '@/components/ui/onvero-logo';
+import { OnveroLogo } from '../marketing/onvero-logo';
 
 /**
  * Logo3D — interactive Onvero logo on a dark pill background.

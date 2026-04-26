@@ -5,7 +5,7 @@ import * as Color from 'color-bits';
 import Link from 'next/link';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { OnveroLogo } from '@/components/ui/onvero-logo';
+import { OnveroLogo } from '../marketing/onvero-logo';
 import { useTranslation, useLanguage, type Lang } from '@/lib/language-context';
 
 export const getRGBA = (cssColor: React.CSSProperties['color'], fallback: string = 'rgba(180, 180, 180)'): string => {

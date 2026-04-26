@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ShoppingBag, Home, Scale, Dumbbell, Receipt } from "lucide-react";
-import DisplayCards from "@/components/ui/display-cards";
+import DisplayCards from "../marketing/display-cards";
 import { useTranslation } from "@/lib/language-context";
 
 const fadeUp = (delay = 0) => ({

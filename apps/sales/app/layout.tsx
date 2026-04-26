@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, DM_Sans, DM_Mono } from 'next/font/google';
 import './globals.css';
-import { Providers } from '@/components/providers';
-import { CookieConsent } from '@/components/CookieConsent';
-import { AnalyticsLoader } from '@/components/AnalyticsLoader';
+import { Providers } from '@onvero/ui/app-shell/providers';
+import { CookieConsent } from '@onvero/ui/app-shell/CookieConsent';
+import { AnalyticsLoader } from '@onvero/ui/app-shell/AnalyticsLoader';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { SpotlightCard } from "../marketing/spotlight-card";
 import { useTranslation } from "@/lib/language-context";
 
 const fadeUp = (delay = 0) => ({

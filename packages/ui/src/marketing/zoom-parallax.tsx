@@ -3,7 +3,7 @@
 import { useScroll, useTransform, motion } from 'framer-motion';
 import { useRef } from 'react';
 import Image from 'next/image';
-import { Model3D } from '@/components/ui/model-3d';
+import { Model3D } from '../effects/model-3d';
 
 interface Image {
   src: string;

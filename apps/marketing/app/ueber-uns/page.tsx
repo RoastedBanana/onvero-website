@@ -1,18 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Navbar } from "@/components/ui/navbar";
+import { Navbar } from "@onvero/ui/marketing/navbar";
 
 const ZoomParallax = dynamic(
-  () => import("@/components/ui/zoom-parallax").then((m) => m.ZoomParallax),
+  () => import("@onvero/ui/marketing/zoom-parallax").then((m) => m.ZoomParallax),
   { ssr: false }
 );
 const TeamCards = dynamic(
-  () => import("@/components/ui/team-cards").then((m) => m.TeamCards),
+  () => import("@onvero/ui/marketing/team-cards").then((m) => m.TeamCards),
   { ssr: false }
 );
 const FooterComponent = dynamic(
-  () => import("@/components/ui/flickering-footer").then((m) => m.FooterComponent),
+  () => import("@onvero/ui/marketing/flickering-footer").then((m) => m.FooterComponent),
   { ssr: false }
 );
 

@@ -2,7 +2,7 @@
 
 import Script from 'next/script';
 import { useSyncExternalStore } from 'react';
-import { hasConsent } from '@/components/CookieConsent';
+import { hasConsent } from '../app-shell/CookieConsent';
 
 function subscribe(callback: () => void) {
   window.addEventListener('storage', callback);

@@ -4,7 +4,6 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./*"],
-      "@/components/*": ["../sales/components/*"],
       "@/lib/*": ["../sales/lib/*"],
       "@/hooks/*": ["../sales/hooks/*"]
     }

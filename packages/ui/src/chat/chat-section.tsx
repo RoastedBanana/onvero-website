@@ -11,7 +11,7 @@ import {
   recordSend,
   isRateLimited,
 } from "@/lib/chat-config";
-import { TextShimmer } from "@/components/ui/text-shimmer";
+import { TextShimmer } from "../effects/text-shimmer";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },

@@ -1,7 +1,7 @@
 'use client';
 
-import { Navbar } from '@/components/ui/navbar';
-import { FooterComponent } from '@/components/ui/flickering-footer';
+import { Navbar } from '@onvero/ui/marketing/navbar';
+import { FooterComponent } from '@onvero/ui/marketing/flickering-footer';
 
 export default function AGBPage() {
   return (

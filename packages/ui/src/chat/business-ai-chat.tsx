@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from '../primitives/textarea';
 import { cn } from '@/lib/utils';
 import {
   BarChart2,
@@ -19,9 +19,9 @@ import {
   PanelLeftOpen,
   Pencil,
 } from 'lucide-react';
-import { DottedSurface } from '@/components/ui/dotted-surface';
+import { DottedSurface } from '../effects/dotted-surface';
 import ReactMarkdown from 'react-markdown';
-import { TextShimmer } from '@/components/ui/text-shimmer';
+import { TextShimmer } from '../effects/text-shimmer';
 import { createBrowserClient } from '@supabase/ssr';
 
 const WEBHOOK = '/api/proxy/chat';

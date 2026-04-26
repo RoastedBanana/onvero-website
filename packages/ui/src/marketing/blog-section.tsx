@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { GlassBlogCard } from '@/components/ui/glass-blog-card';
+import { GlassBlogCard } from '../marketing/glass-blog-card';
 import { calcReadTime } from '@/lib/utils';
 
 interface BlogPost {
