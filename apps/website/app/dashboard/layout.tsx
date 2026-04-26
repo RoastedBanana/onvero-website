@@ -24,6 +24,7 @@ const ICONS = {
   edit: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z',
   text: 'M4 6h16M4 12h16M4 18h10',
   search: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z',
+  spark: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
 } as const;
 
 const NAV: NavSection[] = [
@@ -37,6 +38,10 @@ const NAV: NavSection[] = [
   {
     title: 'CONTENT',
     items: [{ label: 'Texte', href: '/dashboard/texts', icon: ICONS.text }],
+  },
+  {
+    title: 'KI-AGENT',
+    items: [{ label: 'Business Chat', href: '/dashboard/business-ai', icon: ICONS.spark }],
   },
   {
     title: 'SEO',

@@ -116,11 +116,13 @@ function SuggestionButton({ icon, label, onClick }: { icon: React.ReactNode; lab
         color: 'rgba(255,255,255,0.45)',
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)';
-        (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.8)';
+        (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.06)';
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.3)';
+        (e.currentTarget as HTMLElement).style.color = '#A5B4FC';
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.08)';
         (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)';
       }}
     >
@@ -238,10 +240,14 @@ function ChatSidebar({
                 onClick={() => {
                   if (editingId !== session.id) onSelect(session.id);
                 }}
-                className="group flex items-center gap-2 mx-2 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+                className="group flex items-center gap-2 mx-2 px-3 py-2 rounded-lg cursor-pointer transition-all"
                 style={{
-                  background: session.id === activeId ? 'rgba(255,255,255,0.08)' : 'transparent',
-                  color: session.id === activeId ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.45)',
+                  background: session.id === activeId ? 'rgba(99,102,241,0.1)' : 'transparent',
+                  color: session.id === activeId ? '#A5B4FC' : 'rgba(255,255,255,0.45)',
+                  boxShadow:
+                    session.id === activeId
+                      ? 'inset 0 0 0 0.5px rgba(99,102,241,0.2), 0 2px 8px rgba(99,102,241,0.08)'
+                      : 'none',
                 }}
                 onMouseEnter={(e) => {
                   if (session.id !== activeId)
@@ -712,9 +718,18 @@ export function BusinessAIChat() {
                   disabled={loading || !sessionReady}
                   className={cn(
                     'p-2 rounded-lg text-sm transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:pointer-events-none',
-                    value.trim() || preview ? 'bg-white text-black' : 'border text-white/30'
+                    !(value.trim() || preview) && 'border text-white/30'
                   )}
-                  style={value.trim() || preview ? {} : { borderColor: 'rgba(255,255,255,0.1)' }}
+                  style={
+                    value.trim() || preview
+                      ? {
+                          background: 'linear-gradient(135deg, #6366F1, #818CF8)',
+                          color: '#fff',
+                          border: 'none',
+                          boxShadow: '0 2px 16px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+                        }
+                      : { borderColor: 'rgba(255,255,255,0.1)' }
+                  }
                 >
                   <ArrowUpIcon className="w-4 h-4" />
                 </button>
