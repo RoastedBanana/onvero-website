@@ -18,6 +18,46 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'jnaqmsvozkpqawqwslrl.supabase.co' },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/erstgespraech-buchen',
+        destination: '/buchen',
+        permanent: false,
+      },
+      // Auth + dashboard moved to sales subdomain
+      {
+        source: '/login',
+        destination: 'https://sales.onvero.de/login',
+        permanent: true,
+      },
+      {
+        source: '/join',
+        destination: 'https://sales.onvero.de/join',
+        permanent: true,
+      },
+      {
+        source: '/sales',
+        destination: 'https://sales.onvero.de/dashboard',
+        permanent: true,
+      },
+      {
+        source: '/sales/:path*',
+        destination: 'https://sales.onvero.de/dashboard/:path*',
+        permanent: true,
+      },
+      {
+        source: '/dashboard',
+        destination: 'https://sales.onvero.de/dashboard',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:path*',
+        destination: 'https://sales.onvero.de/dashboard/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
