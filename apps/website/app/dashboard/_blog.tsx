@@ -340,6 +340,146 @@ function ShimmerOverlay() {
   );
 }
 
+// ─── AI PROMPT POPOVER ───────────────────────────────────────────────────────
+
+function AiPromptPopover({
+  open,
+  onClose,
+  onSubmit,
+  disabled,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (prompt: string) => void;
+  disabled: boolean;
+}) {
+  const [prompt, setPrompt] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setPrompt('');
+      return;
+    }
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: 'absolute',
+        bottom: 'calc(100% + 8px)',
+        right: 0,
+        width: 320,
+        background: C.surface,
+        border: '1px solid rgba(99,102,241,0.25)',
+        borderRadius: 12,
+        padding: 12,
+        boxShadow: '0 12px 32px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.04)',
+        zIndex: 20,
+        animation: 'scaleIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) both',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10.5,
+          color: C.accentBright,
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          marginBottom: 8,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <SparkleIcon size={11} />
+        Mit KI überarbeiten
+      </div>
+      <textarea
+        autoFocus
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Optional: Was soll die KI ändern? z. B. kürzer fassen, förmlicher, CTA hinzufügen…"
+        rows={3}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            onSubmit(prompt.trim());
+            onClose();
+          }
+          if (e.key === 'Escape') onClose();
+        }}
+        style={{
+          width: '100%',
+          background: 'rgba(255,255,255,0.03)',
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
+          color: C.text1,
+          fontSize: 12.5,
+          padding: '8px 10px',
+          outline: 'none',
+          fontFamily: 'inherit',
+          resize: 'none',
+          lineHeight: 1.5,
+        }}
+      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8 }}>
+        <span style={{ fontSize: 10, color: C.text3 }}>⌘ + Enter</span>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            onSubmit(prompt.trim());
+            onClose();
+          }}
+          className="w-primary"
+          style={{
+            background: 'linear-gradient(135deg, #6366F1, #818CF8)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 7,
+            padding: '6px 14px',
+            fontSize: 11.5,
+            fontWeight: 500,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.5 : 1,
+            fontFamily: 'inherit',
+            boxShadow: '0 2px 12px rgba(99,102,241,0.25)',
+          }}
+        >
+          Anwenden →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SparkleIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z" />
+      <path d="M20 16l1.04 3.13L24 20l-2.96.87L20 24l-1.04-3.13L16 20l2.96-.87L20 16z" />
+    </svg>
+  );
+}
+
 // ─── BLOG FORM ───────────────────────────────────────────────────────────────
 
 export function BlogForm({
@@ -356,12 +496,14 @@ export function BlogForm({
   onSubmit: () => void;
   submitting: boolean;
   submitLabel: string;
-  onAiPolish: () => void;
+  onAiPolish: (prompt?: string) => void;
   aiPolishing: boolean;
 }) {
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((p) => ({ ...p, [k]: v }));
+  const [aiOpen, setAiOpen] = useState(false);
 
   const canSubmit = !!(form.title.trim() && form.content.trim() && form.author.trim() && !submitting);
+  const canPolish = !!(form.title.trim() || form.content.trim());
 
   return (
     <form
@@ -393,33 +535,72 @@ export function BlogForm({
             value={form.content}
             onChange={(e) => set('content', e.target.value)}
             placeholder="Markdown wird unterstützt…"
-            style={textareaStyle}
+            style={{ ...textareaStyle, paddingBottom: 44 }}
           />
           {aiPolishing && <ShimmerOverlay />}
+          <AiPromptPopover
+            open={aiOpen}
+            onClose={() => setAiOpen(false)}
+            onSubmit={(p) => onAiPolish(p || undefined)}
+            disabled={aiPolishing || !canPolish}
+          />
+          <button
+            type="button"
+            onClick={() => setAiOpen((o) => !o)}
+            disabled={aiPolishing || !canPolish}
+            title="Mit KI überarbeiten"
+            style={{
+              position: 'absolute',
+              bottom: 8,
+              right: 8,
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              border: '1px solid rgba(99,102,241,0.3)',
+              background: aiPolishing || aiOpen ? 'rgba(99,102,241,0.22)' : 'rgba(99,102,241,0.1)',
+              color: C.accentBright,
+              cursor: aiPolishing ? 'wait' : !canPolish ? 'not-allowed' : 'pointer',
+              opacity: !canPolish ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.2s, border-color 0.2s',
+              zIndex: 3,
+              padding: 0,
+              fontFamily: 'inherit',
+            }}
+            onMouseEnter={(e) => {
+              if (!aiPolishing && canPolish) {
+                e.currentTarget.style.background = 'rgba(99,102,241,0.25)';
+                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!aiPolishing && canPolish && !aiOpen) {
+                e.currentTarget.style.background = 'rgba(99,102,241,0.1)';
+                e.currentTarget.style.borderColor = 'rgba(99,102,241,0.3)';
+              }
+            }}
+          >
+            {aiPolishing ? (
+              <svg
+                width={14}
+                height={14}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ animation: 'spin 1s linear infinite' }}
+              >
+                <path d="M21 12a9 9 0 11-6.219-8.56" />
+              </svg>
+            ) : (
+              <SparkleIcon size={14} />
+            )}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onAiPolish}
-          disabled={aiPolishing || !form.title.trim() || !form.content.trim()}
-          style={{
-            marginTop: 8,
-            background: 'rgba(99,102,241,0.08)',
-            border: '1px solid rgba(99,102,241,0.2)',
-            color: C.accentBright,
-            borderRadius: 8,
-            padding: '6px 12px',
-            fontSize: 11.5,
-            fontWeight: 500,
-            cursor: aiPolishing ? 'wait' : 'pointer',
-            fontFamily: 'inherit',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            opacity: aiPolishing || !form.title.trim() || !form.content.trim() ? 0.5 : 1,
-          }}
-        >
-          {aiPolishing ? '✨ KI poliert…' : '✨ Mit KI verbessern'}
-        </button>
       </div>
 
       <TagInput tags={form.tags} onChange={(t) => set('tags', t)} />
@@ -901,9 +1082,10 @@ export async function polishWithAI(
   form: FormState,
   setForm: (f: FormState) => void,
   setAiPolishing: (b: boolean) => void,
-  setErrorMsg: (s: string | null) => void
+  setErrorMsg: (s: string | null) => void,
+  prompt?: string
 ) {
-  if (!form.title.trim() || !form.content.trim()) return;
+  if (!form.title.trim() && !form.content.trim()) return;
   setAiPolishing(true);
   setErrorMsg(null);
   try {
@@ -914,6 +1096,7 @@ export async function polishWithAI(
         action: 'blog-ai-polish',
         title: form.title,
         content: form.content,
+        ...(prompt ? { prompt } : {}),
       }),
     });
     const result = await res.json();

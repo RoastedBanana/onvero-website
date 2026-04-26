@@ -79,7 +79,7 @@ export default function CreateBlogPostPage() {
               onSubmit={submit}
               submitting={submitState === 'loading'}
               submitLabel="Beitrag erstellen"
-              onAiPolish={() => polishWithAI(form, setForm, setAiPolishing, setErrorMsg)}
+              onAiPolish={(prompt) => polishWithAI(form, setForm, setAiPolishing, setErrorMsg, prompt)}
               aiPolishing={aiPolishing}
             />
           </div>

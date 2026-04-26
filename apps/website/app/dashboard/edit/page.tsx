@@ -175,7 +175,7 @@ export default function EditBlogPostPage() {
                 onSubmit={submit}
                 submitting={submitState === 'loading'}
                 submitLabel="Änderungen speichern"
-                onAiPolish={() => polishWithAI(form, setForm, setAiPolishing, setErrorMsg)}
+                onAiPolish={(prompt) => polishWithAI(form, setForm, setAiPolishing, setErrorMsg, prompt)}
                 aiPolishing={aiPolishing}
               />
             </div>
