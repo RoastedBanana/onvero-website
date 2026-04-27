@@ -672,6 +672,7 @@ function PostCard({
   selectionActive,
   onOpen,
   onToggleCheck,
+  onContextMenu,
 }: {
   post: BlogPost;
   selected: boolean;
@@ -679,6 +680,7 @@ function PostCard({
   selectionActive: boolean;
   onOpen: () => void;
   onToggleCheck: () => void;
+  onContextMenu: (e: React.MouseEvent, post: BlogPost) => void;
 }) {
   const tags = (post.tags || '')
     .split(',')
@@ -695,6 +697,7 @@ function PostCard({
   return (
     <div
       onClick={handleClick}
+      onContextMenu={(e) => onContextMenu(e, post)}
       className="w-card"
       role="button"
       tabIndex={0}
@@ -842,6 +845,7 @@ export function PostGrid({
   checkedIds,
   onToggleCheck,
   onCheckAllVisible,
+  onContextMenu,
 }: {
   posts: BlogPost[];
   selectedId: string | null;
@@ -850,6 +854,7 @@ export function PostGrid({
   checkedIds: Set<string>;
   onToggleCheck: (id: string) => void;
   onCheckAllVisible: (ids: string[], checked: boolean) => void;
+  onContextMenu: (e: React.MouseEvent, post: BlogPost) => void;
 }) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -960,6 +965,7 @@ export function PostGrid({
               selectionActive={selectionActive}
               onOpen={() => onSelect(p.documentId)}
               onToggleCheck={() => onToggleCheck(p.documentId)}
+              onContextMenu={onContextMenu}
             />
           ))}
         </div>
@@ -1169,6 +1175,144 @@ export function SplitLayout({ form, preview }: { form: React.ReactNode; preview:
       <div>{form}</div>
       <div>{preview}</div>
     </div>
+  );
+}
+
+// ─── CONTEXT MENU ────────────────────────────────────────────────────────────
+
+export interface ContextMenuState {
+  x: number;
+  y: number;
+  post: BlogPost;
+}
+
+export function PostContextMenu({
+  state,
+  onClose,
+  onToggleMark,
+  onDelete,
+  onOpen,
+}: {
+  state: ContextMenuState | null;
+  onClose: () => void;
+  onToggleMark: (post: BlogPost) => void;
+  onDelete: (post: BlogPost) => void;
+  onOpen: (post: BlogPost) => void;
+}) {
+  useEffect(() => {
+    if (!state) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    const onScroll = () => onClose();
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onScroll, true);
+    };
+  }, [state, onClose]);
+
+  if (!state) return null;
+
+  const MENU_W = 200;
+  const MENU_H = 132;
+  const x = Math.min(state.x, window.innerWidth - MENU_W - 8);
+  const y = Math.min(state.y, window.innerHeight - MENU_H - 8);
+
+  const item: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    width: '100%',
+    padding: '8px 12px',
+    background: 'transparent',
+    border: 'none',
+    color: C.text1,
+    fontSize: 12.5,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    textAlign: 'left',
+    transition: 'background 0.12s ease',
+  };
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+        style={{ position: 'fixed', inset: 0, zIndex: 60 }}
+      />
+      <div
+        role="menu"
+        style={{
+          position: 'fixed',
+          left: x,
+          top: y,
+          width: MENU_W,
+          background: 'rgba(14,16,37,0.97)',
+          border: `1px solid ${C.borderAccent}`,
+          borderRadius: 10,
+          padding: 4,
+          boxShadow: '0 16px 48px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.04)',
+          backdropFilter: 'blur(12px)',
+          zIndex: 61,
+          animation: 'scaleIn 0.12s cubic-bezier(0.22, 1, 0.36, 1) both',
+          transformOrigin: 'top left',
+          fontFamily: 'inherit',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            onOpen(state.post);
+            onClose();
+          }}
+          style={item}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99,102,241,0.12)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          Bearbeiten
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onToggleMark(state.post);
+            onClose();
+          }}
+          style={{ ...item, color: C.warning }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(251,191,36,0.1)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          <StarIcon size={13} filled={state.post.marked} />
+          {state.post.marked ? 'Markierung entfernen' : 'Markieren'}
+        </button>
+        <div style={{ height: 1, background: C.border, margin: '4px 0' }} />
+        <button
+          type="button"
+          onClick={() => {
+            onDelete(state.post);
+            onClose();
+          }}
+          style={{ ...item, color: C.danger }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(248,113,113,0.12)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+          </svg>
+          Löschen
+        </button>
+      </div>
+    </>
   );
 }
 

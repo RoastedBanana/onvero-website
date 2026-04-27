@@ -13,11 +13,13 @@ import {
   getImageUrl,
   mapRawPost,
   polishWithAI,
+  PostContextMenu,
   PostGrid,
   postsToCsv,
   SplitLayout,
   SuccessBanner,
   type BlogPost,
+  type ContextMenuState,
   type FormState,
   type SubmitState,
 } from '../_blog';
@@ -40,6 +42,7 @@ export default function EditBlogPostPage() {
 
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [menu, setMenu] = useState<ContextMenuState | null>(null);
 
   const loadPosts = useCallback(async () => {
     setPostsLoading(true);
@@ -227,6 +230,63 @@ export default function EditBlogPostPage() {
     downloadCsv(`blogposts-${stamp}.csv`, csv);
   }
 
+  const openContextMenu = useCallback((e: React.MouseEvent, post: BlogPost) => {
+    e.preventDefault();
+    setMenu({ x: e.clientX, y: e.clientY, post });
+  }, []);
+
+  const closeContextMenu = useCallback(() => setMenu(null), []);
+
+  async function singleToggleMark(post: BlogPost) {
+    const newMarked = !post.marked;
+    setBulkBusy(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/posts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set-marked', documentIds: [post.documentId], marked: newMarked }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Markieren fehlgeschlagen.');
+      setPosts((p) =>
+        p.map((x) => (x.documentId === post.documentId ? { ...x, marked: newMarked } : x))
+      );
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Markieren fehlgeschlagen.');
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function singleDelete(post: BlogPost) {
+    const ok = window.confirm(`„${post.title || 'Beitrag'}" unwiderruflich löschen?`);
+    if (!ok) return;
+    setBulkBusy(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/posts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', documentIds: [post.documentId] }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Löschen fehlgeschlagen.');
+      setPosts((p) => p.filter((x) => x.documentId !== post.documentId));
+      setCheckedIds((prev) => {
+        if (!prev.has(post.documentId)) return prev;
+        const next = new Set(prev);
+        next.delete(post.documentId);
+        return next;
+      });
+      if (selectedDocId === post.documentId) backToList();
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Löschen fehlgeschlagen.');
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   return (
     <>
       <Confetti active={confetti} />
@@ -250,6 +310,7 @@ export default function EditBlogPostPage() {
             checkedIds={checkedIds}
             onToggleCheck={toggleCheck}
             onCheckAllVisible={checkAllVisible}
+            onContextMenu={openContextMenu}
           />
         </div>
       )}
@@ -290,6 +351,14 @@ export default function EditBlogPostPage() {
         onToggleMark={bulkToggleMark}
         onExport={bulkExport}
         onDelete={bulkDelete}
+      />
+
+      <PostContextMenu
+        state={menu}
+        onClose={closeContextMenu}
+        onOpen={(p) => selectPost(p.documentId)}
+        onToggleMark={singleToggleMark}
+        onDelete={singleDelete}
       />
     </>
   );
