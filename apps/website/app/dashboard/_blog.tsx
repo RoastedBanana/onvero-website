@@ -1338,14 +1338,22 @@ export function BulkActionBar({
   if (count === 0) return null;
   return (
     <div
+      style={{
+        position: 'fixed',
+        left: 220,
+        right: 0,
+        bottom: 24,
+        zIndex: 50,
+        display: 'flex',
+        justifyContent: 'center',
+        pointerEvents: 'none',
+      }}
+    >
+    <div
       role="region"
       aria-label="Massenaktionen"
       style={{
-        position: 'fixed',
-        left: '50%',
-        bottom: 24,
-        transform: 'translateX(-50%)',
-        zIndex: 50,
+        pointerEvents: 'auto',
         display: 'flex',
         alignItems: 'center',
         gap: 10,
@@ -1464,6 +1472,7 @@ export function BulkActionBar({
       >
         ×
       </button>
+    </div>
     </div>
   );
 }
