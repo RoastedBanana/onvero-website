@@ -19,6 +19,7 @@ export interface BlogPost {
   imageUrl: string | null;
   imageId: string | null;
   createdAt: string;
+  marked: boolean;
 }
 
 export interface FormState {
@@ -648,21 +649,66 @@ export function BlogForm({
 
 // ─── POST CARD ───────────────────────────────────────────────────────────────
 
-function PostCard({ post, selected, onClick }: { post: BlogPost; selected: boolean; onClick: () => void }) {
+function CheckIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+function StarIcon({ size = 12, filled = false }: { size?: number; filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function PostCard({
+  post,
+  selected,
+  checked,
+  selectionActive,
+  onOpen,
+  onToggleCheck,
+}: {
+  post: BlogPost;
+  selected: boolean;
+  checked: boolean;
+  selectionActive: boolean;
+  onOpen: () => void;
+  onToggleCheck: () => void;
+}) {
   const tags = (post.tags || '')
     .split(',')
     .map((t) => t.trim())
     .filter(Boolean)
     .slice(0, 3);
   const img = getImageUrl(post.imageUrl);
+
+  const handleClick = () => {
+    if (selectionActive) onToggleCheck();
+    else onOpen();
+  };
+
   return (
-    <button
-      onClick={onClick}
+    <div
+      onClick={handleClick}
       className="w-card"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
       style={{
+        position: 'relative',
         textAlign: 'left',
-        background: selected ? 'rgba(99,102,241,0.06)' : C.surface,
-        border: `1px solid ${selected ? C.borderAccent : C.border}`,
+        background: checked ? 'rgba(99,102,241,0.1)' : selected ? 'rgba(99,102,241,0.06)' : C.surface,
+        border: `1px solid ${checked || selected ? C.borderAccent : C.border}`,
         borderRadius: 14,
         padding: 0,
         overflow: 'hidden',
@@ -673,6 +719,63 @@ function PostCard({ post, selected, onClick }: { post: BlogPost; selected: boole
         fontFamily: 'inherit',
       }}
     >
+      <button
+        type="button"
+        aria-label={checked ? 'Auswahl entfernen' : 'Auswählen'}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleCheck();
+        }}
+        className="w-card-check"
+        style={{
+          position: 'absolute',
+          top: 8,
+          left: 8,
+          width: 22,
+          height: 22,
+          borderRadius: 6,
+          background: checked ? C.accentDim : 'rgba(8,9,26,0.72)',
+          border: `1px solid ${checked ? C.accentDim : 'rgba(255,255,255,0.25)'}`,
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 3,
+          padding: 0,
+          backdropFilter: 'blur(6px)',
+          opacity: selectionActive || checked ? 1 : 0,
+          transition: 'opacity 0.15s ease, background 0.15s ease',
+          fontFamily: 'inherit',
+        }}
+      >
+        {checked && <CheckIcon size={12} />}
+      </button>
+
+      {post.marked && (
+        <div
+          aria-label="Markiert"
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            background: 'rgba(251,191,36,0.18)',
+            border: '1px solid rgba(251,191,36,0.45)',
+            color: C.warning,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 3,
+            backdropFilter: 'blur(6px)',
+          }}
+        >
+          <StarIcon size={12} filled />
+        </div>
+      )}
+
       {img ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={img} alt={post.title} style={{ width: '100%', height: 130, objectFit: 'cover' }} />
@@ -725,7 +828,7 @@ function PostCard({ post, selected, onClick }: { post: BlogPost; selected: boole
           </span>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -736,11 +839,17 @@ export function PostGrid({
   selectedId,
   onSelect,
   loading,
+  checkedIds,
+  onToggleCheck,
+  onCheckAllVisible,
 }: {
   posts: BlogPost[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   loading: boolean;
+  checkedIds: Set<string>;
+  onToggleCheck: (id: string) => void;
+  onCheckAllVisible: (ids: string[], checked: boolean) => void;
 }) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -762,6 +871,10 @@ export function PostGrid({
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / POSTS_PER_PAGE));
   const visible = filtered.slice((page - 1) * POSTS_PER_PAGE, page * POSTS_PER_PAGE);
+
+  const visibleIds = visible.map((p) => p.documentId);
+  const allVisibleChecked = visibleIds.length > 0 && visibleIds.every((id) => checkedIds.has(id));
+  const selectionActive = checkedIds.size > 0;
 
   if (loading) {
     return (
@@ -790,9 +903,29 @@ export function PostGrid({
           placeholder="Suchen nach Titel, Autor oder Tag…"
           style={{ ...inputStyle, maxWidth: 360 }}
         />
-        <span style={{ fontSize: 11, color: C.text3 }}>
-          {filtered.length} {filtered.length === 1 ? 'Beitrag' : 'Beiträge'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {visibleIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onCheckAllVisible(visibleIds, !allVisibleChecked)}
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: `1px solid ${C.border}`,
+                color: C.text2,
+                borderRadius: 8,
+                padding: '6px 10px',
+                fontSize: 11,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {allVisibleChecked ? 'Auswahl auf dieser Seite aufheben' : 'Alle auf dieser Seite auswählen'}
+            </button>
+          )}
+          <span style={{ fontSize: 11, color: C.text3 }}>
+            {filtered.length} {filtered.length === 1 ? 'Beitrag' : 'Beiträge'}
+          </span>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -823,7 +956,10 @@ export function PostGrid({
               key={p.documentId}
               post={p}
               selected={selectedId === p.documentId}
-              onClick={() => onSelect(p.documentId)}
+              checked={checkedIds.has(p.documentId)}
+              selectionActive={selectionActive}
+              onOpen={() => onSelect(p.documentId)}
+              onToggleCheck={() => onToggleCheck(p.documentId)}
             />
           ))}
         </div>
@@ -1036,6 +1172,186 @@ export function SplitLayout({ form, preview }: { form: React.ReactNode; preview:
   );
 }
 
+// ─── BULK ACTION BAR ─────────────────────────────────────────────────────────
+
+export function BulkActionBar({
+  count,
+  allMarked,
+  busy,
+  onClear,
+  onToggleMark,
+  onExport,
+  onDelete,
+}: {
+  count: number;
+  allMarked: boolean;
+  busy: boolean;
+  onClear: () => void;
+  onToggleMark: () => void;
+  onExport: () => void;
+  onDelete: () => void;
+}) {
+  if (count === 0) return null;
+  return (
+    <div
+      role="region"
+      aria-label="Massenaktionen"
+      style={{
+        position: 'fixed',
+        left: '50%',
+        bottom: 24,
+        transform: 'translateX(-50%)',
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        background: 'rgba(14,16,37,0.92)',
+        border: `1px solid ${C.borderAccent}`,
+        borderRadius: 14,
+        padding: '10px 12px 10px 16px',
+        boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(99,102,241,0.15), 0 0 32px rgba(99,102,241,0.18)',
+        backdropFilter: 'blur(12px)',
+        animation: 'fadeInUp 0.25s cubic-bezier(0.22, 1, 0.36, 1) both',
+        fontFamily: 'inherit',
+      }}
+    >
+      <span style={{ fontSize: 12, color: C.text1, fontWeight: 500 }}>
+        {count} {count === 1 ? 'Beitrag' : 'Beiträge'} ausgewählt
+      </span>
+      <span style={{ width: 1, height: 22, background: C.border }} />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={onToggleMark}
+        className="w-ghost"
+        style={{
+          background: 'rgba(251,191,36,0.08)',
+          border: '1px solid rgba(251,191,36,0.25)',
+          color: C.warning,
+          borderRadius: 8,
+          padding: '7px 12px',
+          fontSize: 12,
+          cursor: busy ? 'not-allowed' : 'pointer',
+          opacity: busy ? 0.5 : 1,
+          fontFamily: 'inherit',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <StarIcon size={12} filled={allMarked} />
+        {allMarked ? 'Markierung entfernen' : 'Markieren'}
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={onExport}
+        className="w-ghost"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: `1px solid ${C.border}`,
+          color: C.text2,
+          borderRadius: 8,
+          padding: '7px 12px',
+          fontSize: 12,
+          cursor: busy ? 'not-allowed' : 'pointer',
+          opacity: busy ? 0.5 : 1,
+          fontFamily: 'inherit',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+        </svg>
+        CSV exportieren
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={onDelete}
+        style={{
+          background: 'rgba(248,113,113,0.1)',
+          border: '1px solid rgba(248,113,113,0.3)',
+          color: C.danger,
+          borderRadius: 8,
+          padding: '7px 12px',
+          fontSize: 12,
+          cursor: busy ? 'not-allowed' : 'pointer',
+          opacity: busy ? 0.5 : 1,
+          fontFamily: 'inherit',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          transition: 'background 0.15s ease, border-color 0.15s ease',
+        }}
+        onMouseEnter={(e) => {
+          if (busy) return;
+          e.currentTarget.style.background = 'rgba(248,113,113,0.18)';
+          e.currentTarget.style.borderColor = 'rgba(248,113,113,0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(248,113,113,0.1)';
+          e.currentTarget.style.borderColor = 'rgba(248,113,113,0.3)';
+        }}
+      >
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+        </svg>
+        Löschen
+      </button>
+      <span style={{ width: 1, height: 22, background: C.border }} />
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label="Auswahl aufheben"
+        style={{
+          background: 'transparent',
+          border: 'none',
+          color: C.text3,
+          fontSize: 18,
+          lineHeight: 1,
+          cursor: 'pointer',
+          padding: '4px 8px',
+          fontFamily: 'inherit',
+        }}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+// ─── CSV EXPORT ──────────────────────────────────────────────────────────────
+
+export function postsToCsv(posts: BlogPost[]): string {
+  const headers = ['document_id', 'title', 'author', 'tags', 'marked', 'created_at', 'cover_image_url', 'content'];
+  const escape = (v: unknown) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = posts.map((p) =>
+    [p.documentId, p.title, p.author, p.tags, p.marked ? 'true' : 'false', p.createdAt, p.imageUrl ?? '', p.content]
+      .map(escape)
+      .join(',')
+  );
+  return [headers.join(','), ...rows].join('\r\n');
+}
+
+export function downloadCsv(filename: string, csv: string) {
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ─── BANNERS ─────────────────────────────────────────────────────────────────
 
 export function SuccessBanner({ text }: { text: string }) {
@@ -1133,5 +1449,6 @@ export function mapRawPost(r: Record<string, unknown>): BlogPost {
     imageUrl: (r.cover_image_url as string | null) ?? null,
     imageId: (r.cover_image_id as string | null) ?? null,
     createdAt: (r.created_at as string) ?? '',
+    marked: r.marked === true,
   };
 }

@@ -1,17 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Confetti } from '@onvero/ui/effects/confetti';
 import { C, GhostButton, PageHeader } from '../_shared';
 import {
   BlogForm,
   BlogPreview,
+  BulkActionBar,
+  downloadCsv,
   ErrorBanner,
   emptyForm,
   getImageUrl,
   mapRawPost,
   polishWithAI,
   PostGrid,
+  postsToCsv,
   SplitLayout,
   SuccessBanner,
   type BlogPost,
@@ -34,6 +37,9 @@ export default function EditBlogPostPage() {
   const [confetti, setConfetti] = useState(false);
   const [aiPolishing, setAiPolishing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const loadPosts = useCallback(async () => {
     setPostsLoading(true);
@@ -137,6 +143,90 @@ export default function EditBlogPostPage() {
     }
   }
 
+  const toggleCheck = useCallback((id: string) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const checkAllVisible = useCallback((ids: string[], checked: boolean) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) ids.forEach((id) => next.add(id));
+      else ids.forEach((id) => next.delete(id));
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => setCheckedIds(new Set()), []);
+
+  const checkedPosts = useMemo(
+    () => posts.filter((p) => checkedIds.has(p.documentId)),
+    [posts, checkedIds]
+  );
+  const allMarked = checkedPosts.length > 0 && checkedPosts.every((p) => p.marked);
+
+  async function bulkDelete() {
+    if (checkedIds.size === 0) return;
+    const ids = Array.from(checkedIds);
+    const ok = window.confirm(
+      `${ids.length} ${ids.length === 1 ? 'Beitrag' : 'Beiträge'} unwiderruflich löschen?`
+    );
+    if (!ok) return;
+    setBulkBusy(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/posts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', documentIds: ids }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Löschen fehlgeschlagen.');
+      setPosts((p) => p.filter((post) => !checkedIds.has(post.documentId)));
+      if (selectedDocId && checkedIds.has(selectedDocId)) backToList();
+      clearSelection();
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Löschen fehlgeschlagen.');
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkToggleMark() {
+    if (checkedIds.size === 0) return;
+    const ids = Array.from(checkedIds);
+    const newMarked = !allMarked;
+    setBulkBusy(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/posts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'set-marked', documentIds: ids, marked: newMarked }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Markieren fehlgeschlagen.');
+      setPosts((p) =>
+        p.map((post) => (checkedIds.has(post.documentId) ? { ...post, marked: newMarked } : post))
+      );
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Markieren fehlgeschlagen.');
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  function bulkExport() {
+    if (checkedPosts.length === 0) return;
+    const csv = postsToCsv(checkedPosts);
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`blogposts-${stamp}.csv`, csv);
+  }
+
   return (
     <>
       <Confetti active={confetti} />
@@ -152,7 +242,15 @@ export default function EditBlogPostPage() {
 
       {!selectedDocId && (
         <div style={{ animation: 'tabIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both' }}>
-          <PostGrid posts={posts} selectedId={selectedDocId} onSelect={selectPost} loading={postsLoading} />
+          <PostGrid
+            posts={posts}
+            selectedId={selectedDocId}
+            onSelect={selectPost}
+            loading={postsLoading}
+            checkedIds={checkedIds}
+            onToggleCheck={toggleCheck}
+            onCheckAllVisible={checkAllVisible}
+          />
         </div>
       )}
 
@@ -183,6 +281,16 @@ export default function EditBlogPostPage() {
           preview={<BlogPreview form={form} createdAt={selectedRaw?.created_at ?? undefined} />}
         />
       )}
+
+      <BulkActionBar
+        count={checkedIds.size}
+        allMarked={allMarked}
+        busy={bulkBusy}
+        onClear={clearSelection}
+        onToggleMark={bulkToggleMark}
+        onExport={bulkExport}
+        onDelete={bulkDelete}
+      />
     </>
   );
 }

@@ -72,6 +72,13 @@ export const GLOBAL_STYLES = `
     transform: translateY(-1px);
     box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.08);
   }
+  .w-card:hover .w-card-check {
+    opacity: 1 !important;
+  }
+  .w-card-check:hover {
+    background: rgba(99,102,241,0.85) !important;
+    border-color: rgba(99,102,241,0.9) !important;
+  }
   .w-tab { transition: all 0.15s ease; }
   .w-tab:hover { color: #A5B4FC !important; }
 
