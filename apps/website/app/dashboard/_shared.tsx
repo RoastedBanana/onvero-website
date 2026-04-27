@@ -267,6 +267,39 @@ export function PrimaryButton({
   );
 }
 
+// ─── SKELETON PRIMITIVE ──────────────────────────────────────────────────────
+
+export function SkeletonBox({
+  width,
+  height,
+  radius = 6,
+  delay = 0,
+  style,
+}: {
+  width?: number | string;
+  height?: number | string;
+  radius?: number | string;
+  delay?: number;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width,
+        height,
+        borderRadius: radius,
+        background:
+          'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'skeletonShimmer 1.6s ease-in-out infinite',
+        animationDelay: `${delay}ms`,
+        ...style,
+      }}
+    />
+  );
+}
+
 // ─── PAGE HEADER ─────────────────────────────────────────────────────────────
 
 export function PageHeader({

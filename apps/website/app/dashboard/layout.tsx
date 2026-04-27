@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { C, GLOBAL_STYLES, ParallaxBackground } from './_shared';
+import { C, GLOBAL_STYLES, ParallaxBackground, SkeletonBox } from './_shared';
 
 // ─── NAV CONFIG ──────────────────────────────────────────────────────────────
 
@@ -289,30 +289,43 @@ function ProfileDropdown() {
           fontFamily: 'inherit',
         }}
       >
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 7,
-            background: 'linear-gradient(135deg, #6366F1, #818CF8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 10,
-            fontWeight: 600,
-            color: '#fff',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)',
-          }}
-        >
-          {user?.initials ?? '..'}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: 11.5, fontWeight: 500, color: C.text1, lineHeight: 1.2 }}>
-            {user?.name ?? 'Laden...'}
-          </span>
-          <span style={{ fontSize: 9.5, color: C.text3, lineHeight: 1.2 }}>
-            {user?.email ? user.email.split('@')[1] : ''}
-          </span>
+        {user ? (
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 7,
+              background: 'linear-gradient(135deg, #6366F1, #818CF8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 10,
+              fontWeight: 600,
+              color: '#fff',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)',
+            }}
+          >
+            {user.initials}
+          </div>
+        ) : (
+          <SkeletonBox width={28} height={28} radius={7} />
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: user ? 0 : 4 }}>
+          {user ? (
+            <>
+              <span style={{ fontSize: 11.5, fontWeight: 500, color: C.text1, lineHeight: 1.2 }}>
+                {user.name}
+              </span>
+              <span style={{ fontSize: 9.5, color: C.text3, lineHeight: 1.2 }}>
+                {user.email ? user.email.split('@')[1] : ''}
+              </span>
+            </>
+          ) : (
+            <>
+              <SkeletonBox width={88} height={11} />
+              <SkeletonBox width={64} height={9} />
+            </>
+          )}
         </div>
         <svg
           width={10}

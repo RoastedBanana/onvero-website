@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, File, Folder, FolderOpen, Save, Search } from 'lucide-react';
 import { createClient } from '@onvero/lib/supabase';
-import { C } from './_shared';
+import { C, SkeletonBox } from './_shared';
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -552,21 +552,7 @@ export function WebsiteTextsEditor() {
 
   // ─── Render ──────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div
-        style={{
-          background: C.surface,
-          border: `1px solid ${C.border}`,
-          borderRadius: 14,
-          padding: '40px 24px',
-          textAlign: 'center',
-          color: C.text3,
-          fontSize: 13,
-        }}
-      >
-        Lade Texte…
-      </div>
-    );
+    return <WebsiteTextsSkeleton />;
   }
 
   return (
@@ -878,6 +864,62 @@ export function WebsiteTextsEditor() {
               Wähle einen Abschnitt aus der linken Seite
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SKELETON ────────────────────────────────────────────────────────────────
+
+function WebsiteTextsSkeleton() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 500 }}>
+      <SkeletonBox height={38} width={480} radius={10} />
+
+      <div style={{ display: 'flex', gap: 18, flex: 1, minHeight: 500 }}>
+        <div
+          style={{
+            width: 240,
+            flexShrink: 0,
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 12,
+            padding: '12px 8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          <SkeletonBox height={10} width={50} delay={0} style={{ margin: '4px 10px 8px' }} />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 10px' }}>
+              <SkeletonBox height={11} width={11} radius={3} delay={i * 50} />
+              <SkeletonBox height={12} width={`${60 + ((i * 13) % 30)}%`} delay={i * 50} />
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 12,
+            padding: 20,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 18,
+          }}
+        >
+          <SkeletonBox height={18} width="40%" delay={120} />
+          <SkeletonBox height={1} width="100%" radius={0} delay={120} />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <SkeletonBox height={10} width={90} delay={140 + i * 70} />
+              <SkeletonBox height={i % 2 === 0 ? 40 : 80} width="100%" radius={10} delay={140 + i * 70} />
+            </div>
+          ))}
         </div>
       </div>
     </div>
