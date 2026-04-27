@@ -649,6 +649,49 @@ export function BlogForm({
 
 // ─── POST CARD ───────────────────────────────────────────────────────────────
 
+const skeletonBg: React.CSSProperties = {
+  background:
+    'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%)',
+  backgroundSize: '200% 100%',
+  animation: 'skeletonShimmer 1.6s ease-in-out infinite',
+  borderRadius: 6,
+};
+
+function PostCardSkeleton({ delay = 0 }: { delay?: number }) {
+  const wrap: React.CSSProperties = {
+    background: C.surface,
+    border: `1px solid ${C.border}`,
+    borderRadius: 14,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 2px 16px rgba(0,0,0,0.25)',
+    animationDelay: `${delay}ms`,
+  };
+  const block = (style: React.CSSProperties): React.CSSProperties => ({
+    ...skeletonBg,
+    ...style,
+    animationDelay: `${delay}ms`,
+  });
+  return (
+    <div style={wrap} aria-hidden="true">
+      <div style={block({ width: '100%', height: 130, borderRadius: 0 })} />
+      <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={block({ height: 12, width: '85%' })} />
+        <div style={block({ height: 12, width: '60%' })} />
+        <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+          <div style={block({ height: 14, width: 38 })} />
+          <div style={block({ height: 14, width: 50 })} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+          <div style={block({ height: 9, width: 70 })} />
+          <div style={block({ height: 9, width: 90 })} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CheckIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
@@ -885,15 +928,14 @@ export function PostGrid({
     return (
       <div
         style={{
-          background: C.surface,
-          border: `1px solid ${C.border}`,
-          borderRadius: 14,
-          padding: '60px 24px',
-          textAlign: 'center',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: 14,
         }}
       >
-        <UniqueLoading size="md" />
-        <div style={{ fontSize: 12, color: C.text3, marginTop: 12 }}>Beiträge werden geladen…</div>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <PostCardSkeleton key={i} delay={i * 60} />
+        ))}
       </div>
     );
   }
