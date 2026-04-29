@@ -357,9 +357,9 @@ export default function NetworkCanvas({
           endDot.pos.x,
           0,
         );
-        grad.addColorStop(0, `rgba(79, 70, 229, ${aLeft})`);
-        grad.addColorStop(0.5, `rgba(79, 70, 229, ${aThroat})`);
-        grad.addColorStop(1, `rgba(79, 70, 229, ${aRight})`);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${aLeft})`);
+        grad.addColorStop(0.5, `rgba(255, 255, 255, ${aThroat})`);
+        grad.addColorStop(1, `rgba(255, 255, 255, ${aRight})`);
         ctx.strokeStyle = grad;
 
         ctx.beginPath();
@@ -372,7 +372,7 @@ export default function NetworkCanvas({
       for (let i = 0; i < curves.length; i++) {
         const c = curves[i];
         const startDot = leftDots[c.startIdx];
-        ctx.fillStyle = `rgba(79, 70, 229, ${DOT_BASE_ALPHA})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${DOT_BASE_ALPHA})`;
         ctx.beginPath();
         ctx.arc(startDot.pos.x, startDot.pos.y, 2.4, 0, Math.PI * 2);
         ctx.fill();
@@ -380,7 +380,7 @@ export default function NetworkCanvas({
         if (c.rightAlpha >= HIDDEN_THRESHOLD) {
           const endDot = rightDots[c.endIdx];
           const rightDotAlpha = (DOT_BASE_ALPHA * c.rightAlpha).toFixed(3);
-          ctx.fillStyle = `rgba(79, 70, 229, ${rightDotAlpha})`;
+          ctx.fillStyle = `rgba(255, 255, 255, ${rightDotAlpha})`;
           ctx.beginPath();
           ctx.arc(endDot.pos.x, endDot.pos.y, 2.4, 0, Math.PI * 2);
           ctx.fill();
