@@ -41,16 +41,15 @@ export function ConnectionsSection() {
         </div>
       </div>
 
-      <div className="relative">
-        {/* Mint→navy radial glow spans the full section width and reaches
-            up across the artwork area; canvas paints on top via the
-            relative wrapper below. */}
+      <div className="relative overflow-hidden">
+        {/* Mint→navy radial glow, contained to the artwork band so the
+            bottom terminates as a clean horizontal edge. */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'radial-gradient(ellipse 95% 180% at 50% 105%, rgba(0,212,168,0.85) 0%, rgba(40,80,210,0.68) 25%, rgba(20,40,150,0.58) 45%, rgba(10,28,110,0.42) 65%, rgba(8,20,80,0.22) 82%, rgba(255,255,255,0) 100%)',
+              'radial-gradient(ellipse 55% 100% at 50% 100%, rgba(0,212,168,0.85) 0%, rgba(40,80,210,0.68) 30%, rgba(20,40,150,0.55) 55%, rgba(10,28,110,0.32) 75%, rgba(255,255,255,0) 95%)',
             filter: 'blur(34px)',
           }}
         />
