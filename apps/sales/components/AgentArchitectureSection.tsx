@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Gauge, Mail, Network, Search } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { OnveroGradient } from './OnveroGradient';
@@ -12,6 +15,11 @@ const BALL_CLUSTER_W = 208.5;
 const BALL_CLUSTER_OFFSETS = [28, 104.5, 181] as const;
 const BALL_CLUSTER_TOP_OFFSET = 60;
 
+const PULSE_DURATION = 900;
+const TOOL_PULSE_DURATION = 600;
+const BREATHING_DURATION = 3000;
+const TOOL_GLOW_DURATION = 1500;
+
 type Agent = {
   id: string;
   icon: LucideIcon;
@@ -19,7 +27,6 @@ type Agent = {
   subtitle: string;
   tag: string;
   tools: string;
-  /** Card top-left position in % of panel. */
   left: number;
   top: number;
 };
@@ -66,14 +73,12 @@ type ToolConnection = {
 const toolConnections: ToolConnection[] = agents.map((a) => {
   const b = cardBounds[a.id];
   const cardAnchor = { x: b.cx, y: b.bottom };
-
   const clusterLeftPx = cardAnchor.x - BALL_CLUSTER_W / 2;
   const clusterTopPx = b.bottom + BALL_CLUSTER_TOP_OFFSET;
   const balls = BALL_CLUSTER_OFFSETS.map((dx) => ({
     x: clusterLeftPx + dx,
     y: clusterTopPx,
   }));
-
   return { agentId: a.id, cardAnchor, balls };
 });
 
@@ -116,11 +121,30 @@ const interAgentLinks: InterAgentLink[] = [
   },
 ];
 
+function getLinkBetween(
+  from: string,
+  to: string,
+): { fromId: string; toId: string; direction: 'forward' | 'reverse' } | null {
+  for (const link of interAgentLinks) {
+    if (link.fromId === from && link.toId === to) {
+      return { fromId: link.fromId, toId: link.toId, direction: 'forward' };
+    }
+    if (link.fromId === to && link.toId === from) {
+      return { fromId: link.fromId, toId: link.toId, direction: 'reverse' };
+    }
+  }
+  return null;
+}
+
+const CW_ORDER = ['lead-scout', 'business-agent', 'outreach-writer', 'score-engine'] as const;
+const CCW_ORDER = ['lead-scout', 'score-engine', 'outreach-writer', 'business-agent'] as const;
+
 function AgentCard({ agent }: { agent: Agent }) {
   const Icon = agent.icon;
   return (
     <div
-      className="flex h-full w-full items-center gap-2 rounded-full pl-1.5 pr-3 ring-1 ring-white/15 shadow-[0_8px_32px_-8px_rgba(13,13,43,0.45)] backdrop-blur-xl"
+      data-agent-card-inner={agent.id}
+      className="onv-card flex h-full w-full items-center gap-2 rounded-full pl-1.5 pr-3 ring-1 ring-white/15 backdrop-blur-xl"
       style={{
         backgroundImage:
           'linear-gradient(89deg, rgba(227,233,247,0.51) 0%, rgba(255,255,255,0.12) 100%)',
@@ -150,9 +174,14 @@ function AgentCard({ agent }: { agent: Agent }) {
   );
 }
 
-function ArchitectureOverlay() {
+function ArchitectureOverlay({
+  svgRef,
+}: {
+  svgRef: React.RefObject<SVGSVGElement | null>;
+}) {
   return (
     <svg
+      ref={svgRef}
       aria-hidden="true"
       viewBox={`0 0 ${PANEL_W} ${PANEL_H}`}
       preserveAspectRatio="xMidYMid meet"
@@ -168,6 +197,13 @@ function ArchitectureOverlay() {
           <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0.12)" />
         </linearGradient>
+        <filter id="onv-pulse-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
 
       {interAgentLinks.map((link) => (
@@ -222,6 +258,7 @@ function ArchitectureOverlay() {
                 fill="url(#onv-glass-ball)"
                 stroke="rgba(255,255,255,0.35)"
                 strokeWidth="0.6"
+                data-ball-circle
               />
               <ellipse
                 cx={ball.x}
@@ -234,11 +271,190 @@ function ArchitectureOverlay() {
           ))}
         </g>
       ))}
+
+      <g data-pulse-layer />
     </svg>
   );
 }
 
+function useArchitectureChoreography(
+  panelRef: React.RefObject<HTMLDivElement | null>,
+  svgRef: React.RefObject<SVGSVGElement | null>,
+) {
+  const [hovering, setHovering] = useState(false);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onEnter = () => setHovering(true);
+    const onLeave = () => setHovering(false);
+    panel.addEventListener('mouseenter', onEnter);
+    panel.addEventListener('mouseleave', onLeave);
+    return () => {
+      panel.removeEventListener('mouseenter', onEnter);
+      panel.removeEventListener('mouseleave', onLeave);
+    };
+  }, [panelRef]);
+
+  useEffect(() => {
+    if (!hovering) return;
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    let cancelled = false;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const rafs: number[] = [];
+    const ephemeralEls = new Set<SVGElement>();
+    const breathingCleanups: Array<() => void> = [];
+    const glowCleanups: Array<() => void> = [];
+
+    const schedule = (fn: () => void, ms: number) => {
+      const id = setTimeout(() => {
+        if (!cancelled) fn();
+      }, ms);
+      timeouts.push(id);
+    };
+
+    const spawnPulse = (
+      pathSelector: string,
+      duration: number,
+      direction: 'forward' | 'reverse',
+      onArrive?: () => void,
+    ) => {
+      const path = svg.querySelector<SVGPathElement>(pathSelector);
+      if (!path) return;
+      const pathLength = path.getTotalLength();
+      const layer = svg.querySelector<SVGGElement>('[data-pulse-layer]');
+      if (!layer) return;
+
+      const ns = 'http://www.w3.org/2000/svg';
+      const dot = document.createElementNS(ns, 'circle');
+      dot.setAttribute('r', '2.6');
+      dot.setAttribute('fill', '#ffffff');
+      dot.setAttribute('filter', 'url(#onv-pulse-glow)');
+      layer.appendChild(dot);
+      ephemeralEls.add(dot);
+
+      const start = performance.now();
+      const tick = (now: number) => {
+        if (cancelled) {
+          dot.remove();
+          ephemeralEls.delete(dot);
+          return;
+        }
+        const elapsed = now - start;
+        const t = Math.min(1, elapsed / duration);
+        const len = (direction === 'forward' ? t : 1 - t) * pathLength;
+        const p = path.getPointAtLength(len);
+        dot.setAttribute('cx', String(p.x));
+        dot.setAttribute('cy', String(p.y));
+        if (t < 1) {
+          rafs.push(requestAnimationFrame(tick));
+        } else {
+          dot.remove();
+          ephemeralEls.delete(dot);
+          onArrive?.();
+        }
+      };
+      rafs.push(requestAnimationFrame(tick));
+    };
+
+    const triggerBreathing = (agentId: string) => {
+      const inner = document.querySelector<HTMLDivElement>(
+        `[data-agent-card-inner="${agentId}"]`,
+      );
+      if (!inner) return;
+      inner.classList.remove('onv-breathing');
+      void inner.offsetWidth;
+      inner.classList.add('onv-breathing');
+      const t = setTimeout(() => inner.classList.remove('onv-breathing'), BREATHING_DURATION);
+      timeouts.push(t);
+      const cleanup = () => inner.classList.remove('onv-breathing');
+      breathingCleanups.push(cleanup);
+    };
+
+    const triggerToolGlow = (agentId: string, ballIndex: number) => {
+      const ball = svg.querySelector<SVGCircleElement>(
+        `[data-ball][data-agent="${agentId}"][data-ball-index="${ballIndex}"] [data-ball-circle]`,
+      );
+      if (!ball) return;
+      ball.classList.remove('onv-glowing');
+      void (ball as unknown as { getBBox: () => DOMRect }).getBBox();
+      ball.classList.add('onv-glowing');
+      const t = setTimeout(() => ball.classList.remove('onv-glowing'), TOOL_GLOW_DURATION);
+      timeouts.push(t);
+      const cleanup = () => ball.classList.remove('onv-glowing');
+      glowCleanups.push(cleanup);
+    };
+
+    const fireAgentTools = (agentId: string) => {
+      for (let i = 0; i < 3; i++) {
+        const sel = `[data-connector][data-agent="${agentId}"][data-ball-index="${i}"]`;
+        spawnPulse(sel, TOOL_PULSE_DURATION, 'forward', () => {
+          triggerToolGlow(agentId, i);
+        });
+      }
+    };
+
+    let directionToggle: 'cw' | 'ccw' = 'cw';
+
+    const runCycle = () => {
+      if (cancelled) return;
+
+      const order = directionToggle === 'cw' ? CW_ORDER : CCW_ORDER;
+      let elapsed = 0;
+
+      schedule(() => {
+        triggerBreathing(order[0]);
+        fireAgentTools(order[0]);
+      }, elapsed);
+
+      for (let i = 0; i < order.length; i++) {
+        const from = order[i];
+        const to = order[(i + 1) % order.length];
+        const link = getLinkBetween(from, to);
+        if (!link) continue;
+
+        const pulseFireTime = elapsed + BREATHING_DURATION;
+        schedule(() => {
+          spawnPulse(
+            `[data-from="${link.fromId}"][data-to="${link.toId}"]`,
+            PULSE_DURATION,
+            link.direction,
+            () => {
+              triggerBreathing(to);
+              fireAgentTools(to);
+            },
+          );
+        }, pulseFireTime);
+
+        elapsed += BREATHING_DURATION + PULSE_DURATION;
+      }
+
+      schedule(() => {
+        directionToggle = directionToggle === 'cw' ? 'ccw' : 'cw';
+        runCycle();
+      }, elapsed);
+    };
+
+    runCycle();
+
+    return () => {
+      cancelled = true;
+      timeouts.forEach(clearTimeout);
+      rafs.forEach(cancelAnimationFrame);
+      ephemeralEls.forEach((el) => el.remove());
+      breathingCleanups.forEach((fn) => fn());
+      glowCleanups.forEach((fn) => fn());
+    };
+  }, [hovering, svgRef]);
+}
+
 export function AgentArchitectureSection() {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  useArchitectureChoreography(panelRef, svgRef);
+
   return (
     <section className="bg-white font-[family-name:var(--font-nunito)] text-[#0A2540]">
       <div className="mx-auto max-w-7xl px-6 pb-24 pt-8 md:pb-32 md:px-8">
@@ -252,7 +468,10 @@ export function AgentArchitectureSection() {
           </h2>
         </div>
 
-        <div className="relative overflow-hidden rounded-[15px] shadow-2xl shadow-[#0D0D2B]/30 ring-1 ring-black/5">
+        <div
+          ref={panelRef}
+          className="relative overflow-hidden rounded-[15px] shadow-2xl shadow-[#0D0D2B]/30 ring-1 ring-black/5"
+        >
           <OnveroGradient
             className="absolute inset-0"
             colors={['#0D0D2B', '#2D1B69', '#0EA5E9', '#6EE7B7']}
@@ -260,7 +479,7 @@ export function AgentArchitectureSection() {
           />
 
           <div className="relative hidden aspect-[1115/560] w-full lg:block">
-            <ArchitectureOverlay />
+            <ArchitectureOverlay svgRef={svgRef} />
 
             {agents.map((agent) => (
               <div
@@ -301,6 +520,40 @@ export function AgentArchitectureSection() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .onv-card {
+          box-shadow: 0 8px 32px -8px rgba(13,13,43,0.45);
+        }
+        @keyframes onv-breathe {
+          0%, 100% {
+            box-shadow:
+              0 8px 32px -8px rgba(13,13,43,0.45),
+              0 0 0 0 rgba(255,255,255,0);
+          }
+          50% {
+            box-shadow:
+              0 8px 32px -8px rgba(13,13,43,0.45),
+              0 0 0 4px rgba(255,255,255,0.6);
+          }
+        }
+        .onv-card.onv-breathing {
+          animation: onv-breathe 0.6s ease-in-out 5;
+        }
+        @keyframes onv-tool-glow {
+          0% {
+            stroke: rgba(255,255,255,0.95);
+            stroke-width: 3;
+          }
+          100% {
+            stroke: rgba(255,255,255,0);
+            stroke-width: 0.6;
+          }
+        }
+        [data-ball-circle].onv-glowing {
+          animation: onv-tool-glow 1.5s ease-out forwards;
+        }
+      `}</style>
     </section>
   );
 }
