@@ -285,6 +285,104 @@ function ArchitectureOverlay({
   );
 }
 
+function useMagneticCards(panelRef: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const cards = Array.from(
+      panel.querySelectorAll<HTMLElement>('[data-agent-card]'),
+    );
+    if (cards.length === 0) return;
+
+    type CardState = { x: number; y: number; tx: number; ty: number };
+    const states = new Map<HTMLElement, CardState>();
+    cards.forEach((c) => states.set(c, { x: 0, y: 0, tx: 0, ty: 0 }));
+
+    let mouseX: number | null = null;
+    let mouseY: number | null = null;
+    let raf = 0;
+
+    const RADIUS = 240;
+    const STRENGTH = 0.18;
+    const DAMPING = 0.16;
+    const SETTLE_EPSILON = 0.04;
+
+    const onMove = (e: MouseEvent) => {
+      const rect = panel.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    const onLeave = () => {
+      mouseX = null;
+      mouseY = null;
+    };
+
+    const tick = () => {
+      const panelRect = panel.getBoundingClientRect();
+      let stillSettling = mouseX !== null;
+
+      for (const card of cards) {
+        const state = states.get(card)!;
+        const cardRect = card.getBoundingClientRect();
+        const naturalCx =
+          cardRect.left + cardRect.width / 2 - panelRect.left - state.x;
+        const naturalCy =
+          cardRect.top + cardRect.height / 2 - panelRect.top - state.y;
+
+        let targetX = 0;
+        let targetY = 0;
+        if (mouseX !== null && mouseY !== null) {
+          const dx = mouseX - naturalCx;
+          const dy = mouseY - naturalCy;
+          const dist = Math.hypot(dx, dy);
+          if (dist < RADIUS) {
+            const falloff = 1 - dist / RADIUS;
+            const eased = falloff * falloff;
+            targetX = dx * eased * STRENGTH;
+            targetY = dy * eased * STRENGTH;
+          }
+        }
+
+        state.tx = targetX;
+        state.ty = targetY;
+        state.x += (state.tx - state.x) * DAMPING;
+        state.y += (state.ty - state.y) * DAMPING;
+
+        if (
+          Math.abs(state.x) > SETTLE_EPSILON ||
+          Math.abs(state.y) > SETTLE_EPSILON
+        ) {
+          stillSettling = true;
+        }
+
+        card.style.transform = `translate3d(${state.x.toFixed(2)}px, ${state.y.toFixed(2)}px, 0)`;
+      }
+
+      if (stillSettling) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        raf = 0;
+        for (const card of cards) {
+          card.style.transform = '';
+        }
+      }
+    };
+
+    panel.addEventListener('mousemove', onMove);
+    panel.addEventListener('mouseleave', onLeave);
+
+    return () => {
+      panel.removeEventListener('mousemove', onMove);
+      panel.removeEventListener('mouseleave', onLeave);
+      if (raf) cancelAnimationFrame(raf);
+      for (const card of cards) {
+        card.style.transform = '';
+      }
+    };
+  }, [panelRef]);
+}
+
 function useArchitectureChoreography(
   panelRef: React.RefObject<HTMLDivElement | null>,
   svgRef: React.RefObject<SVGSVGElement | null>,
@@ -473,6 +571,7 @@ export function AgentArchitectureSection() {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   useArchitectureChoreography(panelRef, svgRef);
+  useMagneticCards(panelRef);
 
   return (
     <section className="bg-white font-[family-name:var(--font-nunito)] text-[#0A2540]">
