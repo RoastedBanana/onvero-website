@@ -59,7 +59,7 @@ function AgentCard({ agent }: { agent: Agent }) {
   const Icon = agent.icon;
   return (
     <div
-      className="flex w-full items-center gap-2 rounded-full pl-1.5 pr-3 py-1.5 ring-1 ring-white/15 shadow-[0_8px_32px_-8px_rgba(13,13,43,0.45)] backdrop-blur-xl"
+      className="flex h-full w-full items-center gap-2 rounded-full pl-1.5 pr-3 ring-1 ring-white/15 shadow-[0_8px_32px_-8px_rgba(13,13,43,0.45)] backdrop-blur-xl"
       style={{
         backgroundImage:
           'linear-gradient(89deg, rgba(227,233,247,0.51) 0%, rgba(255,255,255,0.12) 100%)',
@@ -195,7 +195,7 @@ export function AgentArchitectureSection() {
                   left: `${agent.left}%`,
                   top: `${agent.top}%`,
                   width: `${CARD_W_PCT}%`,
-                  minWidth: '210px',
+                  height: `${(CARD_H / PANEL_H) * 100}%`,
                 }}
                 data-agent-card={agent.id}
               >
