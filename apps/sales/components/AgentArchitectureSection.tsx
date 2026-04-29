@@ -87,44 +87,61 @@ const toolConnections: ToolConnection[] = agents.map((a) => {
   return { agentId: a.id, cardAnchor, balls };
 });
 
-type InterAgentLink = {
+type CardSide = 'left' | 'right' | 'top' | 'bottom';
+
+type InterAgentLinkSpec = {
   id: string;
   fromId: string;
   toId: string;
-  d: string;
+  fromSide: CardSide;
+  toSide: CardSide;
 };
 
-const ls = cardBounds['lead-scout'];
-const se = cardBounds['score-engine'];
-const ow = cardBounds['outreach-writer'];
-const ba = cardBounds['business-agent'];
+function getSideAnchor(b: CardBounds, side: CardSide) {
+  switch (side) {
+    case 'left':   return { x: b.left,  y: b.cy };
+    case 'right':  return { x: b.right, y: b.cy };
+    case 'top':    return { x: b.cx,    y: b.top };
+    case 'bottom': return { x: b.cx,    y: b.bottom };
+  }
+}
 
-const interAgentLinks: InterAgentLink[] = [
-  {
-    id: 'score-engine--lead-scout',
-    fromId: 'score-engine',
-    toId: 'lead-scout',
-    d: `M ${se.left} ${se.cy} C ${(se.left + ls.right) / 2} ${se.cy}, ${(se.left + ls.right) / 2} ${ls.cy}, ${ls.right} ${ls.cy}`,
-  },
-  {
-    id: 'score-engine--outreach-writer',
-    fromId: 'score-engine',
-    toId: 'outreach-writer',
-    d: `M ${se.right} ${se.cy} C ${(se.right + ow.left) / 2} ${se.cy}, ${(se.right + ow.left) / 2} ${ow.cy}, ${ow.left} ${ow.cy}`,
-  },
-  {
-    id: 'lead-scout--business-agent',
-    fromId: 'lead-scout',
-    toId: 'business-agent',
-    d: `M ${ls.right} ${ls.cy} C ${(ls.right + ba.left) / 2} ${ls.cy}, ${(ls.right + ba.left) / 2} ${ba.cy}, ${ba.left} ${ba.cy}`,
-  },
-  {
-    id: 'outreach-writer--business-agent',
-    fromId: 'outreach-writer',
-    toId: 'business-agent',
-    d: `M ${ow.left} ${ow.cy} C ${(ow.left + ba.right) / 2} ${ow.cy}, ${(ow.left + ba.right) / 2} ${ba.cy}, ${ba.right} ${ba.cy}`,
-  },
+function buildInterAgentPath(
+  fromB: CardBounds,
+  fromSide: CardSide,
+  toB: CardBounds,
+  toSide: CardSide,
+): string {
+  const start = getSideAnchor(fromB, fromSide);
+  const end = getSideAnchor(toB, toSide);
+  const midX = (start.x + end.x) / 2;
+  return `M ${start.x} ${start.y} C ${midX} ${start.y}, ${midX} ${end.y}, ${end.x} ${end.y}`;
+}
+
+function buildToolPath(
+  cardBottom: { x: number; y: number },
+  ball: { x: number; y: number },
+): string {
+  const midY = (cardBottom.y + ball.y) / 2;
+  return `M ${cardBottom.x} ${cardBottom.y} C ${cardBottom.x} ${midY}, ${ball.x} ${midY}, ${ball.x} ${ball.y - BALL_R}`;
+}
+
+const interAgentLinkSpecs: InterAgentLinkSpec[] = [
+  { id: 'score-engine--lead-scout',       fromId: 'score-engine',    toId: 'lead-scout',      fromSide: 'left',  toSide: 'right' },
+  { id: 'score-engine--outreach-writer',  fromId: 'score-engine',    toId: 'outreach-writer', fromSide: 'right', toSide: 'left'  },
+  { id: 'lead-scout--business-agent',     fromId: 'lead-scout',      toId: 'business-agent',  fromSide: 'right', toSide: 'left'  },
+  { id: 'outreach-writer--business-agent',fromId: 'outreach-writer', toId: 'business-agent',  fromSide: 'left',  toSide: 'right' },
 ];
+
+const interAgentLinks = interAgentLinkSpecs.map((spec) => ({
+  ...spec,
+  d: buildInterAgentPath(
+    cardBounds[spec.fromId],
+    spec.fromSide,
+    cardBounds[spec.toId],
+    spec.toSide,
+  ),
+}));
 
 function getLinkBetween(
   from: string,
@@ -393,102 +410,232 @@ function ArchitectureOverlay({
   );
 }
 
-function useMagneticCards(panelRef: React.RefObject<HTMLDivElement | null>) {
+function useMagneticNetwork(
+  panelRef: React.RefObject<HTMLDivElement | null>,
+  svgRef: React.RefObject<SVGSVGElement | null>,
+) {
   useEffect(() => {
     const panel = panelRef.current;
-    if (!panel) return;
-    const cards = Array.from(
-      panel.querySelectorAll<HTMLElement>('[data-agent-card]'),
-    );
-    if (cards.length === 0) return;
+    const svg = svgRef.current;
+    if (!panel || !svg) return;
 
-    type CardState = { x: number; y: number; tx: number; ty: number };
-    const states = new Map<HTMLElement, CardState>();
-    cards.forEach((c) => states.set(c, { x: 0, y: 0, tx: 0, ty: 0 }));
+    type Offset = { x: number; y: number; tx: number; ty: number };
+    const makeOffset = (): Offset => ({ x: 0, y: 0, tx: 0, ty: 0 });
 
-    let mouseX: number | null = null;
-    let mouseY: number | null = null;
+    const cardOffsets: Record<string, Offset> = {};
+    agents.forEach((a) => {
+      cardOffsets[a.id] = makeOffset();
+    });
+
+    const ballOffsets: Record<string, Offset> = {};
+    toolConnections.forEach((conn) => {
+      conn.balls.forEach((_b, i) => {
+        ballOffsets[`${conn.agentId}-${i}`] = makeOffset();
+      });
+    });
+
+    let mouseSvgX: number | null = null;
+    let mouseSvgY: number | null = null;
     let raf = 0;
 
-    const RADIUS = 240;
+    /** Attraction radius in svg units. */
+    const RADIUS = 220;
     const STRENGTH = 0.18;
-    const DAMPING = 0.16;
-    const SETTLE_EPSILON = 0.04;
+    const DAMPING = 0.18;
+    const SETTLE_EPSILON = 0.05;
 
-    const onMove = (e: MouseEvent) => {
+    const updateMouse = (e: MouseEvent) => {
       const rect = panel.getBoundingClientRect();
-      mouseX = e.clientX - rect.left;
-      mouseY = e.clientY - rect.top;
+      const scale = PANEL_W / rect.width;
+      mouseSvgX = (e.clientX - rect.left) * scale;
+      mouseSvgY = (e.clientY - rect.top) * scale;
       if (!raf) raf = requestAnimationFrame(tick);
     };
     const onLeave = () => {
-      mouseX = null;
-      mouseY = null;
+      mouseSvgX = null;
+      mouseSvgY = null;
+    };
+
+    const lerpToward = (state: Offset, naturalX: number, naturalY: number) => {
+      let targetX = 0;
+      let targetY = 0;
+      if (mouseSvgX !== null && mouseSvgY !== null) {
+        const dx = mouseSvgX - naturalX;
+        const dy = mouseSvgY - naturalY;
+        const dist = Math.hypot(dx, dy);
+        if (dist < RADIUS) {
+          const falloff = 1 - dist / RADIUS;
+          const eased = falloff * falloff;
+          targetX = dx * eased * STRENGTH;
+          targetY = dy * eased * STRENGTH;
+        }
+      }
+      state.tx = targetX;
+      state.ty = targetY;
+      state.x += (state.tx - state.x) * DAMPING;
+      state.y += (state.ty - state.y) * DAMPING;
+      return (
+        Math.abs(state.x) > SETTLE_EPSILON ||
+        Math.abs(state.y) > SETTLE_EPSILON
+      );
     };
 
     const tick = () => {
-      const panelRect = panel.getBoundingClientRect();
-      let stillSettling = mouseX !== null;
+      const rect = panel.getBoundingClientRect();
+      const svgScale = rect.width / PANEL_W;
+      let stillSettling = mouseSvgX !== null;
 
-      for (const card of cards) {
-        const state = states.get(card)!;
-        const cardRect = card.getBoundingClientRect();
-        const naturalCx =
-          cardRect.left + cardRect.width / 2 - panelRect.left - state.x;
-        const naturalCy =
-          cardRect.top + cardRect.height / 2 - panelRect.top - state.y;
+      for (const agent of agents) {
+        const state = cardOffsets[agent.id];
+        const base = cardBounds[agent.id];
+        if (lerpToward(state, base.cx, base.cy)) stillSettling = true;
+      }
 
-        let targetX = 0;
-        let targetY = 0;
-        if (mouseX !== null && mouseY !== null) {
-          const dx = mouseX - naturalCx;
-          const dy = mouseY - naturalCy;
-          const dist = Math.hypot(dx, dy);
-          if (dist < RADIUS) {
-            const falloff = 1 - dist / RADIUS;
-            const eased = falloff * falloff;
-            targetX = dx * eased * STRENGTH;
-            targetY = dy * eased * STRENGTH;
+      for (const conn of toolConnections) {
+        for (let i = 0; i < conn.balls.length; i++) {
+          const ball = conn.balls[i];
+          const state = ballOffsets[`${conn.agentId}-${i}`];
+          if (lerpToward(state, ball.x, ball.y)) stillSettling = true;
+        }
+      }
+
+      const offsetCardBounds: Record<string, CardBounds> = {};
+      for (const agent of agents) {
+        const o = cardOffsets[agent.id];
+        const b = cardBounds[agent.id];
+        offsetCardBounds[agent.id] = {
+          left: b.left + o.x,
+          top: b.top + o.y,
+          right: b.right + o.x,
+          bottom: b.bottom + o.y,
+          cx: b.cx + o.x,
+          cy: b.cy + o.y,
+        };
+      }
+
+      for (const agent of agents) {
+        const card = panel.querySelector<HTMLElement>(
+          `[data-agent-card="${agent.id}"]`,
+        );
+        if (!card) continue;
+        const o = cardOffsets[agent.id];
+        const dx = (o.x * svgScale).toFixed(2);
+        const dy = (o.y * svgScale).toFixed(2);
+        card.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+      }
+
+      for (const conn of toolConnections) {
+        const cb = offsetCardBounds[conn.agentId];
+        const cardBottom = { x: cb.cx, y: cb.bottom };
+
+        const anchor = svg.querySelector<SVGCircleElement>(
+          `[data-anchor][data-agent="${conn.agentId}"]`,
+        );
+        if (anchor) {
+          anchor.setAttribute('cx', cardBottom.x.toFixed(2));
+          anchor.setAttribute('cy', cardBottom.y.toFixed(2));
+        }
+
+        for (let i = 0; i < conn.balls.length; i++) {
+          const ballNatural = conn.balls[i];
+          const o = ballOffsets[`${conn.agentId}-${i}`];
+          const ballPos = { x: ballNatural.x + o.x, y: ballNatural.y + o.y };
+
+          const ballGroup = svg.querySelector(
+            `[data-ball][data-agent="${conn.agentId}"][data-ball-index="${i}"]`,
+          );
+          if (ballGroup) {
+            const ballCircle = ballGroup.querySelector('[data-ball-circle]');
+            const ballEllipse = ballGroup.querySelector('ellipse');
+            ballCircle?.setAttribute('cx', ballPos.x.toFixed(2));
+            ballCircle?.setAttribute('cy', ballPos.y.toFixed(2));
+            ballEllipse?.setAttribute('cx', ballPos.x.toFixed(2));
+            ballEllipse?.setAttribute('cy', (ballPos.y - 7).toFixed(2));
           }
+
+          const path = svg.querySelector(
+            `[data-connector][data-agent="${conn.agentId}"][data-ball-index="${i}"]`,
+          );
+          path?.setAttribute('d', buildToolPath(cardBottom, ballPos));
         }
+      }
 
-        state.tx = targetX;
-        state.ty = targetY;
-        state.x += (state.tx - state.x) * DAMPING;
-        state.y += (state.ty - state.y) * DAMPING;
-
-        if (
-          Math.abs(state.x) > SETTLE_EPSILON ||
-          Math.abs(state.y) > SETTLE_EPSILON
-        ) {
-          stillSettling = true;
-        }
-
-        card.style.transform = `translate3d(${state.x.toFixed(2)}px, ${state.y.toFixed(2)}px, 0)`;
+      for (const spec of interAgentLinkSpecs) {
+        const fromB = offsetCardBounds[spec.fromId];
+        const toB = offsetCardBounds[spec.toId];
+        const path = svg.querySelector(
+          `[data-from="${spec.fromId}"][data-to="${spec.toId}"]`,
+        );
+        path?.setAttribute(
+          'd',
+          buildInterAgentPath(fromB, spec.fromSide, toB, spec.toSide),
+        );
       }
 
       if (stillSettling) {
         raf = requestAnimationFrame(tick);
       } else {
         raf = 0;
-        for (const card of cards) {
-          card.style.transform = '';
-        }
       }
     };
 
-    panel.addEventListener('mousemove', onMove);
+    panel.addEventListener('mousemove', updateMouse);
     panel.addEventListener('mouseleave', onLeave);
 
     return () => {
-      panel.removeEventListener('mousemove', onMove);
+      panel.removeEventListener('mousemove', updateMouse);
       panel.removeEventListener('mouseleave', onLeave);
       if (raf) cancelAnimationFrame(raf);
-      for (const card of cards) {
-        card.style.transform = '';
+
+      for (const agent of agents) {
+        const card = panel.querySelector<HTMLElement>(
+          `[data-agent-card="${agent.id}"]`,
+        );
+        if (card) card.style.transform = '';
+      }
+
+      for (const conn of toolConnections) {
+        const cb = cardBounds[conn.agentId];
+        const cardBottom = { x: cb.cx, y: cb.bottom };
+        const anchor = svg.querySelector<SVGCircleElement>(
+          `[data-anchor][data-agent="${conn.agentId}"]`,
+        );
+        anchor?.setAttribute('cx', cardBottom.x.toFixed(2));
+        anchor?.setAttribute('cy', cardBottom.y.toFixed(2));
+
+        for (let i = 0; i < conn.balls.length; i++) {
+          const ball = conn.balls[i];
+          const ballGroup = svg.querySelector(
+            `[data-ball][data-agent="${conn.agentId}"][data-ball-index="${i}"]`,
+          );
+          if (ballGroup) {
+            const ballCircle = ballGroup.querySelector('[data-ball-circle]');
+            const ballEllipse = ballGroup.querySelector('ellipse');
+            ballCircle?.setAttribute('cx', ball.x.toFixed(2));
+            ballCircle?.setAttribute('cy', ball.y.toFixed(2));
+            ballEllipse?.setAttribute('cx', ball.x.toFixed(2));
+            ballEllipse?.setAttribute('cy', (ball.y - 7).toFixed(2));
+          }
+          const path = svg.querySelector(
+            `[data-connector][data-agent="${conn.agentId}"][data-ball-index="${i}"]`,
+          );
+          path?.setAttribute('d', buildToolPath(cardBottom, ball));
+        }
+      }
+
+      for (const spec of interAgentLinkSpecs) {
+        const fromB = cardBounds[spec.fromId];
+        const toB = cardBounds[spec.toId];
+        const path = svg.querySelector(
+          `[data-from="${spec.fromId}"][data-to="${spec.toId}"]`,
+        );
+        path?.setAttribute(
+          'd',
+          buildInterAgentPath(fromB, spec.fromSide, toB, spec.toSide),
+        );
       }
     };
-  }, [panelRef]);
+  }, [panelRef, svgRef]);
 }
 
 function useArchitectureChoreography(
@@ -537,7 +684,6 @@ function useArchitectureChoreography(
     ) => {
       const path = svg.querySelector<SVGPathElement>(pathSelector);
       if (!path) return;
-      const pathLength = path.getTotalLength();
       const layer = svg.querySelector<SVGGElement>('[data-pulse-layer]');
       if (!layer) return;
 
@@ -560,6 +706,7 @@ function useArchitectureChoreography(
         const elapsed = now - start;
         const t = Math.min(1, elapsed / duration);
         const eased = easeInOutCubic(t);
+        const pathLength = path.getTotalLength();
         const len = (direction === 'forward' ? eased : 1 - eased) * pathLength;
         const p = path.getPointAtLength(len);
         dot.setAttribute('cx', String(p.x));
@@ -680,7 +827,7 @@ export function AgentArchitectureSection() {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
   useArchitectureChoreography(panelRef, svgRef);
-  useMagneticCards(panelRef);
+  useMagneticNetwork(panelRef, svgRef);
 
   return (
     <section className="bg-white font-[family-name:var(--font-nunito)] text-[#0A2540]">
