@@ -19,8 +19,8 @@ type Curve = {
   cp2: Vec2;
   cp1Vel: Vec2;
   cp2Vel: Vec2;
-  pulsePhase: number;
-  pulseSpeed: number;
+  opacityPhase: number;
+  opacitySpeed: number;
 };
 
 function rand(seed: number): number {
@@ -28,32 +28,13 @@ function rand(seed: number): number {
   return x - Math.floor(x);
 }
 
-function bezierPoint(c: Curve, t: number, out: Vec2): void {
-  const omt = 1 - t;
-  const omt2 = omt * omt;
-  const omt3 = omt2 * omt;
-  const t2 = t * t;
-  const t3 = t2 * t;
-  out.x =
-    omt3 * c.start.x +
-    3 * omt2 * t * c.cp1.x +
-    3 * omt * t2 * c.cp2.x +
-    t3 * c.end.x;
-  out.y =
-    omt3 * c.start.y +
-    3 * omt2 * t * c.cp1.y +
-    3 * omt * t2 * c.cp2.y +
-    t3 * c.end.y;
-}
-
-const STROKE_COLOR = 'rgba(79, 70, 229, 0.22)';
+const STROKE_BASE_ALPHA = 0.24;
+const STROKE_AMP_ALPHA = 0.18;
 const DOT_COLOR = 'rgba(79, 70, 229, 0.55)';
-const PULSE_CORE = 'rgba(79, 70, 229, ';
-const PULSE_HALO = 'rgba(124, 58, 237, ';
 
 export default function NetworkCanvas({
   className,
-  curveCount = 50,
+  curveCount = 56,
 }: NetworkCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -96,8 +77,13 @@ export default function NetworkCanvas({
       const rightX = width * 0.94;
       const topY = height * 0.06;
       const bottomY = height * 0.94;
-      const cx = width * 0.5;
       const cy = height * 0.5;
+
+      // Control points sit roughly 18% of width inside from each edge.
+      // That places them entirely outside the centre region, so the cursor
+      // can only deflect a curve when it's near the left or right column.
+      const cp1X = leftX + width * 0.18;
+      const cp2X = rightX - width * 0.18;
 
       leftDots = [];
       rightDots = [];
@@ -111,15 +97,15 @@ export default function NetworkCanvas({
         leftDots.push(left);
         rightDots.push(right);
 
-        const jitter = (rand(i + 11) - 0.5) * 4;
-        const cp1Rest: Vec2 = {
-          x: leftX + (cx - leftX) * 0.92,
-          y: cy + (y - cy) * 0.06 + jitter,
-        };
-        const cp2Rest: Vec2 = {
-          x: rightX - (rightX - cx) * 0.92,
-          y: cy + (y - cy) * 0.06 + jitter,
-        };
+        // Tiny vertical jitter on the cps so the throat reads organic
+        // without spreading vertically.
+        const jitter1 = (rand(i + 11) - 0.5) * 5;
+        const jitter2 = (rand(i + 31) - 0.5) * 5;
+
+        // The throat collapses to a point: cp y stays at the canvas
+        // centre regardless of where the curve enters/exits.
+        const cp1Rest: Vec2 = { x: cp1X, y: cy + jitter1 };
+        const cp2Rest: Vec2 = { x: cp2X, y: cy + jitter2 };
 
         curves.push({
           start: left,
@@ -130,8 +116,8 @@ export default function NetworkCanvas({
           cp2: { ...cp2Rest },
           cp1Vel: { x: 0, y: 0 },
           cp2Vel: { x: 0, y: 0 },
-          pulsePhase: rand(i + 1),
-          pulseSpeed: 1 / (2.4 + rand(i + 200) * 1.6),
+          opacityPhase: rand(i + 7) * Math.PI * 2,
+          opacitySpeed: 0.35 + rand(i + 71) * 0.55,
         });
       }
     };
@@ -156,13 +142,11 @@ export default function NetworkCanvas({
       parent.addEventListener('mouseleave', onLeave);
     }
 
-    const out: Vec2 = { x: 0, y: 0 };
     let raf = 0;
-    let last = performance.now();
+    const startTime = performance.now();
 
     const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
+      const time = (now - startTime) / 1000;
 
       for (const c of curves) {
         for (const which of ['cp1', 'cp2'] as const) {
@@ -191,17 +175,19 @@ export default function NetworkCanvas({
           cp.x += cpVel.x;
           cp.y += cpVel.y;
         }
-
-        c.pulsePhase += c.pulseSpeed * dt;
-        if (c.pulsePhase > 1) c.pulsePhase -= 1;
       }
 
       ctx.clearRect(0, 0, width, height);
 
       ctx.lineCap = 'round';
       ctx.lineWidth = 1;
-      ctx.strokeStyle = STROKE_COLOR;
       for (const c of curves) {
+        const wave = Math.sin(time * c.opacitySpeed + c.opacityPhase);
+        const alpha = Math.max(
+          0.03,
+          STROKE_BASE_ALPHA + wave * STROKE_AMP_ALPHA,
+        );
+        ctx.strokeStyle = `rgba(79, 70, 229, ${alpha.toFixed(3)})`;
         ctx.beginPath();
         ctx.moveTo(c.start.x, c.start.y);
         ctx.bezierCurveTo(c.cp1.x, c.cp1.y, c.cp2.x, c.cp2.y, c.end.x, c.end.y);
@@ -217,30 +203,6 @@ export default function NetworkCanvas({
       for (const dot of rightDots) {
         ctx.beginPath();
         ctx.arc(dot.x, dot.y, 2.4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      for (const c of curves) {
-        const t = c.pulsePhase;
-        let opacity = 1;
-        if (t < 0.12) opacity = t / 0.12;
-        else if (t > 0.88) opacity = (1 - t) / 0.12;
-        if (opacity <= 0) continue;
-
-        bezierPoint(c, t, out);
-
-        const grad = ctx.createRadialGradient(out.x, out.y, 0, out.x, out.y, 14);
-        grad.addColorStop(0, `${PULSE_HALO}${0.55 * opacity})`);
-        grad.addColorStop(0.45, `${PULSE_HALO}${0.18 * opacity})`);
-        grad.addColorStop(1, `${PULSE_HALO}0)`);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(out.x, out.y, 14, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = `${PULSE_CORE}${0.95 * opacity})`;
-        ctx.beginPath();
-        ctx.arc(out.x, out.y, 1.8, 0, Math.PI * 2);
         ctx.fill();
       }
 
