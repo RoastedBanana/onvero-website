@@ -22,18 +22,23 @@ type DriftParams = {
 type Curve = {
   start: Vec2;
   end: Vec2;
-  cp1Rest: Vec2;
-  cp2Rest: Vec2;
-  cp1: Vec2;
-  cp2: Vec2;
-  cp1Vel: Vec2;
-  cp2Vel: Vec2;
+  throat: Vec2;
+  /** Left-half cubic: start → cpL1 → cpL2 → throat. */
+  cpL1Rest: Vec2;
+  cpL1: Vec2;
+  cpL1Vel: Vec2;
+  cpL2: Vec2;
+  /** Right-half cubic: throat → cpR1 → cpR2 → end. */
+  cpR1: Vec2;
+  cpR2Rest: Vec2;
+  cpR2: Vec2;
+  cpR2Vel: Vec2;
   opacityPhase: number;
   opacitySpeed: number;
   /** 0..1 — alpha multiplier on the right half of the stroke. */
   rightAlpha: number;
-  drift1: DriftParams;
-  drift2: DriftParams;
+  driftL: DriftParams;
+  driftR: DriftParams;
 };
 
 function rand(seed: number): number {
@@ -43,10 +48,10 @@ function rand(seed: number): number {
 
 function makeDrift(seed: number): DriftParams {
   return {
-    ampX: 0.7 + rand(seed) * 1.6,
+    ampX: 0.6 + rand(seed) * 1.4,
     freqX: 0.25 + rand(seed + 1) * 0.45,
     phaseX: rand(seed + 2) * Math.PI * 2,
-    ampY: 0.7 + rand(seed + 3) * 1.6,
+    ampY: 0.6 + rand(seed + 3) * 1.4,
     freqY: 0.25 + rand(seed + 4) * 0.45,
     phaseY: rand(seed + 5) * Math.PI * 2,
   };
@@ -54,7 +59,7 @@ function makeDrift(seed: number): DriftParams {
 
 const STROKE_BASE_ALPHA = 0.28;
 const STROKE_AMP_ALPHA = 0.18;
-const THROAT_ALPHA_FACTOR = 0.16;
+const THROAT_ALPHA_FACTOR = 0.4;
 const DOT_BASE_ALPHA = 0.55;
 
 export default function NetworkCanvas({
@@ -102,17 +107,19 @@ export default function NetworkCanvas({
       const rightX = width * 0.93;
       const topY = height * 0.06;
       const bottomY = height * 0.94;
+      const cx = width * 0.5;
       const cy = height * 0.5;
 
-      // Control points anchored close to the endpoint columns. The cps
-      // sit ~8% of width inside from each edge so the cursor can only
-      // reach them when it's near the left or right column — never
-      // from the centre throat.
-      const cp1X = leftX + width * 0.08;
-      const cp2X = rightX - width * 0.08;
+      // Endpoint-side cps (mouse-interactive) sit ~8% inside each edge.
+      // Throat-side cps sit ~8% before/after the centre — close enough
+      // that the joint reads as a single point, far enough that the bow
+      // approaching the throat stays a smooth convex arc instead of
+      // kinking.
+      const cpL1X = leftX + width * 0.08;
+      const cpL2X = cx - width * 0.08;
+      const cpR1X = cx + width * 0.08;
+      const cpR2X = rightX - width * 0.08;
 
-      // Endpoints first — left and right columns get random x/y jitter
-      // so they don't read as ruler-straight verticals.
       leftDots = [];
       rightDots = [];
       for (let i = 0; i < curveCount; i++) {
@@ -127,10 +134,9 @@ export default function NetworkCanvas({
       }
 
       // Cross-mapping: each left endpoint connects to a right endpoint
-      // that is shifted by ±~15% of count. The right half of every
-      // curve emerges at a different y than where its left half started,
-      // so deforming a left strand causes the matched strand on the
-      // right to deflect somewhere else along the column.
+      // shifted by ±~18 % of count, so the right half emerges at a
+      // different y than the left started — "auf der Rückseite eine
+      // andere Linie".
       const swing = Math.max(2, Math.floor(curveCount * 0.18));
       const mapping = new Array<number>(curveCount);
       for (let i = 0; i < curveCount; i++) {
@@ -142,17 +148,18 @@ export default function NetworkCanvas({
       for (let i = 0; i < curveCount; i++) {
         const start = leftDots[i];
         const end = rightDots[mapping[i]];
+        const throat: Vec2 = { x: cx, y: cy };
 
-        // Convex bow: both control points sit at the canvas centre so
-        // each curve smoothly arcs toward cy in the middle without the
-        // hard concave pinch that the knot formula produced. Curves
-        // near cy stay almost straight; curves further out bow more.
-        const cp1Rest: Vec2 = { x: cp1X, y: cy };
-        const cp2Rest: Vec2 = { x: cp2X, y: cy };
+        // cpL1 sits at the start's y → curve leaves the left endpoint
+        // tangent-horizontal. cpL2 sits at cy → curve arrives at the
+        // throat tangent-horizontal. Same logic mirrored on the right.
+        const cpL1Rest: Vec2 = { x: cpL1X, y: start.y };
+        const cpL2: Vec2 = { x: cpL2X, y: cy };
+        const cpR1: Vec2 = { x: cpR1X, y: cy };
+        const cpR2Rest: Vec2 = { x: cpR2X, y: end.y };
 
-        // Distribution of how visible each curve is on the right side.
-        // 35% full, 35% partial, 30% near-invisible — the right column
-        // emerges visibly thinner than the left column.
+        // 35 % full / 35 % partial / 30 % near-invisible — the right
+        // column emerges visibly thinner than the left column.
         const r = rand(i + 333);
         let rightAlpha: number;
         if (r < 0.35) rightAlpha = 1.0;
@@ -162,17 +169,20 @@ export default function NetworkCanvas({
         curves.push({
           start,
           end,
-          cp1Rest: { ...cp1Rest },
-          cp2Rest: { ...cp2Rest },
-          cp1: { ...cp1Rest },
-          cp2: { ...cp2Rest },
-          cp1Vel: { x: 0, y: 0 },
-          cp2Vel: { x: 0, y: 0 },
+          throat,
+          cpL1Rest: { ...cpL1Rest },
+          cpL1: { ...cpL1Rest },
+          cpL1Vel: { x: 0, y: 0 },
+          cpL2,
+          cpR1,
+          cpR2Rest: { ...cpR2Rest },
+          cpR2: { ...cpR2Rest },
+          cpR2Vel: { x: 0, y: 0 },
           opacityPhase: rand(i + 7) * Math.PI * 2,
           opacitySpeed: 0.32 + rand(i + 71) * 0.55,
           rightAlpha,
-          drift1: makeDrift(i * 17 + 800),
-          drift2: makeDrift(i * 17 + 900),
+          driftL: makeDrift(i * 17 + 800),
+          driftR: makeDrift(i * 17 + 900),
         });
       }
     };
@@ -200,63 +210,41 @@ export default function NetworkCanvas({
     let raf = 0;
     const startTime = performance.now();
 
+    const updateCp = (
+      cp: Vec2,
+      cpVel: Vec2,
+      cpRest: Vec2,
+      drift: DriftParams,
+      time: number,
+    ) => {
+      let restX = cpRest.x + Math.sin(time * drift.freqX + drift.phaseX) * drift.ampX;
+      let restY = cpRest.y + Math.cos(time * drift.freqY + drift.phaseY) * drift.ampY;
+
+      if (mouseX !== null && mouseY !== null) {
+        const ddx = cp.x - mouseX;
+        const ddy = cp.y - mouseY;
+        const dist = Math.hypot(ddx, ddy);
+        if (dist < MOUSE_RADIUS && dist > 0.001) {
+          const force = (1 - dist / MOUSE_RADIUS) * MOUSE_FORCE;
+          restX += (ddx / dist) * force;
+          restY += (ddy / dist) * force;
+        }
+      }
+
+      cpVel.x += (restX - cp.x) * SPRING_K;
+      cpVel.y += (restY - cp.y) * SPRING_K;
+      cpVel.x *= SPRING_DAMPING;
+      cpVel.y *= SPRING_DAMPING;
+      cp.x += cpVel.x;
+      cp.y += cpVel.y;
+    };
+
     const tick = (now: number) => {
       const time = (now - startTime) / 1000;
 
       for (const c of curves) {
-        // cp1
-        {
-          const cp = c.cp1;
-          const cpVel = c.cp1Vel;
-          const d = c.drift1;
-          let restX = c.cp1Rest.x + Math.sin(time * d.freqX + d.phaseX) * d.ampX;
-          let restY = c.cp1Rest.y + Math.cos(time * d.freqY + d.phaseY) * d.ampY;
-
-          if (mouseX !== null && mouseY !== null) {
-            const ddx = cp.x - mouseX;
-            const ddy = cp.y - mouseY;
-            const dist = Math.hypot(ddx, ddy);
-            if (dist < MOUSE_RADIUS && dist > 0.001) {
-              const force = (1 - dist / MOUSE_RADIUS) * MOUSE_FORCE;
-              restX += (ddx / dist) * force;
-              restY += (ddy / dist) * force;
-            }
-          }
-
-          cpVel.x += (restX - cp.x) * SPRING_K;
-          cpVel.y += (restY - cp.y) * SPRING_K;
-          cpVel.x *= SPRING_DAMPING;
-          cpVel.y *= SPRING_DAMPING;
-          cp.x += cpVel.x;
-          cp.y += cpVel.y;
-        }
-
-        // cp2
-        {
-          const cp = c.cp2;
-          const cpVel = c.cp2Vel;
-          const d = c.drift2;
-          let restX = c.cp2Rest.x + Math.sin(time * d.freqX + d.phaseX) * d.ampX;
-          let restY = c.cp2Rest.y + Math.cos(time * d.freqY + d.phaseY) * d.ampY;
-
-          if (mouseX !== null && mouseY !== null) {
-            const ddx = cp.x - mouseX;
-            const ddy = cp.y - mouseY;
-            const dist = Math.hypot(ddx, ddy);
-            if (dist < MOUSE_RADIUS && dist > 0.001) {
-              const force = (1 - dist / MOUSE_RADIUS) * MOUSE_FORCE;
-              restX += (ddx / dist) * force;
-              restY += (ddy / dist) * force;
-            }
-          }
-
-          cpVel.x += (restX - cp.x) * SPRING_K;
-          cpVel.y += (restY - cp.y) * SPRING_K;
-          cpVel.x *= SPRING_DAMPING;
-          cpVel.y *= SPRING_DAMPING;
-          cp.x += cpVel.x;
-          cp.y += cpVel.y;
-        }
+        updateCp(c.cpL1, c.cpL1Vel, c.cpL1Rest, c.driftL, time);
+        updateCp(c.cpR2, c.cpR2Vel, c.cpR2Rest, c.driftR, time);
       }
 
       ctx.clearRect(0, 0, width, height);
@@ -281,7 +269,22 @@ export default function NetworkCanvas({
 
         ctx.beginPath();
         ctx.moveTo(c.start.x, c.start.y);
-        ctx.bezierCurveTo(c.cp1.x, c.cp1.y, c.cp2.x, c.cp2.y, c.end.x, c.end.y);
+        ctx.bezierCurveTo(
+          c.cpL1.x,
+          c.cpL1.y,
+          c.cpL2.x,
+          c.cpL2.y,
+          c.throat.x,
+          c.throat.y,
+        );
+        ctx.bezierCurveTo(
+          c.cpR1.x,
+          c.cpR1.y,
+          c.cpR2.x,
+          c.cpR2.y,
+          c.end.x,
+          c.end.y,
+        );
         ctx.stroke();
       }
 
