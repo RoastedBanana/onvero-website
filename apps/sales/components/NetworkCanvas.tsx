@@ -21,6 +21,9 @@ type Curve = {
   cp2Vel: Vec2;
   opacityPhase: number;
   opacitySpeed: number;
+  /** 0..1 — multiplier for the right half of the stroke. <1 makes the
+   *  curve fade out after passing through the throat. */
+  rightAlpha: number;
 };
 
 function rand(seed: number): number {
@@ -28,9 +31,9 @@ function rand(seed: number): number {
   return x - Math.floor(x);
 }
 
-const STROKE_BASE_ALPHA = 0.24;
+const STROKE_BASE_ALPHA = 0.26;
 const STROKE_AMP_ALPHA = 0.18;
-const DOT_COLOR = 'rgba(79, 70, 229, 0.55)';
+const DOT_BASE_ALPHA = 0.55;
 
 export default function NetworkCanvas({
   className,
@@ -73,17 +76,18 @@ export default function NetworkCanvas({
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const leftX = width * 0.06;
-      const rightX = width * 0.94;
+      const leftX = width * 0.07;
+      const rightX = width * 0.93;
       const topY = height * 0.06;
       const bottomY = height * 0.94;
       const cy = height * 0.5;
 
-      // Control points sit roughly 18% of width inside from each edge.
-      // That places them entirely outside the centre region, so the cursor
-      // can only deflect a curve when it's near the left or right column.
-      const cp1X = leftX + width * 0.18;
-      const cp2X = rightX - width * 0.18;
+      // Control points anchored close to the endpoint columns. The cps
+      // sit ~8% of width inside from each edge so the cursor can only
+      // reach them when it's near the left or right column — never from
+      // the centre throat.
+      const cp1X = leftX + width * 0.08;
+      const cp2X = rightX - width * 0.08;
 
       leftDots = [];
       rightDots = [];
@@ -92,20 +96,33 @@ export default function NetworkCanvas({
       for (let i = 0; i < curveCount; i++) {
         const t = curveCount > 1 ? i / (curveCount - 1) : 0.5;
         const y = topY + t * (bottomY - topY);
-        const left: Vec2 = { x: leftX, y };
-        const right: Vec2 = { x: rightX, y };
+
+        // Slightly random horizontal x on the endpoint dots so the
+        // columns don't read as ruler-straight verticals.
+        const jitterLeftX = (rand(i + 100) - 0.5) * 22;
+        const jitterRightX = (rand(i + 200) - 0.5) * 22;
+        const jitterLeftY = (rand(i + 300) - 0.5) * 6;
+        const jitterRightY = (rand(i + 400) - 0.5) * 6;
+        const left: Vec2 = { x: leftX + jitterLeftX, y: y + jitterLeftY };
+        const right: Vec2 = { x: rightX + jitterRightX, y: y + jitterRightY };
         leftDots.push(left);
         rightDots.push(right);
 
-        // Tiny vertical jitter on the cps so the throat reads organic
-        // without spreading vertically.
-        const jitter1 = (rand(i + 11) - 0.5) * 5;
-        const jitter2 = (rand(i + 31) - 0.5) * 5;
+        // Knot maths: pulling the cp y by exactly (cy - y) / 3 forces
+        // every cubic bezier to pass through (cx, cy) at t = 0.5,
+        // collapsing the entire bundle into a single point in the centre.
+        const cpY = cy + (cy - y) / 3;
+        const cp1Rest: Vec2 = { x: cp1X, y: cpY };
+        const cp2Rest: Vec2 = { x: cp2X, y: cpY };
 
-        // The throat collapses to a point: cp y stays at the canvas
-        // centre regardless of where the curve enters/exits.
-        const cp1Rest: Vec2 = { x: cp1X, y: cy + jitter1 };
-        const cp2Rest: Vec2 = { x: cp2X, y: cy + jitter2 };
+        // Distribution: most curves stay full; ~25% fade in the right
+        // half; ~10% nearly vanish past the throat. Net effect: fewer
+        // visible strands on the right than on the left.
+        const r = rand(i + 333);
+        let rightAlpha: number;
+        if (r < 0.62) rightAlpha = 1.0;
+        else if (r < 0.88) rightAlpha = 0.32 + rand(i + 444) * 0.32;
+        else rightAlpha = 0.04 + rand(i + 555) * 0.14;
 
         curves.push({
           start: left,
@@ -118,6 +135,7 @@ export default function NetworkCanvas({
           cp2Vel: { x: 0, y: 0 },
           opacityPhase: rand(i + 7) * Math.PI * 2,
           opacitySpeed: 0.35 + rand(i + 71) * 0.55,
+          rightAlpha,
         });
       }
     };
@@ -187,22 +205,32 @@ export default function NetworkCanvas({
           0.03,
           STROKE_BASE_ALPHA + wave * STROKE_AMP_ALPHA,
         );
-        ctx.strokeStyle = `rgba(79, 70, 229, ${alpha.toFixed(3)})`;
+        const aLeft = alpha.toFixed(3);
+        const aRight = (alpha * c.rightAlpha).toFixed(3);
+
+        const grad = ctx.createLinearGradient(c.start.x, 0, c.end.x, 0);
+        grad.addColorStop(0, `rgba(79, 70, 229, ${aLeft})`);
+        grad.addColorStop(0.5, `rgba(79, 70, 229, ${aLeft})`);
+        grad.addColorStop(1, `rgba(79, 70, 229, ${aRight})`);
+        ctx.strokeStyle = grad;
+
         ctx.beginPath();
         ctx.moveTo(c.start.x, c.start.y);
         ctx.bezierCurveTo(c.cp1.x, c.cp1.y, c.cp2.x, c.cp2.y, c.end.x, c.end.y);
         ctx.stroke();
       }
 
-      ctx.fillStyle = DOT_COLOR;
-      for (const dot of leftDots) {
+      for (let i = 0; i < curves.length; i++) {
+        const c = curves[i];
+        ctx.fillStyle = `rgba(79, 70, 229, ${DOT_BASE_ALPHA})`;
         ctx.beginPath();
-        ctx.arc(dot.x, dot.y, 2.4, 0, Math.PI * 2);
+        ctx.arc(leftDots[i].x, leftDots[i].y, 2.4, 0, Math.PI * 2);
         ctx.fill();
-      }
-      for (const dot of rightDots) {
+
+        const rightDotAlpha = (DOT_BASE_ALPHA * c.rightAlpha).toFixed(3);
+        ctx.fillStyle = `rgba(79, 70, 229, ${rightDotAlpha})`;
         ctx.beginPath();
-        ctx.arc(dot.x, dot.y, 2.4, 0, Math.PI * 2);
+        ctx.arc(rightDots[i].x, rightDots[i].y, 2.4, 0, Math.PI * 2);
         ctx.fill();
       }
 
