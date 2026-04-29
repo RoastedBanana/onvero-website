@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { OnveroGradient } from './OnveroGradient';
 
 const PANEL_W = 1115;
@@ -142,6 +143,113 @@ function getLinkBetween(
 
 const CW_ORDER = ['lead-scout', 'business-agent', 'outreach-writer', 'score-engine'] as const;
 const CCW_ORDER = ['lead-scout', 'score-engine', 'outreach-writer', 'business-agent'] as const;
+
+type ChatMessage = { from: 'user' | 'agent'; text: string };
+
+const agentChats: Record<
+  string,
+  { statusLabel: string; messages: ChatMessage[] }
+> = {
+  'lead-scout': {
+    statusLabel: 'sucht aktiv',
+    messages: [
+      { from: 'user', text: 'Finde 50 SaaS-Gründer in Berlin, 10–50 Mitarbeiter.' },
+      { from: 'agent', text: '47 Profile aus Apollo + LinkedIn. Reichere gerade Firmographics an.' },
+    ],
+  },
+  'score-engine': {
+    statusLabel: 'qualifiziert',
+    messages: [
+      { from: 'user', text: 'Welche Leads passen am besten zu unserem ICP?' },
+      { from: 'agent', text: '23 Leads scoren über 80/100. Top-Match: B2B-Fintechs in Series A/B.' },
+    ],
+  },
+  'outreach-writer': {
+    statusLabel: 'schreibt Draft',
+    messages: [
+      { from: 'user', text: 'Erstansprache an Sarah, CTO bei Klima AI.' },
+      { from: 'agent', text: 'Draft fertig. Hook: ihre Series-A-Ankündigung. Ton: technisch, kurz.' },
+    ],
+  },
+  'business-agent': {
+    statusLabel: 'orchestriert',
+    messages: [
+      { from: 'user', text: 'Starte einen Outbound-Workflow für AI/SaaS.' },
+      { from: 'agent', text: 'Routing aktiv: Scout → Engine → Writer. ETA: 8 Min.' },
+    ],
+  },
+};
+
+const chatPlacement: Record<string, string> = {
+  'lead-scout':      'left-full top-1/2 -translate-y-1/2 ml-3',
+  'score-engine':    'top-full left-1/2 -translate-x-1/2 mt-3',
+  'outreach-writer': 'right-full top-1/2 -translate-y-1/2 mr-3',
+  'business-agent':  'bottom-full left-1/2 -translate-x-1/2 mb-3',
+};
+
+function AgentChat({ agent, visible }: { agent: Agent; visible: boolean }) {
+  const chat = agentChats[agent.id];
+  const placement = chatPlacement[agent.id];
+  if (!chat) return null;
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 8, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 4, scale: 0.97 }}
+          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+          className={`pointer-events-none absolute z-50 w-[280px] ${placement}`}
+        >
+          <div className="rounded-2xl bg-white p-3 shadow-[0_18px_48px_-12px_rgba(13,13,43,0.45)] ring-1 ring-black/5">
+            <div className="flex items-center gap-2 border-b border-black/5 pb-2">
+              <img
+                src={agent.imageSrc}
+                alt=""
+                className="size-8 shrink-0 rounded-full bg-[#e3e9f7] object-cover ring-1 ring-black/5"
+                draggable={false}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[12px] font-bold leading-tight text-[#0A2540]">
+                  {agent.title}
+                </p>
+                <p className="mt-0.5 flex items-center gap-1 text-[10px] leading-tight text-[#697386]">
+                  <span className="relative flex size-1.5 items-center justify-center">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#40BFB1] opacity-60" />
+                    <span className="relative size-1.5 rounded-full bg-[#40BFB1]" />
+                  </span>
+                  {chat.statusLabel}
+                </p>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-col gap-1.5">
+              {chat.messages.map((m, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: 0.1 + i * 0.13,
+                    duration: 0.28,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className={`max-w-[88%] rounded-xl px-2.5 py-1.5 text-[11.5px] leading-snug ${
+                    m.from === 'user'
+                      ? 'self-end rounded-br-sm bg-[#4F46E5] text-white'
+                      : 'self-start rounded-bl-sm bg-[#F1F2F6] text-[#0A2540]'
+                  }`}
+                >
+                  {m.text}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 function AgentCard({ agent }: { agent: Agent }) {
   return (
@@ -570,6 +678,7 @@ function useArchitectureChoreography(
 export function AgentArchitectureSection() {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
   useArchitectureChoreography(panelRef, svgRef);
   useMagneticCards(panelRef);
 
@@ -608,10 +717,18 @@ export function AgentArchitectureSection() {
                   top: `${agent.top}%`,
                   width: `${CARD_W_PCT}%`,
                   height: `${(CARD_H / PANEL_H) * 100}%`,
+                  zIndex: hoveredAgent === agent.id ? 40 : 10,
                 }}
                 data-agent-card={agent.id}
+                onMouseEnter={() => setHoveredAgent(agent.id)}
+                onMouseLeave={() =>
+                  setHoveredAgent((current) =>
+                    current === agent.id ? null : current,
+                  )
+                }
               >
                 <AgentCard agent={agent} />
+                <AgentChat agent={agent} visible={hoveredAgent === agent.id} />
               </div>
             ))}
 
