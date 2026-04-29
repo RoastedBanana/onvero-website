@@ -7,7 +7,7 @@ const trustedBy = ['n8n', 'Figma', 'Anthropic', 'OpenAI', 'Cursor', 'Supabase'];
 
 export function HeroSection() {
   return (
-    <main className="bg-white font-[family-name:var(--font-nunito)] text-[#0A2540]">
+    <div className="bg-white font-[family-name:var(--font-nunito)] text-[#0A2540]">
       <Navbar />
       <section className="overflow-hidden">
         <div className="pt-28 pb-20 md:pt-36 md:pb-32">
@@ -71,6 +71,6 @@ export function HeroSection() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
