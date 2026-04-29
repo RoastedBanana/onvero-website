@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { HeroSection } from '@/components/HeroSection';
 
 export default function Page() {
-  redirect('/dashboard');
+  return <HeroSection />;
 }

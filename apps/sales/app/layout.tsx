@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono, DM_Sans, DM_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, DM_Sans, DM_Mono, Nunito } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@onvero/ui/app-shell/providers';
 import { CookieConsent } from '@onvero/ui/app-shell/CookieConsent';
@@ -27,6 +27,13 @@ const dmMono = DM_Mono({
   weight: ['400', '500'],
 });
 
+const nunito = Nunito({
+  variable: '--font-nunito',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: 'Onvero — KI-Infrastruktur für dein Unternehmen',
   description:
@@ -41,7 +48,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${dmSans.variable} ${dmMono.variable} ${nunito.variable} h-full antialiased`}
       style={{ backgroundColor: '#0f0f0f' }}
     >
       <head />
