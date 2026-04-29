@@ -241,7 +241,7 @@ export default function NetworkCanvas({
       }
     };
 
-    const stepDot = (dot: DotState, time: number) => {
+    const stepDot = (dot: DotState, time: number, linkedY: number) => {
       const restX = {
         v:
           dot.base.x +
@@ -250,7 +250,8 @@ export default function NetworkCanvas({
       const restY = {
         v:
           dot.base.y +
-          Math.cos(time * dot.drift.freqY + dot.drift.phaseY) * dot.drift.ampY,
+          Math.cos(time * dot.drift.freqY + dot.drift.phaseY) * dot.drift.ampY +
+          linkedY,
       };
       applyMouse(dot.pos, restX, restY);
       dot.vel.x += (restX.v - dot.pos.x) * SPRING_K;
@@ -260,6 +261,10 @@ export default function NetworkCanvas({
       dot.pos.x += dot.vel.x;
       dot.pos.y += dot.vel.y;
     };
+
+    /** How strongly one side's deflection pulls the matched dot on the
+     *  opposite side toward the same offset. 0 = independent, 1 = rigid. */
+    const LINK_FACTOR = 0.5;
 
     const stepCp = (
       cp: Vec2,
@@ -287,8 +292,38 @@ export default function NetworkCanvas({
     const tick = (now: number) => {
       const time = (now - startTime) / 1000;
 
-      for (const dot of leftDots) stepDot(dot, time);
-      for (const dot of rightDots) stepDot(dot, time);
+      // Capture the previous-frame deflection of each dot from its base.
+      // Every curve C uses one left dot and one right dot — propagate a
+      // fraction of one side's deflection to the other side's rest, so
+      // pulling a strand on the left visibly drags its mate on the
+      // right and vice versa. Cross-mapping collisions are averaged.
+      const leftLinkY = new Array<number>(leftDots.length).fill(0);
+      const rightLinkY = new Array<number>(rightDots.length).fill(0);
+      const leftLinkCount = new Array<number>(leftDots.length).fill(0);
+      const rightLinkCount = new Array<number>(rightDots.length).fill(0);
+      for (const c of curves) {
+        leftLinkY[c.startIdx] += rightDots[c.endIdx].pos.y - rightDots[c.endIdx].base.y;
+        leftLinkCount[c.startIdx]++;
+        rightLinkY[c.endIdx] += leftDots[c.startIdx].pos.y - leftDots[c.startIdx].base.y;
+        rightLinkCount[c.endIdx]++;
+      }
+      for (let i = 0; i < leftLinkY.length; i++) {
+        leftLinkY[i] = leftLinkCount[i] > 0
+          ? (leftLinkY[i] / leftLinkCount[i]) * LINK_FACTOR
+          : 0;
+      }
+      for (let i = 0; i < rightLinkY.length; i++) {
+        rightLinkY[i] = rightLinkCount[i] > 0
+          ? (rightLinkY[i] / rightLinkCount[i]) * LINK_FACTOR
+          : 0;
+      }
+
+      for (let i = 0; i < leftDots.length; i++) {
+        stepDot(leftDots[i], time, leftLinkY[i]);
+      }
+      for (let i = 0; i < rightDots.length; i++) {
+        stepDot(rightDots[i], time, rightLinkY[i]);
+      }
 
       for (const c of curves) {
         const startDot = leftDots[c.startIdx];
