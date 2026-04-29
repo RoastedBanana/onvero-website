@@ -15,10 +15,12 @@ const BALL_CLUSTER_W = 208.5;
 const BALL_CLUSTER_OFFSETS = [28, 104.5, 181] as const;
 const BALL_CLUSTER_TOP_OFFSET = 60;
 
-const PULSE_DURATION = 1100;
-const TOOL_PULSE_DURATION = 750;
-const BREATHING_DURATION = 3000;
-const TOOL_GLOW_DURATION = 1800;
+const PULSE_DURATION = 950;
+const TOOL_PULSE_DURATION = 650;
+const BREATHING_DURATION = 2200;
+const TOOL_GLOW_DURATION = 1400;
+/** Fire the next-agent pulse after this fraction of breathing has elapsed. */
+const PULSE_LEAD = 0.6;
 
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -421,13 +423,15 @@ function useArchitectureChoreography(
         fireAgentTools(order[0]);
       }, elapsed);
 
+      const stepInterval = BREATHING_DURATION * PULSE_LEAD + PULSE_DURATION;
+
       for (let i = 0; i < order.length; i++) {
         const from = order[i];
         const to = order[(i + 1) % order.length];
         const link = getLinkBetween(from, to);
         if (!link) continue;
 
-        const pulseFireTime = elapsed + BREATHING_DURATION;
+        const pulseFireTime = elapsed + BREATHING_DURATION * PULSE_LEAD;
         schedule(() => {
           spawnPulse(
             `[data-from="${link.fromId}"][data-to="${link.toId}"]`,
@@ -440,7 +444,7 @@ function useArchitectureChoreography(
           );
         }, pulseFireTime);
 
-        elapsed += BREATHING_DURATION + PULSE_DURATION;
+        elapsed += stepInterval;
       }
 
       schedule(() => {
@@ -559,7 +563,7 @@ export function AgentArchitectureSection() {
           }
         }
         .onv-card.onv-breathing {
-          animation: onv-breathe 0.75s cubic-bezier(0.45, 0, 0.55, 1) 4;
+          animation: onv-breathe 1.1s cubic-bezier(0.45, 0, 0.55, 1) 2;
         }
         @keyframes onv-tool-glow {
           0% {
@@ -580,7 +584,7 @@ export function AgentArchitectureSection() {
                       stroke-width 400ms cubic-bezier(0.16, 1, 0.3, 1);
         }
         [data-ball-circle].onv-glowing {
-          animation: onv-tool-glow 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: onv-tool-glow 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
     </section>
