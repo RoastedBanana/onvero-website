@@ -115,8 +115,12 @@ export default function NetworkCanvas({
 
       const leftX = width * 0.07;
       const rightX = width * 0.93;
-      const topY = height * 0.06;
-      const bottomY = height * 0.94;
+      const leftTopY = height * 0.06;
+      const leftBottomY = height * 0.94;
+      // Right column is compressed vertically — fewer punctation points
+      // bunched closer together behind the throat.
+      const rightTopY = height * 0.24;
+      const rightBottomY = height * 0.76;
       cx = width * 0.5;
       cy = height * 0.5;
 
@@ -132,13 +136,14 @@ export default function NetworkCanvas({
       rightDots = [];
       for (let i = 0; i < curveCount; i++) {
         const t = curveCount > 1 ? i / (curveCount - 1) : 0.5;
-        const y = topY + t * (bottomY - topY);
+        const yLeft = leftTopY + t * (leftBottomY - leftTopY);
+        const yRight = rightTopY + t * (rightBottomY - rightTopY);
         const jitterLeftX = (rand(i + 100) - 0.5) * 22;
-        const jitterRightX = (rand(i + 200) - 0.5) * 22;
+        const jitterRightX = (rand(i + 200) - 0.5) * 14;
         const jitterLeftY = (rand(i + 300) - 0.5) * 6;
-        const jitterRightY = (rand(i + 400) - 0.5) * 6;
-        const leftBase = { x: leftX + jitterLeftX, y: y + jitterLeftY };
-        const rightBase = { x: rightX + jitterRightX, y: y + jitterRightY };
+        const jitterRightY = (rand(i + 400) - 0.5) * 4;
+        const leftBase = { x: leftX + jitterLeftX, y: yLeft + jitterLeftY };
+        const rightBase = { x: rightX + jitterRightX, y: yRight + jitterRightY };
         leftDots.push({
           base: leftBase,
           pos: { ...leftBase },

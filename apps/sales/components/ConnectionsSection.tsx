@@ -3,7 +3,7 @@ import NetworkCanvas from './NetworkCanvas';
 export function ConnectionsSection() {
   return (
     <section className="bg-white py-20 md:py-28">
-      <div className="aspect-[16/9] w-full">
+      <div className="mx-auto aspect-[16/9] w-full max-w-5xl px-6">
         <NetworkCanvas className="h-full w-full" />
       </div>
     </section>
