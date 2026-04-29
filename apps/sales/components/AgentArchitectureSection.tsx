@@ -98,15 +98,56 @@ function ToolCircles() {
       fill="none"
       className="block h-full w-full"
     >
-      <line x1="104.5" y1="0" x2="104.5" y2="40" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      <line x1="40" y1="40" x2="169" y2="40" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      <line x1="40" y1="40" x2="40" y2="80" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      <line x1="104.5" y1="40" x2="104.5" y2="80" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      <line x1="169" y1="40" x2="169" y2="80" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      {[40, 104.5, 169].map((cx) => (
+      <defs>
+        <radialGradient id="onv-glass-ball" cx="50%" cy="32%" r="65%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.92)" />
+          <stop offset="55%" stopColor="rgba(231,237,250,0.55)" />
+          <stop offset="100%" stopColor="rgba(180,195,225,0.18)" />
+        </radialGradient>
+        <linearGradient id="onv-connector" x1="50%" y1="0%" x2="50%" y2="100%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.12)" />
+        </linearGradient>
+      </defs>
+
+      <path
+        d="M 104.5 5 L 104.5 92"
+        stroke="url(#onv-connector)"
+        strokeWidth="0.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M 104.5 5 C 104.5 38, 28 38, 28 92"
+        stroke="url(#onv-connector)"
+        strokeWidth="0.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M 104.5 5 C 104.5 38, 181 38, 181 92"
+        stroke="url(#onv-connector)"
+        strokeWidth="0.9"
+        strokeLinecap="round"
+      />
+
+      <circle cx="104.5" cy="5" r="1.6" fill="rgba(255,255,255,0.75)" />
+
+      {[28, 104.5, 181].map((cx) => (
         <g key={cx}>
-          <circle cx={cx} cy={95} r="14" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-          <circle cx={cx} cy={95} r="5" fill="rgba(255,255,255,0.4)" />
+          <circle
+            cx={cx}
+            cy={102}
+            r="15"
+            fill="url(#onv-glass-ball)"
+            stroke="rgba(255,255,255,0.35)"
+            strokeWidth="0.6"
+          />
+          <ellipse
+            cx={cx}
+            cy={95}
+            rx="7"
+            ry="2.6"
+            fill="rgba(255,255,255,0.45)"
+          />
         </g>
       ))}
     </svg>
