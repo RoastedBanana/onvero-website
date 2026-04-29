@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Gauge, Mail, Network, Search } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { OnveroGradient } from './OnveroGradient';
 
 const PANEL_W = 1115;
@@ -27,7 +26,7 @@ const easeInOutCubic = (t: number) =>
 
 type Agent = {
   id: string;
-  icon: LucideIcon;
+  imageSrc: string;
   title: string;
   subtitle: string;
   tag: string;
@@ -37,10 +36,10 @@ type Agent = {
 };
 
 const agents: Agent[] = [
-  { id: 'lead-scout',     icon: Search,  title: 'Lead Scout',      subtitle: 'Prospecting Agent',   tag: 'Live', tools: 'Database · Enrichment',  left: 5,  top: 37 },
-  { id: 'score-engine',   icon: Gauge,   title: 'Score Engine',    subtitle: 'Qualification Agent', tag: 'Auto', tools: 'Firecrawl · Vector DB',  left: 38, top: 16 },
-  { id: 'outreach-writer',icon: Mail,    title: 'Outreach Writer', subtitle: 'Email Agent',         tag: 'AI',   tools: 'Resend · Templates',     left: 74, top: 38 },
-  { id: 'business-agent', icon: Network, title: 'Business Agent',  subtitle: 'Orchestrator',        tag: 'Core', tools: 'Router · Memory',        left: 38, top: 60 },
+  { id: 'lead-scout',     imageSrc: '/agents/lead-scout.png',     title: 'Lead Scout',      subtitle: 'Prospecting Agent',   tag: 'Live', tools: 'Database · Enrichment',  left: 5,  top: 37 },
+  { id: 'score-engine',   imageSrc: '/agents/score-engine.png',   title: 'Score Engine',    subtitle: 'Qualification Agent', tag: 'Auto', tools: 'Firecrawl · Vector DB',  left: 38, top: 16 },
+  { id: 'outreach-writer',imageSrc: '/agents/outreach-writer.png',title: 'Outreach Writer', subtitle: 'Email Agent',         tag: 'AI',   tools: 'Resend · Templates',     left: 74, top: 38 },
+  { id: 'business-agent', imageSrc: '/agents/business-agent.png', title: 'Business Agent',  subtitle: 'Orchestrator',        tag: 'Core', tools: 'Router · Memory',        left: 38, top: 60 },
 ];
 
 type CardBounds = {
@@ -145,7 +144,6 @@ const CW_ORDER = ['lead-scout', 'business-agent', 'outreach-writer', 'score-engi
 const CCW_ORDER = ['lead-scout', 'score-engine', 'outreach-writer', 'business-agent'] as const;
 
 function AgentCard({ agent }: { agent: Agent }) {
-  const Icon = agent.icon;
   return (
     <div
       data-agent-card-inner={agent.id}
@@ -155,8 +153,13 @@ function AgentCard({ agent }: { agent: Agent }) {
           'linear-gradient(89deg, rgba(227,233,247,0.51) 0%, rgba(255,255,255,0.12) 100%)',
       }}
     >
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#e3e9f7] to-[#e3e9f7]/80">
-        <Icon className="size-4 text-[#2D1B69]" strokeWidth={2.25} />
+      <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#e3e9f7] to-[#e3e9f7]/80 ring-1 ring-white/20">
+        <img
+          src={agent.imageSrc}
+          alt=""
+          className="size-full object-cover"
+          draggable={false}
+        />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-[11.26px] font-bold leading-tight text-white">
