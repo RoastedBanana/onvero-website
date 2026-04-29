@@ -2,6 +2,16 @@ import { ArrowUpRight, Gauge, Mail, Network, Search } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { OnveroGradient } from './OnveroGradient';
 
+const PANEL_W = 1115;
+const PANEL_H = 560;
+const CARD_W_PCT = 21.5;
+const CARD_W = (CARD_W_PCT / 100) * PANEL_W;
+const CARD_H = 62;
+const BALL_R = 15;
+const BALL_CLUSTER_W = 208.5;
+const BALL_CLUSTER_OFFSETS = [28, 104.5, 181] as const;
+const BALL_CLUSTER_TOP_OFFSET = 60;
+
 type Agent = {
   id: string;
   icon: LucideIcon;
@@ -9,52 +19,41 @@ type Agent = {
   subtitle: string;
   tag: string;
   tools: string;
-  position: { left: string; top: string };
-  toolsPosition?: { left: string; top: string };
+  /** Card top-left position in % of panel. */
+  left: number;
+  top: number;
 };
 
 const agents: Agent[] = [
-  {
-    id: 'lead-scout',
-    icon: Search,
-    title: 'Lead Scout',
-    subtitle: 'Prospecting Agent',
-    tag: 'Live',
-    tools: 'Database · Enrichment',
-    position: { left: '5%', top: '37%' },
-    toolsPosition: { left: '5%', top: '48%' },
-  },
-  {
-    id: 'score-engine',
-    icon: Gauge,
-    title: 'Score Engine',
-    subtitle: 'Qualification Agent',
-    tag: 'Auto',
-    tools: 'Firecrawl · Vector DB',
-    position: { left: '38%', top: '16%' },
-    toolsPosition: { left: '38%', top: '27%' },
-  },
-  {
-    id: 'outreach-writer',
-    icon: Mail,
-    title: 'Outreach Writer',
-    subtitle: 'Email Agent',
-    tag: 'AI',
-    tools: 'Resend · Templates',
-    position: { left: '74%', top: '38%' },
-    toolsPosition: { left: '74%', top: '49%' },
-  },
-  {
-    id: 'business-agent',
-    icon: Network,
-    title: 'Business Agent',
-    subtitle: 'Orchestrator',
-    tag: 'Core',
-    tools: 'Router · Memory',
-    position: { left: '38%', top: '60%' },
-    toolsPosition: { left: '38%', top: '71%' },
-  },
+  { id: 'lead-scout',     icon: Search,  title: 'Lead Scout',      subtitle: 'Prospecting Agent',   tag: 'Live', tools: 'Database · Enrichment',  left: 5,  top: 37 },
+  { id: 'score-engine',   icon: Gauge,   title: 'Score Engine',    subtitle: 'Qualification Agent', tag: 'Auto', tools: 'Firecrawl · Vector DB',  left: 38, top: 16 },
+  { id: 'outreach-writer',icon: Mail,    title: 'Outreach Writer', subtitle: 'Email Agent',         tag: 'AI',   tools: 'Resend · Templates',     left: 74, top: 38 },
+  { id: 'business-agent', icon: Network, title: 'Business Agent',  subtitle: 'Orchestrator',        tag: 'Core', tools: 'Router · Memory',        left: 38, top: 60 },
 ];
+
+type Connection = {
+  agentId: string;
+  cardAnchor: { x: number; y: number };
+  balls: { x: number; y: number }[];
+};
+
+const connections: Connection[] = agents.map((a) => {
+  const cardLeftPx = (a.left / 100) * PANEL_W;
+  const cardTopPx = (a.top / 100) * PANEL_H;
+  const cardAnchor = {
+    x: cardLeftPx + CARD_W / 2,
+    y: cardTopPx + CARD_H,
+  };
+
+  const clusterLeftPx = cardAnchor.x - BALL_CLUSTER_W / 2;
+  const clusterTopPx = cardTopPx + CARD_H + BALL_CLUSTER_TOP_OFFSET;
+  const balls = BALL_CLUSTER_OFFSETS.map((dx) => ({
+    x: clusterLeftPx + dx,
+    y: clusterTopPx,
+  }));
+
+  return { agentId: a.id, cardAnchor, balls };
+});
 
 function AgentCard({ agent }: { agent: Agent }) {
   const Icon = agent.icon;
@@ -90,13 +89,13 @@ function AgentCard({ agent }: { agent: Agent }) {
   );
 }
 
-function ToolCircles() {
+function ArchitectureOverlay() {
   return (
     <svg
       aria-hidden="true"
-      viewBox="0 0 209 121"
-      fill="none"
-      className="block h-full w-full"
+      viewBox={`0 0 ${PANEL_W} ${PANEL_H}`}
+      preserveAspectRatio="xMidYMid meet"
+      className="pointer-events-none absolute inset-0 h-full w-full"
     >
       <defs>
         <radialGradient id="onv-glass-ball" cx="50%" cy="32%" r="65%">
@@ -110,44 +109,54 @@ function ToolCircles() {
         </linearGradient>
       </defs>
 
-      <path
-        d="M 104.5 5 L 104.5 92"
-        stroke="url(#onv-connector)"
-        strokeWidth="0.9"
-        strokeLinecap="round"
-      />
-      <path
-        d="M 104.5 5 C 104.5 38, 28 38, 28 92"
-        stroke="url(#onv-connector)"
-        strokeWidth="0.9"
-        strokeLinecap="round"
-      />
-      <path
-        d="M 104.5 5 C 104.5 38, 181 38, 181 92"
-        stroke="url(#onv-connector)"
-        strokeWidth="0.9"
-        strokeLinecap="round"
-      />
+      {connections.map((conn) => (
+        <g key={conn.agentId} data-agent={conn.agentId}>
+          {conn.balls.map((ball, i) => {
+            const midY = (conn.cardAnchor.y + ball.y) / 2;
+            const d = `M ${conn.cardAnchor.x} ${conn.cardAnchor.y} C ${conn.cardAnchor.x} ${midY}, ${ball.x} ${midY}, ${ball.x} ${ball.y - BALL_R}`;
+            return (
+              <path
+                key={i}
+                d={d}
+                stroke="url(#onv-connector)"
+                strokeWidth="0.9"
+                strokeLinecap="round"
+                fill="none"
+                data-connector
+                data-agent={conn.agentId}
+                data-ball-index={i}
+              />
+            );
+          })}
 
-      <circle cx="104.5" cy="5" r="1.6" fill="rgba(255,255,255,0.75)" />
-
-      {[28, 104.5, 181].map((cx) => (
-        <g key={cx}>
           <circle
-            cx={cx}
-            cy={102}
-            r="15"
-            fill="url(#onv-glass-ball)"
-            stroke="rgba(255,255,255,0.35)"
-            strokeWidth="0.6"
+            cx={conn.cardAnchor.x}
+            cy={conn.cardAnchor.y}
+            r="1.6"
+            fill="rgba(255,255,255,0.75)"
+            data-anchor
+            data-agent={conn.agentId}
           />
-          <ellipse
-            cx={cx}
-            cy={95}
-            rx="7"
-            ry="2.6"
-            fill="rgba(255,255,255,0.45)"
-          />
+
+          {conn.balls.map((ball, i) => (
+            <g key={i} data-ball data-agent={conn.agentId} data-ball-index={i}>
+              <circle
+                cx={ball.x}
+                cy={ball.y}
+                r={BALL_R}
+                fill="url(#onv-glass-ball)"
+                stroke="rgba(255,255,255,0.35)"
+                strokeWidth="0.6"
+              />
+              <ellipse
+                cx={ball.x}
+                cy={ball.y - 7}
+                rx="7"
+                ry="2.6"
+                fill="rgba(255,255,255,0.45)"
+              />
+            </g>
+          ))}
         </g>
       ))}
     </svg>
@@ -176,27 +185,23 @@ export function AgentArchitectureSection() {
           />
 
           <div className="relative hidden aspect-[1115/560] w-full lg:block">
+            <ArchitectureOverlay />
+
             {agents.map((agent) => (
               <div
                 key={agent.id}
-                className="absolute w-[21.5%] min-w-[210px]"
-                style={agent.position}
+                className="absolute"
+                style={{
+                  left: `${agent.left}%`,
+                  top: `${agent.top}%`,
+                  width: `${CARD_W_PCT}%`,
+                  minWidth: '210px',
+                }}
+                data-agent-card={agent.id}
               >
                 <AgentCard agent={agent} />
               </div>
             ))}
-
-            {agents.map((agent) =>
-              agent.toolsPosition ? (
-                <div
-                  key={`${agent.id}-tools`}
-                  className="absolute w-[18.7%] min-w-[180px]"
-                  style={{ ...agent.toolsPosition, height: '21.5%' }}
-                >
-                  <ToolCircles />
-                </div>
-              ) : null,
-            )}
 
             <a
               href="#mehr"
