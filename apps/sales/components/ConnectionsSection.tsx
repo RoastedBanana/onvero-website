@@ -50,7 +50,7 @@ export function ConnectionsSection() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              'radial-gradient(ellipse 55% 130% at 50% 100%, rgba(0,212,168,0.78) 0%, rgba(40,80,210,0.62) 30%, rgba(10,28,120,0.52) 55%, rgba(8,20,80,0.30) 75%, rgba(255,255,255,0) 95%)',
+              'radial-gradient(ellipse 95% 180% at 50% 105%, rgba(0,212,168,0.85) 0%, rgba(40,80,210,0.68) 25%, rgba(20,40,150,0.58) 45%, rgba(10,28,110,0.42) 65%, rgba(8,20,80,0.22) 82%, rgba(255,255,255,0) 100%)',
             filter: 'blur(34px)',
           }}
         />
