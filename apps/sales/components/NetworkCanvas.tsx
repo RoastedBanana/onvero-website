@@ -10,6 +10,15 @@ interface NetworkCanvasProps {
 
 type Vec2 = { x: number; y: number };
 
+type DriftParams = {
+  ampX: number;
+  freqX: number;
+  phaseX: number;
+  ampY: number;
+  freqY: number;
+  phaseY: number;
+};
+
 type Curve = {
   start: Vec2;
   end: Vec2;
@@ -21,9 +30,10 @@ type Curve = {
   cp2Vel: Vec2;
   opacityPhase: number;
   opacitySpeed: number;
-  /** 0..1 — multiplier for the right half of the stroke. <1 makes the
-   *  curve fade out after passing through the throat. */
+  /** 0..1 — alpha multiplier on the right half of the stroke. */
   rightAlpha: number;
+  drift1: DriftParams;
+  drift2: DriftParams;
 };
 
 function rand(seed: number): number {
@@ -31,13 +41,25 @@ function rand(seed: number): number {
   return x - Math.floor(x);
 }
 
-const STROKE_BASE_ALPHA = 0.26;
+function makeDrift(seed: number): DriftParams {
+  return {
+    ampX: 0.7 + rand(seed) * 1.6,
+    freqX: 0.25 + rand(seed + 1) * 0.45,
+    phaseX: rand(seed + 2) * Math.PI * 2,
+    ampY: 0.7 + rand(seed + 3) * 1.6,
+    freqY: 0.25 + rand(seed + 4) * 0.45,
+    phaseY: rand(seed + 5) * Math.PI * 2,
+  };
+}
+
+const STROKE_BASE_ALPHA = 0.28;
 const STROKE_AMP_ALPHA = 0.18;
+const THROAT_ALPHA_FACTOR = 0.16;
 const DOT_BASE_ALPHA = 0.55;
 
 export default function NetworkCanvas({
   className,
-  curveCount = 56,
+  curveCount = 54,
 }: NetworkCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -84,49 +106,62 @@ export default function NetworkCanvas({
 
       // Control points anchored close to the endpoint columns. The cps
       // sit ~8% of width inside from each edge so the cursor can only
-      // reach them when it's near the left or right column — never from
-      // the centre throat.
+      // reach them when it's near the left or right column — never
+      // from the centre throat.
       const cp1X = leftX + width * 0.08;
       const cp2X = rightX - width * 0.08;
 
+      // Endpoints first — left and right columns get random x/y jitter
+      // so they don't read as ruler-straight verticals.
       leftDots = [];
       rightDots = [];
-      curves = [];
-
       for (let i = 0; i < curveCount; i++) {
         const t = curveCount > 1 ? i / (curveCount - 1) : 0.5;
         const y = topY + t * (bottomY - topY);
-
-        // Slightly random horizontal x on the endpoint dots so the
-        // columns don't read as ruler-straight verticals.
         const jitterLeftX = (rand(i + 100) - 0.5) * 22;
         const jitterRightX = (rand(i + 200) - 0.5) * 22;
         const jitterLeftY = (rand(i + 300) - 0.5) * 6;
         const jitterRightY = (rand(i + 400) - 0.5) * 6;
-        const left: Vec2 = { x: leftX + jitterLeftX, y: y + jitterLeftY };
-        const right: Vec2 = { x: rightX + jitterRightX, y: y + jitterRightY };
-        leftDots.push(left);
-        rightDots.push(right);
+        leftDots.push({ x: leftX + jitterLeftX, y: y + jitterLeftY });
+        rightDots.push({ x: rightX + jitterRightX, y: y + jitterRightY });
+      }
 
-        // Knot maths: pulling the cp y by exactly (cy - y) / 3 forces
-        // every cubic bezier to pass through (cx, cy) at t = 0.5,
-        // collapsing the entire bundle into a single point in the centre.
-        const cpY = cy + (cy - y) / 3;
-        const cp1Rest: Vec2 = { x: cp1X, y: cpY };
-        const cp2Rest: Vec2 = { x: cp2X, y: cpY };
+      // Cross-mapping: each left endpoint connects to a right endpoint
+      // that is shifted by ±~15% of count. The right half of every
+      // curve emerges at a different y than where its left half started,
+      // so deforming a left strand causes the matched strand on the
+      // right to deflect somewhere else along the column.
+      const swing = Math.max(2, Math.floor(curveCount * 0.18));
+      const mapping = new Array<number>(curveCount);
+      for (let i = 0; i < curveCount; i++) {
+        const offset = Math.round((rand(i + 999) - 0.5) * 2 * swing);
+        mapping[i] = ((i + offset) % curveCount + curveCount) % curveCount;
+      }
 
-        // Distribution: most curves stay full; ~25% fade in the right
-        // half; ~10% nearly vanish past the throat. Net effect: fewer
-        // visible strands on the right than on the left.
+      curves = [];
+      for (let i = 0; i < curveCount; i++) {
+        const start = leftDots[i];
+        const end = rightDots[mapping[i]];
+
+        // Convex bow: both control points sit at the canvas centre so
+        // each curve smoothly arcs toward cy in the middle without the
+        // hard concave pinch that the knot formula produced. Curves
+        // near cy stay almost straight; curves further out bow more.
+        const cp1Rest: Vec2 = { x: cp1X, y: cy };
+        const cp2Rest: Vec2 = { x: cp2X, y: cy };
+
+        // Distribution of how visible each curve is on the right side.
+        // 35% full, 35% partial, 30% near-invisible — the right column
+        // emerges visibly thinner than the left column.
         const r = rand(i + 333);
         let rightAlpha: number;
-        if (r < 0.62) rightAlpha = 1.0;
-        else if (r < 0.88) rightAlpha = 0.32 + rand(i + 444) * 0.32;
-        else rightAlpha = 0.04 + rand(i + 555) * 0.14;
+        if (r < 0.35) rightAlpha = 1.0;
+        else if (r < 0.7) rightAlpha = 0.22 + rand(i + 444) * 0.32;
+        else rightAlpha = 0.03 + rand(i + 555) * 0.12;
 
         curves.push({
-          start: left,
-          end: right,
+          start,
+          end,
           cp1Rest: { ...cp1Rest },
           cp2Rest: { ...cp2Rest },
           cp1: { ...cp1Rest },
@@ -134,8 +169,10 @@ export default function NetworkCanvas({
           cp1Vel: { x: 0, y: 0 },
           cp2Vel: { x: 0, y: 0 },
           opacityPhase: rand(i + 7) * Math.PI * 2,
-          opacitySpeed: 0.35 + rand(i + 71) * 0.55,
+          opacitySpeed: 0.32 + rand(i + 71) * 0.55,
           rightAlpha,
+          drift1: makeDrift(i * 17 + 800),
+          drift2: makeDrift(i * 17 + 900),
         });
       }
     };
@@ -167,13 +204,40 @@ export default function NetworkCanvas({
       const time = (now - startTime) / 1000;
 
       for (const c of curves) {
-        for (const which of ['cp1', 'cp2'] as const) {
-          const cp = c[which];
-          const cpVel = c[`${which}Vel` as 'cp1Vel' | 'cp2Vel'];
-          const cpRest = c[`${which}Rest` as 'cp1Rest' | 'cp2Rest'];
+        // cp1
+        {
+          const cp = c.cp1;
+          const cpVel = c.cp1Vel;
+          const d = c.drift1;
+          let restX = c.cp1Rest.x + Math.sin(time * d.freqX + d.phaseX) * d.ampX;
+          let restY = c.cp1Rest.y + Math.cos(time * d.freqY + d.phaseY) * d.ampY;
 
-          let restX = cpRest.x;
-          let restY = cpRest.y;
+          if (mouseX !== null && mouseY !== null) {
+            const ddx = cp.x - mouseX;
+            const ddy = cp.y - mouseY;
+            const dist = Math.hypot(ddx, ddy);
+            if (dist < MOUSE_RADIUS && dist > 0.001) {
+              const force = (1 - dist / MOUSE_RADIUS) * MOUSE_FORCE;
+              restX += (ddx / dist) * force;
+              restY += (ddy / dist) * force;
+            }
+          }
+
+          cpVel.x += (restX - cp.x) * SPRING_K;
+          cpVel.y += (restY - cp.y) * SPRING_K;
+          cpVel.x *= SPRING_DAMPING;
+          cpVel.y *= SPRING_DAMPING;
+          cp.x += cpVel.x;
+          cp.y += cpVel.y;
+        }
+
+        // cp2
+        {
+          const cp = c.cp2;
+          const cpVel = c.cp2Vel;
+          const d = c.drift2;
+          let restX = c.cp2Rest.x + Math.sin(time * d.freqX + d.phaseX) * d.ampX;
+          let restY = c.cp2Rest.y + Math.cos(time * d.freqY + d.phaseY) * d.ampY;
 
           if (mouseX !== null && mouseY !== null) {
             const ddx = cp.x - mouseX;
@@ -206,11 +270,12 @@ export default function NetworkCanvas({
           STROKE_BASE_ALPHA + wave * STROKE_AMP_ALPHA,
         );
         const aLeft = alpha.toFixed(3);
+        const aThroat = (alpha * THROAT_ALPHA_FACTOR).toFixed(3);
         const aRight = (alpha * c.rightAlpha).toFixed(3);
 
         const grad = ctx.createLinearGradient(c.start.x, 0, c.end.x, 0);
         grad.addColorStop(0, `rgba(79, 70, 229, ${aLeft})`);
-        grad.addColorStop(0.5, `rgba(79, 70, 229, ${aLeft})`);
+        grad.addColorStop(0.5, `rgba(79, 70, 229, ${aThroat})`);
         grad.addColorStop(1, `rgba(79, 70, 229, ${aRight})`);
         ctx.strokeStyle = grad;
 
