@@ -91,6 +91,18 @@ const ba = cardBounds['business-agent'];
 
 const interAgentLinks: InterAgentLink[] = [
   {
+    id: 'score-engine--lead-scout',
+    fromId: 'score-engine',
+    toId: 'lead-scout',
+    d: `M ${se.left} ${se.cy} C ${se.left - 80} ${se.cy}, ${ls.cx} ${ls.top - 50}, ${ls.cx} ${ls.top}`,
+  },
+  {
+    id: 'score-engine--outreach-writer',
+    fromId: 'score-engine',
+    toId: 'outreach-writer',
+    d: `M ${se.right} ${se.cy} C ${se.right + 80} ${se.cy}, ${ow.cx} ${ow.top - 50}, ${ow.cx} ${ow.top}`,
+  },
+  {
     id: 'lead-scout--business-agent',
     fromId: 'lead-scout',
     toId: 'business-agent',
@@ -101,12 +113,6 @@ const interAgentLinks: InterAgentLink[] = [
     fromId: 'outreach-writer',
     toId: 'business-agent',
     d: `M ${ow.left} ${ow.cy} C ${(ow.left + ba.right) / 2} ${ow.cy}, ${(ow.left + ba.right) / 2} ${ba.cy}, ${ba.right} ${ba.cy}`,
-  },
-  {
-    id: 'score-engine--business-agent',
-    fromId: 'score-engine',
-    toId: 'business-agent',
-    d: `M ${se.right} ${se.cy} C ${se.right + 55} ${se.cy + 70}, ${ba.right + 55} ${ba.cy - 70}, ${ba.right} ${ba.cy}`,
   },
 ];
 
