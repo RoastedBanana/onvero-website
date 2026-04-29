@@ -31,22 +31,44 @@ const agents: Agent[] = [
   { id: 'business-agent', icon: Network, title: 'Business Agent',  subtitle: 'Orchestrator',        tag: 'Core', tools: 'Router · Memory',        left: 38, top: 60 },
 ];
 
-type Connection = {
+type CardBounds = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  cx: number;
+  cy: number;
+};
+
+function getCardBounds(a: Agent): CardBounds {
+  const left = (a.left / 100) * PANEL_W;
+  const top = (a.top / 100) * PANEL_H;
+  return {
+    left,
+    top,
+    right: left + CARD_W,
+    bottom: top + CARD_H,
+    cx: left + CARD_W / 2,
+    cy: top + CARD_H / 2,
+  };
+}
+
+const cardBounds: Record<string, CardBounds> = Object.fromEntries(
+  agents.map((a) => [a.id, getCardBounds(a)]),
+);
+
+type ToolConnection = {
   agentId: string;
   cardAnchor: { x: number; y: number };
   balls: { x: number; y: number }[];
 };
 
-const connections: Connection[] = agents.map((a) => {
-  const cardLeftPx = (a.left / 100) * PANEL_W;
-  const cardTopPx = (a.top / 100) * PANEL_H;
-  const cardAnchor = {
-    x: cardLeftPx + CARD_W / 2,
-    y: cardTopPx + CARD_H,
-  };
+const toolConnections: ToolConnection[] = agents.map((a) => {
+  const b = cardBounds[a.id];
+  const cardAnchor = { x: b.cx, y: b.bottom };
 
   const clusterLeftPx = cardAnchor.x - BALL_CLUSTER_W / 2;
-  const clusterTopPx = cardTopPx + CARD_H + BALL_CLUSTER_TOP_OFFSET;
+  const clusterTopPx = b.bottom + BALL_CLUSTER_TOP_OFFSET;
   const balls = BALL_CLUSTER_OFFSETS.map((dx) => ({
     x: clusterLeftPx + dx,
     y: clusterTopPx,
@@ -54,6 +76,39 @@ const connections: Connection[] = agents.map((a) => {
 
   return { agentId: a.id, cardAnchor, balls };
 });
+
+type InterAgentLink = {
+  id: string;
+  fromId: string;
+  toId: string;
+  d: string;
+};
+
+const ls = cardBounds['lead-scout'];
+const se = cardBounds['score-engine'];
+const ow = cardBounds['outreach-writer'];
+const ba = cardBounds['business-agent'];
+
+const interAgentLinks: InterAgentLink[] = [
+  {
+    id: 'lead-scout--business-agent',
+    fromId: 'lead-scout',
+    toId: 'business-agent',
+    d: `M ${ls.right} ${ls.cy} C ${(ls.right + ba.left) / 2} ${ls.cy}, ${(ls.right + ba.left) / 2} ${ba.cy}, ${ba.left} ${ba.cy}`,
+  },
+  {
+    id: 'outreach-writer--business-agent',
+    fromId: 'outreach-writer',
+    toId: 'business-agent',
+    d: `M ${ow.left} ${ow.cy} C ${(ow.left + ba.right) / 2} ${ow.cy}, ${(ow.left + ba.right) / 2} ${ba.cy}, ${ba.right} ${ba.cy}`,
+  },
+  {
+    id: 'score-engine--business-agent',
+    fromId: 'score-engine',
+    toId: 'business-agent',
+    d: `M ${se.right} ${se.cy} C ${se.right + 55} ${se.cy + 70}, ${ba.right + 55} ${ba.cy - 70}, ${ba.right} ${ba.cy}`,
+  },
+];
 
 function AgentCard({ agent }: { agent: Agent }) {
   const Icon = agent.icon;
@@ -109,7 +164,21 @@ function ArchitectureOverlay() {
         </linearGradient>
       </defs>
 
-      {connections.map((conn) => (
+      {interAgentLinks.map((link) => (
+        <path
+          key={link.id}
+          d={link.d}
+          stroke="url(#onv-connector)"
+          strokeWidth="0.9"
+          strokeLinecap="round"
+          fill="none"
+          data-inter-agent
+          data-from={link.fromId}
+          data-to={link.toId}
+        />
+      ))}
+
+      {toolConnections.map((conn) => (
         <g key={conn.agentId} data-agent={conn.agentId}>
           {conn.balls.map((ball, i) => {
             const midY = (conn.cardAnchor.y + ball.y) / 2;
