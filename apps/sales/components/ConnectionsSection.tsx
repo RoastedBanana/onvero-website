@@ -43,21 +43,19 @@ export function ConnectionsSection() {
 
       <div className="mx-auto max-w-5xl px-6">
         <div className="relative overflow-hidden rounded-3xl">
+          {/* Soft mint→navy radial glow anchored under the throat. Reaches
+              high enough to wash up over the strands while staying soft. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse 90% 130% at 50% 100%, rgba(0,212,168,0.34) 0%, rgba(26,58,107,0.14) 55%, rgba(255,255,255,0) 90%)',
+              filter: 'blur(34px)',
+            }}
+          />
           <div className="relative aspect-[16/9]">
             <NetworkCanvas className="h-full w-full" />
-            {/* Mint→navy radial glow rendered above the canvas with
-                screen blending — washes the strands themselves with
-                colour rather than sitting behind them. */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  'radial-gradient(ellipse 75% 80% at 50% 60%, rgba(0,212,168,0.42) 0%, rgba(79,70,229,0.22) 40%, rgba(26,58,107,0.10) 65%, rgba(255,255,255,0) 85%)',
-                mixBlendMode: 'screen',
-                filter: 'blur(28px)',
-              }}
-            />
           </div>
         </div>
       </div>
