@@ -15,10 +15,13 @@ const BALL_CLUSTER_W = 208.5;
 const BALL_CLUSTER_OFFSETS = [28, 104.5, 181] as const;
 const BALL_CLUSTER_TOP_OFFSET = 60;
 
-const PULSE_DURATION = 900;
-const TOOL_PULSE_DURATION = 600;
+const PULSE_DURATION = 1100;
+const TOOL_PULSE_DURATION = 750;
 const BREATHING_DURATION = 3000;
-const TOOL_GLOW_DURATION = 1500;
+const TOOL_GLOW_DURATION = 1800;
+
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 type Agent = {
   id: string;
@@ -329,9 +332,10 @@ function useArchitectureChoreography(
 
       const ns = 'http://www.w3.org/2000/svg';
       const dot = document.createElementNS(ns, 'circle');
-      dot.setAttribute('r', '2.6');
+      dot.setAttribute('r', '2.8');
       dot.setAttribute('fill', '#ffffff');
       dot.setAttribute('filter', 'url(#onv-pulse-glow)');
+      dot.setAttribute('opacity', '0');
       layer.appendChild(dot);
       ephemeralEls.add(dot);
 
@@ -344,10 +348,18 @@ function useArchitectureChoreography(
         }
         const elapsed = now - start;
         const t = Math.min(1, elapsed / duration);
-        const len = (direction === 'forward' ? t : 1 - t) * pathLength;
+        const eased = easeInOutCubic(t);
+        const len = (direction === 'forward' ? eased : 1 - eased) * pathLength;
         const p = path.getPointAtLength(len);
         dot.setAttribute('cx', String(p.x));
         dot.setAttribute('cy', String(p.y));
+
+        const FADE = 0.18;
+        let opacity = 1;
+        if (t < FADE) opacity = t / FADE;
+        else if (t > 1 - FADE) opacity = (1 - t) / FADE;
+        dot.setAttribute('opacity', String(opacity));
+
         if (t < 1) {
           rafs.push(requestAnimationFrame(tick));
         } else {
@@ -524,34 +536,51 @@ export function AgentArchitectureSection() {
       <style>{`
         .onv-card {
           box-shadow: 0 8px 32px -8px rgba(13,13,43,0.45);
+          transition: box-shadow 600ms cubic-bezier(0.16, 1, 0.3, 1);
         }
         @keyframes onv-breathe {
-          0%, 100% {
+          0% {
             box-shadow:
               0 8px 32px -8px rgba(13,13,43,0.45),
+              0 0 0 0 rgba(255,255,255,0),
               0 0 0 0 rgba(255,255,255,0);
           }
           50% {
             box-shadow:
               0 8px 32px -8px rgba(13,13,43,0.45),
-              0 0 0 4px rgba(255,255,255,0.6);
+              0 0 0 4px rgba(255,255,255,0.5),
+              0 0 18px 6px rgba(255,255,255,0.18);
+          }
+          100% {
+            box-shadow:
+              0 8px 32px -8px rgba(13,13,43,0.45),
+              0 0 0 0 rgba(255,255,255,0),
+              0 0 0 0 rgba(255,255,255,0);
           }
         }
         .onv-card.onv-breathing {
-          animation: onv-breathe 0.6s ease-in-out 5;
+          animation: onv-breathe 0.75s cubic-bezier(0.45, 0, 0.55, 1) 4;
         }
         @keyframes onv-tool-glow {
           0% {
             stroke: rgba(255,255,255,0.95);
-            stroke-width: 3;
+            stroke-width: 2.8;
+          }
+          18% {
+            stroke: rgba(255,255,255,0.8);
+            stroke-width: 2.4;
           }
           100% {
-            stroke: rgba(255,255,255,0);
+            stroke: rgba(255,255,255,0.35);
             stroke-width: 0.6;
           }
         }
+        [data-ball-circle] {
+          transition: stroke 400ms cubic-bezier(0.16, 1, 0.3, 1),
+                      stroke-width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
         [data-ball-circle].onv-glowing {
-          animation: onv-tool-glow 1.5s ease-out forwards;
+          animation: onv-tool-glow 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
     </section>
