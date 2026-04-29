@@ -41,23 +41,23 @@ export function ConnectionsSection() {
         </div>
       </div>
 
-      {/* Mint→navy radial glow stretched edge-to-edge across the section.
-          Sits behind the artwork but spans the full viewport width so the
-          colour wash isn't bound to the canvas frame. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10"
-        style={{
-          height: '85%',
-          background:
-            'radial-gradient(ellipse 70% 110% at 50% 100%, rgba(0,212,168,0.34) 0%, rgba(26,58,107,0.14) 55%, rgba(255,255,255,0) 90%)',
-          filter: 'blur(34px)',
-        }}
-      />
-
-      <div className="relative mx-auto max-w-5xl px-6">
-        <div className="relative aspect-[16/9]">
-          <NetworkCanvas className="h-full w-full" />
+      <div className="relative">
+        {/* Mint→navy radial glow spans the full section width and reaches
+            up across the artwork area; canvas paints on top via the
+            relative wrapper below. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse 55% 130% at 50% 100%, rgba(0,212,168,0.36) 0%, rgba(26,58,107,0.16) 55%, rgba(255,255,255,0) 90%)',
+            filter: 'blur(34px)',
+          }}
+        />
+        <div className="relative mx-auto max-w-5xl px-6">
+          <div className="relative aspect-[16/9]">
+            <NetworkCanvas className="h-full w-full" />
+          </div>
         </div>
       </div>
     </section>
