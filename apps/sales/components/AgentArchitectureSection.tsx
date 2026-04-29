@@ -94,13 +94,13 @@ const interAgentLinks: InterAgentLink[] = [
     id: 'score-engine--lead-scout',
     fromId: 'score-engine',
     toId: 'lead-scout',
-    d: `M ${se.left} ${se.cy} C ${se.left - 80} ${se.cy}, ${ls.cx} ${ls.top - 50}, ${ls.cx} ${ls.top}`,
+    d: `M ${se.left} ${se.cy} C ${(se.left + ls.right) / 2} ${se.cy}, ${(se.left + ls.right) / 2} ${ls.cy}, ${ls.right} ${ls.cy}`,
   },
   {
     id: 'score-engine--outreach-writer',
     fromId: 'score-engine',
     toId: 'outreach-writer',
-    d: `M ${se.right} ${se.cy} C ${se.right + 80} ${se.cy}, ${ow.cx} ${ow.top - 50}, ${ow.cx} ${ow.top}`,
+    d: `M ${se.right} ${se.cy} C ${(se.right + ow.left) / 2} ${se.cy}, ${(se.right + ow.left) / 2} ${ow.cy}, ${ow.left} ${ow.cy}`,
   },
   {
     id: 'lead-scout--business-agent',
