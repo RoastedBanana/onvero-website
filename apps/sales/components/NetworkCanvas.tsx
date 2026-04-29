@@ -81,8 +81,8 @@ export default function NetworkCanvas({
       typeof window !== 'undefined' &&
       ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-    const MOUSE_RADIUS = 120;
-    const MOUSE_FORCE = 80;
+    const MOUSE_RADIUS = 110;
+    const MOUSE_FORCE = 35;
     const SPRING_K = 0.08;
     const SPRING_DAMPING = 0.9;
 
@@ -264,7 +264,7 @@ export default function NetworkCanvas({
 
     /** How strongly one side's deflection pulls the matched dot on the
      *  opposite side toward the same offset. 0 = independent, 1 = rigid. */
-    const LINK_FACTOR = 0.5;
+    const LINK_FACTOR = 0.35;
 
     const stepCp = (
       cp: Vec2,
