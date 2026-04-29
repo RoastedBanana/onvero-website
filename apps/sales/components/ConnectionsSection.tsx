@@ -9,7 +9,7 @@ const stats = [
 
 export function ConnectionsSection() {
   return (
-    <section className="bg-white py-20 font-[family-name:var(--font-nunito)] md:py-28">
+    <section className="relative bg-white py-20 font-[family-name:var(--font-nunito)] md:py-28">
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <h2 className="mx-auto max-w-3xl text-balance text-center text-4xl font-bold leading-[1.05] tracking-[-0.02em] text-[#0A2540] md:text-5xl lg:text-[64px]">
           Wir strukturieren
@@ -41,22 +41,23 @@ export function ConnectionsSection() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="relative overflow-hidden rounded-3xl">
-          {/* Soft mint→navy radial glow anchored under the throat. Reaches
-              high enough to wash up over the strands while staying soft. */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                'radial-gradient(ellipse 90% 130% at 50% 100%, rgba(0,212,168,0.34) 0%, rgba(26,58,107,0.14) 55%, rgba(255,255,255,0) 90%)',
-              filter: 'blur(34px)',
-            }}
-          />
-          <div className="relative aspect-[16/9]">
-            <NetworkCanvas className="h-full w-full" />
-          </div>
+      {/* Mint→navy radial glow stretched edge-to-edge across the section.
+          Sits behind the artwork but spans the full viewport width so the
+          colour wash isn't bound to the canvas frame. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10"
+        style={{
+          height: '85%',
+          background:
+            'radial-gradient(ellipse 70% 110% at 50% 100%, rgba(0,212,168,0.34) 0%, rgba(26,58,107,0.14) 55%, rgba(255,255,255,0) 90%)',
+          filter: 'blur(34px)',
+        }}
+      />
+
+      <div className="relative mx-auto max-w-5xl px-6">
+        <div className="relative aspect-[16/9]">
+          <NetworkCanvas className="h-full w-full" />
         </div>
       </div>
     </section>
