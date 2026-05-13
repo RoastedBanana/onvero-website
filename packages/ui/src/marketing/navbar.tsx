@@ -9,19 +9,36 @@ import { Button } from "../primitives/button";
 import { OnveroLogo, OnveroIcon } from "../marketing/onvero-logo";
 import { useLanguage, useTranslation } from "@onvero/lib/language-context";
 
-function parseCookieUser(): { firstName: string; lastName: string; email?: string } | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/onvero_user=([^;]+)/);
-  if (!match) return null;
-  try { return JSON.parse(decodeURIComponent(match[1])); } catch { return null; }
-}
-
 const NAV_ITEMS = [
-  { id: "hero",       de: "Home",        en: "Home",         href: "/",            section: "hero"       },
-  { id: "leistungen", de: "Leistungen",  en: "Services",     href: "/#leistungen", section: "leistungen" },
-  { id: "projekte",   de: "Referenzen",  en: "References",   href: "/#projekte",   section: "projekte"   },
-  { id: "chatbot",    de: "Fragen",      en: "FAQ",          href: "/#chatbot",    section: "chatbot"    },
-  { id: "ueber-uns",  de: "Über uns",    en: "About us",     href: "/ueber-uns",   section: null         },
+  { id: "hero", de: "Home", en: "Home", href: "/", section: "hero" },
+  {
+    id: "leistungen",
+    de: "Leistungen",
+    en: "Services",
+    href: "/#leistungen",
+    section: "leistungen",
+  },
+  {
+    id: "projekte",
+    de: "Referenzen",
+    en: "References",
+    href: "/#projekte",
+    section: "projekte",
+  },
+  {
+    id: "chatbot",
+    de: "Fragen",
+    en: "FAQ",
+    href: "/#chatbot",
+    section: "chatbot",
+  },
+  {
+    id: "ueber-uns",
+    de: "Über uns",
+    en: "About us",
+    href: "/ueber-uns",
+    section: null,
+  },
 ];
 
 export function Navbar() {
@@ -31,11 +48,6 @@ export function Navbar() {
   const [activeTab, setActiveTab] = useState("hero");
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState<{ firstName: string; lastName: string } | null>(null);
-
-  useEffect(() => {
-    setLoggedInUser(parseCookieUser());
-  }, []);
 
   // Scroll shadow
   useEffect(() => {
@@ -52,7 +64,9 @@ export function Navbar() {
     }
     if (pathname !== "/") return;
 
-    const sectionIds = NAV_ITEMS.filter((i) => i.section).map((i) => i.section!);
+    const sectionIds = NAV_ITEMS.filter((i) => i.section).map(
+      (i) => i.section!,
+    );
     const observers: IntersectionObserver[] = [];
 
     sectionIds.forEach((id) => {
@@ -62,7 +76,7 @@ export function Navbar() {
         ([entry]) => {
           if (entry.isIntersecting) setActiveTab(id);
         },
-        { rootMargin: "-35% 0px -45% 0px", threshold: 0 }
+        { rootMargin: "-35% 0px -45% 0px", threshold: 0 },
       );
       obs.observe(el);
       observers.push(obs);
@@ -78,14 +92,21 @@ export function Navbar() {
       }`}
       style={
         scrolled
-          ? { borderBottom: "1px solid rgba(255,255,255,0.06)", backgroundColor: "rgba(15,15,15,0.85)" }
+          ? {
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              backgroundColor: "rgba(15,15,15,0.85)",
+            }
           : {}
       }
     >
       <div className="max-w-7xl mx-auto px-6 md:px-8 lg:px-12 py-4 flex items-center justify-between">
-
         {/* Logo */}
-        <Link href="/" className="flex items-center" aria-label="Onvero" onClick={() => setActiveTab("hero")}>
+        <Link
+          href="/"
+          className="flex items-center"
+          aria-label="Onvero"
+          onClick={() => setActiveTab("hero")}
+        >
           <OnveroLogo className="hidden md:block h-10 w-auto" />
           <OnveroIcon className="md:hidden h-10 w-auto" />
         </Link>
@@ -101,12 +122,16 @@ export function Navbar() {
                 href={item.href}
                 onClick={() => setActiveTab(item.id)}
                 className="relative px-4 py-2 text-sm font-medium rounded-full transition-colors duration-200"
-                style={{ color: isActive ? "#ffffff" : "rgba(255,255,255,0.45)" }}
+                style={{
+                  color: isActive ? "#ffffff" : "rgba(255,255,255,0.45)",
+                }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.color = "rgba(255,255,255,0.8)";
+                  if (!isActive)
+                    e.currentTarget.style.color = "rgba(255,255,255,0.8)";
                 }}
                 onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.color = "rgba(255,255,255,0.45)";
+                  if (!isActive)
+                    e.currentTarget.style.color = "rgba(255,255,255,0.45)";
                 }}
               >
                 {label}
@@ -125,7 +150,10 @@ export function Navbar() {
                     >
                       <span
                         className="absolute w-14 h-8 rounded-full -left-3 top-0"
-                        style={{ backgroundColor: "rgba(255,255,255,0.12)", filter: "blur(8px)" }}
+                        style={{
+                          backgroundColor: "rgba(255,255,255,0.12)",
+                          filter: "blur(8px)",
+                        }}
                       />
                     </span>
                   </motion.span>
@@ -141,13 +169,32 @@ export function Navbar() {
           <button
             onClick={() => setLang(lang === "de" ? "en" : "de")}
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-200"
-            style={{ border: "1px solid rgba(255,255,255,0.12)", background: "transparent" }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.28)")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}
+            style={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "transparent",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.borderColor = "rgba(255,255,255,0.28)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")
+            }
           >
-            <span style={{ color: lang === "de" ? "#ffffff" : "rgba(255,255,255,0.35)" }}>DE</span>
+            <span
+              style={{
+                color: lang === "de" ? "#ffffff" : "rgba(255,255,255,0.35)",
+              }}
+            >
+              DE
+            </span>
             <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
-            <span style={{ color: lang === "en" ? "#ffffff" : "rgba(255,255,255,0.35)" }}>EN</span>
+            <span
+              style={{
+                color: lang === "en" ? "#ffffff" : "rgba(255,255,255,0.35)",
+              }}
+            >
+              EN
+            </span>
           </button>
 
           {/* CTA */}
@@ -161,31 +208,27 @@ export function Navbar() {
           </Button>
 
           {/* Anmelden / Profil-Avatar */}
-          {loggedInUser ? (
-            <Link href="/sales">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-opacity hover:opacity-80"
-                style={{
-                  background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  color: "#fff",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                {(loggedInUser.firstName?.[0] ?? "").toUpperCase()}{(loggedInUser.lastName?.[0] ?? "").toUpperCase()}
-              </div>
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              className="text-sm font-medium px-4 py-2 rounded-xl transition-colors"
-              style={{ color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.12)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#fff"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.3)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"; }}
-            >
-              {t("Anmelden", "Sign in")}
-            </Link>
-          )}
+          <a
+            href="https://sales.onvero.de/login"
+            className="text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.color = "#fff";
+              (e.currentTarget as HTMLElement).style.borderColor =
+                "rgba(255,255,255,0.3)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.color =
+                "rgba(255,255,255,0.6)";
+              (e.currentTarget as HTMLElement).style.borderColor =
+                "rgba(255,255,255,0.12)";
+            }}
+          >
+            {t("Anmelden", "Sign in")}
+          </a>
         </div>
 
         {/* Mobile toggle */}
@@ -194,7 +237,11 @@ export function Navbar() {
           style={{ color: "rgba(255,255,255,0.6)" }}
           onClick={() => setMobileOpen(!mobileOpen)}
         >
-          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {mobileOpen ? (
+            <X className="w-6 h-6" />
+          ) : (
+            <Menu className="w-6 h-6" />
+          )}
         </button>
       </div>
 
@@ -202,29 +249,56 @@ export function Navbar() {
       {mobileOpen && (
         <div
           className="md:hidden backdrop-blur-xl px-6 py-5 flex flex-col gap-3"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)", backgroundColor: "rgba(15,15,15,0.95)" }}
+          style={{
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            backgroundColor: "rgba(15,15,15,0.95)",
+          }}
         >
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.id}
               href={item.href}
               className="text-sm font-medium py-2 transition-colors"
-              style={{ color: activeTab === item.id ? "#ffffff" : "rgba(255,255,255,0.55)" }}
-              onClick={() => { setActiveTab(item.id); setMobileOpen(false); }}
+              style={{
+                color:
+                  activeTab === item.id ? "#ffffff" : "rgba(255,255,255,0.55)",
+              }}
+              onClick={() => {
+                setActiveTab(item.id);
+                setMobileOpen(false);
+              }}
             >
               {lang === "de" ? item.de : item.en}
             </Link>
           ))}
 
-          <div className="flex items-center gap-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div
+            className="flex items-center gap-3 pt-3"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+          >
             <button
               onClick={() => setLang(lang === "de" ? "en" : "de")}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full"
-              style={{ border: "1px solid rgba(255,255,255,0.12)", background: "transparent" }}
+              style={{
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "transparent",
+              }}
             >
-              <span style={{ color: lang === "de" ? "#ffffff" : "rgba(255,255,255,0.35)" }}>DE</span>
+              <span
+                style={{
+                  color: lang === "de" ? "#ffffff" : "rgba(255,255,255,0.35)",
+                }}
+              >
+                DE
+              </span>
               <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
-              <span style={{ color: lang === "en" ? "#ffffff" : "rgba(255,255,255,0.35)" }}>EN</span>
+              <span
+                style={{
+                  color: lang === "en" ? "#ffffff" : "rgba(255,255,255,0.35)",
+                }}
+              >
+                EN
+              </span>
             </button>
             <Button
               asChild
@@ -234,14 +308,17 @@ export function Navbar() {
                 {t("Erstgespräch buchen →", "Book a call →")}
               </Link>
             </Button>
-            <Link
-              href={loggedInUser ? "/dashboard" : "/login"}
+            <a
+              href="https://sales.onvero.de/login"
               className="text-sm font-medium py-2 px-4 rounded-xl"
-              style={{ color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.12)" }}
+              style={{
+                color: "rgba(255,255,255,0.6)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
               onClick={() => setMobileOpen(false)}
             >
-              {loggedInUser ? `${loggedInUser.firstName} →` : t("Anmelden", "Sign in")}
-            </Link>
+              {t("Anmelden", "Sign in")}
+            </a>
           </div>
         </div>
       )}
