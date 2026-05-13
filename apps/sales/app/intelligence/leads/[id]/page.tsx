@@ -803,62 +803,362 @@ function SourceBadge({ label, href }: { label: string; href?: string }) {
   return <span style={style}>{label}</span>;
 }
 
-// ─── EmployeeChart ────────────────────────────────────────────────────────────
+// ─── EmployeeAreaChart ───────────────────────────────────────────────────────
 
-function EmployeeChart({ history, isDark }: { history: { year: number; employees: number }[]; isDark: boolean }) {
+function EmployeeAreaChart({ history, isDark }: { history: { year: number; employees: number }[]; isDark: boolean }) {
   const sorted = [...history].sort((a, b) => a.year - b.year);
-  if (sorted.length === 0) return <span style={{ fontSize: 13, color: '#94A3B8' }}>—</span>;
+  if (sorted.length < 2) {
+    // fallback: single bar
+    return <div style={{ fontSize: 13, color: '#94A3B8' }}>{sorted[0]?.employees ?? '—'}</div>;
+  }
+  const W = 240;
+  const H = 90;
+  const PAD = 4;
   const max = Math.max(...sorted.map((e) => e.employees));
-  const chartH = 64;
-  const barW = 26;
-  const gap = 7;
-  const total = sorted.length * (barW + gap) - gap;
+  const min = Math.min(...sorted.map((e) => e.employees));
+  const range = max - min || 1;
+
+  const pts = sorted.map((e, i) => ({
+    x: PAD + (i / (sorted.length - 1)) * (W - PAD * 2),
+    y: PAD + (1 - (e.employees - min) / range) * (H - PAD * 2 - 14),
+    ...e,
+  }));
+
+  // Smooth bezier path
+  const linePath = pts.reduce((acc, p, i) => {
+    if (i === 0) return `M ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+    const prev = pts[i - 1];
+    const cpx = ((prev.x + p.x) / 2).toFixed(1);
+    return `${acc} C ${cpx} ${prev.y.toFixed(1)}, ${cpx} ${p.y.toFixed(1)}, ${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
+  }, '');
+
+  const areaPath = `${linePath} L ${(W - PAD).toFixed(1)} ${H - 14} L ${PAD} ${H - 14} Z`;
+  const gradId = `empGrad_${isDark ? 'd' : 'l'}`;
+
   return (
-    <svg width={total} height={chartH + 20} style={{ display: 'block', overflow: 'visible' }}>
-      {sorted.map((e, i) => {
-        const bh = max > 0 ? Math.max(4, (e.employees / max) * chartH) : 4;
-        const x = i * (barW + gap);
-        const isLatest = i === sorted.length - 1;
-        const fill = isLatest ? '#10B981' : isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.10)';
+    <svg width={W} height={H} style={{ display: 'block', overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#10B981" stopOpacity={isDark ? 0.28 : 0.18} />
+          <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* Gridlines */}
+      {[0.33, 0.66, 1].map((t) => (
+        <line
+          key={t}
+          x1={PAD}
+          x2={W - PAD}
+          y1={PAD + t * (H - PAD * 2 - 14)}
+          y2={PAD + t * (H - PAD * 2 - 14)}
+          stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}
+          strokeDasharray="3 3"
+        />
+      ))}
+      {/* Area fill */}
+      <motion.path
+        d={areaPath}
+        fill={`url(#${gradId})`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.9, delay: 0.1 }}
+      />
+      {/* Line */}
+      <motion.path
+        d={linePath}
+        fill="none"
+        stroke="#10B981"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ duration: 1.1, ease: 'easeInOut' }}
+      />
+      {/* Points + year labels */}
+      {pts.map((p, i) => {
+        const isLatest = i === pts.length - 1;
         return (
-          <g key={e.year}>
-            <motion.rect
-              x={x}
-              y={chartH - bh}
-              width={barW}
-              rx={5}
-              fill={fill}
-              initial={{ height: 0, y: chartH }}
-              animate={{ height: bh, y: chartH - bh }}
-              transition={{ duration: 0.55, delay: i * 0.07, ease: 'easeOut' }}
+          <g key={p.year}>
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={isLatest ? 5 : 3}
+              fill={isLatest ? '#10B981' : isDark ? 'rgba(16,185,129,0.45)' : 'rgba(16,185,129,0.55)'}
             />
+            {isLatest && (
+              <circle cx={p.x} cy={p.y} r={9} fill="none" stroke="#10B981" strokeWidth={1.5} strokeOpacity={0.3} />
+            )}
             <text
-              x={x + barW / 2}
-              y={chartH + 13}
+              x={p.x}
+              y={H - 1}
               textAnchor="middle"
               fontSize={9}
-              fill={isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)'}
+              fill={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.28)'}
               fontFamily="inherit"
             >
-              {String(e.year).slice(2)}
+              {String(p.year).slice(2)}
             </text>
-            {isLatest && (
+            {/* Value label for first, last, and local peaks */}
+            {(isLatest || i === 0) && (
               <text
-                x={x + barW / 2}
-                y={chartH - bh - 6}
+                x={p.x + (i === 0 ? 0 : 0)}
+                y={p.y - 9}
                 textAnchor="middle"
-                fontSize={11}
-                fill="#10B981"
+                fontSize={10}
                 fontWeight="800"
+                fill={isLatest ? '#10B981' : isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)'}
                 fontFamily="inherit"
               >
-                {e.employees}
+                {p.employees}
               </text>
             )}
           </g>
         );
       })}
     </svg>
+  );
+}
+
+// ─── TrendArrow ───────────────────────────────────────────────────────────────
+
+function TrendArrow({ dir, color }: { dir: 'up' | 'down' | 'stable'; color: string }) {
+  if (dir === 'stable')
+    return (
+      <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+        <rect width="20" height="20" rx="10" fill={color} fillOpacity="0.15" />
+        <path d="M6 10h8" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  const arrow = dir === 'up' ? 'M10 14V6M6.5 9.5L10 6l3.5 3.5' : 'M10 6v8M6.5 10.5L10 14l3.5-3.5';
+  return (
+    <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+      <rect width="20" height="20" rx="10" fill={color} fillOpacity="0.18" />
+      <path d={arrow} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ─── KpiStrip ─────────────────────────────────────────────────────────────────
+
+function KpiStrip({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
+  const yearFounded = lead.founded ? parseInt(lead.founded) : null;
+  const yearsInBusiness = yearFounded ? new Date().getFullYear() - yearFounded : null;
+
+  const kpis = [
+    {
+      label: 'Mitarbeiter',
+      value: lead.employees ?? '—',
+      sub: lead.employeeTrend
+        ? lead.employeeTrend === 'up'
+          ? 'Wachstum'
+          : lead.employeeTrend === 'down'
+            ? 'Rückgang'
+            : 'Stabil'
+        : undefined,
+      trend: lead.employeeTrend ?? 'stable',
+      trendColor: lead.employeeTrend === 'up' ? '#10B981' : lead.employeeTrend === 'down' ? '#EF4444' : '#94A3B8',
+      accent: '#10B981',
+    },
+    {
+      label: 'Gegründet',
+      value: lead.founded ?? '—',
+      sub: yearsInBusiness ? `${yearsInBusiness} Jahre` : undefined,
+      trend: null,
+      trendColor: '#818CF8',
+      accent: '#818CF8',
+    },
+    {
+      label: 'Branche',
+      value: lead.industry ?? '—',
+      sub: lead.legal_form,
+      trend: null,
+      trendColor: '#F97316',
+      accent: '#F97316',
+    },
+    {
+      label: 'Onvero Score',
+      value: String(lead.score),
+      sub: lead.fit ? `${lead.fit}% Fit` : undefined,
+      trend: lead.score >= 70 ? 'up' : ('down' as const),
+      trendColor: lead.score >= 70 ? '#10B981' : '#EF4444',
+      accent: lead.score >= 70 ? '#10B981' : '#EF4444',
+    },
+  ] as const;
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 12,
+        marginBottom: 16,
+      }}
+    >
+      {kpis.map((k, i) => (
+        <motion.div
+          key={k.label}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.07, duration: 0.35, ease: 'easeOut' }}
+          style={{
+            ...glassCard(isDark),
+            borderRadius: 14,
+            padding: '16px 18px',
+            borderTop: `2px solid ${k.accent}`,
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: c.textMuted,
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.08em',
+              }}
+            >
+              {k.label}
+            </span>
+            {k.trend && <TrendArrow dir={k.trend} color={k.trendColor} />}
+          </div>
+          <div
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: k.accent,
+              lineHeight: 1,
+              marginBottom: 4,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {k.value}
+          </div>
+          {k.sub && <div style={{ fontSize: 12, color: c.textMuted, fontWeight: 500 }}>{k.sub}</div>}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ─── DataSourcesBar ──────────────────────────────────────────────────────────
+
+function DataSourcesBar({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
+  const sources = [
+    {
+      label: 'Handelsregister',
+      icon: '⚖',
+      color: '#10B981',
+      fields: [lead.founded, lead.legal_form, lead.hrb_number, lead.court, lead.representative].filter(Boolean).length,
+      total: 5,
+      url: 'https://www.handelsregister.de',
+    },
+    {
+      label: 'Instagram',
+      icon: '📸',
+      color: '#E1306C',
+      fields: [lead.instagramFollowers, lead.instagramPosts].filter((v) => v != null).length,
+      total: 2,
+    },
+    {
+      label: 'Website',
+      icon: '🌐',
+      color: '#818CF8',
+      fields: [lead.website, lead.tech_stack?.length ? 1 : 0].filter(Boolean).length,
+      total: 2,
+    },
+    {
+      label: 'KI-Analyse',
+      icon: '🤖',
+      color: '#F97316',
+      fields: [lead.lead_summary, lead.pitch, lead.toneOfVoice, lead.proposedOffer].filter(Boolean).length,
+      total: 4,
+    },
+    {
+      label: 'LinkedIn',
+      icon: '💼',
+      color: '#0077B5',
+      fields: lead.contacts.filter((c) => c.source === 'linkedin').length,
+      total: Math.max(lead.contacts.length, 1),
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        ...glassCard(isDark),
+        borderRadius: 14,
+        padding: '16px 20px',
+        marginBottom: 16,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 800,
+          color: c.textMuted,
+          textTransform: 'uppercase' as const,
+          letterSpacing: '0.08em',
+          marginBottom: 14,
+        }}
+      >
+        Datenquellen
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+        {sources.map((s) => {
+          const pct = Math.round((s.fields / s.total) * 100);
+          return (
+            <div key={s.label}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 4,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <span style={{ fontSize: 13 }}>{s.icon}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>{s.label}</span>
+                </div>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: s.color,
+                    background: s.color + '15',
+                    padding: '1px 7px',
+                    borderRadius: 99,
+                  }}
+                >
+                  {s.fields}/{s.total} Felder
+                </span>
+              </div>
+              <div
+                style={{
+                  height: 4,
+                  borderRadius: 99,
+                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
+                  overflow: 'hidden',
+                }}
+              >
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
+                  style={{
+                    height: '100%',
+                    borderRadius: 99,
+                    background: s.color,
+                    opacity: 0.8,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -968,6 +1268,9 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
         </div>
       ) : null}
 
+      {/* ── KPI Strip ─────────────────────────────────────────────────────── */}
+      <KpiStrip lead={lead} c={c} isDark={isDark} />
+
       {/* ── 2. 3-Column Snapshot ──────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
         {/* Firma */}
@@ -1013,38 +1316,34 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
 
         {/* Mitarbeiter */}
         <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 20px' }}>
-          <div style={sectionTitle}>Mitarbeiter</div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={label}>Aktuell</div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: '#10B981', lineHeight: 1 }}>
-              {lead.employees ?? '—'}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={sectionTitle}>Mitarbeiter</div>
             {lead.employeeTrend && (
-              <div
-                style={{
-                  fontSize: 13,
-                  color:
-                    lead.employeeTrend === 'up' ? '#10B981' : lead.employeeTrend === 'down' ? '#EF4444' : '#94A3B8',
-                  marginTop: 4,
-                  fontWeight: 600,
-                }}
-              >
-                {lead.employeeTrend === 'up' ? '↑ Wachstum' : lead.employeeTrend === 'down' ? '↓ Rückgang' : '→ Stabil'}
-              </div>
+              <TrendArrow
+                dir={lead.employeeTrend}
+                color={lead.employeeTrend === 'up' ? '#10B981' : lead.employeeTrend === 'down' ? '#EF4444' : '#94A3B8'}
+              />
             )}
           </div>
-          {rawHistory.length > 0 ? (
+          {rawHistory.length > 1 ? (
             <>
-              <EmployeeChart history={rawHistory} isDark={isDark} />
+              <EmployeeAreaChart history={rawHistory} isDark={isDark} />
               {lead.employeeHistory && (
-                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 8, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 10, lineHeight: 1.5 }}>
                   {lead.employeeHistory}
                 </div>
               )}
             </>
-          ) : lead.employeeHistory ? (
-            <div style={{ fontSize: 13, color: c.textSub, lineHeight: 1.6 }}>{lead.employeeHistory}</div>
-          ) : null}
+          ) : (
+            <>
+              <div style={{ fontSize: 32, fontWeight: 800, color: '#10B981', lineHeight: 1, marginBottom: 8 }}>
+                {lead.employees ?? '—'}
+              </div>
+              {lead.employeeHistory && (
+                <div style={{ fontSize: 13, color: c.textSub, lineHeight: 1.6 }}>{lead.employeeHistory}</div>
+              )}
+            </>
+          )}
           <div style={{ marginTop: 12 }}>
             <SourceBadge label="Handelsregister" />
           </div>
@@ -1581,6 +1880,9 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
           ))}
         </div>
       )}
+
+      {/* ── Datenquellen ──────────────────────────────────────────────────── */}
+      <DataSourcesBar lead={lead} c={c} isDark={isDark} />
     </div>
   );
 }
