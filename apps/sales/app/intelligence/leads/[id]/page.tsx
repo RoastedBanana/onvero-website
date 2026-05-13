@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useLayoutEffect, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpIcon } from 'lucide-react';
+import { ArrowUpIcon, Users, Calendar, Globe, Phone, X, Info, ChevronDown } from 'lucide-react';
 import { useTheme, colors } from '../../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
 import { GlassButton } from '@/components/ui/glass-button';
@@ -939,229 +939,6 @@ function TrendArrow({ dir, color }: { dir: 'up' | 'down' | 'stable'; color: stri
   );
 }
 
-// ─── KpiStrip ─────────────────────────────────────────────────────────────────
-
-function KpiStrip({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
-  const yearFounded = lead.founded ? parseInt(lead.founded) : null;
-  const yearsInBusiness = yearFounded ? new Date().getFullYear() - yearFounded : null;
-
-  const kpis = [
-    {
-      label: 'Mitarbeiter',
-      value: lead.employees ?? '—',
-      sub: lead.employeeTrend
-        ? lead.employeeTrend === 'up'
-          ? 'Wachstum'
-          : lead.employeeTrend === 'down'
-            ? 'Rückgang'
-            : 'Stabil'
-        : undefined,
-      trend: lead.employeeTrend ?? 'stable',
-      trendColor: lead.employeeTrend === 'up' ? '#10B981' : lead.employeeTrend === 'down' ? '#EF4444' : '#94A3B8',
-      accent: '#10B981',
-    },
-    {
-      label: 'Gegründet',
-      value: lead.founded ?? '—',
-      sub: yearsInBusiness ? `${yearsInBusiness} Jahre` : undefined,
-      trend: null,
-      trendColor: '#818CF8',
-      accent: '#818CF8',
-    },
-    {
-      label: 'Branche',
-      value: lead.industry ?? '—',
-      sub: lead.legal_form,
-      trend: null,
-      trendColor: '#F97316',
-      accent: '#F97316',
-    },
-    {
-      label: 'Onvero Score',
-      value: String(lead.score),
-      sub: lead.fit ? `${lead.fit}% Fit` : undefined,
-      trend: lead.score >= 70 ? 'up' : ('down' as const),
-      trendColor: lead.score >= 70 ? '#10B981' : '#EF4444',
-      accent: lead.score >= 70 ? '#10B981' : '#EF4444',
-    },
-  ] as const;
-
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: 12,
-        marginBottom: 16,
-      }}
-    >
-      {kpis.map((k, i) => (
-        <motion.div
-          key={k.label}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.07, duration: 0.35, ease: 'easeOut' }}
-          style={{
-            ...glassCard(isDark),
-            borderRadius: 14,
-            padding: '16px 18px',
-            borderTop: `2px solid ${k.accent}`,
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 800,
-                color: c.textMuted,
-                textTransform: 'uppercase' as const,
-                letterSpacing: '0.08em',
-              }}
-            >
-              {k.label}
-            </span>
-            {k.trend && <TrendArrow dir={k.trend} color={k.trendColor} />}
-          </div>
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 800,
-              color: k.accent,
-              lineHeight: 1,
-              marginBottom: 4,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            {k.value}
-          </div>
-          {k.sub && <div style={{ fontSize: 12, color: c.textMuted, fontWeight: 500 }}>{k.sub}</div>}
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-// ─── DataSourcesBar ──────────────────────────────────────────────────────────
-
-function DataSourcesBar({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
-  const sources = [
-    {
-      label: 'Handelsregister',
-      icon: '⚖',
-      color: '#10B981',
-      fields: [lead.founded, lead.legal_form, lead.hrb_number, lead.court, lead.representative].filter(Boolean).length,
-      total: 5,
-      url: 'https://www.handelsregister.de',
-    },
-    {
-      label: 'Instagram',
-      icon: '📸',
-      color: '#E1306C',
-      fields: [lead.instagramFollowers, lead.instagramPosts].filter((v) => v != null).length,
-      total: 2,
-    },
-    {
-      label: 'Website',
-      icon: '🌐',
-      color: '#818CF8',
-      fields: [lead.website, lead.tech_stack?.length ? 1 : 0].filter(Boolean).length,
-      total: 2,
-    },
-    {
-      label: 'KI-Analyse',
-      icon: '🤖',
-      color: '#F97316',
-      fields: [lead.lead_summary, lead.pitch, lead.toneOfVoice, lead.proposedOffer].filter(Boolean).length,
-      total: 4,
-    },
-    {
-      label: 'LinkedIn',
-      icon: '💼',
-      color: '#0077B5',
-      fields: lead.contacts.filter((c) => c.source === 'linkedin').length,
-      total: Math.max(lead.contacts.length, 1),
-    },
-  ];
-
-  return (
-    <div
-      style={{
-        ...glassCard(isDark),
-        borderRadius: 14,
-        padding: '16px 20px',
-        marginBottom: 16,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 800,
-          color: c.textMuted,
-          textTransform: 'uppercase' as const,
-          letterSpacing: '0.08em',
-          marginBottom: 14,
-        }}
-      >
-        Datenquellen
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
-        {sources.map((s) => {
-          const pct = Math.round((s.fields / s.total) * 100);
-          return (
-            <div key={s.label}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 4,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <span style={{ fontSize: 13 }}>{s.icon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>{s.label}</span>
-                </div>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: s.color,
-                    background: s.color + '15',
-                    padding: '1px 7px',
-                    borderRadius: 99,
-                  }}
-                >
-                  {s.fields}/{s.total} Felder
-                </span>
-              </div>
-              <div
-                style={{
-                  height: 4,
-                  borderRadius: 99,
-                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
-                  overflow: 'hidden',
-                }}
-              >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${pct}%` }}
-                  transition={{ duration: 0.7, delay: 0.1, ease: 'easeOut' }}
-                  style={{
-                    height: '100%',
-                    borderRadius: 99,
-                    background: s.color,
-                    opacity: 0.8,
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ─── Expandable ───────────────────────────────────────────────────────────────
 
 function Expandable({ open, children }: { open: boolean; children: React.ReactNode }) {
@@ -1183,12 +960,128 @@ function Expandable({ open, children }: { open: boolean; children: React.ReactNo
   );
 }
 
+// ─── ExpandModal ──────────────────────────────────────────────────────────────
+
+function ExpandModal({
+  open,
+  onClose,
+  title,
+  children,
+  isDark,
+  c,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  isDark: boolean;
+  c: ReturnType<typeof colors>;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 200,
+              background: isDark ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(4px)',
+            }}
+          />
+          {/* Modal */}
+          <motion.div
+            key="modal"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            style={{
+              position: 'fixed',
+              top: '6%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '70vw',
+              maxHeight: '86vh',
+              zIndex: 201,
+              display: 'flex',
+              flexDirection: 'column',
+              background: isDark ? 'rgba(12,14,28,0.97)' : 'rgba(250,250,255,0.98)',
+              border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+              borderRadius: 20,
+              boxShadow: '0 24px 80px rgba(0,0,0,0.4)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '18px 24px',
+                borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: 16, fontWeight: 800, color: c.text, letterSpacing: '-0.01em' }}>{title}</span>
+              <button
+                onClick={onClose}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                  color: c.textMuted,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontFamily: 'inherit',
+                }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+            {/* Scrollable body */}
+            <div style={{ overflowY: 'auto', flex: 1, padding: '24px' }}>{children}</div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Info Tab ─────────────────────────────────────────────────────────────────
 
 function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
-  const [scoreOpen, setScoreOpen] = useState(false);
-  const [financeOpen, setFinanceOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
+
+  // Expand-modal state for each section
+  const [firmaModal, setFirmaModal] = useState(false);
+  const [faktenModal, setFaktenModal] = useState(false);
+  const [finanzenModal, setFinanzenModal] = useState(false);
+  const [socialModal, setSocialModal] = useState(false);
+  const [bewertungenModal, setBewertungenModal] = useState(false);
+  const [techModal, setTechModal] = useState(false);
 
   const rawHistory: { year: number; employees: number }[] = lead._empHistory ?? [];
 
@@ -1199,13 +1092,6 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
     social: 'Social Media',
     linkedin: 'LinkedIn',
     openweb: 'OpenWeb',
-  };
-
-  const card: React.CSSProperties = {
-    ...glassCard(isDark),
-    borderRadius: 16,
-    padding: '20px 24px',
-    marginBottom: 16,
   };
 
   const sectionTitle: React.CSSProperties = {
@@ -1219,14 +1105,68 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
 
   const label: React.CSSProperties = { fontSize: 12, color: c.textMuted, marginBottom: 3 };
   const value: React.CSSProperties = { fontSize: 15, fontWeight: 700, color: c.text };
-  const divider: React.CSSProperties = {
-    height: 1,
-    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-    margin: '14px 0',
-  };
 
-  void divider;
-  void card;
+  // Compact quick-view card with an expand button
+  function QuickCard({
+    title,
+    accent,
+    onExpand,
+    children,
+  }: {
+    title: string;
+    accent?: string;
+    onExpand: () => void;
+    children: React.ReactNode;
+  }) {
+    return (
+      <div
+        style={{
+          ...glassCard(isDark),
+          borderRadius: 14,
+          padding: '16px 18px',
+          ...(accent ? { borderTop: `2px solid ${accent}` } : {}),
+          display: 'flex',
+          flexDirection: 'column' as const,
+          gap: 10,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase' as const,
+              color: c.textMuted,
+            }}
+          >
+            {title}
+          </span>
+          <button
+            onClick={onExpand}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 700,
+              color: accent ?? c.textMuted,
+              fontFamily: 'inherit',
+              padding: 0,
+              opacity: 0.75,
+            }}
+          >
+            <Info size={12} />
+            Details
+          </button>
+        </div>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '20px 24px' }}>
@@ -1268,56 +1208,37 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
         </div>
       ) : null}
 
-      {/* ── KPI Strip ─────────────────────────────────────────────────────── */}
-      <KpiStrip lead={lead} c={c} isDark={isDark} />
-
-      {/* ── 2. 3-Column Snapshot ──────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
+      {/* ── 2. Compact quick-view cards ───────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
         {/* Firma */}
-        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 20px' }}>
-          <div style={sectionTitle}>Firma</div>
-          {[
-            { l: 'Gründung', v: lead.founded ? `${lead.founded}` : undefined },
-            { l: 'Rechtsform', v: lead.legal_form },
-            { l: 'HRB', v: lead.hrb_number },
-            { l: 'Amtsgericht', v: lead.court },
-            { l: 'Branche', v: lead.industry },
-            { l: 'Geschäftsführung', v: lead.representative },
-          ]
-            .filter((r) => r.v)
-            .map((row) => (
-              <div key={row.l} style={{ marginBottom: 12 }}>
-                <div style={label}>{row.l}</div>
-                <div style={value}>{row.v}</div>
-              </div>
-            ))}
-          {lead.website && (
-            <a
-              href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-              target="_blank"
-              rel="noopener noreferrer"
+        <QuickCard title="Firma" accent="#818CF8" onExpand={() => setFirmaModal(true)}>
+          {lead.legal_form && <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{lead.legal_form}</div>}
+          {lead.founded && (
+            <div style={{ fontSize: 12, color: c.textMuted }}>
+              Gegründet <strong style={{ color: c.text }}>{lead.founded}</strong>
+            </div>
+          )}
+          {lead.representative && (
+            <div
               style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: '#818CF8',
-                textDecoration: 'none',
-                display: 'block',
-                marginTop: 4,
+                fontSize: 12,
+                color: c.textMuted,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap' as const,
               }}
             >
-              {lead.website.replace(/^https?:\/\//, '')} ↗
-            </a>
+              {lead.representative}
+            </div>
           )}
-          {lead.phone && <div style={{ fontSize: 14, color: c.textSub, marginTop: 6 }}>{lead.phone}</div>}
-          <div style={{ marginTop: 12 }}>
-            <SourceBadge label="Handelsregister" href="https://www.handelsregister.de" />
-          </div>
-        </div>
+        </QuickCard>
 
-        {/* Mitarbeiter */}
-        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={sectionTitle}>Mitarbeiter</div>
+        {/* Fakten / Mitarbeiter */}
+        <QuickCard title="Mitarbeiter" accent="#10B981" onExpand={() => setFaktenModal(true)}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 24, fontWeight: 800, color: '#10B981', lineHeight: 1 }}>
+              {lead.employees ?? '—'}
+            </span>
             {lead.employeeTrend && (
               <TrendArrow
                 dir={lead.employeeTrend}
@@ -1325,75 +1246,34 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
               />
             )}
           </div>
-          {rawHistory.length > 1 ? (
-            <>
-              <EmployeeAreaChart history={rawHistory} isDark={isDark} />
-              {lead.employeeHistory && (
-                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 10, lineHeight: 1.5 }}>
-                  {lead.employeeHistory}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 32, fontWeight: 800, color: '#10B981', lineHeight: 1, marginBottom: 8 }}>
-                {lead.employees ?? '—'}
-              </div>
-              {lead.employeeHistory && (
-                <div style={{ fontSize: 13, color: c.textSub, lineHeight: 1.6 }}>{lead.employeeHistory}</div>
-              )}
-            </>
+          {lead.employeeHistory && (
+            <div style={{ fontSize: 11, color: c.textMuted, lineHeight: 1.4 }}>{lead.employeeHistory}</div>
           )}
-          <div style={{ marginTop: 12 }}>
-            <SourceBadge label="Handelsregister" />
-          </div>
-        </div>
+        </QuickCard>
 
         {/* Finanzen */}
-        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 20px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}
-          >
-            <div style={sectionTitle}>Finanzen</div>
-            <button
-              onClick={() => setFinanceOpen((v) => !v)}
+        <QuickCard title="Finanzen" accent="#F97316" onExpand={() => setFinanzenModal(true)}>
+          {lead.revenue ? (
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#F97316', lineHeight: 1 }}>{lead.revenue}</div>
+          ) : (
+            <div style={{ fontSize: 13, color: c.textMuted }}>Keine Umsatzdaten</div>
+          )}
+          {lead.financials && (
+            <div
               style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: 13,
-                color: '#818CF8',
-                fontWeight: 700,
-                fontFamily: 'inherit',
-                padding: 0,
+                fontSize: 12,
+                color: c.textMuted,
+                lineHeight: 1.4,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical' as const,
               }}
             >
-              {financeOpen ? '▲' : '▼'}
-            </button>
-          </div>
-          {lead.financials ? (
-            <>
-              <p style={{ fontSize: 14, color: c.text, lineHeight: 1.65, margin: '0 0 12px' }}>
-                {financeOpen
-                  ? lead.financials
-                  : lead.financials.slice(0, 120) + (lead.financials.length > 120 ? '…' : '')}
-              </p>
-              <Expandable open={financeOpen}>
-                <div style={{ paddingTop: 8 }}>{/* Additional finance detail when expanded */}</div>
-              </Expandable>
-            </>
-          ) : (
-            <span style={{ fontSize: 14, color: c.textMuted }}>Keine Finanzdaten verfügbar</span>
+              {lead.financials}
+            </div>
           )}
-          <div style={{ marginTop: 12 }}>
-            <SourceBadge label="Handelsregister" />
-          </div>
-        </div>
+        </QuickCard>
       </div>
 
       {/* ── 3. Signale ────────────────────────────────────────────────────── */}
@@ -1434,7 +1314,7 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
                         lineHeight: 1.3,
                       }}
                     >
-                      <span style={{ fontSize: 11, opacity: 0.85 }}>✓</span>
+                      <span style={{ fontSize: 11, opacity: 0.85 }}>&#10003;</span>
                       {flag}
                     </div>
                   );
@@ -1479,7 +1359,7 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
                         lineHeight: 1.3,
                       }}
                     >
-                      <span style={{ fontSize: 11, opacity: 0.85 }}>✗</span>
+                      <span style={{ fontSize: 11, opacity: 0.85 }}>&#10007;</span>
                       {flag}
                       {raw?.severity && raw.severity !== 'low' && (
                         <span style={{ fontSize: 10, fontWeight: 800, opacity: 0.75, marginLeft: 2 }}>
@@ -1515,14 +1395,20 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  fontSize: 13,
                   color: '#818CF8',
-                  fontWeight: 700,
                   fontFamily: 'inherit',
                   padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
               >
-                {eventsOpen ? '▲' : '▼'}
+                <ChevronDown
+                  size={16}
+                  style={{
+                    transform: eventsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease',
+                  }}
+                />
               </button>
             </div>
           </div>
@@ -1552,7 +1438,7 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
                       borderRadius: 10,
                     }}
                   >
-                    <span style={{ color: '#10B981', fontSize: 14, flexShrink: 0 }}>→</span>
+                    <span style={{ color: '#10B981', fontSize: 14, flexShrink: 0 }}>&#8594;</span>
                     <span style={{ fontSize: 14, color: c.text, lineHeight: 1.5 }}>{u.text}</span>
                   </div>
                 ))}
@@ -1562,93 +1448,238 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
         </div>
       )}
 
-      {/* ── 5. KI-Score Begründung ────────────────────────────────────────── */}
-      {lead.scoreReason && (
-        <div
-          style={{
-            ...glassCard(isDark),
-            borderRadius: 16,
-            padding: '20px 24px',
-            marginBottom: 16,
-            borderLeft: `3px solid ${scoreColor(lead.score)}`,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 14,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ ...sectionTitle, marginBottom: 0 }}>Score-Begründung</div>
-              <span style={{ fontSize: 22, fontWeight: 800, color: scoreColor(lead.score) }}>{lead.score}</span>
+      {/* ── 5. Online-Präsenz — compact expand cards ──────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+        {/* Social Media */}
+        <QuickCard title="Social Media" accent="#E1306C" onExpand={() => setSocialModal(true)}>
+          {lead.instagramFollowers != null ? (
+            <div>
+              <div style={{ fontSize: 11, color: c.textMuted, marginBottom: 2 }}>Instagram</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: c.text, lineHeight: 1 }}>
+                {lead.instagramFollowers.toLocaleString('de-DE')}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <SourceBadge label="KI-Analyse" />
-              <button
-                onClick={() => setScoreOpen((v) => !v)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  color: '#818CF8',
-                  fontWeight: 700,
-                  fontFamily: 'inherit',
-                  padding: 0,
-                }}
-              >
-                {scoreOpen ? '▲' : '▼'}
-              </button>
+          ) : lead.facebookFollowers != null ? (
+            <div>
+              <div style={{ fontSize: 11, color: c.textMuted, marginBottom: 2 }}>Facebook</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: c.text, lineHeight: 1 }}>
+                {lead.facebookFollowers.toLocaleString('de-DE')}
+              </div>
             </div>
-          </div>
-          <p style={{ fontSize: 14, lineHeight: 1.7, color: c.text, margin: 0 }}>
-            {scoreOpen ? lead.scoreReason : lead.scoreReason.slice(0, 180) + (lead.scoreReason.length > 180 ? '…' : '')}
-          </p>
-        </div>
-      )}
-
-      {/* ── 6. Online-Präsenz ─────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
-        {/* Social */}
-        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 20px' }}>
-          <div style={sectionTitle}>Social Media</div>
-          {[
-            {
-              platform: 'Instagram',
-              followers: lead.instagramFollowers,
-              posts: lead.instagramPosts,
-            },
-            { platform: 'Facebook', followers: lead.facebookFollowers, posts: undefined },
-          ].map((s) => (
-            <div key={s.platform} style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, color: c.textMuted, marginBottom: 4 }}>{s.platform}</div>
-              {s.followers != null ? (
-                <div style={{ fontSize: 22, fontWeight: 800, color: c.text }}>
-                  {s.followers.toLocaleString('de-DE')}
-                </div>
-              ) : (
-                <div style={{ fontSize: 14, color: c.textMuted }}>—</div>
-              )}
-              {s.posts != null && <div style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>{s.posts} Posts</div>}
-            </div>
-          ))}
-          {lead.lastPosted && (
-            <div style={{ fontSize: 12, color: '#10B981', marginTop: 4 }}>Zuletzt: {lead.lastPosted}</div>
+          ) : (
+            <div style={{ fontSize: 13, color: c.textMuted }}>Keine Social-Daten</div>
           )}
-        </div>
+        </QuickCard>
 
         {/* Bewertungen */}
-        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 20px' }}>
-          <div style={sectionTitle}>Bewertungen</div>
+        <QuickCard title="Bewertungen" accent="#F59E0B" onExpand={() => setBewertungenModal(true)}>
+          {lead.google != null ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span
+                style={{
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: lead.google >= 4 ? '#10B981' : lead.google >= 3 ? '#F97316' : '#EF4444',
+                }}
+              >
+                {Number(lead.google).toFixed(1)}
+              </span>
+              <span style={{ fontSize: 12, color: c.textMuted }}>Google</span>
+            </div>
+          ) : lead.trustpilot != null ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span
+                style={{
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: lead.trustpilot >= 4 ? '#10B981' : lead.trustpilot >= 3 ? '#F97316' : '#EF4444',
+                }}
+              >
+                {Number(lead.trustpilot).toFixed(1)}
+              </span>
+              <span style={{ fontSize: 12, color: c.textMuted }}>Trustpilot</span>
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: c.textMuted }}>Keine Ratings</div>
+          )}
+        </QuickCard>
+
+        {/* Tech Stack */}
+        <QuickCard title="Technologie" accent="#818CF8" onExpand={() => setTechModal(true)}>
+          {lead.tech_stack && lead.tech_stack.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
+              {lead.tech_stack.slice(0, 4).map((t, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '3px 8px',
+                    borderRadius: 6,
+                    background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                    color: c.textSub,
+                    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+                  }}
+                >
+                  {t}
+                </span>
+              ))}
+              {lead.tech_stack.length > 4 && (
+                <span style={{ fontSize: 11, color: c.textMuted, alignSelf: 'center' }}>
+                  +{lead.tech_stack.length - 4}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: c.textMuted }}>Kein Stack erkannt</div>
+          )}
+        </QuickCard>
+      </div>
+
+      {/* ── Expand Modals ─────────────────────────────────────────────────── */}
+
+      {/* Firma Modal */}
+      <ExpandModal open={firmaModal} onClose={() => setFirmaModal(false)} title="Firmendaten" isDark={isDark} c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 0 }}>
           {[
-            {
-              name: 'Google',
-              rating: lead.google,
-              count: lead.reviews?.find((r) => r.platform === 'Google')?.count,
-            },
+            { l: 'Gründung', v: lead.founded },
+            { l: 'Rechtsform', v: lead.legal_form },
+            { l: 'HRB', v: lead.hrb_number },
+            { l: 'Amtsgericht', v: lead.court },
+            { l: 'Branche', v: lead.industry },
+            { l: 'Geschäftsführung', v: lead.representative },
+          ]
+            .filter((r) => r.v)
+            .map((row) => (
+              <div key={row.l} style={{ marginBottom: 16 }}>
+                <div style={label}>{row.l}</div>
+                <div style={value}>{row.v}</div>
+              </div>
+            ))}
+          {lead.website && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={label}>Website</div>
+              <a
+                href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 15, fontWeight: 700, color: '#818CF8', textDecoration: 'none' }}
+              >
+                {lead.website.replace(/^https?:\/\//, '')} &#8599;
+              </a>
+            </div>
+          )}
+          {lead.phone && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={label}>Telefon</div>
+              <div style={value}>{lead.phone}</div>
+            </div>
+          )}
+          <SourceBadge label="Handelsregister" href="https://www.handelsregister.de" />
+        </div>
+      </ExpandModal>
+
+      {/* Fakten / Mitarbeiter Modal */}
+      <ExpandModal
+        open={faktenModal}
+        onClose={() => setFaktenModal(false)}
+        title="Mitarbeiter-Entwicklung"
+        isDark={isDark}
+        c={c}
+      >
+        <div>
+          {rawHistory.length > 1 ? (
+            <>
+              <EmployeeAreaChart history={rawHistory} isDark={isDark} />
+              {lead.employeeHistory && (
+                <div style={{ fontSize: 13, color: c.textMuted, marginTop: 16, lineHeight: 1.6 }}>
+                  {lead.employeeHistory}
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: 40, fontWeight: 800, color: '#10B981', lineHeight: 1, marginBottom: 12 }}>
+              {lead.employees ?? '—'}
+            </div>
+          )}
+          <div style={{ marginTop: 16 }}>
+            <SourceBadge label="Handelsregister" />
+          </div>
+        </div>
+      </ExpandModal>
+
+      {/* Finanzen Modal */}
+      <ExpandModal
+        open={finanzenModal}
+        onClose={() => setFinanzenModal(false)}
+        title="Finanzdaten"
+        isDark={isDark}
+        c={c}
+      >
+        <div>
+          {lead.revenue && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={label}>Umsatz</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: '#F97316', lineHeight: 1 }}>{lead.revenue}</div>
+            </div>
+          )}
+          {lead.financials ? (
+            <p style={{ fontSize: 15, color: c.text, lineHeight: 1.7, margin: 0 }}>{lead.financials}</p>
+          ) : (
+            <p style={{ fontSize: 14, color: c.textMuted }}>Keine Finanzdaten verfügbar</p>
+          )}
+          <div style={{ marginTop: 16 }}>
+            <SourceBadge label="Handelsregister" />
+          </div>
+        </div>
+      </ExpandModal>
+
+      {/* Social Modal */}
+      <ExpandModal open={socialModal} onClose={() => setSocialModal(false)} title="Social Media" isDark={isDark} c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20 }}>
+          {[
+            { platform: 'Instagram', followers: lead.instagramFollowers, posts: lead.instagramPosts },
+            { platform: 'Facebook', followers: lead.facebookFollowers, posts: undefined },
+          ].map((s) => (
+            <div key={s.platform}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                  marginBottom: 8,
+                }}
+              >
+                {s.platform}
+              </div>
+              {s.followers != null ? (
+                <div style={{ fontSize: 32, fontWeight: 800, color: c.text, lineHeight: 1 }}>
+                  {s.followers.toLocaleString('de-DE')}
+                  <span style={{ fontSize: 14, fontWeight: 500, color: c.textMuted, marginLeft: 8 }}>Follower</span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 14, color: c.textMuted }}>Keine Daten</div>
+              )}
+              {s.posts != null && <div style={{ fontSize: 13, color: c.textSub, marginTop: 6 }}>{s.posts} Posts</div>}
+            </div>
+          ))}
+          {lead.lastPosted && <div style={{ fontSize: 13, color: '#10B981' }}>Zuletzt gepostet: {lead.lastPosted}</div>}
+        </div>
+      </ExpandModal>
+
+      {/* Bewertungen Modal */}
+      <ExpandModal
+        open={bewertungenModal}
+        onClose={() => setBewertungenModal(false)}
+        title="Bewertungen"
+        isDark={isDark}
+        c={c}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 0 }}>
+          {[
+            { name: 'Google', rating: lead.google, count: lead.reviews?.find((r) => r.platform === 'Google')?.count },
             { name: 'Kununu', rating: lead.kununu, count: undefined },
             { name: 'Trustpilot', rating: lead.trustpilot, count: undefined },
           ].map((r) => (
@@ -1658,57 +1689,50 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: '8px 0',
-                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}`,
+                padding: '14px 0',
+                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'}`,
               }}
             >
-              <span style={{ fontSize: 14, color: c.textSub }}>{r.name}</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{r.name}</span>
               <div style={{ textAlign: 'right' as const }}>
                 {r.rating != null ? (
                   <span
                     style={{
-                      fontSize: 16,
+                      fontSize: 20,
                       fontWeight: 800,
                       color: r.rating >= 4 ? '#10B981' : r.rating >= 3 ? '#F97316' : '#EF4444',
                     }}
                   >
-                    {Number(r.rating).toFixed(1)} ★
+                    {Number(r.rating).toFixed(1)}
                   </span>
                 ) : (
-                  <span style={{ fontSize: 12, color: c.textMuted }}>Kein Rating</span>
+                  <span style={{ fontSize: 13, color: c.textMuted }}>Kein Rating</span>
                 )}
-                {r.count != null && <div style={{ fontSize: 11, color: c.textMuted }}>{r.count} Bewertungen</div>}
+                {r.count != null && (
+                  <div style={{ fontSize: 12, color: c.textMuted, marginTop: 2 }}>{r.count} Bewertungen</div>
+                )}
               </div>
             </div>
           ))}
-          <div style={{ marginTop: 12, fontSize: 11, color: c.textMuted, lineHeight: 1.5 }}>
-            Profil-Zusammenfassungen sind KI-generiert und keine wörtlichen Zitate.
+          <div style={{ marginTop: 14, fontSize: 11, color: c.textMuted, lineHeight: 1.5 }}>
+            Bewertungsdaten sind extern erhoben und werden nicht durch Onvero verifiziert.
           </div>
         </div>
+      </ExpandModal>
 
-        {/* Tech Stack */}
-        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 20px' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              marginBottom: 14,
-            }}
-          >
-            <div style={sectionTitle}>Technologie</div>
-            <SourceBadge label="Website-Scan" />
-          </div>
+      {/* Tech Modal */}
+      <ExpandModal open={techModal} onClose={() => setTechModal(false)} title="Tech-Stack" isDark={isDark} c={c}>
+        <div>
           {lead.tech_stack && lead.tech_stack.length > 0 ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 7 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
               {lead.tech_stack.map((t, i) => (
                 <span
                   key={i}
                   style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 600,
-                    padding: '5px 11px',
-                    borderRadius: 8,
+                    padding: '7px 14px',
+                    borderRadius: 9,
                     background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
                     color: c.textSub,
                     border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
@@ -1719,170 +1743,13 @@ function InfoTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
               ))}
             </div>
           ) : (
-            <span style={{ fontSize: 14, color: c.textMuted }}>Kein Shop-System erkannt</span>
+            <p style={{ fontSize: 14, color: c.textMuted }}>Kein Tech-Stack erkannt</p>
           )}
-        </div>
-      </div>
-
-      {/* ── 7. KI-Profil ──────────────────────────────────────────────────── */}
-      {((lead.coreServices && lead.coreServices.length > 0) ||
-        (lead.usp && lead.usp.length > 0) ||
-        (lead.targetCustomers && lead.targetCustomers.length > 0)) && (
-        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 24px', marginBottom: 16 }}>
-          <div style={{ ...sectionTitle, marginBottom: 20 }}>KI-Firmenprofil</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
-            {lead.coreServices && lead.coreServices.length > 0 && (
-              <div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: '#818CF8',
-                    textTransform: 'uppercase' as const,
-                    letterSpacing: '0.07em',
-                    marginBottom: 10,
-                  }}
-                >
-                  Leistungen
-                </div>
-                {lead.coreServices.map((s, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      padding: '5px 0',
-                      borderBottom:
-                        i < lead.coreServices!.length - 1
-                          ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`
-                          : 'none',
-                    }}
-                  >
-                    <span style={{ color: '#818CF8', flexShrink: 0 }}>·</span>
-                    <span style={{ fontSize: 14, color: c.text, lineHeight: 1.5 }}>{s}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {lead.usp && lead.usp.length > 0 && (
-              <div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: '#F97316',
-                    textTransform: 'uppercase' as const,
-                    letterSpacing: '0.07em',
-                    marginBottom: 10,
-                  }}
-                >
-                  USP
-                </div>
-                {lead.usp.map((s, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      padding: '5px 0',
-                      borderBottom:
-                        i < lead.usp!.length - 1
-                          ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`
-                          : 'none',
-                    }}
-                  >
-                    <span style={{ color: '#F97316', flexShrink: 0 }}>·</span>
-                    <span style={{ fontSize: 14, color: c.text, lineHeight: 1.5 }}>{s}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {lead.targetCustomers && lead.targetCustomers.length > 0 && (
-              <div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: '#10B981',
-                    textTransform: 'uppercase' as const,
-                    letterSpacing: '0.07em',
-                    marginBottom: 10,
-                  }}
-                >
-                  Zielkunden
-                </div>
-                {lead.targetCustomers.map((s, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      padding: '5px 0',
-                      borderBottom:
-                        i < lead.targetCustomers!.length - 1
-                          ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`
-                          : 'none',
-                    }}
-                  >
-                    <span style={{ color: '#10B981', flexShrink: 0 }}>·</span>
-                    <span style={{ fontSize: 14, color: c.text, lineHeight: 1.5 }}>{s}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
           <div style={{ marginTop: 16 }}>
-            <SourceBadge label="KI-Analyse" />
+            <SourceBadge label="Website-Scan" />
           </div>
         </div>
-      )}
-
-      {/* ── 8. Personalisierungs-Hooks ────────────────────────────────────── */}
-      {lead.personalizationHooks && lead.personalizationHooks.length > 0 && (
-        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 24px', marginBottom: 16 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
-            }}
-          >
-            <div style={sectionTitle}>Personalisierungs-Hooks</div>
-            <SourceBadge label="KI-Analyse" />
-          </div>
-          {lead.personalizationHooks.map((hook, i) => (
-            <div
-              key={i}
-              style={{
-                display: 'flex',
-                gap: 12,
-                padding: '12px 0',
-                borderBottom:
-                  i < lead.personalizationHooks!.length - 1
-                    ? `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}`
-                    : 'none',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 18,
-                  color: '#F97316',
-                  fontWeight: 800,
-                  flexShrink: 0,
-                  lineHeight: 1.2,
-                }}
-              >
-                {i + 1}
-              </span>
-              <span style={{ fontSize: 14, color: c.text, lineHeight: 1.6 }}>{hook}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Datenquellen ──────────────────────────────────────────────────── */}
-      <DataSourcesBar lead={lead} c={c} isDark={isDark} />
+      </ExpandModal>
     </div>
   );
 }
@@ -2140,6 +2007,57 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
               </button>
             </div>
           )}
+
+          {/* Personalisierungs-Hooks */}
+          {lead.personalizationHooks && lead.personalizationHooks.length > 0 && (
+            <div
+              style={{
+                ...glassCard(isDark),
+                borderRadius: 16,
+                padding: '20px 24px',
+                marginBottom: 16,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 16,
+                }}
+              >
+                <div style={sectionTitle}>Personalisierungs-Hooks</div>
+                <SourceBadge label="KI-Analyse" />
+              </div>
+              {lead.personalizationHooks.map((hook, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    gap: 12,
+                    padding: '12px 0',
+                    borderBottom:
+                      i < lead.personalizationHooks!.length - 1
+                        ? `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}`
+                        : 'none',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 18,
+                      color: '#F97316',
+                      fontWeight: 800,
+                      flexShrink: 0,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span style={{ fontSize: 14, color: c.text, lineHeight: 1.6 }}>{hook}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2167,6 +2085,7 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
   const [status, setStatus] = useState<LeadStatus>('warm');
+  const [scoreHover, setScoreHover] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -2191,12 +2110,6 @@ export default function LeadDetailPage() {
     const main = document.querySelector('main');
     if (main) main.scrollTop = 0;
   }, []);
-
-  const subScores = [
-    { label: 'Fit', value: lead?.fit ?? 0, color: '#10B981' },
-    { label: 'Vol', value: lead?.volume ?? 0, color: '#F97316' },
-    { label: 'Zeit', value: lead?.timing ?? 0, color: '#94A3B8' },
-  ];
 
   const TAB_LABELS: Record<ActiveTab, string> = { info: 'Info', outbound: 'Outbound', bot: 'KI-Assistent' };
 
@@ -2320,9 +2233,12 @@ export default function LeadDetailPage() {
                   background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
                   color: c.textSub,
                   border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
-                👥 {lead.employees} Mitarbeiter
+                <Users size={12} style={{ flexShrink: 0 }} /> {lead.employees} Mitarbeiter
               </span>
             )}
             {lead.founded && (
@@ -2335,9 +2251,12 @@ export default function LeadDetailPage() {
                   background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
                   color: c.textSub,
                   border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
-                📅 Seit {lead.founded}
+                <Calendar size={12} style={{ flexShrink: 0 }} /> Seit {lead.founded}
               </span>
             )}
             {lead.website && (
@@ -2354,9 +2273,13 @@ export default function LeadDetailPage() {
                   color: '#818CF8',
                   border: '1px solid rgba(79,70,229,0.18)',
                   textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
-                🌐 {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
+                <Globe size={12} style={{ flexShrink: 0 }} />{' '}
+                {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
               </a>
             )}
             {lead.phone && (
@@ -2371,16 +2294,30 @@ export default function LeadDetailPage() {
                   color: c.textSub,
                   border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
                   textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
                 }}
               >
-                📞 {lead.phone}
+                <Phone size={12} style={{ flexShrink: 0 }} /> {lead.phone}
               </a>
             )}
           </div>
         </div>
 
         {/* Score — big badge (Screenshot 2 style) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 6,
+            flexShrink: 0,
+            position: 'relative',
+          }}
+          onMouseEnter={() => setScoreHover(true)}
+          onMouseLeave={() => setScoreHover(false)}
+        >
           <ScoreRing score={lead.score} size={64} />
           <span
             style={{
@@ -2393,6 +2330,29 @@ export default function LeadDetailPage() {
           >
             Score
           </span>
+          {scoreHover && lead.scoreReason && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '110%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 260,
+                background: isDark ? 'rgba(10,12,24,0.95)' : 'rgba(255,255,255,0.98)',
+                border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.1)',
+                borderRadius: 10,
+                padding: '10px 14px',
+                fontSize: 12,
+                color: c.text,
+                lineHeight: 1.55,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.24)',
+                zIndex: 100,
+                pointerEvents: 'none',
+              }}
+            >
+              {lead.scoreReason}
+            </div>
+          )}
         </div>
 
         {/* Fit score pill */}
@@ -2448,25 +2408,6 @@ export default function LeadDetailPage() {
             <option value="cold">Kalt</option>
           </select>
         </div>
-
-        {/* CTA */}
-        <button
-          style={{
-            padding: '8px 18px',
-            borderRadius: 9,
-            background: '#10B981',
-            color: '#fff',
-            border: 'none',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            flexShrink: 0,
-            boxShadow: '0 4px 14px rgba(16,185,129,0.35)',
-          }}
-        >
-          KI-Analyse
-        </button>
       </div>
 
       {/* ── Tabs ────────────────────────────────────────────────────────────── */}
