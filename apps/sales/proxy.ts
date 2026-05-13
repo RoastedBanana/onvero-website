@@ -37,9 +37,14 @@ export async function proxy(request: NextRequest) {
 
   const isLoggedIn = hasSession || hasOnveroSession;
 
-  // Logged-in user visiting /login → send to dashboard
-  if (pathname === '/login' && isLoggedIn) {
+  // Root or login → send logged-in users straight to dashboard
+  if ((pathname === '/' || pathname === '/login') && isLoggedIn) {
     return NextResponse.redirect(new URL('/intelligence', request.url));
+  }
+
+  // Unauthenticated root → send to login
+  if (pathname === '/' && !isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Unauthenticated user visiting protected routes → send to login
