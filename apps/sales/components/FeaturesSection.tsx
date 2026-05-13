@@ -40,9 +40,7 @@ export function FeaturesSection() {
     <section className="bg-white font-[family-name:var(--font-nunito)] text-[#0A2540]">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-32 md:px-8">
         <div className="mb-12 text-center md:mb-16">
-          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.06em] text-[#4F46E5]">
-            Unsere Leistungen
-          </p>
+          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.06em] text-[#4F46E5]">Unsere Leistungen</p>
           <h2 className="mx-auto max-w-3xl text-balance text-3xl font-bold leading-[1.15] tracking-[-0.02em] md:text-4xl lg:text-5xl">
             Alles, was Sie für Ihr Geschäft brauchen
           </h2>

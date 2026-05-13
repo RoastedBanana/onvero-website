@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { plausibleStats, plausibleTimeseries, plausibleBreakdown } from '@onvero/lib/plausible';
 import { NextResponse } from 'next/server';
 
@@ -11,7 +10,7 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const period = searchParams.get('period') || '30d';
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   const plausibleKey = process.env.PLAUSIBLE_API_KEY || '';
 

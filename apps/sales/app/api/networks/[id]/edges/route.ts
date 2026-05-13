@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +9,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   const { data, error } = await supabase
     .from('network_edges')
@@ -37,7 +36,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const edgeId = searchParams.get('edge_id');
   if (!edgeId) return NextResponse.json({ error: 'edge_id required' }, { status: 400 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   const { error } = await supabase
     .from('network_edges')
     .delete()

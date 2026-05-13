@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +9,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   const { data, error } = await supabase
     .from('network_nodes')
@@ -42,7 +41,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { updates } = (await req.json()) as { updates: { id: string; x: number; y: number }[] };
   if (!updates?.length) return NextResponse.json({ ok: true });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   const now = new Date().toISOString();
 
   const results = await Promise.all(

@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +17,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   // Upload to Supabase Storage
   const fileName = `${tenantId}/${id}/${Date.now()}.webm`;

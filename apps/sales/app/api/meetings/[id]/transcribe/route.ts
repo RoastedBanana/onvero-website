@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'GROQ_API_KEY not configured' }, { status: 500 });
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   // Check if there's a recording for this meeting
   const { data: recording } = await supabase

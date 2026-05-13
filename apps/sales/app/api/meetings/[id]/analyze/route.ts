@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'N8N_WEBHOOK_MEETING_ANALYZER not configured' }, { status: 500 });
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   // Fetch meeting + transcript + notes
   const [meetingRes, transcriptRes, notesRes] = await Promise.all([
@@ -113,7 +112,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const tenantId = await getSessionTenantId();
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   const { data, error } = await supabase
     .from('meeting_analysis')
     .select('*')

@@ -73,6 +73,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id: userId } = await params;
     const { role } = await req.json();
 
+    if (ctx.userId === userId) {
+      return NextResponse.json({ error: 'Du kannst deine eigene Rolle nicht ändern.' }, { status: 400 });
+    }
+
     if (!role || !['admin', 'member'].includes(role)) {
       return NextResponse.json({ error: 'Ungültige Rolle.' }, { status: 400 });
     }

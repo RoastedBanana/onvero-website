@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +13,7 @@ export async function GET(req: NextRequest) {
   const from = url.searchParams.get('from');
   const to = url.searchParams.get('to');
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   // 1. Fetch meetings as calendar events
   let meetingsQuery = supabase
@@ -118,7 +117,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Title and date required' }, { status: 400 });
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   const { data, error } = await supabase
     .from('calendar_events')
     .insert({
@@ -148,7 +147,7 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json();
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   await supabase.from('calendar_events').delete().eq('id', id).eq('tenant_id', tenantId);
   return NextResponse.json({ success: true });
 }

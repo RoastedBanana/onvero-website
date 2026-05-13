@@ -115,11 +115,11 @@ function JoinForm() {
 
       setState({ kind: 'success', tenant_name });
       setTimeout(() => {
-        window.location.href = '/sales';
+        window.location.href = '/intelligence';
       }, 1500);
     } catch {
       setFormError('Netzwerkfehler. Bitte erneut versuchen.');
-      setState({ kind: 'form', tenant_name: tenantName });
+      setState({ kind: 'form', tenant_name: 'tenant_name' in state ? state.tenant_name : '' });
     }
   }
 

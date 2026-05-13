@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionContext, getAdminClient, isAdmin } from '@onvero/lib/tenant-server';
+import { getSalesSessionContext, getAdminClient } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const ctx = await getSessionContext();
+  const ctx = await getSalesSessionContext();
   if (!ctx) return NextResponse.json({ profile: null }, { status: 401 });
 
   const client = getAdminClient();
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function POST() {
-  const ctx = await getSessionContext();
+  const ctx = await getSalesSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const client = getAdminClient();
@@ -52,12 +52,8 @@ export async function POST() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const ctx = await getSessionContext();
+  const ctx = await getSalesSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  if (!isAdmin(ctx.role)) {
-    return NextResponse.json({ error: 'Nur Admins können das Profil bearbeiten.' }, { status: 403 });
-  }
 
   const client = getAdminClient();
   const body = await req.json();
@@ -86,17 +82,22 @@ export async function PATCH(req: NextRequest) {
     'ai_search_prompt',
     'ai_scoring_prompt',
     'onboarding_completed',
+    'icp_config',
+    'scoring_weights',
+    'notifications_config',
   ];
 
-  const sanitized: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const sanitized: Record<string, unknown> = {
+    tenant_id: ctx.tenantId,
+    updated_at: new Date().toISOString(),
+  };
   for (const key of allowed) {
     if (key in body) sanitized[key] = body[key];
   }
 
   const { data, error } = await client
     .from('tenant_ai_profile')
-    .update(sanitized)
-    .eq('tenant_id', ctx.tenantId)
+    .upsert(sanitized, { onConflict: 'tenant_id' })
     .select()
     .single();
 

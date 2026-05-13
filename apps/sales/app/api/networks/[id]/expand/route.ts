@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +13,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { node_id, category } = await req.json();
   if (!node_id || !category) return NextResponse.json({ error: 'node_id and category required' }, { status: 400 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   // Get the node with lead_id and position
   const { data: node } = await supabase

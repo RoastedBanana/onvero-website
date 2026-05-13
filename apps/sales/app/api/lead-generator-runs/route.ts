@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +10,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const limit = parseInt(searchParams.get('limit') ?? '5', 10);
   const status = searchParams.get('status');
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   let query = supabase
     .from('lead_generator_runs')
@@ -31,7 +30,7 @@ export async function POST(req: NextRequest) {
   const tenantId = await getSessionTenantId();
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   const body = await req.json();
 
   const { data, error } = await supabase

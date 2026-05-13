@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { plausibleStats, plausibleTimeseries } from '@onvero/lib/plausible';
 import { NextResponse } from 'next/server';
 
@@ -9,7 +8,7 @@ export async function GET() {
   const TENANT = await getSessionTenantId();
   if (!TENANT) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   const plausibleKey = process.env.PLAUSIBLE_API_KEY || '';
 

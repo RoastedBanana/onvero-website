@@ -1,33 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
+import { getAdminClient } from '@onvero/lib/tenant-server';
 
 export async function GET(req: NextRequest) {
-  // Validate actual Supabase session, don't trust cookie alone
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
+  const sessionRaw = req.cookies.get('onvero_session')?.value;
+  if (!sessionRaw) return NextResponse.json({ user: null });
 
-  if (!authUser) {
+  let session: { userId?: string; tenantId?: string; role?: string } | null = null;
+  try {
+    session = JSON.parse(decodeURIComponent(sessionRaw));
+  } catch {
     return NextResponse.json({ user: null });
   }
 
-  // Return display data from cookie if available, otherwise from auth
-  const raw = req.cookies.get('onvero_user')?.value;
-  if (raw) {
+  if (!session?.userId || !session?.tenantId) return NextResponse.json({ user: null });
+
+  // Fresh role from DB — never trust stale cookie role
+  const admin = getAdminClient();
+  const { data: tu } = await admin
+    .from('tenant_users')
+    .select('role')
+    .eq('user_id', session.userId)
+    .eq('tenant_id', session.tenantId)
+    .maybeSingle();
+
+  // No tenant_users row = user was removed from team; invalidate session
+  if (!tu) return NextResponse.json({ user: null });
+
+  const role = tu.role || 'member';
+
+  // User display info from onvero_user cookie
+  const userRaw = req.cookies.get('onvero_user')?.value;
+  let displayUser: { firstName?: string; lastName?: string; email?: string } = {};
+  if (userRaw) {
     try {
-      const user = JSON.parse(decodeURIComponent(raw));
-      return NextResponse.json({ user });
+      displayUser = JSON.parse(decodeURIComponent(userRaw));
     } catch {
-      // fall through
+      // ignore
     }
+  }
+
+  // If no display cookie, fall back to auth.users email
+  let email = displayUser.email ?? '';
+  if (!email) {
+    const { data: authUser } = await admin.auth.admin.getUserById(session.userId);
+    email = authUser?.user?.email ?? '';
   }
 
   return NextResponse.json({
     user: {
-      email: authUser.email,
-      firstName: authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || '',
-      lastName: '',
+      id: session.userId,
+      tenantId: session.tenantId,
+      role,
+      firstName: displayUser.firstName ?? '',
+      lastName: displayUser.lastName ?? '',
+      email,
     },
   });
 }

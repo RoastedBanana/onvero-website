@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +8,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const tenantId = await getSessionTenantId();
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   const [netRes, nodesRes, edgesRes] = await Promise.all([
     supabase.from('networks').select('*').eq('id', id).eq('tenant_id', tenantId).maybeSingle(),
@@ -41,7 +40,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   const { data, error } = await supabase
     .from('networks')
@@ -60,7 +59,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const tenantId = await getSessionTenantId();
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   const { error } = await supabase.from('networks').delete().eq('id', id).eq('tenant_id', tenantId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

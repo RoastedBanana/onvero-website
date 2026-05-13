@@ -22,8 +22,7 @@ const TOOL_GLOW_DURATION = 1400;
 /** Fire the next-agent pulse after this fraction of breathing has elapsed. */
 const PULSE_LEAD = 0.6;
 
-const easeInOutCubic = (t: number) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 type Agent = {
   id: string;
@@ -37,10 +36,46 @@ type Agent = {
 };
 
 const agents: Agent[] = [
-  { id: 'lead-scout',     imageSrc: '/agents/lead-scout.png',     title: 'Lead Scout',      subtitle: 'Prospecting Agent',   tag: 'Live', tools: 'Database · Enrichment',  left: 5,  top: 37 },
-  { id: 'score-engine',   imageSrc: '/agents/score-engine.png',   title: 'Score Engine',    subtitle: 'Qualification Agent', tag: 'Auto', tools: 'Firecrawl · Vector DB',  left: 38, top: 16 },
-  { id: 'outreach-writer',imageSrc: '/agents/outreach-writer.png',title: 'Outreach Writer', subtitle: 'Email Agent',         tag: 'AI',   tools: 'Resend · Templates',     left: 74, top: 38 },
-  { id: 'business-agent', imageSrc: '/agents/business-agent.png', title: 'Business Agent',  subtitle: 'Orchestrator',        tag: 'Core', tools: 'Router · Memory',        left: 38, top: 60 },
+  {
+    id: 'lead-scout',
+    imageSrc: '/agents/lead-scout.png',
+    title: 'Lead Scout',
+    subtitle: 'Prospecting Agent',
+    tag: 'Live',
+    tools: 'Database · Enrichment',
+    left: 5,
+    top: 37,
+  },
+  {
+    id: 'score-engine',
+    imageSrc: '/agents/score-engine.png',
+    title: 'Score Engine',
+    subtitle: 'Qualification Agent',
+    tag: 'Auto',
+    tools: 'Firecrawl · Vector DB',
+    left: 38,
+    top: 16,
+  },
+  {
+    id: 'outreach-writer',
+    imageSrc: '/agents/outreach-writer.png',
+    title: 'Outreach Writer',
+    subtitle: 'Email Agent',
+    tag: 'AI',
+    tools: 'Resend · Templates',
+    left: 74,
+    top: 38,
+  },
+  {
+    id: 'business-agent',
+    imageSrc: '/agents/business-agent.png',
+    title: 'Business Agent',
+    subtitle: 'Orchestrator',
+    tag: 'Core',
+    tools: 'Router · Memory',
+    left: 38,
+    top: 60,
+  },
 ];
 
 type CardBounds = {
@@ -65,9 +100,7 @@ function getCardBounds(a: Agent): CardBounds {
   };
 }
 
-const cardBounds: Record<string, CardBounds> = Object.fromEntries(
-  agents.map((a) => [a.id, getCardBounds(a)]),
-);
+const cardBounds: Record<string, CardBounds> = Object.fromEntries(agents.map((a) => [a.id, getCardBounds(a)]));
 
 type ToolConnection = {
   agentId: string;
@@ -99,53 +132,56 @@ type InterAgentLinkSpec = {
 
 function getSideAnchor(b: CardBounds, side: CardSide) {
   switch (side) {
-    case 'left':   return { x: b.left,  y: b.cy };
-    case 'right':  return { x: b.right, y: b.cy };
-    case 'top':    return { x: b.cx,    y: b.top };
-    case 'bottom': return { x: b.cx,    y: b.bottom };
+    case 'left':
+      return { x: b.left, y: b.cy };
+    case 'right':
+      return { x: b.right, y: b.cy };
+    case 'top':
+      return { x: b.cx, y: b.top };
+    case 'bottom':
+      return { x: b.cx, y: b.bottom };
   }
 }
 
-function buildInterAgentPath(
-  fromB: CardBounds,
-  fromSide: CardSide,
-  toB: CardBounds,
-  toSide: CardSide,
-): string {
+function buildInterAgentPath(fromB: CardBounds, fromSide: CardSide, toB: CardBounds, toSide: CardSide): string {
   const start = getSideAnchor(fromB, fromSide);
   const end = getSideAnchor(toB, toSide);
   const midX = (start.x + end.x) / 2;
   return `M ${start.x} ${start.y} C ${midX} ${start.y}, ${midX} ${end.y}, ${end.x} ${end.y}`;
 }
 
-function buildToolPath(
-  cardBottom: { x: number; y: number },
-  ball: { x: number; y: number },
-): string {
+function buildToolPath(cardBottom: { x: number; y: number }, ball: { x: number; y: number }): string {
   const midY = (cardBottom.y + ball.y) / 2;
   return `M ${cardBottom.x} ${cardBottom.y} C ${cardBottom.x} ${midY}, ${ball.x} ${midY}, ${ball.x} ${ball.y - BALL_R}`;
 }
 
 const interAgentLinkSpecs: InterAgentLinkSpec[] = [
-  { id: 'score-engine--lead-scout',       fromId: 'score-engine',    toId: 'lead-scout',      fromSide: 'left',  toSide: 'right' },
-  { id: 'score-engine--outreach-writer',  fromId: 'score-engine',    toId: 'outreach-writer', fromSide: 'right', toSide: 'left'  },
-  { id: 'lead-scout--business-agent',     fromId: 'lead-scout',      toId: 'business-agent',  fromSide: 'right', toSide: 'left'  },
-  { id: 'outreach-writer--business-agent',fromId: 'outreach-writer', toId: 'business-agent',  fromSide: 'left',  toSide: 'right' },
+  { id: 'score-engine--lead-scout', fromId: 'score-engine', toId: 'lead-scout', fromSide: 'left', toSide: 'right' },
+  {
+    id: 'score-engine--outreach-writer',
+    fromId: 'score-engine',
+    toId: 'outreach-writer',
+    fromSide: 'right',
+    toSide: 'left',
+  },
+  { id: 'lead-scout--business-agent', fromId: 'lead-scout', toId: 'business-agent', fromSide: 'right', toSide: 'left' },
+  {
+    id: 'outreach-writer--business-agent',
+    fromId: 'outreach-writer',
+    toId: 'business-agent',
+    fromSide: 'left',
+    toSide: 'right',
+  },
 ];
 
 const interAgentLinks = interAgentLinkSpecs.map((spec) => ({
   ...spec,
-  d: buildInterAgentPath(
-    cardBounds[spec.fromId],
-    spec.fromSide,
-    cardBounds[spec.toId],
-    spec.toSide,
-  ),
+  d: buildInterAgentPath(cardBounds[spec.fromId], spec.fromSide, cardBounds[spec.toId], spec.toSide),
 }));
 
 function getLinkBetween(
   from: string,
-  to: string,
+  to: string
 ): { fromId: string; toId: string; direction: 'forward' | 'reverse' } | null {
   for (const link of interAgentLinks) {
     if (link.fromId === from && link.toId === to) {
@@ -163,15 +199,12 @@ const CCW_ORDER = ['lead-scout', 'score-engine', 'outreach-writer', 'business-ag
 
 type ChatMessage = { from: 'user' | 'agent'; text: string };
 
-const agentChats: Record<
-  string,
-  { statusLabel: string; messages: ChatMessage[] }
-> = {
+const agentChats: Record<string, { statusLabel: string; messages: ChatMessage[] }> = {
   'lead-scout': {
     statusLabel: 'sucht aktiv',
     messages: [
       { from: 'user', text: 'Finde 50 SaaS-Gründer in Berlin, 10–50 Mitarbeiter.' },
-      { from: 'agent', text: '47 Profile aus Apollo + LinkedIn. Reichere gerade Firmographics an.' },
+      { from: 'agent', text: '47 qualifizierte Profile gefunden. Reichere gerade Firmographics an.' },
     ],
   },
   'score-engine': {
@@ -198,10 +231,10 @@ const agentChats: Record<
 };
 
 const chatPlacement: Record<string, string> = {
-  'lead-scout':      'left-full top-1/2 -translate-y-1/2 ml-3',
-  'score-engine':    'top-full left-1/2 -translate-x-1/2 mt-3',
+  'lead-scout': 'left-full top-1/2 -translate-y-1/2 ml-3',
+  'score-engine': 'top-full left-1/2 -translate-x-1/2 mt-3',
   'outreach-writer': 'right-full top-1/2 -translate-y-1/2 mr-3',
-  'business-agent':  'bottom-full left-1/2 -translate-x-1/2 mb-3',
+  'business-agent': 'bottom-full left-1/2 -translate-x-1/2 mb-3',
 };
 
 function AgentChat({ agent, visible }: { agent: Agent; visible: boolean }) {
@@ -228,9 +261,7 @@ function AgentChat({ agent, visible }: { agent: Agent; visible: boolean }) {
                 draggable={false}
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12px] font-bold leading-tight text-[#0A2540]">
-                  {agent.title}
-                </p>
+                <p className="truncate text-[12px] font-bold leading-tight text-[#0A2540]">{agent.title}</p>
                 <p className="mt-0.5 flex items-center gap-1 text-[10px] leading-tight text-[#697386]">
                   <span className="relative flex size-1.5 items-center justify-center">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#40BFB1] opacity-60" />
@@ -274,32 +305,20 @@ function AgentCard({ agent }: { agent: Agent }) {
       data-agent-card-inner={agent.id}
       className="onv-card flex h-full w-full items-center gap-2 rounded-full pl-1.5 pr-3 ring-1 ring-white/15 backdrop-blur-xl"
       style={{
-        backgroundImage:
-          'linear-gradient(89deg, rgba(227,233,247,0.51) 0%, rgba(255,255,255,0.12) 100%)',
+        backgroundImage: 'linear-gradient(89deg, rgba(227,233,247,0.51) 0%, rgba(255,255,255,0.12) 100%)',
       }}
     >
       <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#e3e9f7] to-[#e3e9f7]/80 ring-1 ring-white/20">
-        <img
-          src={agent.imageSrc}
-          alt=""
-          className="size-full object-cover"
-          draggable={false}
-        />
+        <img src={agent.imageSrc} alt="" className="size-full object-cover" draggable={false} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11.26px] font-bold leading-tight text-white">
-          {agent.title}
-        </p>
-        <p className="truncate text-[9.39px] font-semibold leading-tight text-white/70">
-          {agent.subtitle}
-        </p>
+        <p className="truncate text-[11.26px] font-bold leading-tight text-white">{agent.title}</p>
+        <p className="truncate text-[9.39px] font-semibold leading-tight text-white/70">{agent.subtitle}</p>
         <div className="mt-0.5 flex items-center gap-1.5">
           <span className="rounded-[2px] bg-[#C5E8E4] px-1 py-[1px] text-[9.39px] font-bold text-[#40BFB1]">
             {agent.tag}
           </span>
-          <span className="truncate text-[9.39px] font-medium text-white">
-            {agent.tools}
-          </span>
+          <span className="truncate text-[9.39px] font-medium text-white">{agent.tools}</span>
         </div>
       </div>
       <ArrowUpRight className="size-4 shrink-0 text-white/85" />
@@ -307,11 +326,7 @@ function AgentCard({ agent }: { agent: Agent }) {
   );
 }
 
-function ArchitectureOverlay({
-  svgRef,
-}: {
-  svgRef: React.RefObject<SVGSVGElement | null>;
-}) {
+function ArchitectureOverlay({ svgRef }: { svgRef: React.RefObject<SVGSVGElement | null> }) {
   return (
     <svg
       ref={svgRef}
@@ -393,13 +408,7 @@ function ArchitectureOverlay({
                 strokeWidth="0.6"
                 data-ball-circle
               />
-              <ellipse
-                cx={ball.x}
-                cy={ball.y - 7}
-                rx="7"
-                ry="2.6"
-                fill="rgba(255,255,255,0.45)"
-              />
+              <ellipse cx={ball.x} cy={ball.y - 7} rx="7" ry="2.6" fill="rgba(255,255,255,0.45)" />
             </g>
           ))}
         </g>
@@ -412,7 +421,7 @@ function ArchitectureOverlay({
 
 function useMagneticNetwork(
   panelRef: React.RefObject<HTMLDivElement | null>,
-  svgRef: React.RefObject<SVGSVGElement | null>,
+  svgRef: React.RefObject<SVGSVGElement | null>
 ) {
   useEffect(() => {
     const panel = panelRef.current;
@@ -474,10 +483,7 @@ function useMagneticNetwork(
       state.ty = targetY;
       state.x += (state.tx - state.x) * DAMPING;
       state.y += (state.ty - state.y) * DAMPING;
-      return (
-        Math.abs(state.x) > SETTLE_EPSILON ||
-        Math.abs(state.y) > SETTLE_EPSILON
-      );
+      return Math.abs(state.x) > SETTLE_EPSILON || Math.abs(state.y) > SETTLE_EPSILON;
     };
 
     const tick = () => {
@@ -514,9 +520,7 @@ function useMagneticNetwork(
       }
 
       for (const agent of agents) {
-        const card = panel.querySelector<HTMLElement>(
-          `[data-agent-card="${agent.id}"]`,
-        );
+        const card = panel.querySelector<HTMLElement>(`[data-agent-card="${agent.id}"]`);
         if (!card) continue;
         const o = cardOffsets[agent.id];
         const dx = (o.x * svgScale).toFixed(2);
@@ -528,9 +532,7 @@ function useMagneticNetwork(
         const cb = offsetCardBounds[conn.agentId];
         const cardBottom = { x: cb.cx, y: cb.bottom };
 
-        const anchor = svg.querySelector<SVGCircleElement>(
-          `[data-anchor][data-agent="${conn.agentId}"]`,
-        );
+        const anchor = svg.querySelector<SVGCircleElement>(`[data-anchor][data-agent="${conn.agentId}"]`);
         if (anchor) {
           anchor.setAttribute('cx', cardBottom.x.toFixed(2));
           anchor.setAttribute('cy', cardBottom.y.toFixed(2));
@@ -541,9 +543,7 @@ function useMagneticNetwork(
           const o = ballOffsets[`${conn.agentId}-${i}`];
           const ballPos = { x: ballNatural.x + o.x, y: ballNatural.y + o.y };
 
-          const ballGroup = svg.querySelector(
-            `[data-ball][data-agent="${conn.agentId}"][data-ball-index="${i}"]`,
-          );
+          const ballGroup = svg.querySelector(`[data-ball][data-agent="${conn.agentId}"][data-ball-index="${i}"]`);
           if (ballGroup) {
             const ballCircle = ballGroup.querySelector('[data-ball-circle]');
             const ballEllipse = ballGroup.querySelector('ellipse');
@@ -553,9 +553,7 @@ function useMagneticNetwork(
             ballEllipse?.setAttribute('cy', (ballPos.y - 7).toFixed(2));
           }
 
-          const path = svg.querySelector(
-            `[data-connector][data-agent="${conn.agentId}"][data-ball-index="${i}"]`,
-          );
+          const path = svg.querySelector(`[data-connector][data-agent="${conn.agentId}"][data-ball-index="${i}"]`);
           path?.setAttribute('d', buildToolPath(cardBottom, ballPos));
         }
       }
@@ -563,13 +561,8 @@ function useMagneticNetwork(
       for (const spec of interAgentLinkSpecs) {
         const fromB = offsetCardBounds[spec.fromId];
         const toB = offsetCardBounds[spec.toId];
-        const path = svg.querySelector(
-          `[data-from="${spec.fromId}"][data-to="${spec.toId}"]`,
-        );
-        path?.setAttribute(
-          'd',
-          buildInterAgentPath(fromB, spec.fromSide, toB, spec.toSide),
-        );
+        const path = svg.querySelector(`[data-from="${spec.fromId}"][data-to="${spec.toId}"]`);
+        path?.setAttribute('d', buildInterAgentPath(fromB, spec.fromSide, toB, spec.toSide));
       }
 
       if (stillSettling) {
@@ -588,26 +581,20 @@ function useMagneticNetwork(
       if (raf) cancelAnimationFrame(raf);
 
       for (const agent of agents) {
-        const card = panel.querySelector<HTMLElement>(
-          `[data-agent-card="${agent.id}"]`,
-        );
+        const card = panel.querySelector<HTMLElement>(`[data-agent-card="${agent.id}"]`);
         if (card) card.style.transform = '';
       }
 
       for (const conn of toolConnections) {
         const cb = cardBounds[conn.agentId];
         const cardBottom = { x: cb.cx, y: cb.bottom };
-        const anchor = svg.querySelector<SVGCircleElement>(
-          `[data-anchor][data-agent="${conn.agentId}"]`,
-        );
+        const anchor = svg.querySelector<SVGCircleElement>(`[data-anchor][data-agent="${conn.agentId}"]`);
         anchor?.setAttribute('cx', cardBottom.x.toFixed(2));
         anchor?.setAttribute('cy', cardBottom.y.toFixed(2));
 
         for (let i = 0; i < conn.balls.length; i++) {
           const ball = conn.balls[i];
-          const ballGroup = svg.querySelector(
-            `[data-ball][data-agent="${conn.agentId}"][data-ball-index="${i}"]`,
-          );
+          const ballGroup = svg.querySelector(`[data-ball][data-agent="${conn.agentId}"][data-ball-index="${i}"]`);
           if (ballGroup) {
             const ballCircle = ballGroup.querySelector('[data-ball-circle]');
             const ballEllipse = ballGroup.querySelector('ellipse');
@@ -616,9 +603,7 @@ function useMagneticNetwork(
             ballEllipse?.setAttribute('cx', ball.x.toFixed(2));
             ballEllipse?.setAttribute('cy', (ball.y - 7).toFixed(2));
           }
-          const path = svg.querySelector(
-            `[data-connector][data-agent="${conn.agentId}"][data-ball-index="${i}"]`,
-          );
+          const path = svg.querySelector(`[data-connector][data-agent="${conn.agentId}"][data-ball-index="${i}"]`);
           path?.setAttribute('d', buildToolPath(cardBottom, ball));
         }
       }
@@ -626,13 +611,8 @@ function useMagneticNetwork(
       for (const spec of interAgentLinkSpecs) {
         const fromB = cardBounds[spec.fromId];
         const toB = cardBounds[spec.toId];
-        const path = svg.querySelector(
-          `[data-from="${spec.fromId}"][data-to="${spec.toId}"]`,
-        );
-        path?.setAttribute(
-          'd',
-          buildInterAgentPath(fromB, spec.fromSide, toB, spec.toSide),
-        );
+        const path = svg.querySelector(`[data-from="${spec.fromId}"][data-to="${spec.toId}"]`);
+        path?.setAttribute('d', buildInterAgentPath(fromB, spec.fromSide, toB, spec.toSide));
       }
     };
   }, [panelRef, svgRef]);
@@ -640,7 +620,7 @@ function useMagneticNetwork(
 
 function useArchitectureChoreography(
   panelRef: React.RefObject<HTMLDivElement | null>,
-  svgRef: React.RefObject<SVGSVGElement | null>,
+  svgRef: React.RefObject<SVGSVGElement | null>
 ) {
   const [hovering, setHovering] = useState(false);
 
@@ -680,7 +660,7 @@ function useArchitectureChoreography(
       pathSelector: string,
       duration: number,
       direction: 'forward' | 'reverse',
-      onArrive?: () => void,
+      onArrive?: () => void
     ) => {
       const path = svg.querySelector<SVGPathElement>(pathSelector);
       if (!path) return;
@@ -730,9 +710,7 @@ function useArchitectureChoreography(
     };
 
     const triggerBreathing = (agentId: string) => {
-      const inner = document.querySelector<HTMLDivElement>(
-        `[data-agent-card-inner="${agentId}"]`,
-      );
+      const inner = document.querySelector<HTMLDivElement>(`[data-agent-card-inner="${agentId}"]`);
       if (!inner) return;
       inner.classList.remove('onv-breathing');
       void inner.offsetWidth;
@@ -745,7 +723,7 @@ function useArchitectureChoreography(
 
     const triggerToolGlow = (agentId: string, ballIndex: number) => {
       const ball = svg.querySelector<SVGCircleElement>(
-        `[data-ball][data-agent="${agentId}"][data-ball-index="${ballIndex}"] [data-ball-circle]`,
+        `[data-ball][data-agent="${agentId}"][data-ball-index="${ballIndex}"] [data-ball-circle]`
       );
       if (!ball) return;
       ball.classList.remove('onv-glowing');
@@ -789,15 +767,10 @@ function useArchitectureChoreography(
 
         const pulseFireTime = elapsed + BREATHING_DURATION * PULSE_LEAD;
         schedule(() => {
-          spawnPulse(
-            `[data-from="${link.fromId}"][data-to="${link.toId}"]`,
-            PULSE_DURATION,
-            link.direction,
-            () => {
-              triggerBreathing(to);
-              fireAgentTools(to);
-            },
-          );
+          spawnPulse(`[data-from="${link.fromId}"][data-to="${link.toId}"]`, PULSE_DURATION, link.direction, () => {
+            triggerBreathing(to);
+            fireAgentTools(to);
+          });
         }, pulseFireTime);
 
         elapsed += stepInterval;
@@ -836,8 +809,8 @@ export function AgentArchitectureSection() {
           <h2 className="text-balance text-3xl font-bold leading-[1.2] tracking-[-0.01em] md:text-4xl lg:text-[40px] lg:leading-[1.2]">
             <span className="text-[#0A2540]">AI-First Architektur für jedes Unternehmen.</span>{' '}
             <span className="text-[#808080]">
-              Spezialisierte AI-Agents, die parallel arbeiten, voneinander
-              lernen und sich dynamisch an Ihre Aufgaben anpassen.
+              Spezialisierte AI-Agents, die parallel arbeiten, voneinander lernen und sich dynamisch an Ihre Aufgaben
+              anpassen.
             </span>
           </h2>
         </div>
@@ -868,11 +841,7 @@ export function AgentArchitectureSection() {
                 }}
                 data-agent-card={agent.id}
                 onMouseEnter={() => setHoveredAgent(agent.id)}
-                onMouseLeave={() =>
-                  setHoveredAgent((current) =>
-                    current === agent.id ? null : current,
-                  )
-                }
+                onMouseLeave={() => setHoveredAgent((current) => (current === agent.id ? null : current))}
               >
                 <AgentCard agent={agent} />
                 <AgentChat agent={agent} visible={hoveredAgent === agent.id} />

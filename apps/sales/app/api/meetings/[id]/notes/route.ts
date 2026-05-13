@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     phase_name: n.phaseName ?? null,
   }));
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   const { data, error } = await supabase.from('meeting_notes').insert(rows).select();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

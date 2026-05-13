@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +9,7 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const period = searchParams.get('period') || 'all';
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
 
   const days =
     period === 'all'

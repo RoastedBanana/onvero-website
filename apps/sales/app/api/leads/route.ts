@@ -1,18 +1,21 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   const tenantId = await getSessionTenantId();
   if (!tenantId) return NextResponse.json({ leads: [] }, { status: 401 });
 
-  const supabase = await createServerSupabaseClient();
+  const { searchParams } = new URL(req.url);
+  const archived = searchParams.get('archived') === 'true';
+
+  const supabase = getAdminClient();
   const { data, error } = await supabase
     .from('leads')
     .select('*')
     .eq('tenant_id', tenantId)
+    .eq('archived', archived)
     .order('created_at', { ascending: false })
     .limit(200);
 

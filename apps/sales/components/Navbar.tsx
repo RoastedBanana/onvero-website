@@ -11,10 +11,7 @@ const navLinks = [
 export function Navbar() {
   return (
     <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 md:px-10 lg:px-16 py-6">
-      <Link
-        href="/"
-        className="text-[22px] font-extrabold tracking-tight text-[#0A2540] lowercase"
-      >
+      <Link href="/" className="text-[22px] font-extrabold tracking-tight text-[#0A2540] lowercase">
         onvero
       </Link>
 

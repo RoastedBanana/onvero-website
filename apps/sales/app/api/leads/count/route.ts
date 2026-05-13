@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +7,7 @@ export async function GET() {
   const tenantId = await getSessionTenantId();
   if (!tenantId) return NextResponse.json({ count: 0 });
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = getAdminClient();
   const { count } = await supabase
     .from('leads')
     .select('id', { count: 'exact', head: true })

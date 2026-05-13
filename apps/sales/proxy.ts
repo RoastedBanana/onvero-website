@@ -22,16 +22,28 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const hasSession = hasSupabaseSession(request);
-  const hasOnveroSession = !!request.cookies.get('onvero_user')?.value;
+
+  // Validate cookie structure — broken/corrupted cookies are not treated as valid
+  const raw = request.cookies.get('onvero_session')?.value;
+  let hasOnveroSession = false;
+  if (raw) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(raw));
+      hasOnveroSession = !!(parsed.userId && parsed.tenantId);
+    } catch {
+      hasOnveroSession = false;
+    }
+  }
+
   const isLoggedIn = hasSession || hasOnveroSession;
 
   // Logged-in user visiting /login → send to dashboard
   if (pathname === '/login' && isLoggedIn) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/intelligence', request.url));
   }
 
   // Unauthenticated user visiting protected routes → send to login
-  const isProtected = pathname.startsWith('/dashboard');
+  const isProtected = pathname.startsWith('/dashboard') || pathname.startsWith('/intelligence');
   if (isProtected && !isLoggedIn) {
     const url = new URL('/login', request.url);
     url.searchParams.set('from', pathname);
@@ -52,22 +64,14 @@ export async function proxy(request: NextRequest) {
       '/api/leads',
       '/api/lead-generator-runs',
       '/api/analytics',
-      '/api/profile',
+      // '/api/profile',  // protected — requires session
       '/api/people',
       '/api/tenant-quota',
       '/api/sales/',
     ];
     const isPublic = PUBLIC_API.some((r) => pathname.startsWith(r));
-    if (!isPublic) {
-      const sessionCookie = request.cookies.get('onvero_user');
-      if (!sessionCookie?.value) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      try {
-        JSON.parse(decodeURIComponent(sessionCookie.value));
-      } catch {
-        return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-      }
+    if (!isPublic && !isLoggedIn) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }
 
@@ -75,5 +79,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/login', '/join', '/dashboard/:path*', '/api/:path*'],
+  matcher: ['/login', '/join', '/dashboard/:path*', '/intelligence/:path*', '/api/:path*'],
 };

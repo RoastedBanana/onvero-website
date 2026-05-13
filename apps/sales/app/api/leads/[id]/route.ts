@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { createServerSupabaseClient } from '@onvero/lib/supabase-server';
-import { getSessionTenantId } from '@onvero/lib/tenant-server';
+import { getSessionTenantId, getAdminClient } from '@onvero/lib/tenant-server';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -21,15 +20,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
-    const client = getAdmin() ?? (await createServerSupabaseClient());
+    const client = getAdmin() ?? getAdminClient();
 
     const [leadRes, activitiesRes] = await Promise.all([
-      client
-        .from('leads')
-        .select('*')
-        .eq('id', id)
-        .eq('tenant_id', tenantId)
-        .maybeSingle(),
+      client.from('leads').select('*').eq('id', id).eq('tenant_id', tenantId).maybeSingle(),
       client
         .from('lead_activities')
         .select('id, type, title, content, content_full_title, content_full_content, interested, created_at, metadata')
@@ -68,12 +62,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     'tier',
     'is_excluded',
     'exclusion_reason',
+    'archived',
   ];
   for (const key of allowed) {
     if (key in body) safeFields[key] = body[key];
   }
 
-  const client = getAdmin() ?? (await createServerSupabaseClient());
+  const client = getAdmin() ?? getAdminClient();
 
   // Try with session tenant first
   let tenantId = await getSessionTenantId();
@@ -103,7 +98,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const tenantId = await getSessionTenantId();
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const client = getAdmin() ?? (await createServerSupabaseClient());
+  const client = getAdmin() ?? getAdminClient();
 
   await client.from('lead_activities').delete().eq('lead_id', id).eq('tenant_id', tenantId);
   const { error } = await client.from('leads').delete().eq('id', id).eq('tenant_id', tenantId);
