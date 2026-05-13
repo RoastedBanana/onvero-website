@@ -283,7 +283,7 @@ function MarkerTooltip({ state }: { state: TooltipState }) {
         boxShadow: '0 4px 20px rgba(10,37,64,0.10)',
         pointerEvents: 'none',
         zIndex: 10001,
-        fontFamily: 'var(--font-nunito),sans-serif',
+        fontFamily: 'var(--font-inter),sans-serif',
         whiteSpace: 'nowrap',
       }}
     >
@@ -386,7 +386,7 @@ export function GlobeAnalytics({
             userSelect: 'none',
             pointerEvents: 'none',
             whiteSpace: 'nowrap',
-            fontFamily: 'var(--font-nunito),sans-serif',
+            fontFamily: 'var(--font-inter),sans-serif',
           }}
         >
           Scrollen zum Zoomen · Ziehen zum Drehen
@@ -443,7 +443,7 @@ export function GlobeAnalytics({
                 letterSpacing: '0.07em',
                 userSelect: 'none',
                 whiteSpace: 'nowrap',
-                fontFamily: 'var(--font-nunito),sans-serif',
+                fontFamily: 'var(--font-inter),sans-serif',
               }}
             >
               Scrollen zum Zoomen · Ziehen zum Drehen · ESC zum Schließen

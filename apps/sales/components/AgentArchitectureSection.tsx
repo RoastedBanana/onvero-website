@@ -803,7 +803,7 @@ export function AgentArchitectureSection() {
   useMagneticNetwork(panelRef, svgRef);
 
   return (
-    <section className="bg-white font-[family-name:var(--font-nunito)] text-[#0A2540]">
+    <section className="bg-white font-[family-name:var(--font-inter)] text-[#0A2540]">
       <div className="mx-auto max-w-7xl px-6 pb-24 pt-8 md:pb-32 md:px-8">
         <div className="mb-10 max-w-4xl md:mb-14">
           <h2 className="text-balance text-3xl font-bold leading-[1.2] tracking-[-0.01em] md:text-4xl lg:text-[40px] lg:leading-[1.2]">

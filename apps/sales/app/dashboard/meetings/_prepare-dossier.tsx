@@ -34,8 +34,8 @@ export default function PrepareDossier({ meeting, lead }: { meeting: Meeting; le
       color: C.accent,
       items: [
         { key: 'Name', value: lead.name },
-        { key: 'Position', value: lead.jobTitle },
-        { key: 'E-Mail', value: lead.email },
+        { key: 'Position', value: lead.jobTitle ?? null },
+        { key: 'E-Mail', value: lead.email ?? null },
         { key: 'Telefon', value: lead.phone },
         { key: 'LinkedIn', value: lead.linkedinUrl ? 'Profil vorhanden' : null },
       ],
@@ -59,7 +59,7 @@ export default function PrepareDossier({ meeting, lead }: { meeting: Meeting; le
       color: '#FBBF24',
       items: [
         { key: 'Google Rating', value: lead.googleRating ? `${lead.googleRating} ★` : null },
-        { key: 'Google Reviews', value: lead.googleReviews > 0 ? `${lead.googleReviews} Bewertungen` : null },
+        { key: 'Google Reviews', value: (lead.googleReviews ?? 0) > 0 ? `${lead.googleReviews} Bewertungen` : null },
         { key: 'Quelle', value: lead.source },
         { key: 'Erstellt am', value: lead.createdAt },
       ],
@@ -404,9 +404,9 @@ export default function PrepareDossier({ meeting, lead }: { meeting: Meeting; le
           </div>
           <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.7, margin: 0 }}>{lead.aiSummary}</p>
 
-          {lead.aiTags.length > 0 && (
+          {(lead.aiTags ?? []).length > 0 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
-              {lead.aiTags.map((tag) => (
+              {(lead.aiTags ?? []).map((tag) => (
                 <span
                   key={tag}
                   style={{
@@ -427,7 +427,7 @@ export default function PrepareDossier({ meeting, lead }: { meeting: Meeting; le
       )}
 
       {/* Employment History */}
-      {lead.employmentHistory.length > 0 && (
+      {(lead.employmentHistory ?? []).length > 0 && (
         <div
           style={{
             background: C.surface,
@@ -456,7 +456,7 @@ export default function PrepareDossier({ meeting, lead }: { meeting: Meeting; le
             <span style={{ fontSize: 10, fontWeight: 600, color: C.text3, letterSpacing: '0.08em' }}>KARRIERE</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {lead.employmentHistory.slice(0, 5).map((job, i) => (
+            {(lead.employmentHistory ?? []).slice(0, 5).map((job, i) => (
               <div
                 key={`${job.company}-${i}`}
                 style={{

@@ -118,7 +118,7 @@ function Collapsible({
 // ─── CAREER SECTION ──────────────────────────────────────────────────────────
 
 export function CareerSection({ entries }: { entries: Lead['employmentHistory'] }) {
-  const sorted = [...entries].sort((a, b) => {
+  const sorted = [...(entries ?? [])].sort((a, b) => {
     if (a.current && !b.current) return -1;
     if (!a.current && b.current) return 1;
     if (!a.startDate && !b.startDate) return 0;

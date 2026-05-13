@@ -37,7 +37,7 @@ function FeatureCard({ title, size }: { title: string; size: FeatureSize }) {
 
 export function FeaturesSection() {
   return (
-    <section className="bg-white font-[family-name:var(--font-nunito)] text-[#0A2540]">
+    <section className="bg-white font-[family-name:var(--font-inter)] text-[#0A2540]">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-32 md:px-8">
         <div className="mb-12 text-center md:mb-16">
           <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.06em] text-[#4F46E5]">Unsere Leistungen</p>

@@ -1071,7 +1071,7 @@ export const LEADS: Lead[] = RAW_LEADS.map((r) => {
       ...(e.last_contacted_at ? [{ action: 'E-Mail versendet', time: e.last_contacted_at, color: '#34D399' }] : []),
     ],
   };
-});
+}) as unknown[] as Lead[];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 

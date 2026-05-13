@@ -39,6 +39,19 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // If cookie has no name, query profiles table directly (handles stale cookies)
+  let firstName = displayUser.firstName ?? '';
+  let lastName = displayUser.lastName ?? '';
+  if (!firstName && !lastName) {
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', session.userId)
+      .maybeSingle();
+    firstName = profile?.first_name ?? '';
+    lastName = profile?.last_name ?? '';
+  }
+
   // If no display cookie, fall back to auth.users email
   let email = displayUser.email ?? '';
   if (!email) {
@@ -51,8 +64,8 @@ export async function GET(req: NextRequest) {
       id: session.userId,
       tenantId: session.tenantId,
       role,
-      firstName: displayUser.firstName ?? '',
-      lastName: displayUser.lastName ?? '',
+      firstName,
+      lastName,
       email,
     },
   });

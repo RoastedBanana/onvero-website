@@ -360,9 +360,6 @@ function dbToLead(r: DbLead): Lead {
     isExcluded: (r.is_excluded as boolean) ?? false,
     exclusionReason: (r.exclusion_reason as string) ?? null,
     apolloOrganizationId: (r.apollo_organization_id as string) ?? null,
-    // Compat: map fitScore to score for UI components
-    score: fitScore ?? null,
-    scoreBreakdown: fitScore ? [{ label: 'Unternehmensfit', value: fitScore ?? 0, max: 100 }] : [],
     name: company,
     // Legacy compat — empty defaults
     firstName: '',

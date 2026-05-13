@@ -68,7 +68,7 @@ function LoginForm() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: '2rem',
-        fontFamily: 'var(--font-nunito), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        fontFamily: 'var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       }}
     >
       <div
