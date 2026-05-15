@@ -230,32 +230,67 @@ function Sidebar({ theme }: { theme: Theme }) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
-          padding: '0 14px',
-          height: 32,
-          marginBottom: 18,
+          padding: '0 10px 0 18px',
+          height: 34,
+          marginBottom: 58,
           textDecoration: 'none',
           flexShrink: 0,
+          position: 'relative',
         }}
       >
-        <img
-          src="/onvero-icon.svg"
-          alt="Onvero"
-          style={{ width: 22, height: 22, flexShrink: 0, filter: isDark ? 'invert(1)' : 'none' }}
-        />
+        {/* Collapsed: single lettermark */}
         <span
           style={{
-            fontSize: 13,
-            fontWeight: 800,
+            position: 'absolute',
+            left: 18,
+            fontSize: 22,
+            fontWeight: 900,
             color: c.text,
-            letterSpacing: '-0.02em',
-            whiteSpace: 'nowrap',
+            letterSpacing: '-0.05em',
+            lineHeight: 1,
+            opacity: expanded ? 0 : 1,
+            transition: 'opacity 120ms ease-out',
+            pointerEvents: 'none',
+          }}
+        >
+          O
+        </span>
+        {/* Expanded: two-line wordmark */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
             opacity: expanded ? 1 : 0,
             transition: 'opacity 150ms ease-out',
           }}
         >
-          leads.onvero
-        </span>
+          <span
+            style={{
+              fontSize: 20,
+              fontWeight: 900,
+              color: c.text,
+              letterSpacing: '-0.04em',
+              lineHeight: 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Onvero
+          </span>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: c.textMuted,
+              letterSpacing: '0.04em',
+              lineHeight: 1,
+              whiteSpace: 'nowrap',
+              textTransform: 'uppercase',
+            }}
+          >
+            Leads
+          </span>
+        </div>
       </Link>
 
       {/* Home */}
