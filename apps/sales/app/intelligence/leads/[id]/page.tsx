@@ -299,6 +299,25 @@ interface LeadDetail {
   social_top_commenters?: { name?: string; handle?: string; comment_count?: number; platform?: string }[];
   social_upcoming_events?: { title?: string; date?: string; platform?: string; source_url?: string }[];
   li_similar_companies?: { name?: string; url?: string; industry?: string; size?: string }[];
+  // Address
+  street?: string;
+  zip?: string;
+  registeredSeat?: string;
+  businessModel?: string;
+  // Web analysis
+  web_analysis_summary?: string;
+  web_value_proposition?: string;
+  web_has_careers_page?: boolean;
+  web_has_shop?: boolean;
+  web_open_positions_count?: number;
+  web_memberships?: string[];
+  web_certifications?: string[];
+  web_partnerships?: string[];
+  web_target_market?: string;
+  web_industry_position?: string;
+  web_buying_signals?: { signal: string; evidence?: string; priority?: string; source_url?: string }[];
+  web_outreach_hooks?: { hook: string; source_page?: string; suggested_opener?: string }[];
+  web_recent_news?: { headline: string; source_url?: string; date_approx?: string; significance?: string }[];
 }
 
 // ─── DB mapper ───────────────────────────────────────────────────────────────
@@ -665,6 +684,29 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
       ? (d.reviews_opportunity_flags as LeadDetail['reviews_opportunity_flags'])
       : undefined,
     reviews_analyzed_at: d.reviews_analyzed_at as string | undefined,
+    street: d.street as string | undefined,
+    zip: d.zip as string | undefined,
+    registeredSeat: d.registered_seat as string | undefined,
+    businessModel: d.business_model as string | undefined,
+    web_analysis_summary: d.web_analysis_summary as string | undefined,
+    web_value_proposition: d.web_value_proposition as string | undefined,
+    web_has_careers_page: d.web_has_careers_page as boolean | undefined,
+    web_has_shop: d.web_has_shop as boolean | undefined,
+    web_open_positions_count: d.web_open_positions_count as number | undefined,
+    web_memberships: Array.isArray(d.web_memberships) ? (d.web_memberships as string[]) : undefined,
+    web_certifications: Array.isArray(d.web_certifications) ? (d.web_certifications as string[]) : undefined,
+    web_partnerships: Array.isArray(d.web_partnerships) ? (d.web_partnerships as string[]) : undefined,
+    web_target_market: d.web_target_market as string | undefined,
+    web_industry_position: d.web_industry_position as string | undefined,
+    web_buying_signals: Array.isArray(d.web_buying_signals)
+      ? (d.web_buying_signals as { signal: string; evidence?: string; priority?: string; source_url?: string }[])
+      : undefined,
+    web_outreach_hooks: Array.isArray(d.web_outreach_hooks)
+      ? (d.web_outreach_hooks as { hook: string; source_page?: string; suggested_opener?: string }[])
+      : undefined,
+    web_recent_news: Array.isArray(d.web_recent_news)
+      ? (d.web_recent_news as { headline: string; source_url?: string; date_approx?: string; significance?: string }[])
+      : undefined,
   };
 }
 
@@ -6575,6 +6617,148 @@ function InfoTab({
         </div>
       ) : null}
 
+      {/* ── 1b. Web-Signale ───────────────────────────────────────────────── */}
+      {lead.web_buying_signals?.length || lead.web_outreach_hooks?.length || lead.web_recent_news?.length ? (
+        <div
+          style={{
+            ...glassCard(isDark),
+            borderRadius: 16,
+            padding: '20px 24px',
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase' as const,
+              color: '#0EA5E9',
+              marginBottom: 14,
+            }}
+          >
+            Web-Signale
+          </div>
+
+          {/* Buying signals */}
+          {!!lead.web_buying_signals?.length && (
+            <div>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  marginBottom: 6,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Kaufsignale
+              </div>
+              {lead.web_buying_signals.map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      marginTop: 4,
+                      background: s.priority === 'high' ? '#EF4444' : s.priority === 'medium' ? '#F97316' : '#10B981',
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: 13, color: c.text, fontWeight: 600 }}>{s.signal}</div>
+                    {s.evidence && <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{s.evidence}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Outreach hooks */}
+          {!!lead.web_outreach_hooks?.length && (
+            <div>
+              {!!lead.web_buying_signals?.length && (
+                <div
+                  style={{
+                    height: 1,
+                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                    margin: '12px 0',
+                  }}
+                />
+              )}
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  marginBottom: 6,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Outreach-Hooks
+              </div>
+              {lead.web_outreach_hooks.map((h, i) => (
+                <div key={i} style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: c.text, marginBottom: 3 }}>{h.hook}</div>
+                  {h.suggested_opener && (
+                    <div style={{ fontSize: 11, color: c.textMuted, fontStyle: 'italic' as const, lineHeight: 1.5 }}>
+                      &bdquo;{h.suggested_opener}&ldquo;
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Recent news */}
+          {!!lead.web_recent_news?.length && (
+            <div>
+              {(!!lead.web_buying_signals?.length || !!lead.web_outreach_hooks?.length) && (
+                <div
+                  style={{
+                    height: 1,
+                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                    margin: '12px 0',
+                  }}
+                />
+              )}
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  marginBottom: 6,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Aktuelle News
+              </div>
+              {lead.web_recent_news.map((n, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    marginBottom: 6,
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: c.text, flex: 1, lineHeight: 1.4 }}>{n.headline}</div>
+                  {n.date_approx && (
+                    <div style={{ fontSize: 10, color: c.textMuted, flexShrink: 0 }}>{n.date_approx}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+
       {/* ── 2. Compact quick-view cards ───────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
         {/* Firma */}
@@ -6587,21 +6771,41 @@ function InfoTab({
                 </div>
               )}
               {lead.founded && (
-                <span
-                  style={{
-                    display: 'inline-block',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: '#818CF8',
-                    border: '1px solid #818CF8',
-                    borderRadius: 99,
-                    padding: '2px 9px',
-                    marginBottom: 8,
-                    letterSpacing: '0.02em',
-                  }}
+                <div
+                  style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' as const, gap: 4, marginBottom: 8 }}
                 >
-                  seit {lead.founded}
-                </span>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: '#818CF8',
+                      border: '1px solid #818CF8',
+                      borderRadius: 99,
+                      padding: '2px 9px',
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    seit {lead.founded}
+                  </span>
+                  {lead.businessModel && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: '#818CF8',
+                        background: 'rgba(129,140,248,0.12)',
+                        border: '1px solid rgba(129,140,248,0.25)',
+                        borderRadius: 99,
+                        padding: '2px 8px',
+                        marginLeft: 6,
+                      }}
+                    >
+                      {lead.businessModel.toUpperCase()}
+                    </span>
+                  )}
+                </div>
               )}
               {lead.representative && (
                 <div
@@ -6688,6 +6892,11 @@ function InfoTab({
                     }}
                   >
                     {lead.website.replace(/^https?:\/\/(www\.)?/, '')}
+                  </div>
+                )}
+                {lead.street && (
+                  <div style={{ fontSize: 11, color: c.textMuted }}>
+                    {lead.street}, {lead.zip} {lead.city}
                   </div>
                 )}
               </div>
@@ -6803,6 +7012,16 @@ function InfoTab({
                   {rawHistory.length > 1 && (
                     <div style={{ marginTop: 4 }}>
                       <EmployeeAreaChart history={rawHistory} isDark={isDark} />
+                    </div>
+                  )}
+                  {lead.web_open_positions_count != null && lead.web_open_positions_count > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: c.text }}>
+                        {lead.web_open_positions_count} offene Stellen
+                      </span>
+                      {lead.web_has_careers_page && (
+                        <span style={{ fontSize: 10, color: '#10B981' }}>Karriereseite</span>
+                      )}
                     </div>
                   )}
                 </div>
