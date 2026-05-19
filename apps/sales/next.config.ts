@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'jnaqmsvozkpqawqwslrl.supabase.co' },
+      { protocol: 'https', hostname: 'logo.clearbit.com' },
+      { protocol: 'https', hostname: '*.googleusercontent.com' },
+      { protocol: 'https', hostname: 'media.licdn.com' },
     ],
   },
   async headers() {
@@ -39,7 +42,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               `script-src 'self' 'unsafe-inline' https://plausible.io${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://jnaqmsvozkpqawqwslrl.supabase.co https://images.unsplash.com https://media.licdn.com https://zenprospect-production.s3.amazonaws.com",
+              "img-src 'self' data: blob: https://jnaqmsvozkpqawqwslrl.supabase.co https://images.unsplash.com https://media.licdn.com https://zenprospect-production.s3.amazonaws.com https://logo.clearbit.com https://*.googleusercontent.com https://scontent-ord5-3.xx.fbcdn.net https://*.fbcdn.net",
               "font-src 'self' data:",
               "connect-src 'self' https://jnaqmsvozkpqawqwslrl.supabase.co wss://jnaqmsvozkpqawqwslrl.supabase.co https://plausible.io",
               "frame-ancestors 'none'",
