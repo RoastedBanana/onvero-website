@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme, colors } from '../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
@@ -76,6 +76,7 @@ function mapApiLead(row: any): Lead {
     added: row.created_at ? new Date(row.created_at as string).toLocaleDateString('de-DE') : '',
     signals: signals > 0 ? signals : undefined,
     enrichmentStatus: (row.enrichment_status as string) ?? 'raw',
+    logo_url: (row.logo_url as string | undefined) ?? undefined,
   };
 }
 
@@ -100,6 +101,7 @@ interface Lead {
   added: string;
   signals?: number;
   enrichmentStatus?: string;
+  logo_url?: string;
 }
 
 const STATUS_META: Record<Status, { label: string; bg: string; color: string; headerBg: string }> = {
@@ -128,6 +130,57 @@ function avatarFor(name: string) {
     .join('')
     .toUpperCase();
   return { ...AVATAR_PALETTE[idx], initials };
+}
+
+function LogoAvatar({
+  name,
+  logoUrl,
+  size,
+  radius,
+  fontSize,
+  isDark,
+  av,
+}: {
+  name: string;
+  logoUrl?: string;
+  size: number;
+  radius: number;
+  fontSize: number;
+  isDark: boolean;
+  av: ReturnType<typeof avatarFor>;
+}) {
+  const [err, setErr] = React.useState(false);
+  const show = !!logoUrl && !err;
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        background: show ? (isDark ? 'rgba(255,255,255,0.06)' : '#F4F5F8') : av.bg,
+        color: av.color,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize,
+        fontWeight: 800,
+        flexShrink: 0,
+        letterSpacing: '0.02em',
+        overflow: 'hidden',
+      }}
+    >
+      {show ? (
+        <img
+          src={logoUrl}
+          alt={name}
+          onError={() => setErr(true)}
+          style={{ width: size - 10, height: size - 10, objectFit: 'contain' }}
+        />
+      ) : (
+        av.initials
+      )}
+    </div>
+  );
 }
 
 function scoreColor(s: number) {
@@ -407,23 +460,15 @@ function KanbanCard({
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: av.bg,
-              color: av.color,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 10,
-              fontWeight: 800,
-              flexShrink: 0,
-            }}
-          >
-            {av.initials}
-          </div>
+          <LogoAvatar
+            name={lead.name}
+            logoUrl={lead.logo_url}
+            size={30}
+            radius={8}
+            fontSize={10}
+            isDark={isDark}
+            av={av}
+          />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 800, color: c.text, lineHeight: 1.3 }}>{lead.name}</div>
             <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>
@@ -1508,24 +1553,15 @@ export default function LeadsPage() {
                           {/* Company name with avatar */}
                           <td style={{ padding: '10px 14px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div
-                                style={{
-                                  width: 34,
-                                  height: 34,
-                                  borderRadius: 9,
-                                  background: av.bg,
-                                  color: av.color,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 11,
-                                  fontWeight: 800,
-                                  flexShrink: 0,
-                                  letterSpacing: '0.02em',
-                                }}
-                              >
-                                {av.initials}
-                              </div>
+                              <LogoAvatar
+                                name={lead.name}
+                                logoUrl={lead.logo_url}
+                                size={34}
+                                radius={9}
+                                fontSize={11}
+                                isDark={isDark}
+                                av={av}
+                              />
                               <div>
                                 <div style={{ fontWeight: 700, color: c.text, fontSize: 13 }}>{lead.name}</div>
                                 <div style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>
@@ -1585,7 +1621,12 @@ export default function LeadsPage() {
                                     }}
                                   >
                                     <div
-                                      style={{ width: `${val}%`, height: '100%', background: color, borderRadius: 99 }}
+                                      style={{
+                                        width: `${val}%`,
+                                        height: '100%',
+                                        background: color,
+                                        borderRadius: 99,
+                                      }}
                                     />
                                   </div>
                                   <span style={{ fontSize: 10, fontWeight: 700, color, minWidth: 18 }}>{val}</span>
