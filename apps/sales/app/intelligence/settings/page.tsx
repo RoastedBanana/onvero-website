@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { useOnboarding } from '../_onboarding';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTheme, colors } from '../layout';
+
+// ─── Konstanten ───────────────────────────────────────────────────────────────
 
 const INDUSTRIES = [
   'Mode & Bekleidung',
@@ -19,67 +20,268 @@ const INDUSTRIES = [
   'Lebensmittel & FMCG',
   'Pharma & Gesundheit',
   'Schmuck & Luxus',
-];
-const SYSTEMS = [
-  'Shopify',
-  'Shopware 5',
-  'Shopware 6',
-  'WooCommerce',
-  'JTL',
-  'Plentymarkets',
-  'Magento',
-  'Oxid',
-  'Salesforce Commerce',
-  'SAP Commerce',
-];
-const CARRIERS = ['DHL', 'DPD', 'Hermes / evri', 'GLS', 'UPS', 'FedEx', 'DB Schenker', 'TNT', 'Colis Privé'];
-const GEOGRAPHIES = ['Deutschland', 'Österreich', 'Schweiz'];
-const BUNDESLAENDER = [
-  'Bayern',
-  'NRW',
-  'Baden-Württemberg',
-  'Hessen',
-  'Hamburg',
-  'Berlin',
-  'Sachsen',
-  'Niedersachsen',
-  'Brandenburg',
-  'Schleswig-Holstein',
+  'SaaS & IT',
+  'Industrie & Maschinenbau',
+  'Logistik & Versand',
+  'Finanzen & Versicherung',
+  'Medien & Verlag',
+  'Immobilien',
 ];
 
-function Section({
-  title,
-  sub,
-  children,
-  c,
-}: {
-  title: string;
-  sub?: string;
-  children: React.ReactNode;
-  c: ReturnType<typeof colors>;
-}) {
+const STORAGE_ANGEBOT = 'onvero.settings.angebotsProfile.v1';
+const STORAGE_ABSENDER = 'onvero.settings.absenderProfile.v1';
+const STORAGE_TAB = 'onvero.settings.activeTab.v1';
+const STORAGE_ACTIVE_ANGEBOT = 'onvero.settings.activeAngebot.v1';
+const STORAGE_ACTIVE_ABSENDER = 'onvero.settings.activeAbsender.v1';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Tab = 'angebot' | 'absender';
+
+type AngebotsProfile = {
+  id: string;
+  name: string;
+  unternehmen: string;
+  beschreibung: string;
+  painPoints: string[];
+  valueProposition: string;
+  referenzen: string[];
+  mitarbeiterMin: number;
+  mitarbeiterMax: number;
+  umsatzMin: number;
+  umsatzMax: number;
+  zielBranchen: string[];
+};
+
+type AbsenderProfile = {
+  id: string;
+  name: string;
+};
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+}
+
+function emptyAngebot(): AngebotsProfile {
+  return {
+    id: uid(),
+    name: 'Neues Angebots-Profil',
+    unternehmen: '',
+    beschreibung: '',
+    painPoints: [],
+    valueProposition: '',
+    referenzen: [],
+    mitarbeiterMin: 10,
+    mitarbeiterMax: 500,
+    umsatzMin: 1_000_000,
+    umsatzMax: 50_000_000,
+    zielBranchen: [],
+  };
+}
+
+function emptyAbsender(): AbsenderProfile {
+  return {
+    id: uid(),
+    name: 'Neues Absender-Profil',
+  };
+}
+
+// ─── Atomare Inputs ───────────────────────────────────────────────────────────
+
+function inputStyle(c: ReturnType<typeof colors>): React.CSSProperties {
+  return {
+    width: '100%',
+    background: c.bgPage,
+    border: `1px solid ${c.border}`,
+    borderRadius: 8,
+    padding: '9px 12px',
+    fontSize: 13,
+    color: c.text,
+    fontFamily: 'var(--font-inter), sans-serif',
+    outline: 'none',
+    transition: 'border-color 0.15s',
+  };
+}
+
+function Label({ children, c, sub }: { children: React.ReactNode; c: ReturnType<typeof colors>; sub?: string }) {
   return (
-    <div style={{ background: c.bgCard, border: `1px solid ${c.border}`, borderRadius: 14, overflow: 'hidden' }}>
-      <div style={{ padding: '20px 24px', borderBottom: `1px solid ${c.border}` }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>{title}</div>
-        {sub && <div style={{ fontSize: 12, color: c.textSub, marginTop: 3 }}>{sub}</div>}
-      </div>
-      <div style={{ padding: '20px 24px' }}>{children}</div>
+    <div style={{ marginBottom: 6 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: c.text }}>{children}</div>
+      {sub && <div style={{ fontSize: 11, color: c.textSub, marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
 
-function Toggle({
-  label,
-  sub,
+function TextField({
   value,
   onChange,
+  placeholder,
   c,
 }: {
-  label: string;
-  sub?: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={inputStyle(c)}
+      onFocus={(e) => (e.currentTarget.style.borderColor = c.accent)}
+      onBlur={(e) => (e.currentTarget.style.borderColor = c.border)}
+    />
+  );
+}
+
+function TextArea({
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+  c,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      style={{ ...inputStyle(c), resize: 'vertical', minHeight: rows * 22, lineHeight: 1.55 }}
+      onFocus={(e) => (e.currentTarget.style.borderColor = c.accent)}
+      onBlur={(e) => (e.currentTarget.style.borderColor = c.border)}
+    />
+  );
+}
+
+function TagInput({
+  values,
+  onChange,
+  placeholder,
+  c,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
+  c: ReturnType<typeof colors>;
+}) {
+  const [draft, setDraft] = useState('');
+
+  function commit() {
+    const v = draft.trim();
+    if (!v) return;
+    if (!values.includes(v)) onChange([...values, v]);
+    setDraft('');
+  }
+
+  function remove(idx: number) {
+    onChange(values.filter((_, i) => i !== idx));
+  }
+
+  return (
+    <div
+      style={{
+        background: c.bgPage,
+        border: `1px solid ${c.border}`,
+        borderRadius: 8,
+        padding: 6,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 6,
+        minHeight: 40,
+        alignItems: 'center',
+      }}
+    >
+      {values.map((tag, idx) => (
+        <span
+          key={`${tag}-${idx}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: c.bgCard,
+            border: `1px solid ${c.border}`,
+            color: c.text,
+            borderRadius: 6,
+            padding: '4px 4px 4px 10px',
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+        >
+          {tag}
+          <button
+            onClick={() => remove(idx)}
+            aria-label={`${tag} entfernen`}
+            style={{
+              width: 18,
+              height: 18,
+              borderRadius: 4,
+              border: 'none',
+              background: 'transparent',
+              color: c.textSub,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 4l8 8M12 4l-8 8" />
+            </svg>
+          </button>
+        </span>
+      ))}
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            commit();
+          } else if (e.key === 'Backspace' && draft === '' && values.length > 0) {
+            onChange(values.slice(0, -1));
+          }
+        }}
+        onBlur={commit}
+        placeholder={values.length === 0 ? placeholder : ''}
+        style={{
+          flex: '1 0 140px',
+          minWidth: 120,
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          fontSize: 13,
+          color: c.text,
+          padding: '4px 6px',
+          fontFamily: 'var(--font-inter), sans-serif',
+        }}
+      />
+    </div>
+  );
+}
+
+function NumberField({
+  value,
+  onChange,
+  suffix,
+  step = 1,
+  min = 0,
+  c,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  suffix?: string;
+  step?: number;
+  min?: number;
   c: ReturnType<typeof colors>;
 }) {
   return (
@@ -87,297 +289,260 @@ function Toggle({
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '12px 0',
-        borderBottom: `1px solid ${c.border}`,
+        background: c.bgPage,
+        border: `1px solid ${c.border}`,
+        borderRadius: 8,
+        overflow: 'hidden',
       }}
     >
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>{sub}</div>}
-      </div>
-      <button
-        onClick={() => onChange(!value)}
+      <input
+        type="number"
+        value={Number.isFinite(value) ? value : 0}
+        min={min}
+        step={step}
+        onChange={(e) => onChange(Number(e.target.value) || 0)}
         style={{
-          width: 44,
-          height: 24,
-          borderRadius: 99,
+          flex: 1,
+          background: 'transparent',
           border: 'none',
-          cursor: 'pointer',
-          background: value ? c.accent : c.borderStrong,
-          position: 'relative',
-          flexShrink: 0,
-          transition: 'background 0.2s',
+          outline: 'none',
+          padding: '9px 12px',
+          fontSize: 13,
+          color: c.text,
+          fontFamily: 'var(--font-inter), sans-serif',
         }}
-      >
-        <span
-          style={{
-            position: 'absolute',
-            top: 3,
-            left: value ? 23 : 3,
-            width: 18,
-            height: 18,
-            borderRadius: '50%',
-            background: '#fff',
-            transition: 'left 0.2s',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-          }}
-        />
-      </button>
+      />
+      {suffix && (
+        <span style={{ fontSize: 12, fontWeight: 600, color: c.textSub, paddingRight: 12, whiteSpace: 'nowrap' }}>
+          {suffix}
+        </span>
+      )}
     </div>
   );
 }
 
-function Slider({
-  label,
+function RangeMinMax({
+  minLabel,
+  maxLabel,
   min,
   max,
-  value,
   onChange,
-  unit,
+  suffix,
+  step,
   c,
 }: {
-  label: string;
+  minLabel?: string;
+  maxLabel?: string;
   min: number;
   max: number;
-  value: number;
-  onChange: (v: number) => void;
-  unit?: string;
+  onChange: (range: { min: number; max: number }) => void;
+  suffix?: string;
+  step?: number;
   c: ReturnType<typeof colors>;
 }) {
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{label}</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: c.accent }}>
-          {value}
-          {unit}
-        </span>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div>
+        <div style={{ fontSize: 11, color: c.textSub, marginBottom: 4, fontWeight: 600 }}>{minLabel ?? 'Min'}</div>
+        <NumberField value={min} onChange={(v) => onChange({ min: v, max })} suffix={suffix} step={step} c={c} />
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: '100%', accentColor: c.accent, cursor: 'pointer' }}
-      />
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-        <span style={{ fontSize: 11, color: c.textSub }}>
-          {min}
-          {unit}
-        </span>
-        <span style={{ fontSize: 11, color: c.textSub }}>
-          {max}
-          {unit}
-        </span>
+      <div>
+        <div style={{ fontSize: 11, color: c.textSub, marginBottom: 4, fontWeight: 600 }}>{maxLabel ?? 'Max'}</div>
+        <NumberField value={max} onChange={(v) => onChange({ min, max: v })} suffix={suffix} step={step} c={c} />
       </div>
     </div>
   );
 }
+
+function ChipGroup({
+  items,
+  selected,
+  onToggle,
+  c,
+}: {
+  items: string[];
+  selected: string[];
+  onToggle: (item: string) => void;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      {items.map((item) => {
+        const active = selected.includes(item);
+        return (
+          <button
+            key={item}
+            onClick={() => onToggle(item)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 7,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: `1px solid ${active ? c.accent : c.border}`,
+              background: active ? c.accent : c.bgPage,
+              color: active ? (c.bgPage === '#FFFFFF' ? '#fff' : c.bgPage) : c.textSub,
+              transition: 'all 0.12s',
+              fontFamily: 'var(--font-inter), sans-serif',
+            }}
+          >
+            {item}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Layout helpers ───────────────────────────────────────────────────────────
+
+function Card({
+  title,
+  sub,
+  children,
+  c,
+}: {
+  title?: string;
+  sub?: string;
+  children: React.ReactNode;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <div style={{ background: c.bgCard, border: `1px solid ${c.border}`, borderRadius: 14, overflow: 'hidden' }}>
+      {title && (
+        <div style={{ padding: '18px 22px', borderBottom: `1px solid ${c.border}` }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>{title}</div>
+          {sub && <div style={{ fontSize: 12, color: c.textSub, marginTop: 3 }}>{sub}</div>}
+        </div>
+      )}
+      <div style={{ padding: '20px 22px' }}>{children}</div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  sub,
+  children,
+  c,
+}: {
+  label: string;
+  sub?: string;
+  children: React.ReactNode;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <div>
+      <Label c={c} sub={sub}>
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { theme } = useTheme();
   const c = colors(theme);
-  const isDark = theme === 'dark';
 
-  // ICP defaults
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([
-    'Mode & Bekleidung',
-    'Sport & Outdoor',
-    'Elektronik & Technik',
-    'Haushalt & Living',
-  ]);
-  const [selectedSystems, setSelectedSystems] = useState<string[]>(['Shopify', 'Shopware 6', 'WooCommerce', 'JTL']);
-  const [selectedGeographies, setSelectedGeographies] = useState<string[]>(['Deutschland', 'Österreich', 'Schweiz']);
-  const [selectedBundeslaender, setSelectedBundeslaender] = useState<string[]>([]);
-  const [minVolume, setMinVolume] = useState(100);
-  const [maxVolume, setMaxVolume] = useState(3000);
-  const [targetCarriers, setTargetCarriers] = useState<string[]>(['DHL', 'DPD', 'Hermes / evri', 'GLS']);
-  const [excludedCarriers, setExcludedCarriers] = useState<string[]>([]);
-  const [minScore, setMinScore] = useState(65);
-  const [fitWeight, setFitWeight] = useState(40);
-  const [volumeWeight, setVolumeWeight] = useState(35);
-  const [timingWeight, setTimingWeight] = useState(25);
-  const [slackWebhook, setSlackWebhook] = useState('');
-  const [notifyEmail, setNotifyEmail] = useState('');
-  const [notifyHot, setNotifyHot] = useState(true);
-  const [notifyNewLayer, setNotifyNewLayer] = useState(false);
-  const [notifyWeekly, setNotifyWeekly] = useState(true);
-  const [autoExport, setAutoExport] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'csv' | 'xlsx'>('csv');
   const [loaded, setLoaded] = useState(false);
+  const [tab, setTab] = useState<Tab>('angebot');
 
-  const { refresh } = useOnboarding();
-  const [saving, setSaving] = useState(false);
+  const [angebotsProfile, setAngebotsProfile] = useState<AngebotsProfile[]>([]);
+  const [absenderProfile, setAbsenderProfile] = useState<AbsenderProfile[]>([]);
+  const [activeAngebotId, setActiveAngebotId] = useState<string | null>(null);
+  const [activeAbsenderId, setActiveAbsenderId] = useState<string | null>(null);
+
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Load saved profile on mount
+  // Load from localStorage
   useEffect(() => {
-    fetch('/api/profile')
-      .then((r) => r.json())
-      .then(({ profile }) => {
-        if (!profile) return;
-        const icp = profile.icp_config ?? {};
-        const w = profile.scoring_weights ?? {};
-        const n = profile.notifications_config ?? {};
-        if (Array.isArray(icp.industries) && icp.industries.length) setSelectedIndustries(icp.industries);
-        if (Array.isArray(icp.systems) && icp.systems.length) setSelectedSystems(icp.systems);
-        if (Array.isArray(icp.geographies) && icp.geographies.length) setSelectedGeographies(icp.geographies);
-        if (Array.isArray(icp.bundeslaender)) setSelectedBundeslaender(icp.bundeslaender);
-        if (typeof icp.min_volume === 'number') setMinVolume(icp.min_volume);
-        if (typeof icp.max_volume === 'number') setMaxVolume(icp.max_volume);
-        if (Array.isArray(icp.target_carriers) && icp.target_carriers.length) setTargetCarriers(icp.target_carriers);
-        if (Array.isArray(icp.excluded_carriers)) setExcludedCarriers(icp.excluded_carriers);
-        if (typeof icp.min_score === 'number') setMinScore(icp.min_score);
-        if (typeof w.fit === 'number') setFitWeight(w.fit);
-        if (typeof w.volume === 'number') setVolumeWeight(w.volume);
-        if (typeof w.timing === 'number') setTimingWeight(w.timing);
-        if (typeof n.slack_webhook === 'string') setSlackWebhook(n.slack_webhook);
-        if (typeof n.notify_email === 'string') setNotifyEmail(n.notify_email);
-        if (typeof n.notify_hot === 'boolean') setNotifyHot(n.notify_hot);
-        if (typeof n.notify_new_layer === 'boolean') setNotifyNewLayer(n.notify_new_layer);
-        if (typeof n.notify_weekly === 'boolean') setNotifyWeekly(n.notify_weekly);
-      })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
+    try {
+      const ang = JSON.parse(localStorage.getItem(STORAGE_ANGEBOT) ?? '[]') as AngebotsProfile[];
+      const abs = JSON.parse(localStorage.getItem(STORAGE_ABSENDER) ?? '[]') as AbsenderProfile[];
+      const t = localStorage.getItem(STORAGE_TAB) as Tab | null;
+      const aAng = localStorage.getItem(STORAGE_ACTIVE_ANGEBOT);
+      const aAbs = localStorage.getItem(STORAGE_ACTIVE_ABSENDER);
+
+      setAngebotsProfile(Array.isArray(ang) ? ang : []);
+      setAbsenderProfile(Array.isArray(abs) ? abs : []);
+      if (t === 'angebot' || t === 'absender') setTab(t);
+      if (aAng && ang.some((p) => p.id === aAng)) setActiveAngebotId(aAng);
+      else if (ang.length) setActiveAngebotId(ang[0].id);
+      if (aAbs && abs.some((p) => p.id === aAbs)) setActiveAbsenderId(aAbs);
+      else if (abs.length) setActiveAbsenderId(abs[0].id);
+    } catch {
+      // ignore
+    } finally {
+      setLoaded(true);
+    }
   }, []);
 
-  const totalWeight = fitWeight + volumeWeight + timingWeight;
+  // Persist tab
+  useEffect(() => {
+    if (loaded) localStorage.setItem(STORAGE_TAB, tab);
+  }, [tab, loaded]);
+  useEffect(() => {
+    if (loaded && activeAngebotId) localStorage.setItem(STORAGE_ACTIVE_ANGEBOT, activeAngebotId);
+  }, [activeAngebotId, loaded]);
+  useEffect(() => {
+    if (loaded && activeAbsenderId) localStorage.setItem(STORAGE_ACTIVE_ABSENDER, activeAbsenderId);
+  }, [activeAbsenderId, loaded]);
 
-  function setWeightBalanced(field: 'fit' | 'volume' | 'timing', newVal: number) {
-    const remaining = 100 - newVal;
-    if (field === 'fit') {
-      const total = volumeWeight + timingWeight || 1;
-      setFitWeight(newVal);
-      setVolumeWeight(Math.round((volumeWeight / total) * remaining));
-      setTimingWeight(100 - newVal - Math.round((volumeWeight / total) * remaining));
-    } else if (field === 'volume') {
-      const total = fitWeight + timingWeight || 1;
-      setVolumeWeight(newVal);
-      setFitWeight(Math.round((fitWeight / total) * remaining));
-      setTimingWeight(100 - newVal - Math.round((fitWeight / total) * remaining));
-    } else {
-      const total = fitWeight + volumeWeight || 1;
-      setTimingWeight(newVal);
-      setFitWeight(Math.round((fitWeight / total) * remaining));
-      setVolumeWeight(100 - newVal - Math.round((fitWeight / total) * remaining));
-    }
+  const persistAngebot = useCallback((next: AngebotsProfile[]) => {
+    setAngebotsProfile(next);
+    localStorage.setItem(STORAGE_ANGEBOT, JSON.stringify(next));
+    setSavedAt(new Date());
+  }, []);
+
+  const persistAbsender = useCallback((next: AbsenderProfile[]) => {
+    setAbsenderProfile(next);
+    localStorage.setItem(STORAGE_ABSENDER, JSON.stringify(next));
+    setSavedAt(new Date());
+  }, []);
+
+  function createAngebot() {
+    const p = emptyAngebot();
+    persistAngebot([...angebotsProfile, p]);
+    setActiveAngebotId(p.id);
   }
 
-  const handleSave = useCallback(async () => {
-    setSaving(true);
-    setSaveError(null);
-    try {
-      const res = await fetch('/api/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          icp_config: {
-            industries: selectedIndustries,
-            systems: selectedSystems,
-            geographies: selectedGeographies,
-            bundeslaender: selectedBundeslaender,
-            min_volume: minVolume,
-            max_volume: maxVolume,
-            target_carriers: targetCarriers,
-            excluded_carriers: excludedCarriers,
-            min_score: minScore,
-          },
-          scoring_weights: {
-            fit: fitWeight,
-            volume: volumeWeight,
-            timing: timingWeight,
-          },
-          notifications_config: {
-            slack_webhook: slackWebhook,
-            notify_email: notifyEmail,
-            notify_hot: notifyHot,
-            notify_new_layer: notifyNewLayer,
-            notify_weekly: notifyWeekly,
-          },
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setSaveError(body.error ?? `Fehler ${res.status}`);
-        return;
-      }
-      setSavedAt(new Date());
-      setSaveError(null);
-      refresh();
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'Netzwerkfehler');
-    } finally {
-      setSaving(false);
-    }
-  }, [
-    refresh,
-    selectedIndustries,
-    selectedSystems,
-    selectedGeographies,
-    selectedBundeslaender,
-    minVolume,
-    maxVolume,
-    targetCarriers,
-    excludedCarriers,
-    minScore,
-    fitWeight,
-    volumeWeight,
-    timingWeight,
-    slackWebhook,
-    notifyEmail,
-    notifyHot,
-    notifyNewLayer,
-    notifyWeekly,
-  ]);
-
-  function toggleItem(list: string[], setList: (l: string[]) => void, item: string) {
-    setList(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
+  function createAbsender() {
+    const p = emptyAbsender();
+    persistAbsender([...absenderProfile, p]);
+    setActiveAbsenderId(p.id);
   }
 
-  function ChipGroup({
-    items,
-    selected,
-    onToggle,
-    color = c.accent,
-    bg,
-  }: {
-    items: string[];
-    selected: string[];
-    onToggle: (item: string) => void;
-    color?: string;
-    bg?: string;
-  }) {
-    const activeBg = bg ?? (isDark ? `${color}22` : '#EEF0FF');
-    return (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {items.map((item) => {
-          const active = selected.includes(item);
-          return (
-            <button
-              key={item}
-              onClick={() => onToggle(item)}
-              style={{
-                padding: '5px 12px',
-                borderRadius: 7,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: 'none',
-                background: active ? activeBg : c.bgPage,
-                color: active ? color : c.textSub,
-                outline: active ? `1.5px solid ${color}40` : 'none',
-              }}
-            >
-              {item}
-            </button>
-          );
-        })}
-      </div>
-    );
+  function updateAngebot(id: string, patch: Partial<AngebotsProfile>) {
+    persistAngebot(angebotsProfile.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   }
+
+  function deleteAngebot(id: string) {
+    const next = angebotsProfile.filter((p) => p.id !== id);
+    persistAngebot(next);
+    if (activeAngebotId === id) setActiveAngebotId(next[0]?.id ?? null);
+  }
+
+  function updateAbsender(id: string, patch: Partial<AbsenderProfile>) {
+    persistAbsender(absenderProfile.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  }
+
+  function deleteAbsender(id: string) {
+    const next = absenderProfile.filter((p) => p.id !== id);
+    persistAbsender(next);
+    if (activeAbsenderId === id) setActiveAbsenderId(next[0]?.id ?? null);
+  }
+
+  const activeAngebot = useMemo(
+    () => angebotsProfile.find((p) => p.id === activeAngebotId) ?? null,
+    [angebotsProfile, activeAngebotId],
+  );
+  const activeAbsender = useMemo(
+    () => absenderProfile.find((p) => p.id === activeAbsenderId) ?? null,
+    [absenderProfile, activeAbsenderId],
+  );
 
   if (!loaded) {
     return (
@@ -389,26 +554,12 @@ export default function SettingsPage() {
           alignItems: 'center',
           justifyContent: 'center',
           fontFamily: 'var(--font-inter), sans-serif',
+          color: c.textMuted,
+          fontSize: 13,
+          fontWeight: 600,
         }}
       >
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: 10, color: c.textMuted, fontSize: 13, fontWeight: 600 }}
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            style={{ animation: 'spin 0.8s linear infinite' }}
-          >
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-          </svg>
-          Einstellungen werden geladen…
-        </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        Einstellungen werden geladen…
       </div>
     );
   }
@@ -422,525 +573,555 @@ export default function SettingsPage() {
         color: c.text,
       }}
     >
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      {/* Hero header */}
+      {/* Header */}
       <div
         style={{
-          background: isDark
-            ? `linear-gradient(135deg, ${c.bgCard} 0%, ${c.bg} 100%)`
-            : 'linear-gradient(135deg, #EEF0FF 0%, #F0F4FF 60%, #F7F8FC 100%)',
           borderBottom: `1px solid ${c.border}`,
-          padding: '24px 32px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 24,
+          padding: '24px 32px 0',
+          background: c.bg,
         }}
       >
-        <div>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              background: c.bgCard,
-              border: `1px solid ${isDark ? c.border : '#E0E3FF'}`,
-              color: c.accent,
-              borderRadius: 99,
-              padding: '3px 10px',
-              fontSize: 11,
-              fontWeight: 700,
-              marginBottom: 10,
-              letterSpacing: '0.04em',
-            }}
-          >
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.accent }} />
-            Konfiguration
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 24,
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 4px', color: c.text, lineHeight: 1 }}>
+              Einstellungen
+            </h1>
+            <p style={{ fontSize: 13, color: c.textSub, margin: 0 }}>
+              Angebots- und Absender-Profile für Ihre Outreach-Kampagnen
+            </p>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 5px', color: c.text, lineHeight: 1 }}>
-            Einstellungen
-          </h1>
-          <p style={{ fontSize: 13, color: c.textSub, margin: 0 }}>
-            ICP, Scoring-Gewichte, Benachrichtigungen & Export
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          {saveError && !saving && (
-            <span style={{ fontSize: 11, color: '#DC2626', fontWeight: 700 }}>Fehler: {saveError}</span>
-          )}
-          {savedAt && !saving && !saveError && (
-            <span style={{ fontSize: 11, color: '#059669', fontWeight: 700 }}>
+          {savedAt && (
+            <span style={{ fontSize: 11, color: c.success, fontWeight: 700 }}>
               Gespeichert {savedAt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              background: saving ? (isDark ? `${c.accent}88` : '#A5B4FC') : c.accent,
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              padding: '9px 20px',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-              transition: 'background 0.15s',
-              fontFamily: 'var(--font-inter), sans-serif',
-            }}
-          >
-            {saving ? (
-              <>
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  style={{ animation: 'spin 0.8s linear infinite' }}
-                >
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                </svg>
-                Wird gespeichert…
-              </>
-            ) : (
-              <>
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="13.5 4.5 6 12 2.5 8.5" />
-                </svg>
-                Speichern
-              </>
-            )}
-          </button>
+        </div>
+
+        {/* Tab pills */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          <TabPill active={tab === 'angebot'} onClick={() => setTab('angebot')} c={c}>
+            Angebots-Profile
+            <Counter n={angebotsProfile.length} active={tab === 'angebot'} c={c} />
+          </TabPill>
+          <TabPill active={tab === 'absender'} onClick={() => setTab('absender')} c={c}>
+            Absender-Profile
+            <Counter n={absenderProfile.length} active={tab === 'absender'} c={c} />
+          </TabPill>
         </div>
       </div>
 
-      <div style={{ padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 860 }}>
-        {/* ICP */}
-        <Section
-          title="ICP-Konfiguration"
-          sub="Ideal Customer Profile — definiert welche Leads als Treffer gewertet werden"
+      {/* Body: two-column layout */}
+      <div
+        style={{
+          padding: '24px 32px',
+          display: 'grid',
+          gridTemplateColumns: '280px 1fr',
+          gap: 20,
+          maxWidth: 1280,
+          alignItems: 'start',
+        }}
+      >
+        {/* Sidebar: profile list */}
+        <ProfileSidebar
+          tab={tab}
+          angebotsProfile={angebotsProfile}
+          absenderProfile={absenderProfile}
+          activeAngebotId={activeAngebotId}
+          activeAbsenderId={activeAbsenderId}
+          onSelectAngebot={setActiveAngebotId}
+          onSelectAbsender={setActiveAbsenderId}
+          onCreateAngebot={createAngebot}
+          onCreateAbsender={createAbsender}
           c={c}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Geographie */}
-            <div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: c.textSub,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: 10,
-                }}
-              >
-                Geographie
-              </div>
-              <ChipGroup
-                items={GEOGRAPHIES}
-                selected={selectedGeographies}
-                onToggle={(i) => toggleItem(selectedGeographies, setSelectedGeographies, i)}
-                color="#0891B2"
-                bg={isDark ? 'rgba(8,145,178,0.2)' : '#ECFEFF'}
-              />
-            </div>
-            <div style={{ paddingLeft: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: c.textSub, marginBottom: 8 }}>
-                Bundesländer (optional — leer = ganz DACH)
-              </div>
-              <ChipGroup
-                items={BUNDESLAENDER}
-                selected={selectedBundeslaender}
-                onToggle={(i) => toggleItem(selectedBundeslaender, setSelectedBundeslaender, i)}
-                color="#0891B2"
-                bg={isDark ? 'rgba(8,145,178,0.2)' : '#ECFEFF'}
-              />
-            </div>
+        />
 
-            {/* Paketvolumen */}
-            <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 20 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: c.textSub,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: 16,
-                }}
-              >
-                Paketvolumen (Pakete / Tag)
-              </div>
-              <Slider
-                label="Mindestvolumen"
-                min={50}
-                max={5000}
-                value={minVolume}
-                onChange={setMinVolume}
-                unit=" Pakete/Tag"
+        {/* Main editor */}
+        <div>
+          {tab === 'angebot' ? (
+            activeAngebot ? (
+              <AngebotsEditor
+                profile={activeAngebot}
+                onChange={(patch) => updateAngebot(activeAngebot.id, patch)}
+                onDelete={() => deleteAngebot(activeAngebot.id)}
                 c={c}
               />
-              <Slider
-                label="Maximalvolumen (0 = unbegrenzt)"
-                min={500}
-                max={10000}
-                value={maxVolume}
-                onChange={setMaxVolume}
-                unit=" Pakete/Tag"
+            ) : (
+              <EmptyState
+                title="Noch kein Angebots-Profil"
+                hint="Lege ein Profil an, um zu definieren, was Du verkaufst und wen Du erreichen willst."
+                cta="Profil erstellen"
+                onCta={createAngebot}
                 c={c}
               />
-              <div style={{ fontSize: 11, color: c.textSub, marginTop: -8 }}>
-                Zu kleine Shops rentieren sich nicht — zu große sind in Langzeitverträgen gebunden
-              </div>
-            </div>
-
-            {/* Branchen */}
-            <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 20 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: c.textSub,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: 10,
-                }}
-              >
-                Branchen
-              </div>
-              <ChipGroup
-                items={INDUSTRIES}
-                selected={selectedIndustries}
-                onToggle={(i) => toggleItem(selectedIndustries, setSelectedIndustries, i)}
-              />
-            </div>
-
-            {/* Shop-Systeme */}
-            <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 20 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: c.textSub,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: 10,
-                }}
-              >
-                Shop-Systeme (Technographics)
-              </div>
-              <ChipGroup
-                items={SYSTEMS}
-                selected={selectedSystems}
-                onToggle={(i) => toggleItem(selectedSystems, setSelectedSystems, i)}
-                color="#7C3AED"
-                bg={isDark ? 'rgba(124,58,237,0.2)' : '#F5F3FF'}
-              />
-            </div>
-
-            {/* Ziel-Carrier */}
-            <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 20 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: c.textSub,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: 10,
-                }}
-              >
-                Ziel-Carrier (aktuell genutzt — zu gewinnen)
-              </div>
-              <ChipGroup
-                items={CARRIERS}
-                selected={targetCarriers}
-                onToggle={(i) => toggleItem(targetCarriers, setTargetCarriers, i)}
-                color="#059669"
-                bg={isDark ? 'rgba(5,150,105,0.2)' : '#ECFDF5'}
-              />
-              <div style={{ fontSize: 11, color: c.textSub, marginTop: 8 }}>
-                Leads die aktuell bei diesen Carriern sind, sind potenzielle Wechselkandidaten
-              </div>
-            </div>
-
-            {/* Ausschliessen */}
-            <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 20 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: c.textSub,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: 10,
-                }}
-              >
-                Ausschliessen (Smart Parcel bereits Carrier)
-              </div>
-              <ChipGroup
-                items={CARRIERS}
-                selected={excludedCarriers}
-                onToggle={(i) => toggleItem(excludedCarriers, setExcludedCarriers, i)}
-                color="#DC2626"
-                bg={isDark ? 'rgba(220,38,38,0.2)' : '#FEF2F2'}
-              />
-              <div style={{ fontSize: 11, color: c.textSub, marginTop: 8 }}>
-                Leads bei denen Smart Parcel bereits aktiv ist, werden aus der Pipeline entfernt
-              </div>
-            </div>
-
-            {/* Hot-Lead Schwellwert */}
-            <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: 20 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: c.textSub,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
-                  marginBottom: 16,
-                }}
-              >
-                Mindest-Score fur Hot-Lead
-              </div>
-              <Slider label="Hot-Lead Schwellwert" min={50} max={95} value={minScore} onChange={setMinScore} c={c} />
-            </div>
-          </div>
-        </Section>
-
-        {/* Scoring Weights */}
-        <Section title="Scoring-Gewichtung" sub="Wie stark fließt jede Dimension in den Gesamtscore ein" c={c}>
-          <Slider
-            label="Fit Score (ICP-Übereinstimmung)"
-            min={10}
-            max={80}
-            value={fitWeight}
-            onChange={(v) => setWeightBalanced('fit', v)}
-            unit="%"
-            c={c}
-          />
-          <Slider
-            label="Volumen Score (Paketvolumen-Potenzial)"
-            min={10}
-            max={80}
-            value={volumeWeight}
-            onChange={(v) => setWeightBalanced('volume', v)}
-            unit="%"
-            c={c}
-          />
-          <Slider
-            label="Timing Score (Wechselbereitschaft)"
-            min={10}
-            max={80}
-            value={timingWeight}
-            onChange={(v) => setWeightBalanced('timing', v)}
-            unit="%"
-            c={c}
-          />
-          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-            {[
-              { label: 'Fit', value: fitWeight, color: c.accent },
-              { label: 'Volumen', value: volumeWeight, color: '#0891B2' },
-              { label: 'Timing', value: timingWeight, color: '#DB2777' },
-            ].map((d) => (
-              <div
-                key={d.label}
-                style={{ flex: d.value, height: 6, background: d.color, borderRadius: 99, transition: 'flex 0.3s' }}
-              />
-            ))}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-            {[
-              { label: 'Fit', value: fitWeight, color: c.accent },
-              { label: 'Volumen', value: volumeWeight, color: '#0891B2' },
-              { label: 'Timing', value: timingWeight, color: '#DB2777' },
-            ].map((d) => (
-              <span key={d.label} style={{ fontSize: 11, fontWeight: 700, color: d.color }}>
-                {d.label} {d.value}%
-              </span>
-            ))}
-          </div>
-          {totalWeight !== 100 && (
-            <div style={{ fontSize: 11, color: '#D97706', marginTop: 8 }}>Summe: {totalWeight}% (sollte 100% sein)</div>
+            )
+          ) : activeAbsender ? (
+            <AbsenderEditor
+              profile={activeAbsender}
+              onChange={(patch) => updateAbsender(activeAbsender.id, patch)}
+              onDelete={() => deleteAbsender(activeAbsender.id)}
+              c={c}
+            />
+          ) : (
+            <EmptyState
+              title="Noch kein Absender-Profil"
+              hint="Hier kannst Du gleich Deine Absender konfigurieren — Felder folgen."
+              cta="Profil erstellen"
+              onCta={createAbsender}
+              c={c}
+            />
           )}
-        </Section>
-
-        {/* Notifications */}
-        <Section title="Benachrichtigungen" sub="Wann und wie du über neue Signale informiert wirst" c={c}>
-          <Toggle
-            label="Hot Lead Alert"
-            sub="Benachrichtigung wenn ein Lead den Schwellwert überschreitet"
-            value={notifyHot}
-            onChange={setNotifyHot}
-            c={c}
-          />
-          <Toggle
-            label="Neuer Layer angereichert"
-            sub="Wenn ein Lead neue Firmendaten oder Kaufsignale erhält"
-            value={notifyNewLayer}
-            onChange={setNotifyNewLayer}
-            c={c}
-          />
-          <Toggle
-            label="Wochentlicher Report"
-            sub="Montags: Pipeline-Zusammenfassung per E-Mail"
-            value={notifyWeekly}
-            onChange={setNotifyWeekly}
-            c={c}
-          />
-
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: c.textSub, display: 'block', marginBottom: 6 }}>
-                E-Mail
-              </label>
-              <input
-                value={notifyEmail}
-                onChange={(e) => setNotifyEmail(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  border: `1.5px solid ${c.border}`,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                  background: c.bgPage,
-                  color: c.text,
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 700, color: c.textSub, display: 'block', marginBottom: 6 }}>
-                Slack Webhook URL
-              </label>
-              <input
-                placeholder="https://hooks.slack.com/services/..."
-                value={slackWebhook}
-                onChange={(e) => setSlackWebhook(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  border: `1.5px solid ${c.border}`,
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                  background: c.bgPage,
-                  color: c.text,
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-          </div>
-        </Section>
-
-        {/* Export */}
-        <Section title="Export & Automatisierung" sub="CRM-Übergabe und automatische Reports" c={c}>
-          <Toggle
-            label="Automatischer CSV-Export"
-            sub="Täglich um 08:00 — Hot Leads der letzten 24h"
-            value={autoExport}
-            onChange={setAutoExport}
-            c={c}
-          />
-          <div style={{ marginTop: 16 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: c.textSub, display: 'block', marginBottom: 8 }}>
-              Export-Format
-            </label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {(['csv', 'xlsx'] as const).map((fmt) => (
-                <button
-                  key={fmt}
-                  onClick={() => setExportFormat(fmt)}
-                  style={{
-                    padding: '7px 20px',
-                    borderRadius: 8,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    border: 'none',
-                    background: exportFormat === fmt ? c.text : c.bgPage,
-                    color: exportFormat === fmt ? c.bgCard : c.textSub,
-                  }}
-                >
-                  .{fmt}
-                </button>
-              ))}
-            </div>
-          </div>
-        </Section>
-
-        {/* Danger zone */}
-        <Section title="Gefahrenzone" sub="Unwiderrufliche Aktionen" c={c}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>Alle Leads zurucksetzen</div>
-              <div style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>
-                Entfernt alle Leads und Anreicherungen aus dieser Ansicht
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                if (!window.confirm('Alle Einstellungen auf Standardwerte zurücksetzen?')) return;
-                setSelectedIndustries([
-                  'Mode & Bekleidung',
-                  'Sport & Outdoor',
-                  'Elektronik & Technik',
-                  'Haushalt & Living',
-                ]);
-                setSelectedSystems(['Shopify', 'Shopware 6', 'WooCommerce', 'JTL']);
-                setSelectedGeographies(['Deutschland', 'Österreich', 'Schweiz']);
-                setSelectedBundeslaender([]);
-                setMinVolume(100);
-                setMaxVolume(3000);
-                setTargetCarriers(['DHL', 'DPD', 'Hermes / evri', 'GLS']);
-                setExcludedCarriers([]);
-                setMinScore(65);
-                setFitWeight(40);
-                setVolumeWeight(35);
-                setTimingWeight(25);
-                setSlackWebhook('');
-                setNotifyEmail('');
-                setNotifyHot(true);
-                setNotifyNewLayer(false);
-                setNotifyWeekly(true);
-                setAutoExport(false);
-                setExportFormat('csv');
-              }}
-              style={{
-                padding: '8px 16px',
-                background: isDark ? 'rgba(220,38,38,0.15)' : '#FEF2F2',
-                color: '#DC2626',
-                border: isDark ? '1px solid rgba(220,38,38,0.3)' : '1px solid #FECACA',
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              Zurücksetzen
-            </button>
-          </div>
-        </Section>
+        </div>
       </div>
     </div>
+  );
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+
+function ProfileSidebar({
+  tab,
+  angebotsProfile,
+  absenderProfile,
+  activeAngebotId,
+  activeAbsenderId,
+  onSelectAngebot,
+  onSelectAbsender,
+  onCreateAngebot,
+  onCreateAbsender,
+  c,
+}: {
+  tab: Tab;
+  angebotsProfile: AngebotsProfile[];
+  absenderProfile: AbsenderProfile[];
+  activeAngebotId: string | null;
+  activeAbsenderId: string | null;
+  onSelectAngebot: (id: string) => void;
+  onSelectAbsender: (id: string) => void;
+  onCreateAngebot: () => void;
+  onCreateAbsender: () => void;
+  c: ReturnType<typeof colors>;
+}) {
+  const profiles =
+    tab === 'angebot'
+      ? angebotsProfile.map((p) => ({ id: p.id, label: p.name, hint: p.unternehmen || '—' }))
+      : absenderProfile.map((p) => ({ id: p.id, label: p.name, hint: '' }));
+  const activeId = tab === 'angebot' ? activeAngebotId : activeAbsenderId;
+  const onSelect = tab === 'angebot' ? onSelectAngebot : onSelectAbsender;
+  const onCreate = tab === 'angebot' ? onCreateAngebot : onCreateAbsender;
+
+  return (
+    <div
+      style={{
+        background: c.bgCard,
+        border: `1px solid ${c.border}`,
+        borderRadius: 14,
+        overflow: 'hidden',
+        position: 'sticky',
+        top: 20,
+      }}
+    >
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: `1px solid ${c.border}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <span style={{ fontSize: 11, fontWeight: 700, color: c.textSub, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Profile
+        </span>
+        <button
+          onClick={onCreate}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            background: c.accent,
+            color: c.bg,
+            border: 'none',
+            borderRadius: 7,
+            padding: '5px 10px',
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-inter), sans-serif',
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M8 3v10M3 8h10" />
+          </svg>
+          Neu
+        </button>
+      </div>
+      <div style={{ padding: 6, maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
+        {profiles.length === 0 ? (
+          <div style={{ padding: '20px 14px', fontSize: 12, color: c.textMuted, textAlign: 'center' }}>
+            Noch keine Profile
+          </div>
+        ) : (
+          profiles.map((p) => {
+            const active = p.id === activeId;
+            return (
+              <button
+                key={p.id}
+                onClick={() => onSelect(p.id)}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  background: active ? c.bgHover : 'transparent',
+                  border: `1px solid ${active ? c.borderStrong : 'transparent'}`,
+                  borderRadius: 8,
+                  padding: '9px 12px',
+                  marginBottom: 2,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-inter), sans-serif',
+                  display: 'block',
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 700, color: c.text, lineHeight: 1.3 }}>{p.label || '—'}</div>
+                {p.hint && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: c.textSub,
+                      marginTop: 2,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {p.hint}
+                  </div>
+                )}
+              </button>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Editor: Angebots-Profil ─────────────────────────────────────────────────
+
+function AngebotsEditor({
+  profile,
+  onChange,
+  onDelete,
+  c,
+}: {
+  profile: AngebotsProfile;
+  onChange: (patch: Partial<AngebotsProfile>) => void;
+  onDelete: () => void;
+  c: ReturnType<typeof colors>;
+}) {
+  function toggleBranche(name: string) {
+    const has = profile.zielBranchen.includes(name);
+    onChange({ zielBranchen: has ? profile.zielBranchen.filter((b) => b !== name) : [...profile.zielBranchen, name] });
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Identity card */}
+      <Card title="Angebots-Profil" sub="Was Du verkaufst und für wen es wertvoll ist" c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Name" sub="Interner Profilname" c={c}>
+              <TextField
+                value={profile.name}
+                onChange={(v) => onChange({ name: v })}
+                placeholder="z.B. SaaS Mittelstand"
+                c={c}
+              />
+            </Field>
+            <Field label="Unternehmen" c={c}>
+              <TextField
+                value={profile.unternehmen}
+                onChange={(v) => onChange({ unternehmen: v })}
+                placeholder="z.B. Onvero GmbH"
+                c={c}
+              />
+            </Field>
+          </div>
+
+          <Field label="Beschreibung" sub="Was macht das Unternehmen?" c={c}>
+            <TextArea
+              value={profile.beschreibung}
+              onChange={(v) => onChange({ beschreibung: v })}
+              placeholder="Kurz und konkret: Produkt, Zielgruppe, Vertriebsmodell"
+              rows={3}
+              c={c}
+            />
+          </Field>
+
+          <Field label="Pain Points" sub="Welche Probleme löst Du? Enter oder Komma bestätigt." c={c}>
+            <TagInput
+              values={profile.painPoints}
+              onChange={(v) => onChange({ painPoints: v })}
+              placeholder="z.B. lange Sales-Zyklen"
+              c={c}
+            />
+          </Field>
+
+          <Field label="Value Proposition" sub="Was ist euer konkreter Mehrwert?" c={c}>
+            <TextArea
+              value={profile.valueProposition}
+              onChange={(v) => onChange({ valueProposition: v })}
+              placeholder="z.B. 3x höhere Reply-Rate durch personalisierte Outreach in 60 Sekunden"
+              rows={3}
+              c={c}
+            />
+          </Field>
+
+          <Field label="Referenzen" sub="Bekannte Kunden oder Cases — Enter bestätigt." c={c}>
+            <TagInput
+              values={profile.referenzen}
+              onChange={(v) => onChange({ referenzen: v })}
+              placeholder="z.B. Hermes, DPD, Siemens"
+              c={c}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      {/* Target industry card */}
+      <Card title="Ziel-Branche" sub="An wen richtet sich dieses Angebot?" c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <Field label="Größe" sub="Mitarbeiterzahl im Zielunternehmen" c={c}>
+            <RangeMinMax
+              minLabel="Min Mitarbeiter"
+              maxLabel="Max Mitarbeiter"
+              min={profile.mitarbeiterMin}
+              max={profile.mitarbeiterMax}
+              onChange={({ min, max }) => onChange({ mitarbeiterMin: min, mitarbeiterMax: max })}
+              c={c}
+            />
+          </Field>
+
+          <Field label="Umsatz" sub="Jahresumsatz in Euro" c={c}>
+            <RangeMinMax
+              minLabel="Min Umsatz"
+              maxLabel="Max Umsatz"
+              min={profile.umsatzMin}
+              max={profile.umsatzMax}
+              suffix="€"
+              step={100_000}
+              onChange={({ min, max }) => onChange({ umsatzMin: min, umsatzMax: max })}
+              c={c}
+            />
+          </Field>
+
+          <Field label="Ziel-Branchen" sub="Wähle eine oder mehrere Branchen aus" c={c}>
+            <ChipGroup
+              items={INDUSTRIES}
+              selected={profile.zielBranchen}
+              onToggle={toggleBranche}
+              c={c}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      {/* Danger zone */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => {
+            if (confirm(`Profil "${profile.name}" wirklich löschen?`)) onDelete();
+          }}
+          style={{
+            background: 'transparent',
+            color: c.danger,
+            border: `1px solid ${c.border}`,
+            borderRadius: 8,
+            padding: '7px 14px',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-inter), sans-serif',
+          }}
+        >
+          Profil löschen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Editor: Absender-Profil (Platzhalter) ───────────────────────────────────
+
+function AbsenderEditor({
+  profile,
+  onChange,
+  onDelete,
+  c,
+}: {
+  profile: AbsenderProfile;
+  onChange: (patch: Partial<AbsenderProfile>) => void;
+  onDelete: () => void;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Card title="Absender-Profil" sub="Definiere im nächsten Schritt die Felder für dieses Profil" c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Field label="Name" sub="Interner Profilname" c={c}>
+            <TextField
+              value={profile.name}
+              onChange={(v) => onChange({ name: v })}
+              placeholder="z.B. Max Mustermann — Sales"
+              c={c}
+            />
+          </Field>
+          <div
+            style={{
+              background: c.bgPage,
+              border: `1px dashed ${c.borderStrong}`,
+              borderRadius: 10,
+              padding: 18,
+              fontSize: 12,
+              color: c.textSub,
+              lineHeight: 1.55,
+            }}
+          >
+            Felder für Absender-Profile sind noch nicht definiert. Sobald Du sagst, welche Felder dieses Profil
+            haben soll (z.B. E-Mail, Rolle, Signatur, Tonalität …), erweitere ich diesen Editor.
+          </div>
+        </div>
+      </Card>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => {
+            if (confirm(`Profil "${profile.name}" wirklich löschen?`)) onDelete();
+          }}
+          style={{
+            background: 'transparent',
+            color: c.danger,
+            border: `1px solid ${c.border}`,
+            borderRadius: 8,
+            padding: '7px 14px',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-inter), sans-serif',
+          }}
+        >
+          Profil löschen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty state ─────────────────────────────────────────────────────────────
+
+function EmptyState({
+  title,
+  hint,
+  cta,
+  onCta,
+  c,
+}: {
+  title: string;
+  hint: string;
+  cta: string;
+  onCta: () => void;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <div
+      style={{
+        background: c.bgCard,
+        border: `1px dashed ${c.borderStrong}`,
+        borderRadius: 14,
+        padding: '56px 32px',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: 15, fontWeight: 800, color: c.text, marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 13, color: c.textSub, marginBottom: 18, maxWidth: 380, margin: '0 auto 18px' }}>{hint}</div>
+      <button
+        onClick={onCta}
+        style={{
+          background: c.accent,
+          color: c.bg,
+          border: 'none',
+          borderRadius: 8,
+          padding: '9px 18px',
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: 'pointer',
+          fontFamily: 'var(--font-inter), sans-serif',
+        }}
+      >
+        {cta}
+      </button>
+    </div>
+  );
+}
+
+// ─── Tab pill ─────────────────────────────────────────────────────────────────
+
+function TabPill({
+  active,
+  onClick,
+  children,
+  c,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '10px 16px',
+        background: 'transparent',
+        border: 'none',
+        borderBottom: `2px solid ${active ? c.accent : 'transparent'}`,
+        color: active ? c.text : c.textSub,
+        fontSize: 13,
+        fontWeight: 700,
+        cursor: 'pointer',
+        marginBottom: -1,
+        fontFamily: 'var(--font-inter), sans-serif',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Counter({ n, active, c }: { n: number; active: boolean; c: ReturnType<typeof colors> }) {
+  return (
+    <span
+      style={{
+        background: active ? c.bgHover : c.bgCard,
+        color: c.textSub,
+        borderRadius: 99,
+        padding: '1px 7px',
+        fontSize: 11,
+        fontWeight: 700,
+        minWidth: 18,
+        textAlign: 'center',
+      }}
+    >
+      {n}
+    </span>
   );
 }
