@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme, colors } from '../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
@@ -10,39 +10,72 @@ import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
 type Status = 'hot' | 'warm' | 'cold';
 type ViewMode = 'table' | 'kanban';
 
+const SHOP_SYSTEM_KEYWORDS = [
+  'Shopify',
+  'Shopware 6',
+  'Shopware 5',
+  'Shopware',
+  'WooCommerce',
+  'JTL',
+  'Plentymarkets',
+  'Magento',
+  'OXID',
+  'PrestaShop',
+  'Gambio',
+];
+
+function detectShopSystem(techStack: string[] | null): string {
+  if (!Array.isArray(techStack)) return '';
+  for (const keyword of SHOP_SYSTEM_KEYWORDS) {
+    if (techStack.some((t) => t.toLowerCase().includes(keyword.toLowerCase()))) return keyword;
+  }
+  return '';
+}
+
 function tierToStatus(tier: string | null | undefined): Status {
-  if (tier === 'Hot+' || tier === 'Hot') return 'hot';
-  if (tier === 'Warm') return 'warm';
+  const t = (tier ?? '').toLowerCase();
+  if (t === 'hot+' || t === 'hot') return 'hot';
+  if (t === 'warm') return 'warm';
   return 'cold';
+}
+
+function formatRevenue(eur: number | null | undefined, scraped: string | null | undefined): string {
+  if (eur) return `${(eur / 1_000_000).toFixed(1)} Mio. €`;
+  return scraped ?? '';
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapApiLead(row: any): Lead {
-  const ctx: Record<string, unknown> = row.follow_up_context ?? {};
-  const fitDetail: Record<string, number> = (ctx.fit_score_detail as Record<string, number>) ?? {};
-  const score: number = typeof row.fit_score === 'number' ? row.fit_score : 50;
+  const score: number =
+    typeof row.lead_score === 'number' && row.lead_score > 0
+      ? row.lead_score
+      : typeof row.fit_score === 'number' && row.fit_score > 0
+        ? row.fit_score
+        : 0;
   const signals: number = Array.isArray(row.growth_signals) ? row.growth_signals.length : 0;
+  const shopSystem = detectShopSystem(row.web_tech_stack);
 
   return {
     id: row.id as string,
     name: (row.company_name as string) ?? '',
-    city: (row.city as string) ?? (ctx.city as string) ?? '',
+    city: (row.city as string) ?? '',
     industry: (row.industry as string) ?? '',
-    system: (ctx.shop_system as string) ?? '',
-    carrier: (ctx.carrier as string) ?? '',
+    system: shopSystem,
+    carrier: '',
     score,
-    fit: fitDetail.fit ?? Math.round(score * 0.95),
-    volume: fitDetail.volume ?? Math.round(score * 0.9),
-    timing: fitDetail.timing ?? Math.round(score * 0.95),
+    fit: score > 0 ? Math.round(score * 0.95) : 0,
+    volume: score > 0 ? Math.round(score * 0.9) : 0,
+    timing: score > 0 ? Math.round(score * 0.95) : 0,
     l1: true,
     l2: !!(row.industry && row.city),
-    l3: !!ctx.shop_system,
+    l3: !!(Array.isArray(row.web_tech_stack) && row.web_tech_stack.length > 0),
     l4: signals > 0,
     status: tierToStatus(row.tier),
-    employees: (row.employees_count as string) ?? '',
-    revenue: (row.revenue_range as string) ?? '',
+    employees: row.num_employees ? String(row.num_employees) : (row.estimated_employees_scraped ?? ''),
+    revenue: formatRevenue(row.fin_revenue_eur, row.estimated_revenue_scraped),
     added: row.created_at ? new Date(row.created_at as string).toLocaleDateString('de-DE') : '',
     signals: signals > 0 ? signals : undefined,
+    enrichmentStatus: (row.enrichment_status as string) ?? 'raw',
   };
 }
 
@@ -66,31 +99,8 @@ interface Lead {
   revenue: string;
   added: string;
   signals?: number;
+  enrichmentStatus?: string;
 }
-
-const INITIAL_LEADS: Lead[] = [
-  {
-    id: '7de8adb9-9de3-418e-8ad9-716861faf386',
-    name: 'ARO-tec GmbH',
-    city: 'Bielefeld',
-    industry: 'CNC-Werkzeugmaschinen',
-    system: '',
-    carrier: '',
-    score: 68,
-    fit: 58,
-    volume: 65,
-    timing: 78,
-    l1: true,
-    l2: true,
-    l3: false,
-    l4: true,
-    status: 'warm',
-    employees: '10',
-    revenue: '',
-    added: '12.05.2026',
-    signals: 8,
-  },
-];
 
 const STATUS_META: Record<Status, { label: string; bg: string; color: string; headerBg: string }> = {
   hot: { label: 'Hot', bg: 'rgba(239,68,68,0.12)', color: '#EF4444', headerBg: 'rgba(239,68,68,0.08)' },
@@ -729,27 +739,60 @@ export default function LeadsPage() {
   const c = colors(theme);
   const isDark = theme === 'dark';
 
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [archivedLeads, setArchivedLeads] = useState<Lead[]>([]);
-
-  useEffect(() => {
-    fetch('/api/leads')
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data.leads) && data.leads.length > 0) {
-          setLeads(data.leads.map(mapApiLead));
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('leads-archive');
-      if (stored) setArchivedLeads(JSON.parse(stored));
-    } catch {}
-  }, []);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [newLeadIds, setNewLeadIds] = useState<Set<string>>(new Set());
+  const knownIdsRef = useRef<Set<string>>(new Set());
   const [showArchive, setShowArchive] = useState(false);
+
+  useEffect(() => {
+    async function fetchLeads() {
+      try {
+        const res = await fetch('/api/leads');
+        const data = await res.json();
+        if (Array.isArray(data.leads)) {
+          const mapped = data.leads.map(mapApiLead);
+          setLeads(mapped);
+          knownIdsRef.current = new Set(mapped.map((l: Lead) => l.id));
+        }
+      } catch {}
+      setInitialLoading(false);
+    }
+
+    fetchLeads();
+
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch('/api/leads');
+        const data = await res.json();
+        if (!Array.isArray(data.leads)) return;
+        const mapped = data.leads.map(mapApiLead);
+        const fresh = mapped.filter((l: Lead) => !knownIdsRef.current.has(l.id));
+        if (fresh.length > 0) {
+          const freshIds = new Set<string>(fresh.map((l: Lead) => l.id));
+          setNewLeadIds(freshIds);
+          setTimeout(() => setNewLeadIds(new Set()), 4000);
+          knownIdsRef.current = new Set(mapped.map((l: Lead) => l.id));
+        }
+        setLeads(mapped);
+      } catch {}
+    }, 15000);
+
+    return () => clearInterval(poll);
+  }, []);
+
+  useEffect(() => {
+    if (showArchive) {
+      fetch('/api/leads?archived=true')
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data.leads)) setArchivedLeads(data.leads.map(mapApiLead));
+        })
+        .catch(() => {});
+    }
+  }, [showArchive]);
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<Status | 'all'>(() => {
     if (typeof window === 'undefined') return 'all';
@@ -832,7 +875,10 @@ export default function LeadsPage() {
   }
 
   function confirmDelete() {
-    setLeads((prev) => prev.filter((l) => !selectedIds.has(l.id)));
+    const ids = new Set(selectedIds);
+    setLeads((prev) => prev.filter((l) => !ids.has(l.id)));
+    knownIdsRef.current = new Set([...knownIdsRef.current].filter((id) => !ids.has(id)));
+    ids.forEach((id) => fetch(`/api/leads/${id}`, { method: 'DELETE' }).catch(() => {}));
     setSelectedIds(new Set());
     setShowDeleteModal(false);
   }
@@ -844,15 +890,11 @@ export default function LeadsPage() {
   }
 
   function archiveSelected() {
-    const toArchive = leads.filter((l) => selectedIds.has(l.id));
-    setLeads((prev) => prev.filter((l) => !selectedIds.has(l.id)));
-    setArchivedLeads((prev) => {
-      const next = [...prev, ...toArchive];
-      localStorage.setItem('leads-archive', JSON.stringify(next));
-      return next;
-    });
-    toArchive.forEach((l) =>
-      fetch(`/api/leads/${l.id}`, {
+    const ids = new Set(selectedIds);
+    setLeads((prev) => prev.filter((l) => !ids.has(l.id)));
+    knownIdsRef.current = new Set([...knownIdsRef.current].filter((id) => !ids.has(id)));
+    ids.forEach((id) =>
+      fetch(`/api/leads/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ archived: true }),
@@ -864,12 +906,9 @@ export default function LeadsPage() {
   function restoreLead(id: string) {
     const lead = archivedLeads.find((l) => l.id === id);
     if (!lead) return;
-    setArchivedLeads((prev) => {
-      const next = prev.filter((l) => l.id !== id);
-      localStorage.setItem('leads-archive', JSON.stringify(next));
-      return next;
-    });
+    setArchivedLeads((prev) => prev.filter((l) => l.id !== id));
     setLeads((prev) => [lead, ...prev]);
+    knownIdsRef.current.add(id);
     fetch(`/api/leads/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -963,8 +1002,17 @@ export default function LeadsPage() {
               padding: '4px 10px',
             }}
           >
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981' }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>Sync vor 12 Min.</span>
+            <div
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: initialLoading ? '#F97316' : '#10B981',
+              }}
+            />
+            <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>
+              {initialLoading ? 'Lädt…' : 'Live · alle 15s'}
+            </span>
           </div>
         </div>
         <p style={{ fontSize: 13, color: c.textMuted, margin: '8px 0 0' }}>
@@ -1342,269 +1390,297 @@ export default function LeadsPage() {
         {/* ── TABLE VIEW ─────────────────────────────────────────────────── */}
         {viewMode === 'table' && (
           <div style={{ ...glassCard(isDark), borderRadius: 14, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr
-                  style={{
-                    background:
-                      selectedIds.size > 0
-                        ? isDark
-                          ? 'rgba(16,185,129,0.10)'
-                          : 'rgba(16,185,129,0.06)'
-                        : isDark
-                          ? 'rgba(255,255,255,0.03)'
-                          : 'rgba(0,0,0,0.02)',
-                    borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.07)',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <th style={{ padding: '11px 14px', width: 36 }}>
-                    <Checkbox
-                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                      indeterminate={selectedIds.size > 0 && selectedIds.size < filtered.length}
-                      onChange={toggleSelectAll}
-                      isDark={isDark}
-                      c={c}
-                    />
-                  </th>
-                  {[
-                    'Unternehmen',
-                    'Stadt',
-                    'Branche',
-                    'Shop-System',
-                    'Carrier',
-                    'Layer',
-                    'Score',
-                    'Fit · Vol · Zeit',
-                    'Signale',
-                    'Status',
-                    'Aktion',
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        textAlign: 'left',
-                        padding: '11px 14px',
-                        fontSize: 10,
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.07em',
-                        color: c.textMuted,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((lead) => {
-                  const sm = STATUS_META[lead.status];
-                  const isSelected = selectedIds.has(lead.id);
-                  const isHovered = hoveredRow === lead.id;
-                  const av = avatarFor(lead.name);
-                  return (
+            {initialLoading ? (
+              <div style={{ padding: '24px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      height: 52,
+                      borderRadius: 8,
+                      background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                      animation: 'pulse 1.4s ease-in-out infinite',
+                      animationDelay: `${i * 0.1}s`,
+                    }}
+                  />
+                ))}
+                <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+              </div>
+            ) : (
+              <>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
                     <tr
-                      key={lead.id}
-                      onClick={(e) => handleRowClick(e, lead)}
-                      onMouseEnter={() => setHoveredRow(lead.id)}
-                      onMouseLeave={() => setHoveredRow(null)}
                       style={{
-                        borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
-                        background: isSelected
-                          ? isDark
-                            ? 'rgba(16,185,129,0.12)'
-                            : 'rgba(16,185,129,0.07)'
-                          : isHovered
+                        background:
+                          selectedIds.size > 0
                             ? isDark
-                              ? 'rgba(255,255,255,0.04)'
-                              : 'rgba(0,0,0,0.03)'
-                            : 'transparent',
-                        cursor: 'pointer',
-                        transition: 'background 0.1s',
-                        boxShadow: isSelected ? 'inset 3px 0 0 #10B981' : 'none',
-                        userSelect: 'none',
+                              ? 'rgba(16,185,129,0.10)'
+                              : 'rgba(16,185,129,0.06)'
+                            : isDark
+                              ? 'rgba(255,255,255,0.03)'
+                              : 'rgba(0,0,0,0.02)',
+                        borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.07)',
+                        transition: 'background 0.15s',
                       }}
                     >
-                      <td style={{ padding: '10px 14px' }}>
-                        <Checkbox checked={isSelected} onChange={() => toggleSelect(lead.id)} isDark={isDark} c={c} />
-                      </td>
-
-                      {/* Company name with avatar */}
-                      <td style={{ padding: '10px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div
-                            style={{
-                              width: 34,
-                              height: 34,
-                              borderRadius: 9,
-                              background: av.bg,
-                              color: av.color,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: 11,
-                              fontWeight: 800,
-                              flexShrink: 0,
-                              letterSpacing: '0.02em',
-                            }}
-                          >
-                            {av.initials}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 700, color: c.text, fontSize: 13 }}>{lead.name}</div>
-                            <div style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>
-                              {lead.employees} MA · {lead.revenue}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13 }}>{lead.city}</td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <span
+                      <th style={{ padding: '11px 14px', width: 36 }}>
+                        <Checkbox
+                          checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                          indeterminate={selectedIds.size > 0 && selectedIds.size < filtered.length}
+                          onChange={toggleSelectAll}
+                          isDark={isDark}
+                          c={c}
+                        />
+                      </th>
+                      {[
+                        'Unternehmen',
+                        'Stadt',
+                        'Branche',
+                        'Shop-System',
+                        'Carrier',
+                        'Layer',
+                        'Score',
+                        'Fit · Vol · Zeit',
+                        'Signale',
+                        'Status',
+                        'Aktion',
+                      ].map((h) => (
+                        <th
+                          key={h}
                           style={{
-                            fontSize: 12,
-                            color: c.textSub,
-                            background: c.bgPage,
-                            border: `1px solid ${c.border}`,
-                            borderRadius: 5,
-                            padding: '2px 7px',
-                            fontWeight: 600,
+                            textAlign: 'left',
+                            padding: '11px 14px',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.07em',
+                            color: c.textMuted,
+                            whiteSpace: 'nowrap',
                           }}
                         >
-                          {lead.industry}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <SystemPill name={lead.system} />
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <CarrierPill name={lead.carrier} isDark={isDark} />
-                      </td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <LayerBar l1={lead.l1} l2={lead.l2} l3={lead.l3} l4={lead.l4} />
-                      </td>
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((lead) => {
+                      const sm = STATUS_META[lead.status];
+                      const isSelected = selectedIds.has(lead.id);
+                      const isHovered = hoveredRow === lead.id;
+                      const isNew = newLeadIds.has(lead.id);
+                      const av = avatarFor(lead.name);
+                      return (
+                        <tr
+                          key={lead.id}
+                          onClick={(e) => handleRowClick(e, lead)}
+                          onMouseEnter={() => setHoveredRow(lead.id)}
+                          onMouseLeave={() => setHoveredRow(null)}
+                          style={{
+                            borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
+                            background: isNew
+                              ? 'rgba(16,185,129,0.10)'
+                              : isSelected
+                                ? isDark
+                                  ? 'rgba(16,185,129,0.12)'
+                                  : 'rgba(16,185,129,0.07)'
+                                : isHovered
+                                  ? isDark
+                                    ? 'rgba(255,255,255,0.04)'
+                                    : 'rgba(0,0,0,0.03)'
+                                  : 'transparent',
+                            cursor: 'pointer',
+                            transition: 'background 0.4s',
+                            boxShadow: isNew ? 'inset 3px 0 0 #10B981' : isSelected ? 'inset 3px 0 0 #10B981' : 'none',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <td style={{ padding: '10px 14px' }}>
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={() => toggleSelect(lead.id)}
+                              isDark={isDark}
+                              c={c}
+                            />
+                          </td>
 
-                      {/* Score ring */}
-                      <td style={{ padding: '10px 14px' }}>
-                        <ScoreRing score={lead.score} />
-                      </td>
-
-                      {/* Sub-scores */}
-                      <td style={{ padding: '10px 14px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          {[
-                            { val: lead.fit, color: '#4F46E5', bg: '#EEF0FF', label: 'F' },
-                            { val: lead.volume, color: '#0891B2', bg: '#ECFEFF', label: 'V' },
-                            { val: lead.timing, color: '#DB2777', bg: '#FDF2F8', label: 'T' },
-                          ].map(({ val, color, bg, label }) => (
-                            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span style={{ fontSize: 9, fontWeight: 700, color, width: 8 }}>{label}</span>
+                          {/* Company name with avatar */}
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                               <div
                                 style={{
-                                  width: 50,
-                                  height: 4,
-                                  background: isDark ? c.border : '#F1F5F9',
-                                  borderRadius: 99,
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 9,
+                                  background: av.bg,
+                                  color: av.color,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 11,
+                                  fontWeight: 800,
+                                  flexShrink: 0,
+                                  letterSpacing: '0.02em',
                                 }}
                               >
-                                <div
-                                  style={{ width: `${val}%`, height: '100%', background: color, borderRadius: 99 }}
-                                />
+                                {av.initials}
                               </div>
-                              <span style={{ fontSize: 10, fontWeight: 700, color, minWidth: 18 }}>{val}</span>
+                              <div>
+                                <div style={{ fontWeight: 700, color: c.text, fontSize: 13 }}>{lead.name}</div>
+                                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>
+                                  {lead.employees} MA · {lead.revenue}
+                                </div>
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </td>
+                          </td>
 
-                      {/* Signals */}
-                      <td style={{ padding: '10px 14px' }}>
-                        {lead.signals ? (
-                          <SignalBadge count={lead.signals} />
-                        ) : (
-                          <span style={{ fontSize: 11, color: c.textMuted }}>—</span>
-                        )}
-                      </td>
+                          <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13 }}>{lead.city}</td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                color: c.textSub,
+                                background: c.bgPage,
+                                border: `1px solid ${c.border}`,
+                                borderRadius: 5,
+                                padding: '2px 7px',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {lead.industry}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <SystemPill name={lead.system} />
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <CarrierPill name={lead.carrier} isDark={isDark} />
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <LayerBar l1={lead.l1} l2={lead.l2} l3={lead.l3} l4={lead.l4} />
+                          </td>
 
-                      {/* Status */}
-                      <td style={{ padding: '10px 14px' }}>
-                        <span
-                          style={{
-                            padding: '3px 9px',
-                            background: isDark ? sm.color + '22' : sm.bg,
-                            color: isDark
-                              ? lead.status === 'hot'
-                                ? '#FCA5A5'
-                                : lead.status === 'warm'
-                                  ? '#FCD34D'
-                                  : '#94A3B8'
-                              : sm.color,
-                            borderRadius: 6,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 5,
-                          }}
-                        >
-                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: sm.color }} />
-                          {sm.label}
-                        </span>
-                      </td>
+                          {/* Score ring */}
+                          <td style={{ padding: '10px 14px' }}>
+                            <ScoreRing score={lead.score} />
+                          </td>
 
-                      <td style={{ padding: '10px 14px', width: 90 }}>
-                        {isHovered ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/intelligence/leads/${lead.id}`);
-                            }}
-                            style={{
-                              padding: '4px 12px',
-                              background: c.accent,
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 7,
-                              fontSize: 11,
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              whiteSpace: 'nowrap',
-                              fontFamily: 'var(--font-inter), sans-serif',
-                            }}
-                          >
-                            Öffnen →
-                          </button>
-                        ) : (
-                          <span style={{ color: c.textMuted, fontSize: 11, fontWeight: 600 }}>
-                            {lead.added.replace('.2026', '')}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <div
-              style={{
-                padding: '11px 18px',
-                borderTop: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
-                fontSize: 11,
-                color: c.textMuted,
-                fontWeight: 600,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <span>
-                {filtered.length} von {leads.length} Leads
-              </span>
-              {selectedIds.size > 0 && <span style={{ color: '#10B981' }}>{selectedIds.size} ausgewählt</span>}
-            </div>
+                          {/* Sub-scores */}
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              {[
+                                { val: lead.fit, color: '#4F46E5', bg: '#EEF0FF', label: 'F' },
+                                { val: lead.volume, color: '#0891B2', bg: '#ECFEFF', label: 'V' },
+                                { val: lead.timing, color: '#DB2777', bg: '#FDF2F8', label: 'T' },
+                              ].map(({ val, color, bg, label }) => (
+                                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ fontSize: 9, fontWeight: 700, color, width: 8 }}>{label}</span>
+                                  <div
+                                    style={{
+                                      width: 50,
+                                      height: 4,
+                                      background: isDark ? c.border : '#F1F5F9',
+                                      borderRadius: 99,
+                                    }}
+                                  >
+                                    <div
+                                      style={{ width: `${val}%`, height: '100%', background: color, borderRadius: 99 }}
+                                    />
+                                  </div>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color, minWidth: 18 }}>{val}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+
+                          {/* Signals */}
+                          <td style={{ padding: '10px 14px' }}>
+                            {lead.signals ? (
+                              <SignalBadge count={lead.signals} />
+                            ) : (
+                              <span style={{ fontSize: 11, color: c.textMuted }}>—</span>
+                            )}
+                          </td>
+
+                          {/* Status */}
+                          <td style={{ padding: '10px 14px' }}>
+                            <span
+                              style={{
+                                padding: '3px 9px',
+                                background: isDark ? sm.color + '22' : sm.bg,
+                                color: isDark
+                                  ? lead.status === 'hot'
+                                    ? '#FCA5A5'
+                                    : lead.status === 'warm'
+                                      ? '#FCD34D'
+                                      : '#94A3B8'
+                                  : sm.color,
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 5,
+                              }}
+                            >
+                              <div style={{ width: 5, height: 5, borderRadius: '50%', background: sm.color }} />
+                              {sm.label}
+                            </span>
+                          </td>
+
+                          <td style={{ padding: '10px 14px', width: 90 }}>
+                            {isHovered ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/intelligence/leads/${lead.id}`);
+                                }}
+                                style={{
+                                  padding: '4px 12px',
+                                  background: c.accent,
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: 7,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap',
+                                  fontFamily: 'var(--font-inter), sans-serif',
+                                }}
+                              >
+                                Öffnen →
+                              </button>
+                            ) : (
+                              <span style={{ color: c.textMuted, fontSize: 11, fontWeight: 600 }}>
+                                {lead.added.replace('.2026', '')}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <div
+                  style={{
+                    padding: '11px 18px',
+                    borderTop: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
+                    fontSize: 11,
+                    color: c.textMuted,
+                    fontWeight: 600,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span>
+                    {filtered.length} von {leads.length} Leads
+                  </span>
+                  {selectedIds.size > 0 && <span style={{ color: '#10B981' }}>{selectedIds.size} ausgewählt</span>}
+                </div>
+              </>
+            )}
           </div>
         )}
 
