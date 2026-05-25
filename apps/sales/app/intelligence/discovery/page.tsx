@@ -91,7 +91,6 @@ type AbsenderProfileLite = {
   name: string;
 };
 
-const ANGEBOT_STORAGE = 'onvero.settings.angebotsProfile.v1';
 const ABSENDER_STORAGE = 'onvero.settings.absenderProfile.v1';
 
 type BulkStep = 'setup' | 'outreach';
@@ -2772,20 +2771,25 @@ export default function DiscoveryPage() {
   const [absenderProfile, setAbsenderProfile] = useState<AbsenderProfileLite[]>([]);
 
   useEffect(() => {
-    try {
-      const rawA = localStorage.getItem(ANGEBOT_STORAGE);
-      if (rawA) {
-        const parsed = JSON.parse(rawA);
-        if (Array.isArray(parsed)) {
-          setAngebotsProfile(
-            parsed.map((p) => ({
-              id: String(p.id ?? ''),
-              name: String(p.name ?? '—'),
-              unternehmen: String(p.unternehmen ?? ''),
-            })),
-          );
-        }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/angebots-profile', { cache: 'no-store' });
+        const json = await res.json();
+        const rows = Array.isArray(json?.profiles) ? json.profiles : [];
+        if (cancelled) return;
+        setAngebotsProfile(
+          rows.map((p: { id: string; name?: string; unternehmen?: string }) => ({
+            id: String(p.id ?? ''),
+            name: String(p.name ?? '—'),
+            unternehmen: String(p.unternehmen ?? ''),
+          })),
+        );
+      } catch {
+        // ignore
       }
+    })();
+    try {
       const rawB = localStorage.getItem(ABSENDER_STORAGE);
       if (rawB) {
         const parsed = JSON.parse(rawB);
@@ -2798,6 +2802,9 @@ export default function DiscoveryPage() {
     } catch {
       // ignore
     }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const activeSession = sessions.find((s) => s.id === activeId);

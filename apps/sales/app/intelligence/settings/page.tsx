@@ -1,15 +1,49 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme, colors } from '../layout';
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 
-const STORAGE_ANGEBOT = 'onvero.settings.angebotsProfile.v1';
 const STORAGE_ABSENDER = 'onvero.settings.absenderProfile.v1';
 const STORAGE_TAB = 'onvero.settings.activeTab.v1';
 const STORAGE_ACTIVE_ANGEBOT = 'onvero.settings.activeAngebot.v1';
 const STORAGE_ACTIVE_ABSENDER = 'onvero.settings.activeAbsender.v1';
+
+// ─── API mapping ──────────────────────────────────────────────────────────────
+
+type AngebotsProfileRow = {
+  id: string;
+  name: string;
+  unternehmen: string;
+  beschreibung: string;
+  pain_points: string[];
+  value_proposition: string;
+  referenzen: string[];
+};
+
+function rowToProfile(row: AngebotsProfileRow): AngebotsProfile {
+  return {
+    id: row.id,
+    name: row.name ?? '',
+    unternehmen: row.unternehmen ?? '',
+    beschreibung: row.beschreibung ?? '',
+    painPoints: Array.isArray(row.pain_points) ? row.pain_points : [],
+    valueProposition: row.value_proposition ?? '',
+    referenzen: Array.isArray(row.referenzen) ? row.referenzen : [],
+  };
+}
+
+function profilePatchToRow(patch: Partial<AngebotsProfile>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if ('name' in patch) out.name = patch.name;
+  if ('unternehmen' in patch) out.unternehmen = patch.unternehmen;
+  if ('beschreibung' in patch) out.beschreibung = patch.beschreibung;
+  if ('painPoints' in patch) out.pain_points = patch.painPoints;
+  if ('valueProposition' in patch) out.value_proposition = patch.valueProposition;
+  if ('referenzen' in patch) out.referenzen = patch.referenzen;
+  return out;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -299,30 +333,48 @@ export default function SettingsPage() {
 
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
-  // Load from localStorage
-  useEffect(() => {
-    try {
-      const ang = JSON.parse(localStorage.getItem(STORAGE_ANGEBOT) ?? '[]') as AngebotsProfile[];
-      const abs = JSON.parse(localStorage.getItem(STORAGE_ABSENDER) ?? '[]') as AbsenderProfile[];
-      const t = localStorage.getItem(STORAGE_TAB) as Tab | null;
-      const aAng = localStorage.getItem(STORAGE_ACTIVE_ANGEBOT);
-      const aAbs = localStorage.getItem(STORAGE_ACTIVE_ABSENDER);
+  // Persist debouncers per Angebots-Profil id
+  const pendingPatches = useRef<Map<string, Partial<AngebotsProfile>>>(new Map());
+  const patchTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-      setAngebotsProfile(Array.isArray(ang) ? ang : []);
-      setAbsenderProfile(Array.isArray(abs) ? abs : []);
-      if (t === 'angebot' || t === 'absender') setTab(t);
-      if (aAng && ang.some((p) => p.id === aAng)) setActiveAngebotId(aAng);
-      else if (ang.length) setActiveAngebotId(ang[0].id);
-      if (aAbs && abs.some((p) => p.id === aAbs)) setActiveAbsenderId(aAbs);
-      else if (abs.length) setActiveAbsenderId(abs[0].id);
-    } catch {
-      // ignore
-    } finally {
-      setLoaded(true);
-    }
+  // Load Angebots-Profile from API, Absender + UI state from localStorage
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const abs = JSON.parse(localStorage.getItem(STORAGE_ABSENDER) ?? '[]') as AbsenderProfile[];
+        const t = localStorage.getItem(STORAGE_TAB) as Tab | null;
+        const aAng = localStorage.getItem(STORAGE_ACTIVE_ANGEBOT);
+        const aAbs = localStorage.getItem(STORAGE_ACTIVE_ABSENDER);
+
+        if (!cancelled) {
+          setAbsenderProfile(Array.isArray(abs) ? abs : []);
+          if (t === 'angebot' || t === 'absender') setTab(t);
+          if (aAbs && abs.some((p) => p.id === aAbs)) setActiveAbsenderId(aAbs);
+          else if (abs.length) setActiveAbsenderId(abs[0].id);
+        }
+
+        const res = await fetch('/api/angebots-profile', { cache: 'no-store' });
+        const json = await res.json();
+        const rows = Array.isArray(json?.profiles) ? (json.profiles as AngebotsProfileRow[]) : [];
+        const ang = rows.map(rowToProfile);
+
+        if (cancelled) return;
+        setAngebotsProfile(ang);
+        if (aAng && ang.some((p) => p.id === aAng)) setActiveAngebotId(aAng);
+        else if (ang.length) setActiveAngebotId(ang[0].id);
+      } catch {
+        // ignore — UI starts empty
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Persist tab
+  // Persist tab + active ids in localStorage (UX state)
   useEffect(() => {
     if (loaded) localStorage.setItem(STORAGE_TAB, tab);
   }, [tab, loaded]);
@@ -333,22 +385,53 @@ export default function SettingsPage() {
     if (loaded && activeAbsenderId) localStorage.setItem(STORAGE_ACTIVE_ABSENDER, activeAbsenderId);
   }, [activeAbsenderId, loaded]);
 
-  const persistAngebot = useCallback((next: AngebotsProfile[]) => {
-    setAngebotsProfile(next);
-    localStorage.setItem(STORAGE_ANGEBOT, JSON.stringify(next));
-    setSavedAt(new Date());
-  }, []);
-
   const persistAbsender = useCallback((next: AbsenderProfile[]) => {
     setAbsenderProfile(next);
     localStorage.setItem(STORAGE_ABSENDER, JSON.stringify(next));
     setSavedAt(new Date());
   }, []);
 
-  function createAngebot() {
-    const p = emptyAngebot();
-    persistAngebot([...angebotsProfile, p]);
-    setActiveAngebotId(p.id);
+  function schedulePatch(id: string, patch: Partial<AngebotsProfile>) {
+    const merged = { ...(pendingPatches.current.get(id) ?? {}), ...patch };
+    pendingPatches.current.set(id, merged);
+    const existing = patchTimers.current.get(id);
+    if (existing) clearTimeout(existing);
+    const t = setTimeout(async () => {
+      const body = pendingPatches.current.get(id);
+      pendingPatches.current.delete(id);
+      patchTimers.current.delete(id);
+      if (!body) return;
+      try {
+        const res = await fetch(`/api/angebots-profile/${id}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(profilePatchToRow(body)),
+        });
+        if (res.ok) setSavedAt(new Date());
+      } catch {
+        // ignore — local state still reflects the patch
+      }
+    }, 600);
+    patchTimers.current.set(id, t);
+  }
+
+  async function createAngebot() {
+    const seed = emptyAngebot();
+    try {
+      const res = await fetch('/api/angebots-profile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(profilePatchToRow(seed)),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.profile) return;
+      const created = rowToProfile(json.profile as AngebotsProfileRow);
+      setAngebotsProfile((prev) => [created, ...prev]);
+      setActiveAngebotId(created.id);
+      setSavedAt(new Date());
+    } catch {
+      // ignore
+    }
   }
 
   function createAbsender() {
@@ -358,13 +441,27 @@ export default function SettingsPage() {
   }
 
   function updateAngebot(id: string, patch: Partial<AngebotsProfile>) {
-    persistAngebot(angebotsProfile.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    setAngebotsProfile((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    schedulePatch(id, patch);
   }
 
-  function deleteAngebot(id: string) {
-    const next = angebotsProfile.filter((p) => p.id !== id);
-    persistAngebot(next);
-    if (activeAngebotId === id) setActiveAngebotId(next[0]?.id ?? null);
+  async function deleteAngebot(id: string) {
+    const timer = patchTimers.current.get(id);
+    if (timer) clearTimeout(timer);
+    patchTimers.current.delete(id);
+    pendingPatches.current.delete(id);
+
+    setAngebotsProfile((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      if (activeAngebotId === id) setActiveAngebotId(next[0]?.id ?? null);
+      return next;
+    });
+    try {
+      await fetch(`/api/angebots-profile/${id}`, { method: 'DELETE' });
+      setSavedAt(new Date());
+    } catch {
+      // ignore
+    }
   }
 
   function updateAbsender(id: string, patch: Partial<AbsenderProfile>) {
