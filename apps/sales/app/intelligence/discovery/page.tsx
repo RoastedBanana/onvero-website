@@ -641,83 +641,86 @@ function BulkTagInput({
     setDraft('');
   }
   return (
-    <div
-      style={{
-        background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.62)',
-        border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.7)',
-        borderRadius: 10,
-        padding: 6,
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 6,
-        minHeight: 42,
-        alignItems: 'center',
-      }}
-    >
-      {values.map((tag, idx) => (
-        <span
-          key={`${tag}-${idx}`}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            background: c.accent + '14',
-            color: c.accent,
-            borderRadius: 7,
-            padding: '4px 4px 4px 10px',
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-        >
-          {tag}
-          <button
-            onClick={() => onChange(values.filter((_, i) => i !== idx))}
-            aria-label={`${tag} entfernen`}
-            style={{
-              width: 18,
-              height: 18,
-              borderRadius: 4,
-              border: 'none',
-              background: 'transparent',
-              color: c.accent,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-            }}
-          >
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M4 4l8 8M12 4l-8 8" />
-            </svg>
-          </button>
-        </span>
-      ))}
-      <input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ',') {
-            e.preventDefault();
-            commit();
-          } else if (e.key === 'Backspace' && draft === '' && values.length > 0) {
-            onChange(values.slice(0, -1));
-          }
-        }}
-        onBlur={commit}
-        placeholder={values.length === 0 ? placeholder : ''}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div
         style={{
-          flex: '1 0 140px',
-          minWidth: 120,
-          background: 'transparent',
-          border: 'none',
-          outline: 'none',
-          fontSize: 13,
-          color: c.text,
-          padding: '5px 6px',
-          fontFamily: 'inherit',
+          background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.62)',
+          border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.7)',
+          borderRadius: 10,
+          padding: 6,
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: 42,
         }}
-      />
+      >
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              commit();
+            } else if (e.key === 'Backspace' && draft === '' && values.length > 0) {
+              onChange(values.slice(0, -1));
+            }
+          }}
+          onBlur={commit}
+          placeholder={placeholder}
+          style={{
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            fontSize: 13,
+            color: c.text,
+            padding: '5px 6px',
+            fontFamily: 'inherit',
+          }}
+        />
+      </div>
+      {values.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {values.map((tag, idx) => (
+            <span
+              key={`${tag}-${idx}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                background: c.accent + '14',
+                color: c.accent,
+                borderRadius: 7,
+                padding: '4px 4px 4px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {tag}
+              <button
+                onClick={() => onChange(values.filter((_, i) => i !== idx))}
+                aria-label={`${tag} entfernen`}
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 4,
+                  border: 'none',
+                  background: 'transparent',
+                  color: c.accent,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M4 4l8 8M12 4l-8 8" />
+                </svg>
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
