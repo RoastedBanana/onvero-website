@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTheme, colors } from '../layout';
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
@@ -332,10 +332,8 @@ export default function SettingsPage() {
   const [activeAbsenderId, setActiveAbsenderId] = useState<string | null>(null);
 
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-
-  // Persist debouncers per Angebots-Profil id
-  const pendingPatches = useRef<Map<string, Partial<AngebotsProfile>>>(new Map());
-  const patchTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [dirtyAngebotIds, setDirtyAngebotIds] = useState<Set<string>>(() => new Set());
+  const [savingAngebotId, setSavingAngebotId] = useState<string | null>(null);
 
   // Load Angebots-Profile from API, Absender + UI state from localStorage
   useEffect(() => {
@@ -391,30 +389,6 @@ export default function SettingsPage() {
     setSavedAt(new Date());
   }, []);
 
-  function schedulePatch(id: string, patch: Partial<AngebotsProfile>) {
-    const merged = { ...(pendingPatches.current.get(id) ?? {}), ...patch };
-    pendingPatches.current.set(id, merged);
-    const existing = patchTimers.current.get(id);
-    if (existing) clearTimeout(existing);
-    const t = setTimeout(async () => {
-      const body = pendingPatches.current.get(id);
-      pendingPatches.current.delete(id);
-      patchTimers.current.delete(id);
-      if (!body) return;
-      try {
-        const res = await fetch(`/api/angebots-profile/${id}`, {
-          method: 'PATCH',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(profilePatchToRow(body)),
-        });
-        if (res.ok) setSavedAt(new Date());
-      } catch {
-        // ignore — local state still reflects the patch
-      }
-    }, 600);
-    patchTimers.current.set(id, t);
-  }
-
   async function createAngebot() {
     const seed = emptyAngebot();
     try {
@@ -442,15 +416,47 @@ export default function SettingsPage() {
 
   function updateAngebot(id: string, patch: Partial<AngebotsProfile>) {
     setAngebotsProfile((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-    schedulePatch(id, patch);
+    setDirtyAngebotIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }
+
+  async function saveAngebot(id: string) {
+    const profile = angebotsProfile.find((p) => p.id === id);
+    if (!profile) return;
+    setSavingAngebotId(id);
+    try {
+      const res = await fetch(`/api/angebots-profile/${id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(profilePatchToRow(profile)),
+      });
+      if (res.ok) {
+        setSavedAt(new Date());
+        setDirtyAngebotIds((prev) => {
+          if (!prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    } catch {
+      // ignore — caller can retry
+    } finally {
+      setSavingAngebotId((curr) => (curr === id ? null : curr));
+    }
   }
 
   async function deleteAngebot(id: string) {
-    const timer = patchTimers.current.get(id);
-    if (timer) clearTimeout(timer);
-    patchTimers.current.delete(id);
-    pendingPatches.current.delete(id);
-
+    setDirtyAngebotIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     setAngebotsProfile((prev) => {
       const next = prev.filter((p) => p.id !== id);
       if (activeAngebotId === id) setActiveAngebotId(next[0]?.id ?? null);
@@ -589,7 +595,10 @@ export default function SettingsPage() {
               <AngebotsEditor
                 profile={activeAngebot}
                 onChange={(patch) => updateAngebot(activeAngebot.id, patch)}
+                onSave={() => saveAngebot(activeAngebot.id)}
                 onDelete={() => deleteAngebot(activeAngebot.id)}
+                dirty={dirtyAngebotIds.has(activeAngebot.id)}
+                saving={savingAngebotId === activeAngebot.id}
                 c={c}
               />
             ) : (
@@ -756,12 +765,18 @@ function ProfileSidebar({
 function AngebotsEditor({
   profile,
   onChange,
+  onSave,
   onDelete,
+  dirty,
+  saving,
   c,
 }: {
   profile: AngebotsProfile;
   onChange: (patch: Partial<AngebotsProfile>) => void;
+  onSave: () => void;
   onDelete: () => void;
+  dirty: boolean;
+  saving: boolean;
   c: ReturnType<typeof colors>;
 }) {
   return (
@@ -828,8 +843,8 @@ function AngebotsEditor({
         </div>
       </Card>
 
-      {/* Danger zone */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      {/* Action bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => {
             if (confirm(`Profil "${profile.name}" wirklich löschen?`)) onDelete();
@@ -848,6 +863,31 @@ function AngebotsEditor({
         >
           Profil löschen
         </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {dirty && !saving && (
+            <span style={{ fontSize: 11, fontWeight: 600, color: c.textSub }}>
+              Ungespeicherte Änderungen
+            </span>
+          )}
+          <button
+            onClick={onSave}
+            disabled={!dirty || saving}
+            style={{
+              background: dirty && !saving ? c.accent : c.border,
+              color: dirty && !saving ? (c.bgPage === '#FFFFFF' ? '#fff' : c.bgPage) : c.textSub,
+              border: 'none',
+              borderRadius: 8,
+              padding: '8px 18px',
+              fontSize: 12,
+              fontWeight: 800,
+              cursor: dirty && !saving ? 'pointer' : 'not-allowed',
+              fontFamily: 'var(--font-inter), sans-serif',
+              transition: 'background 0.12s, color 0.12s',
+            }}
+          >
+            {saving ? 'Speichere…' : 'Speichern'}
+          </button>
+        </div>
       </div>
     </div>
   );
