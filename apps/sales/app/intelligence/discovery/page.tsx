@@ -101,12 +101,12 @@ type DeepSetup = {
   angebotsProfileId: string | null;
   rechercheFokus: string;
   weitereQueries: string[];
-  kriterien: string;
+  kriterien: string[];
   orte: string[];
 };
 
 function emptyDeepSetup(): DeepSetup {
-  return { angebotsProfileId: null, rechercheFokus: '', weitereQueries: [], kriterien: '', orte: [] };
+  return { angebotsProfileId: null, rechercheFokus: '', weitereQueries: [], kriterien: [], orte: [] };
 }
 
 type DeepConfig = {
@@ -1726,25 +1726,13 @@ function DeepSearchCard({
         </div>
 
         <div>
-          <BulkFieldLabel label="Kriterien" sub="Harte Filter (Mitarbeiter, Umsatz, Region, etc.)" c={c} />
-          <textarea
-            value={setup.kriterien}
-            onChange={(e) => onPatchSetup({ kriterien: e.target.value })}
+          <BulkFieldLabel label="Kriterien" sub="Harte Filter — Enter bestätigt" c={c} />
+          <BulkTagInput
+            values={setup.kriterien}
+            onChange={(v) => onPatchSetup({ kriterien: v })}
             placeholder="z.B. 50–500 Mitarbeiter, eigene Marke, kein Konzern"
-            rows={3}
-            style={{
-              width: '100%',
-              background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.62)',
-              border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.7)',
-              borderRadius: 10,
-              padding: '10px 12px',
-              fontSize: 13,
-              color: c.text,
-              fontFamily: 'inherit',
-              outline: 'none',
-              resize: 'vertical',
-              lineHeight: 1.5,
-            }}
+            c={c}
+            isDark={isDark}
           />
         </div>
 
@@ -2946,7 +2934,7 @@ export default function DiscoveryPage() {
     await new Promise((r) => setTimeout(r, 1400));
 
     const seed =
-      [setup.weitereQueries[0], setup.rechercheFokus, setup.kriterien].find((v) => v && v.length > 0) ?? 'mode';
+      [setup.weitereQueries[0], setup.rechercheFokus, setup.kriterien[0]].find((v) => v && v.length > 0) ?? 'mode';
     const { results } = getResponse(String(seed));
     const raw: DeepResult[] = results
       .concat(FALLBACK.results)
