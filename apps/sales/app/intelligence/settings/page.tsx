@@ -5,29 +5,6 @@ import { useTheme, colors } from '../layout';
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 
-const INDUSTRIES = [
-  'Mode & Bekleidung',
-  'Sport & Outdoor',
-  'Elektronik & Technik',
-  'Haushalt & Living',
-  'Baby & Kinder',
-  'Garten & Pflanzen',
-  'Fahrrad & Mobilität',
-  'Haustier & Zubehör',
-  'Spielzeug & Hobby',
-  'Auto & Zubehör',
-  'Büro & B2B',
-  'Lebensmittel & FMCG',
-  'Pharma & Gesundheit',
-  'Schmuck & Luxus',
-  'SaaS & IT',
-  'Industrie & Maschinenbau',
-  'Logistik & Versand',
-  'Finanzen & Versicherung',
-  'Medien & Verlag',
-  'Immobilien',
-];
-
 const STORAGE_ANGEBOT = 'onvero.settings.angebotsProfile.v1';
 const STORAGE_ABSENDER = 'onvero.settings.absenderProfile.v1';
 const STORAGE_TAB = 'onvero.settings.activeTab.v1';
@@ -46,11 +23,6 @@ type AngebotsProfile = {
   painPoints: string[];
   valueProposition: string;
   referenzen: string[];
-  mitarbeiterMin: number;
-  mitarbeiterMax: number;
-  umsatzMin: number;
-  umsatzMax: number;
-  zielBranchen: string[];
 };
 
 type AbsenderProfile = {
@@ -71,11 +43,6 @@ function emptyAngebot(): AngebotsProfile {
     painPoints: [],
     valueProposition: '',
     referenzen: [],
-    mitarbeiterMin: 10,
-    mitarbeiterMax: 500,
-    umsatzMin: 1_000_000,
-    umsatzMax: 50_000_000,
-    zielBranchen: [],
   };
 }
 
@@ -265,131 +232,6 @@ function TagInput({
           fontFamily: 'var(--font-inter), sans-serif',
         }}
       />
-    </div>
-  );
-}
-
-function NumberField({
-  value,
-  onChange,
-  suffix,
-  step = 1,
-  min = 0,
-  c,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  suffix?: string;
-  step?: number;
-  min?: number;
-  c: ReturnType<typeof colors>;
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        background: c.bgPage,
-        border: `1px solid ${c.border}`,
-        borderRadius: 8,
-        overflow: 'hidden',
-      }}
-    >
-      <input
-        type="number"
-        value={Number.isFinite(value) ? value : 0}
-        min={min}
-        step={step}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-        style={{
-          flex: 1,
-          background: 'transparent',
-          border: 'none',
-          outline: 'none',
-          padding: '9px 12px',
-          fontSize: 13,
-          color: c.text,
-          fontFamily: 'var(--font-inter), sans-serif',
-        }}
-      />
-      {suffix && (
-        <span style={{ fontSize: 12, fontWeight: 600, color: c.textSub, paddingRight: 12, whiteSpace: 'nowrap' }}>
-          {suffix}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function RangeMinMax({
-  minLabel,
-  maxLabel,
-  min,
-  max,
-  onChange,
-  suffix,
-  step,
-  c,
-}: {
-  minLabel?: string;
-  maxLabel?: string;
-  min: number;
-  max: number;
-  onChange: (range: { min: number; max: number }) => void;
-  suffix?: string;
-  step?: number;
-  c: ReturnType<typeof colors>;
-}) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-      <div>
-        <div style={{ fontSize: 11, color: c.textSub, marginBottom: 4, fontWeight: 600 }}>{minLabel ?? 'Min'}</div>
-        <NumberField value={min} onChange={(v) => onChange({ min: v, max })} suffix={suffix} step={step} c={c} />
-      </div>
-      <div>
-        <div style={{ fontSize: 11, color: c.textSub, marginBottom: 4, fontWeight: 600 }}>{maxLabel ?? 'Max'}</div>
-        <NumberField value={max} onChange={(v) => onChange({ min, max: v })} suffix={suffix} step={step} c={c} />
-      </div>
-    </div>
-  );
-}
-
-function ChipGroup({
-  items,
-  selected,
-  onToggle,
-  c,
-}: {
-  items: string[];
-  selected: string[];
-  onToggle: (item: string) => void;
-  c: ReturnType<typeof colors>;
-}) {
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-      {items.map((item) => {
-        const active = selected.includes(item);
-        return (
-          <button
-            key={item}
-            onClick={() => onToggle(item)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 7,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              border: `1px solid ${active ? c.accent : c.border}`,
-              background: active ? c.accent : c.bgPage,
-              color: active ? (c.bgPage === '#FFFFFF' ? '#fff' : c.bgPage) : c.textSub,
-              transition: 'all 0.12s',
-              fontFamily: 'var(--font-inter), sans-serif',
-            }}
-          >
-            {item}
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -825,11 +667,6 @@ function AngebotsEditor({
   onDelete: () => void;
   c: ReturnType<typeof colors>;
 }) {
-  function toggleBranche(name: string) {
-    const has = profile.zielBranchen.includes(name);
-    onChange({ zielBranchen: has ? profile.zielBranchen.filter((b) => b !== name) : [...profile.zielBranchen, name] });
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Identity card */}
@@ -888,44 +725,6 @@ function AngebotsEditor({
               values={profile.referenzen}
               onChange={(v) => onChange({ referenzen: v })}
               placeholder="z.B. Hermes, DPD, Siemens"
-              c={c}
-            />
-          </Field>
-        </div>
-      </Card>
-
-      {/* Target industry card */}
-      <Card title="Ziel-Branche" sub="An wen richtet sich dieses Angebot?" c={c}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <Field label="Größe" sub="Mitarbeiterzahl im Zielunternehmen" c={c}>
-            <RangeMinMax
-              minLabel="Min Mitarbeiter"
-              maxLabel="Max Mitarbeiter"
-              min={profile.mitarbeiterMin}
-              max={profile.mitarbeiterMax}
-              onChange={({ min, max }) => onChange({ mitarbeiterMin: min, mitarbeiterMax: max })}
-              c={c}
-            />
-          </Field>
-
-          <Field label="Umsatz" sub="Jahresumsatz in Euro" c={c}>
-            <RangeMinMax
-              minLabel="Min Umsatz"
-              maxLabel="Max Umsatz"
-              min={profile.umsatzMin}
-              max={profile.umsatzMax}
-              suffix="€"
-              step={100_000}
-              onChange={({ min, max }) => onChange({ umsatzMin: min, umsatzMax: max })}
-              c={c}
-            />
-          </Field>
-
-          <Field label="Ziel-Branchen" sub="Wähle eine oder mehrere Branchen aus" c={c}>
-            <ChipGroup
-              items={INDUSTRIES}
-              selected={profile.zielBranchen}
-              onToggle={toggleBranche}
               c={c}
             />
           </Field>

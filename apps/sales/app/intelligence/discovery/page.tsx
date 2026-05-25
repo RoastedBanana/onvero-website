@@ -84,7 +84,6 @@ type AngebotsProfileLite = {
   id: string;
   name: string;
   unternehmen: string;
-  zielBranchen?: string[];
 };
 
 type AbsenderProfileLite = {
@@ -2783,7 +2782,6 @@ export default function DiscoveryPage() {
               id: String(p.id ?? ''),
               name: String(p.name ?? '—'),
               unternehmen: String(p.unternehmen ?? ''),
-              zielBranchen: Array.isArray(p.zielBranchen) ? p.zielBranchen : [],
             })),
           );
         }
@@ -2880,8 +2878,7 @@ export default function DiscoveryPage() {
     await new Promise((r) => setTimeout(r, 1400));
 
     const seed =
-      [profile?.zielBranchen?.[0], setup.weitereQueries[0], setup.kriterien].find((v) => v && v.length > 0) ??
-      'mode';
+      [setup.weitereQueries[0], setup.kriterien].find((v) => v && v.length > 0) ?? 'mode';
     const { results } = getResponse(String(seed));
     const padded = results.concat(FALLBACK.results).slice(0, 8);
 
@@ -2942,9 +2939,7 @@ export default function DiscoveryPage() {
     await new Promise((r) => setTimeout(r, 1400));
 
     const seed =
-      [profile?.zielBranchen?.[0], setup.weitereQueries[0], setup.rechercheFokus, setup.kriterien].find(
-        (v) => v && v.length > 0,
-      ) ?? 'mode';
+      [setup.weitereQueries[0], setup.rechercheFokus, setup.kriterien].find((v) => v && v.length > 0) ?? 'mode';
     const { results } = getResponse(String(seed));
     const raw: DeepResult[] = results
       .concat(FALLBACK.results)
