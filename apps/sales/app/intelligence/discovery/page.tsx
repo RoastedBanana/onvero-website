@@ -112,7 +112,6 @@ function emptyDeepSetup(): DeepSetup {
 }
 
 type DeepConfig = {
-  topN: number;
   sources: string[];
   scoringFit: number;
   scoringIntent: number;
@@ -120,7 +119,7 @@ type DeepConfig = {
 };
 
 function emptyDeepConfig(): DeepConfig {
-  return { topN: 5, sources: ['LinkedIn-Profile', 'Tech-Stack', 'News & Signals'], scoringFit: 50, scoringIntent: 30, scoringTiming: 20 };
+  return { sources: ['LinkedIn-Profile', 'Tech-Stack', 'News & Signals'], scoringFit: 50, scoringIntent: 30, scoringTiming: 20 };
 }
 
 const ENRICH_SOURCES: string[] = [
@@ -1762,21 +1761,6 @@ function DeepSearchCard({
           />
         </div>
 
-        <div>
-          <BulkFieldLabel
-            label={`Top-N nach Pre-Scoring · ${config.topN}`}
-            sub="Wie viele Leads sollen nach dem Scoring übrig bleiben?"
-            c={c}
-          />
-          <input
-            type="range"
-            min={1}
-            max={10}
-            value={config.topN}
-            onChange={(e) => onPatchConfig({ topN: Number(e.target.value) })}
-            style={{ width: '100%', accentColor: c.accent, cursor: 'pointer' }}
-          />
-        </div>
       </div>
     </>
   );
@@ -1892,14 +1876,12 @@ function DeepListeCard({
   results,
   generating,
   preScoring,
-  topNHint,
   c,
   isDark,
 }: {
   results: DeepResult[] | undefined;
   generating: boolean;
   preScoring: boolean;
-  topNHint?: number;
   c: ReturnType<typeof colors>;
   isDark: boolean;
 }) {
@@ -1918,7 +1900,7 @@ function DeepListeCard({
         <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>Liste</div>
         <div style={{ fontSize: 11, color: c.textMuted, fontWeight: 600 }}>
           {preScoring
-            ? `Pre-Scoring · Top ${topNHint ?? '?'}`
+            ? 'Pre-Scoring läuft…'
             : hasResults
               ? `${results!.length} Leads`
               : 'Noch keine Treffer'}
@@ -2352,7 +2334,6 @@ function DeepPanel({
               results={results}
               generating={generating}
               preScoring={preScoring}
-              topNHint={config.topN}
               c={c}
               isDark={isDark}
             />
@@ -2987,11 +2968,10 @@ export default function DiscoveryPage() {
 
     await new Promise((r) => setTimeout(r, 2000));
 
-    // Phase 3: assign scores, keep top N
+    // Phase 3: assign scores, sort by score (keep all results)
     const scored = raw
       .map((r, i) => ({ ...r, score: Math.round(60 + Math.random() * 38 - i * 1.2) }))
       .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-    const top = scored.slice(0, Math.max(1, Math.min(scored.length, config.topN)));
 
     setSessions((prev) =>
       prev.map((s) =>
@@ -2999,8 +2979,8 @@ export default function DiscoveryPage() {
           ? {
               ...s,
               deepPreScoring: false,
-              deepResults: top,
-              preview: `${top.length} Leads nach Pre-Scoring`,
+              deepResults: scored,
+              preview: `${scored.length} Leads nach Pre-Scoring`,
             }
           : s,
       ),
