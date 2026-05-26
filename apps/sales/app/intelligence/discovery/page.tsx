@@ -2139,67 +2139,75 @@ function DeepResultCard({
           {r.score}
         </div>
       )}
+      <span
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          padding: '3px 8px',
+          borderRadius: 99,
+          background: sourceColor + '18',
+          color: sourceColor,
+          flexShrink: 0,
+        }}
+      >
+        {r.source}
+      </span>
       {url ? (
         <a
           data-no-toggle
           href={url}
           target="_blank"
           rel="noopener noreferrer"
+          title={`Website öffnen: ${url}`}
+          aria-label="Website öffnen"
           onClick={(e) => e.stopPropagation()}
-          title={url}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 5,
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '4px 9px',
-            borderRadius: 99,
-            background: sourceColor + '18',
-            color: sourceColor,
-            flexShrink: 0,
+            justifyContent: 'center',
+            width: 30,
+            height: 30,
+            borderRadius: 8,
+            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+            border: isDark
+              ? '1px solid rgba(255,255,255,0.10)'
+              : '1px solid rgba(0,0,0,0.08)',
+            color: c.text,
             textDecoration: 'none',
-            fontFamily: 'inherit',
+            flexShrink: 0,
             cursor: 'pointer',
-            transition: 'background 120ms ease',
+            transition: 'background 120ms ease, color 120ms ease, transform 120ms ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = sourceColor + '28';
+            e.currentTarget.style.background = c.accent + '14';
+            e.currentTarget.style.color = c.accent;
+            e.currentTarget.style.transform = 'translateY(-1px)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = sourceColor + '18';
+            e.currentTarget.style.background = isDark
+              ? 'rgba(255,255,255,0.06)'
+              : 'rgba(0,0,0,0.04)';
+            e.currentTarget.style.color = c.text;
+            e.currentTarget.style.transform = 'translateY(0)';
           }}
         >
-          {r.source}
           <svg
-            width="10"
-            height="10"
-            viewBox="0 0 16 16"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
-            <path d="M6 3h7v7" />
-            <path d="M13 3L4 12" />
+            <path d="M14 3h7v7" />
+            <path d="M21 3l-9 9" />
+            <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
           </svg>
         </a>
-      ) : (
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            padding: '3px 8px',
-            borderRadius: 99,
-            background: sourceColor + '18',
-            color: sourceColor,
-            flexShrink: 0,
-          }}
-        >
-          {r.source}
-        </span>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -3224,8 +3232,6 @@ export default function DiscoveryPage() {
       ? [...parsed].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
       : parsed;
 
-    const allKeys = finalResults.map((r, i) => deepLeadKey(r, i));
-
     setSessions((prev) =>
       prev.map((s) =>
         s.id === activeId
@@ -3233,7 +3239,7 @@ export default function DiscoveryPage() {
               ...s,
               deepPreScoring: false,
               deepResults: finalResults,
-              deepSelectedKeys: allKeys,
+              deepSelectedKeys: [],
               preview:
                 finalResults.length > 0
                   ? `${finalResults.length} Leads gefunden`
