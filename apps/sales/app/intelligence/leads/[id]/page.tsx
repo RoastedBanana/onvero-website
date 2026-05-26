@@ -23,7 +23,10 @@ interface Contact {
   linkedin?: string;
   email?: string;
   phone?: string;
-  source: 'linkedin' | 'openregister' | 'salesnavigator' | 'manual' | 'website';
+  photoUrl?: string;
+  emailDraftSubject?: string;
+  emailDraftBody?: string;
+  source: 'linkedin' | 'openregister' | 'salesnavigator' | 'manual' | 'website' | 'apollo';
 }
 
 interface ApolloPerson {
@@ -331,6 +334,38 @@ interface LeadDetail {
 }
 
 // ─── DB mapper ───────────────────────────────────────────────────────────────
+
+type ApiLeadContact = {
+  id: string;
+  apollo_person_id?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  full_name?: string | null;
+  title?: string | null;
+  role?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mobile_phone?: string | null;
+  linkedin_url?: string | null;
+  photo_url?: string | null;
+  email_draft_subject?: string | null;
+  email_draft_body?: string | null;
+};
+
+function mapApiContact(row: ApiLeadContact): Contact {
+  const name = row.full_name?.trim() || [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || 'Unbenannt';
+  return {
+    name,
+    role: row.title || row.role || 'Ansprechpartner',
+    email: row.email ?? undefined,
+    phone: row.phone ?? row.mobile_phone ?? undefined,
+    linkedin: row.linkedin_url ?? undefined,
+    photoUrl: row.photo_url ?? undefined,
+    emailDraftSubject: row.email_draft_subject ?? undefined,
+    emailDraftBody: row.email_draft_body ?? undefined,
+    source: 'apollo',
+  };
+}
 
 function mapDbLead(d: Record<string, unknown>): LeadDetail {
   const financialsHistory = Array.isArray(d.or_financials_history)
@@ -7829,7 +7864,17 @@ function ApolloLoader({ isDark, c }: { isDark: boolean; c: ReturnType<typeof col
 
 type ProfileOption = { id: string; label: string };
 
-function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
+function OutboundTab({
+  lead,
+  c,
+  isDark,
+  onLeadRefresh,
+}: {
+  lead: LeadDetail;
+  c: ReturnType<typeof colors>;
+  isDark: boolean;
+  onLeadRefresh?: () => void | Promise<void>;
+}) {
   // Apollo people loader (below Ansprechpartner list)
   const [apolloOpen, setApolloOpen] = useState(false);
   const [apolloLoading, setApolloLoading] = useState(false);
@@ -7850,6 +7895,9 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [genSuccess, setGenSuccess] = useState<string | null>(null);
+
+  // Inline email-draft expander (one open at a time)
+  const [expandedDraftIdx, setExpandedDraftIdx] = useState<number | null>(null);
 
   // Search filter
   const [apolloSearch, setApolloSearch] = useState('');
@@ -7953,6 +8001,8 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
         return;
       }
       setGenSuccess(typeof data?.message === 'string' ? data.message : 'Outbound generiert.');
+      // Reload the lead so the new contact + email draft appear in the Ansprechpartner list.
+      await onLeadRefresh?.();
     } catch (err) {
       setGenError(err instanceof Error ? err.message : 'Netzwerkfehler');
     } finally {
@@ -7980,6 +8030,7 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
     salesnavigator: { label: 'SalesNav', color: '#F97316' },
     manual: { label: 'Manuell', color: '#94A3B8' },
     website: { label: 'Website', color: '#818CF8' },
+    apollo: { label: 'Apollo', color: '#A855F7' },
   };
 
   return (
@@ -8012,29 +8063,44 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
                     >
                       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
                         {/* Avatar */}
-                        <div
-                          style={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: 16,
-                            background: av.bg,
-                            color: av.color,
-                            fontWeight: 800,
-                            fontSize: 18,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                            letterSpacing: '-0.02em',
-                          }}
-                        >
-                          {ct.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .slice(0, 2)
-                            .toUpperCase()}
-                        </div>
+                        {ct.photoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={ct.photoUrl}
+                            alt={ct.name}
+                            style={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: 16,
+                              objectFit: 'cover',
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: 16,
+                              background: av.bg,
+                              color: av.color,
+                              fontWeight: 800,
+                              fontSize: 18,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              letterSpacing: '-0.02em',
+                            }}
+                          >
+                            {ct.name
+                              .split(' ')
+                              .map((n) => n[0])
+                              .join('')
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </div>
+                        )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div
                             style={{
@@ -8098,7 +8164,104 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
                                 {ct.email}
                               </a>
                             )}
+                            {ct.phone && (
+                              <a
+                                href={`tel:${ct.phone}`}
+                                style={{
+                                  fontSize: 11,
+                                  color: '#10B981',
+                                  fontWeight: 700,
+                                  textDecoration: 'none',
+                                  padding: '3px 10px',
+                                  background: 'rgba(16,185,129,0.1)',
+                                  borderRadius: 999,
+                                  border: '1px solid rgba(16,185,129,0.2)',
+                                }}
+                              >
+                                {ct.phone}
+                              </a>
+                            )}
                           </div>
+
+                          {ct.emailDraftBody && (
+                            <div style={{ marginTop: 12 }}>
+                              <button
+                                type="button"
+                                onClick={() => setExpandedDraftIdx(expandedDraftIdx === i ? null : i)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  color: c.accent,
+                                  background: c.accent + '14',
+                                  border: `1px solid ${c.accent}33`,
+                                  borderRadius: 999,
+                                  padding: '4px 10px',
+                                  cursor: 'pointer',
+                                  fontFamily: 'inherit',
+                                }}
+                              >
+                                ✉ E-Mail-Entwurf {expandedDraftIdx === i ? 'verbergen' : 'anzeigen'}
+                              </button>
+
+                              {expandedDraftIdx === i && (
+                                <div
+                                  style={{
+                                    marginTop: 10,
+                                    padding: '12px 14px',
+                                    borderRadius: 10,
+                                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                                    background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                                  }}
+                                >
+                                  {ct.emailDraftSubject && (
+                                    <div
+                                      style={{
+                                        fontSize: 13,
+                                        fontWeight: 800,
+                                        color: c.text,
+                                        marginBottom: 8,
+                                      }}
+                                    >
+                                      {ct.emailDraftSubject}
+                                    </div>
+                                  )}
+                                  <div
+                                    style={{
+                                      fontSize: 13,
+                                      color: c.text,
+                                      lineHeight: 1.6,
+                                    }}
+                                    dangerouslySetInnerHTML={{ __html: ct.emailDraftBody }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const tmp = document.createElement('div');
+                                      tmp.innerHTML = ct.emailDraftBody ?? '';
+                                      void navigator.clipboard?.writeText(tmp.textContent || '');
+                                    }}
+                                    style={{
+                                      marginTop: 10,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      color: c.textMuted,
+                                      background: 'transparent',
+                                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+                                      borderRadius: 8,
+                                      padding: '5px 10px',
+                                      cursor: 'pointer',
+                                      fontFamily: 'inherit',
+                                    }}
+                                  >
+                                    Kopieren
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -8629,21 +8792,40 @@ export default function LeadDetailPage() {
   const [status, setStatus] = useState<LeadStatus>('warm');
   const [scoreHover, setScoreHover] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    fetch(`/api/leads/${id}`)
-      .then((r) => r.json())
-      .then((data: { lead: Record<string, unknown> }) => {
+  const loadLead = useCallback(
+    async (opts?: { showSpinner?: boolean }) => {
+      if (!id) return;
+      if (opts?.showSpinner !== false) setLoading(true);
+      try {
+        const r = await fetch(`/api/leads/${id}`);
+        const data: { lead: Record<string, unknown>; contacts?: ApiLeadContact[] } = await r.json();
         const mapped = mapDbLead(data.lead);
+        const apolloContacts = (data.contacts ?? []).map(mapApiContact);
+        // Dedup against contacts already derived from the lead row (by email or by lowercase name).
+        const existing = new Set(
+          mapped.contacts.flatMap((c) => [c.email?.toLowerCase(), c.name.toLowerCase()].filter(Boolean) as string[]),
+        );
+        for (const c of apolloContacts) {
+          if (c.email && existing.has(c.email.toLowerCase())) continue;
+          if (existing.has(c.name.toLowerCase())) continue;
+          mapped.contacts.push(c);
+          existing.add(c.name.toLowerCase());
+          if (c.email) existing.add(c.email.toLowerCase());
+        }
         setLead(mapped);
         setStatus(mapped.status);
-      })
-      .catch(() => {
+      } catch {
         /* leave loading state, handle gracefully */
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
+      } finally {
+        if (opts?.showSpinner !== false) setLoading(false);
+      }
+    },
+    [id],
+  );
+
+  useEffect(() => {
+    void loadLead();
+  }, [loadLead]);
 
   const sCfg = STATUS_CFG[status];
   const col = scoreColor(lead?.score ?? 0);
@@ -9074,7 +9256,9 @@ export default function LeadDetailPage() {
             {activeTab === 'info' && (
               <InfoTab lead={lead!} c={c} isDark={isDark} onOpenDetail={(v) => setDetailView(v)} />
             )}
-            {activeTab === 'outbound' && <OutboundTab lead={lead!} c={c} isDark={isDark} />}
+            {activeTab === 'outbound' && (
+              <OutboundTab lead={lead!} c={c} isDark={isDark} onLeadRefresh={() => loadLead({ showSpinner: false })} />
+            )}
             {activeTab === 'bot' && <ChatTab lead={lead!} c={c} isDark={isDark} />}
           </>
         )}

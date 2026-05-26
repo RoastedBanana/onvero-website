@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   try {
     const client = getAdmin() ?? getAdminClient();
 
-    const [leadRes, activitiesRes] = await Promise.all([
+    const [leadRes, activitiesRes, contactsRes] = await Promise.all([
       client.from('leads').select('*').eq('id', id).eq('tenant_id', tenantId).maybeSingle(),
       client
         .from('lead_activities')
@@ -31,16 +31,76 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
         .limit(20),
+      client
+        .from('lead_contacts')
+        .select(
+          'id, apollo_person_id, first_name, last_name, full_name, title, role, seniority, email, email_status, phone, mobile_phone, linkedin_url, photo_url, city, country, status, is_primary, created_at',
+        )
+        .eq('lead_id', id)
+        .eq('tenant_id', tenantId)
+        .neq('is_excluded', true)
+        .order('created_at', { ascending: false }),
     ]);
 
     if (leadRes.error) {
       console.error('[leads/[id]] supabase error:', leadRes.error);
-      return NextResponse.json({ lead: null, activities: [], error: leadRes.error.message }, { status: 500 });
+      return NextResponse.json({ lead: null, activities: [], contacts: [], error: leadRes.error.message }, { status: 500 });
     }
+
+    // For each contact, pull the latest enrichment with an actual email draft.
+    type ContactRow = {
+      id: string;
+      apollo_person_id?: string | null;
+      first_name?: string | null;
+      last_name?: string | null;
+      full_name?: string | null;
+      title?: string | null;
+      role?: string | null;
+      seniority?: string | null;
+      email?: string | null;
+      email_status?: string | null;
+      phone?: string | null;
+      mobile_phone?: string | null;
+      linkedin_url?: string | null;
+      photo_url?: string | null;
+      city?: string | null;
+      country?: string | null;
+      status?: string | null;
+      is_primary?: boolean | null;
+      created_at?: string | null;
+    };
+    const contactRows: ContactRow[] = contactsRes.data ?? [];
+    const contactIds = contactRows.map((c) => c.id);
+    const draftsByContact: Record<string, { subject: string | null; body: string | null; created_at: string }> = {};
+    if (contactIds.length) {
+      const { data: enrichRows } = await client
+        .from('lead_contact_enrichments')
+        .select('lead_contact_id, email_draft_subject, email_draft_body, created_at')
+        .in('lead_contact_id', contactIds)
+        .not('email_draft_body', 'is', null)
+        .order('created_at', { ascending: false });
+      for (const row of enrichRows ?? []) {
+        if (!draftsByContact[row.lead_contact_id]) {
+          draftsByContact[row.lead_contact_id] = {
+            subject: row.email_draft_subject,
+            body: row.email_draft_body,
+            created_at: row.created_at,
+          };
+        }
+      }
+    }
+
+    const contacts = contactRows.map((c) => ({
+      ...c,
+      email_draft_subject: draftsByContact[c.id]?.subject ?? null,
+      email_draft_body: draftsByContact[c.id]?.body ?? null,
+      email_generated_at: draftsByContact[c.id]?.created_at ?? null,
+    }));
 
     return NextResponse.json({
       lead: leadRes.data ?? null,
       activities: activitiesRes.data ?? [],
+      contacts,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e), lead: null, activities: [] }, { status: 500 });
