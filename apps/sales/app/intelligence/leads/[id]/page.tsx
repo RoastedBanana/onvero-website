@@ -8889,18 +8889,8 @@ export default function LeadDetailPage() {
         const r = await fetch(`/api/leads/${id}`);
         const data: { lead: Record<string, unknown>; contacts?: ApiLeadContact[] } = await r.json();
         const mapped = mapDbLead(data.lead);
-        const apolloContacts = (data.contacts ?? []).map(mapApiContact);
-        // Dedup against contacts already derived from the lead row (by email or by lowercase name).
-        const existing = new Set(
-          mapped.contacts.flatMap((c) => [c.email?.toLowerCase(), c.name.toLowerCase()].filter(Boolean) as string[]),
-        );
-        for (const c of apolloContacts) {
-          if (c.email && existing.has(c.email.toLowerCase())) continue;
-          if (existing.has(c.name.toLowerCase())) continue;
-          mapped.contacts.push(c);
-          existing.add(c.name.toLowerCase());
-          if (c.email) existing.add(c.email.toLowerCase());
-        }
+        // Only show contacts that came in via the Apollo "Personen finden" workflow.
+        mapped.contacts = (data.contacts ?? []).map(mapApiContact);
         setLead(mapped);
         setStatus(mapped.status);
       } catch {
