@@ -617,6 +617,12 @@ export default function SettingsPage() {
     });
   }
 
+  // Server-applied changes (e.g. webhook flows) — update state without marking dirty
+  function syncAbsenderFromServer(id: string, patch: Partial<AbsenderProfile>) {
+    setAbsenderProfile((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    setSavedAt(new Date());
+  }
+
   async function saveAbsender(id: string) {
     const profile = absenderProfile.find((p) => p.id === id);
     if (!profile) return;
@@ -798,6 +804,7 @@ export default function SettingsPage() {
               profile={activeAbsender}
               angebotsProfile={angebotsProfile}
               onChange={(patch) => updateAbsender(activeAbsender.id, patch)}
+              onServerSync={(patch) => syncAbsenderFromServer(activeAbsender.id, patch)}
               onSave={() => saveAbsender(activeAbsender.id)}
               onDelete={() => deleteAbsender(activeAbsender.id)}
               dirty={dirtyAbsenderIds.has(activeAbsender.id)}
@@ -1101,6 +1108,7 @@ function AbsenderEditor({
   profile,
   angebotsProfile,
   onChange,
+  onServerSync,
   onSave,
   onDelete,
   dirty,
@@ -1110,6 +1118,7 @@ function AbsenderEditor({
   profile: AbsenderProfile;
   angebotsProfile: AngebotsProfile[];
   onChange: (patch: Partial<AbsenderProfile>) => void;
+  onServerSync: (patch: Partial<AbsenderProfile>) => void;
   onSave: () => void;
   onDelete: () => void;
   dirty: boolean;
@@ -1304,8 +1313,10 @@ function AbsenderEditor({
         c={c}
       >
         <EmailTemplatesEditor
+          profileId={profile.id}
           templates={profile.emailTemplates}
           onChange={(next) => onChange({ emailTemplates: next })}
+          onServerSync={(next) => onServerSync({ emailTemplates: next })}
           c={c}
         />
       </Card>
@@ -1581,12 +1592,16 @@ function SelectField({
 // ─── E-Mail-Vorlagen Editor ──────────────────────────────────────────────────
 
 function EmailTemplatesEditor({
+  profileId,
   templates,
   onChange,
+  onServerSync,
   c,
 }: {
+  profileId: string;
   templates: EmailTemplate[];
   onChange: (next: EmailTemplate[]) => void;
+  onServerSync: (next: EmailTemplate[]) => void;
   c: ReturnType<typeof colors>;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -1612,19 +1627,27 @@ function EmailTemplatesEditor({
     setUploadError(null);
     setUploading(true);
     try {
-      const uploaded: EmailTemplate[] = [];
+      const form = new FormData();
       for (const file of Array.from(files)) {
-        const form = new FormData();
-        form.append('file', file);
-        const res = await fetch('/api/absender-profile/upload-template', { method: 'POST', body: form });
-        const json = await res.json();
-        if (!res.ok || !json?.template) {
-          setUploadError(json?.error ?? `Upload von "${file.name}" fehlgeschlagen`);
-          continue;
-        }
-        uploaded.push(json.template as EmailTemplate);
+        form.append('files', file);
       }
-      if (uploaded.length) onChange([...templates, ...uploaded]);
+      const res = await fetch(`/api/absender-profile/${profileId}/generate-template`, {
+        method: 'POST',
+        body: form,
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.template) {
+        setUploadError(json?.error ?? 'Vorlagen-Generierung fehlgeschlagen');
+        return;
+      }
+      // Server has already persisted — use server's authoritative list if returned
+      if (Array.isArray(json.templates)) {
+        onServerSync(json.templates as EmailTemplate[]);
+      } else {
+        onServerSync([...templates, json.template as EmailTemplate]);
+      }
+    } catch {
+      setUploadError('Vorlagen-Generierung fehlgeschlagen');
     } finally {
       setUploading(false);
     }
@@ -1654,7 +1677,7 @@ function EmailTemplatesEditor({
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M8 12V3M4 7l4-4 4 4M3 13h10" />
           </svg>
-          {uploading ? 'Lade hoch…' : 'Vorlage hochladen'}
+          {uploading ? 'Generiere Vorlage…' : 'Vorlagen hochladen'}
           <input
             type="file"
             accept=".eml,.txt,.html,.htm,message/rfc822,text/plain,text/html"
@@ -1690,7 +1713,7 @@ function EmailTemplatesEditor({
           Vorlage schreiben
         </button>
         <span style={{ fontSize: 11, color: c.textSub, marginLeft: 'auto' }}>
-          Unterstützt: .eml · .txt · .html (max. 512 KB)
+          Lade alle bestehenden Mails hoch — daraus wird eine Vorlage generiert (.eml · .txt · .html)
         </span>
       </div>
 
@@ -1712,8 +1735,8 @@ function EmailTemplatesEditor({
             lineHeight: 1.55,
           }}
         >
-          Noch keine Vorlagen. Lade Beispiel-Mails hoch oder schreibe eine manuell — wir nutzen sie, um den Stil
-          des Absenders zu lernen.
+          Noch keine Vorlagen. Lade alle bestehenden Mails als Beispiel hoch — daraus wird eine Vorlage
+          generiert. Oder schreibe eine Vorlage manuell.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
