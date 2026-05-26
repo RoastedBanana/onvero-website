@@ -24,6 +24,7 @@ interface Contact {
   email?: string;
   phone?: string;
   photoUrl?: string;
+  apolloPersonId?: string;
   emailDraftSubject?: string;
   emailDraftBody?: string;
   source: 'linkedin' | 'openregister' | 'salesnavigator' | 'manual' | 'website' | 'apollo';
@@ -361,6 +362,7 @@ function mapApiContact(row: ApiLeadContact): Contact {
     phone: row.phone ?? row.mobile_phone ?? undefined,
     linkedin: row.linkedin_url ?? undefined,
     photoUrl: row.photo_url ?? undefined,
+    apolloPersonId: row.apollo_person_id ?? undefined,
     emailDraftSubject: row.email_draft_subject ?? undefined,
     emailDraftBody: row.email_draft_body ?? undefined,
     source: 'apollo',
@@ -7973,6 +7975,11 @@ function OutboundTab({
   // Inline email-draft expander (one open at a time)
   const [expandedDraftIdx, setExpandedDraftIdx] = useState<number | null>(null);
 
+  // Apollo IDs already enriched for this lead — those rows are shown disabled.
+  const usedApolloIds = new Set(
+    lead.contacts.map((c) => c.apolloPersonId).filter((v): v is string => Boolean(v)),
+  );
+
   // Search filter
   const [apolloSearch, setApolloSearch] = useState('');
   const filteredApolloPersons = apolloPersons?.filter((p) => {
@@ -8052,6 +8059,10 @@ function OutboundTab({
 
   async function generateOutbound() {
     if (!apolloSelectedId || genLoading) return;
+    if (usedApolloIds.has(apolloSelectedId)) {
+      setGenError('Diese Person wurde bereits zu diesem Lead hinzugefügt.');
+      return;
+    }
     setGenLoading(true);
     setGenError(null);
     setGenSuccess(null);
@@ -8465,12 +8476,14 @@ function OutboundTab({
                   {!apolloLoading && filteredApolloPersons && filteredApolloPersons.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 360, overflowY: 'auto' }}>
                       {filteredApolloPersons.map((p) => {
+                        const isUsed = usedApolloIds.has(p.id);
                         const checked = apolloSelectedId === p.id;
                         const fullName = [p.first_name, p.last_name_obfuscated].filter(Boolean).join(' ') || 'Unbenannt';
                         const phoneYes = p.has_direct_phone === 'Yes';
                         return (
                           <label
                             key={p.id}
+                            title={isUsed ? 'Bereits zu diesem Lead hinzugefügt' : undefined}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -8479,51 +8492,81 @@ function OutboundTab({
                               borderRadius: 10,
                               border: `1px solid ${checked ? c.accent : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
                               background: checked ? c.accent + '14' : 'transparent',
-                              cursor: 'pointer',
-                              transition: 'background 0.12s, border-color 0.12s',
+                              cursor: isUsed ? 'not-allowed' : 'pointer',
+                              opacity: isUsed ? 0.45 : 1,
+                              transition: 'background 0.12s, border-color 0.12s, opacity 0.12s',
                             }}
                           >
                             <input
                               type="radio"
                               name={`apollo-person-${lead.id}`}
                               checked={checked}
-                              onChange={() => setApolloSelectedId(p.id)}
-                              style={{ accentColor: c.accent, cursor: 'pointer' }}
+                              disabled={isUsed}
+                              onChange={() => {
+                                if (!isUsed) setApolloSelectedId(p.id);
+                              }}
+                              style={{ accentColor: c.accent, cursor: isUsed ? 'not-allowed' : 'pointer' }}
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{fullName}</div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  color: c.text,
+                                  textDecoration: isUsed ? 'line-through' : 'none',
+                                }}
+                              >
+                                {fullName}
+                              </div>
                               {p.title && (
                                 <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{p.title}</div>
                               )}
                             </div>
                             <div style={{ display: 'flex', gap: 6 }}>
-                              {p.has_email && (
+                              {isUsed ? (
                                 <span
                                   style={{
                                     fontSize: 10,
                                     fontWeight: 700,
-                                    color: '#10B981',
-                                    background: 'rgba(16,185,129,0.12)',
+                                    color: c.textMuted,
+                                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
                                     padding: '3px 8px',
                                     borderRadius: 999,
                                   }}
                                 >
-                                  E-Mail
+                                  Hinzugefügt
                                 </span>
-                              )}
-                              {phoneYes && (
-                                <span
-                                  style={{
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    color: '#818CF8',
-                                    background: 'rgba(129,140,248,0.12)',
-                                    padding: '3px 8px',
-                                    borderRadius: 999,
-                                  }}
-                                >
-                                  Telefon
-                                </span>
+                              ) : (
+                                <>
+                                  {p.has_email && (
+                                    <span
+                                      style={{
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        color: '#10B981',
+                                        background: 'rgba(16,185,129,0.12)',
+                                        padding: '3px 8px',
+                                        borderRadius: 999,
+                                      }}
+                                    >
+                                      E-Mail
+                                    </span>
+                                  )}
+                                  {phoneYes && (
+                                    <span
+                                      style={{
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        color: '#818CF8',
+                                        background: 'rgba(129,140,248,0.12)',
+                                        padding: '3px 8px',
+                                        borderRadius: 999,
+                                      }}
+                                    >
+                                      Telefon
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </label>
