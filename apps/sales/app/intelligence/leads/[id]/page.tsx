@@ -7736,6 +7736,15 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
   const [genError, setGenError] = useState<string | null>(null);
   const [genSuccess, setGenSuccess] = useState<string | null>(null);
 
+  // Search filter
+  const [apolloSearch, setApolloSearch] = useState('');
+  const filteredApolloPersons = apolloPersons?.filter((p) => {
+    const q = apolloSearch.trim().toLowerCase();
+    if (!q) return true;
+    const haystack = [p.first_name, p.last_name_obfuscated, p.title].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(q);
+  }) ?? null;
+
   async function loadApolloPersons() {
     setApolloOpen(true);
     if (apolloPersons || apolloLoading) return;
@@ -8074,8 +8083,31 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
                     </div>
                   )}
                   {!apolloLoading && apolloPersons && apolloPersons.length > 0 && (
+                    <input
+                      type="text"
+                      value={apolloSearch}
+                      onChange={(e) => setApolloSearch(e.target.value)}
+                      placeholder="Suche nach Name oder Rolle…"
+                      style={{
+                        padding: '9px 12px',
+                        borderRadius: 10,
+                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+                        background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
+                        color: c.text,
+                        fontSize: 13,
+                        fontFamily: 'var(--font-inter), sans-serif',
+                        outline: 'none',
+                      }}
+                    />
+                  )}
+                  {!apolloLoading && filteredApolloPersons && apolloPersons && apolloPersons.length > 0 && filteredApolloPersons.length === 0 && (
+                    <div style={{ fontSize: 12, color: c.textMuted }}>
+                      Kein Treffer für „{apolloSearch}".
+                    </div>
+                  )}
+                  {!apolloLoading && filteredApolloPersons && filteredApolloPersons.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 360, overflowY: 'auto' }}>
-                      {apolloPersons.map((p) => {
+                      {filteredApolloPersons.map((p) => {
                         const checked = apolloSelectedId === p.id;
                         const fullName = [p.first_name, p.last_name_obfuscated].filter(Boolean).join(' ') || 'Unbenannt';
                         const phoneYes = p.has_direct_phone === 'Yes';
