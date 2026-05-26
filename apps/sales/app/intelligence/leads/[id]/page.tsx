@@ -7712,6 +7712,121 @@ function InfoTab({
 
 // ─── Outbound Tab ─────────────────────────────────────────────────────────────
 
+function ApolloLoader({ isDark, c }: { isDark: boolean; c: ReturnType<typeof colors> }) {
+  const messages = [
+    'Apollo wird kontaktiert…',
+    'Unternehmen wird identifiziert…',
+    'Profile werden abgerufen…',
+    'Treffer werden gefiltert…',
+    'Ergebnisse werden aufbereitet…',
+  ];
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % messages.length), 1800);
+    return () => clearInterval(t);
+  }, [messages.length]);
+
+  const skelBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.4, repeat: Infinity, ease: 'linear' }}
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: '50%',
+            border: `2px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'}`,
+            borderTopColor: c.accent,
+            boxSizing: 'border-box',
+            flexShrink: 0,
+          }}
+        />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.25 }}
+            style={{ fontSize: 13, fontWeight: 700, color: c.text }}
+          >
+            {messages[idx]}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Sliding scan bar */}
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 4,
+          borderRadius: 2,
+          background: skelBg,
+          overflow: 'hidden',
+        }}
+      >
+        <motion.div
+          initial={{ x: '-40%' }}
+          animate={{ x: '240%' }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            height: '100%',
+            width: '40%',
+            background: `linear-gradient(90deg, transparent, ${c.accent}, transparent)`,
+            borderRadius: 2,
+          }}
+        />
+      </div>
+
+      {/* Skeleton person rows */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px 12px',
+              borderRadius: 10,
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'}`,
+            }}
+          >
+            <motion.div
+              animate={{ opacity: [0.45, 0.9, 0.45] }}
+              transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.18 }}
+              style={{ width: 14, height: 14, borderRadius: '50%', background: skelBg, flexShrink: 0 }}
+            />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <motion.div
+                animate={{ opacity: [0.45, 0.9, 0.45] }}
+                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.18 }}
+                style={{ width: `${52 + i * 8}%`, height: 10, borderRadius: 4, background: skelBg }}
+              />
+              <motion.div
+                animate={{ opacity: [0.45, 0.9, 0.45] }}
+                transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.18 + 0.15 }}
+                style={{ width: `${28 + i * 7}%`, height: 8, borderRadius: 4, background: skelBg }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ fontSize: 11, color: c.textMuted, textAlign: 'center' }}>
+        Das kann einen Moment dauern — Apollo liefert in der Regel innerhalb von 30 Sekunden.
+      </div>
+    </div>
+  );
+}
+
 type ProfileOption = { id: string; label: string };
 
 function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
@@ -8069,9 +8184,7 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
                     </button>
                   </div>
 
-                  {apolloLoading && (
-                    <div style={{ fontSize: 12, color: c.textMuted }}>Lade Ansprechpartner…</div>
-                  )}
+                  {apolloLoading && <ApolloLoader isDark={isDark} c={c} />}
                   {apolloError && (
                     <div style={{ fontSize: 12, color: '#EF4444' }}>
                       Fehler: {apolloError}
