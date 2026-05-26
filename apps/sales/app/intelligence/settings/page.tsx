@@ -51,7 +51,21 @@ type EmailTemplate = {
   subject: string;
   body: string;
   source: 'manual' | 'uploaded';
+  type?: string;
 };
+
+function templateTypeLabel(type: string): string {
+  switch (type) {
+    case 'initial_outreach':
+      return 'Erstkontakt';
+    case 'follow_up':
+      return 'Follow-up';
+    case 'breakup':
+      return 'Abschluss';
+    default:
+      return type.replace(/_/g, ' ');
+  }
+}
 
 type AbsenderProfileRow = {
   id: string;
@@ -63,6 +77,7 @@ type AbsenderProfileRow = {
   sender_linkedin_url: string | null;
   sender_photo_url: string | null;
   outreach_goal: string | null;
+  tonality: string | null;
   writing_style: string | null;
   formality: string | null;
   greeting_style: string | null;
@@ -72,7 +87,6 @@ type AbsenderProfileRow = {
   email_templates: EmailTemplate[] | null;
   email_signature_html: string | null;
   calendar_link: string | null;
-  key_differentiators: string[] | null;
   forbidden_phrases: string[] | null;
   forbidden_claims: string[] | null;
 };
@@ -93,6 +107,7 @@ function absenderRowToProfile(row: AbsenderProfileRow): AbsenderProfile {
     linkedinUrl: row.sender_linkedin_url ?? '',
     photoUrl: row.sender_photo_url ?? '',
     outreachGoal: row.outreach_goal ?? '',
+    tonality: row.tonality ?? '',
     writingStyle: row.writing_style ?? '',
     formality: row.formality === 'du' ? 'du' : 'sie',
     greetingStyle: row.greeting_style ?? 'formal',
@@ -102,7 +117,6 @@ function absenderRowToProfile(row: AbsenderProfileRow): AbsenderProfile {
     emailTemplates: Array.isArray(row.email_templates) ? row.email_templates : [],
     emailSignatureHtml: row.email_signature_html ?? '',
     calendarLink: row.calendar_link ?? '',
-    keyDifferentiators: asStringArray(row.key_differentiators),
     forbiddenPhrases: asStringArray(row.forbidden_phrases),
     forbiddenClaims: asStringArray(row.forbidden_claims),
   };
@@ -118,6 +132,7 @@ function absenderPatchToRow(patch: Partial<AbsenderProfile>): Record<string, unk
   if ('linkedinUrl' in patch) out.sender_linkedin_url = patch.linkedinUrl;
   if ('photoUrl' in patch) out.sender_photo_url = patch.photoUrl;
   if ('outreachGoal' in patch) out.outreach_goal = patch.outreachGoal;
+  if ('tonality' in patch) out.tonality = patch.tonality;
   if ('writingStyle' in patch) out.writing_style = patch.writingStyle;
   if ('formality' in patch) out.formality = patch.formality;
   if ('greetingStyle' in patch) out.greeting_style = patch.greetingStyle;
@@ -127,7 +142,6 @@ function absenderPatchToRow(patch: Partial<AbsenderProfile>): Record<string, unk
   if ('emailTemplates' in patch) out.email_templates = patch.emailTemplates;
   if ('emailSignatureHtml' in patch) out.email_signature_html = patch.emailSignatureHtml;
   if ('calendarLink' in patch) out.calendar_link = patch.calendarLink;
-  if ('keyDifferentiators' in patch) out.key_differentiators = patch.keyDifferentiators;
   if ('forbiddenPhrases' in patch) out.forbidden_phrases = patch.forbiddenPhrases;
   if ('forbiddenClaims' in patch) out.forbidden_claims = patch.forbiddenClaims;
   return out;
@@ -157,6 +171,7 @@ type AbsenderProfile = {
   linkedinUrl: string;
   photoUrl: string;
   outreachGoal: string;
+  tonality: string;
   writingStyle: string;
   formality: 'du' | 'sie';
   greetingStyle: string;
@@ -166,7 +181,6 @@ type AbsenderProfile = {
   emailTemplates: EmailTemplate[];
   emailSignatureHtml: string;
   calendarLink: string;
-  keyDifferentiators: string[];
   forbiddenPhrases: string[];
   forbiddenClaims: string[];
 };
@@ -197,6 +211,7 @@ function emptyAbsenderSeed(): Partial<AbsenderProfile> {
     linkedinUrl: '',
     photoUrl: '',
     outreachGoal: '',
+    tonality: '',
     writingStyle: '',
     formality: 'sie',
     greetingStyle: 'formal',
@@ -206,7 +221,6 @@ function emptyAbsenderSeed(): Partial<AbsenderProfile> {
     emailTemplates: [],
     emailSignatureHtml: '',
     calendarLink: '',
-    keyDifferentiators: [],
     forbiddenPhrases: [],
     forbiddenClaims: [],
   };
@@ -1222,15 +1236,25 @@ function AbsenderEditor({
                 c={c}
               />
             </Field>
-            <Field label="Tonalität" sub="Wie soll der Stil klingen?" c={c}>
+            <Field label="Tonalität" sub="Kurz: wie soll es klingen?" c={c}>
               <TextField
-                value={profile.writingStyle}
-                onChange={(v) => onChange({ writingStyle: v })}
-                placeholder="z.B. direkt, freundlich, ohne Buzzwords, kurze Sätze"
+                value={profile.tonality}
+                onChange={(v) => onChange({ tonality: v })}
+                placeholder="z.B. professionell-nahbar, lösungsorientiert"
                 c={c}
               />
             </Field>
           </div>
+
+          <Field label="Schreibstil" sub="Detaillierte Beschreibung des Stils — Satzlänge, Aufbau, Beispielformulierungen" c={c}>
+            <TextArea
+              value={profile.writingStyle}
+              onChange={(v) => onChange({ writingStyle: v })}
+              placeholder="z.B. Direkt, wertorientiert. Referenziert konkrete Touchpoints, nennt spezifische Zahlen, endet mit niedrigschwelliger CTA."
+              rows={4}
+              c={c}
+            />
+          </Field>
 
           <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 12 }}>
             <Field label="Sprache" sub="Sprache der Mails" c={c}>
@@ -1277,16 +1301,8 @@ function AbsenderEditor({
       </Card>
 
       {/* Guardrails */}
-      <Card title="Guardrails" sub="Was den Absender ausmacht und was er vermeiden soll" c={c}>
+      <Card title="Guardrails" sub="Was der Absender in Mails vermeiden soll" c={c}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="Key Differentiators" sub="Was macht dieses Angebot einzigartig?" c={c}>
-            <TagInput
-              values={profile.keyDifferentiators}
-              onChange={(v) => onChange({ keyDifferentiators: v })}
-              placeholder="z.B. tiefe Recherche pro Lead"
-              c={c}
-            />
-          </Field>
           <Field label="Verbotene Phrasen" sub="Buzzwords, die nicht in den Mails landen sollen" c={c}>
             <TagInput
               values={profile.forbiddenPhrases}
@@ -1309,14 +1325,14 @@ function AbsenderEditor({
       {/* E-Mail-Vorlagen */}
       <Card
         title="E-Mail-Vorlagen"
-        sub="Lade Beispiel-Mails (.eml/.txt/.html) hoch oder schreibe eine Vorlage manuell"
+        sub="Lade alle bestehenden Mails hoch — daraus werden Vorlagen, Tonalität und Signatur abgeleitet"
         c={c}
       >
         <EmailTemplatesEditor
           profileId={profile.id}
           templates={profile.emailTemplates}
           onChange={(next) => onChange({ emailTemplates: next })}
-          onServerSync={(next) => onServerSync({ emailTemplates: next })}
+          onServerSync={onServerSync}
           c={c}
         />
       </Card>
@@ -1601,7 +1617,7 @@ function EmailTemplatesEditor({
   profileId: string;
   templates: EmailTemplate[];
   onChange: (next: EmailTemplate[]) => void;
-  onServerSync: (next: EmailTemplate[]) => void;
+  onServerSync: (patch: Partial<AbsenderProfile>) => void;
   c: ReturnType<typeof colors>;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -1636,16 +1652,25 @@ function EmailTemplatesEditor({
         body: form,
       });
       const json = await res.json();
-      if (!res.ok || !json?.template) {
+      if (!res.ok || !json?.profile) {
         setUploadError(json?.error ?? 'Vorlagen-Generierung fehlgeschlagen');
         return;
       }
-      // Server has already persisted — use server's authoritative list if returned
-      if (Array.isArray(json.templates)) {
-        onServerSync(json.templates as EmailTemplate[]);
-      } else {
-        onServerSync([...templates, json.template as EmailTemplate]);
-      }
+      // Server already persisted the full updated row — sync all fields
+      const updated = absenderRowToProfile(json.profile as AbsenderProfileRow);
+      onServerSync({
+        tonality: updated.tonality,
+        writingStyle: updated.writingStyle,
+        formality: updated.formality,
+        greetingStyle: updated.greetingStyle,
+        maxEmailWords: updated.maxEmailWords,
+        language: updated.language,
+        emailSignatureHtml: updated.emailSignatureHtml,
+        outreachGoal: updated.outreachGoal,
+        emailTemplates: updated.emailTemplates,
+        forbiddenClaims: updated.forbiddenClaims,
+        forbiddenPhrases: updated.forbiddenPhrases,
+      });
     } catch {
       setUploadError('Vorlagen-Generierung fehlgeschlagen');
     } finally {
@@ -1713,7 +1738,7 @@ function EmailTemplatesEditor({
           Vorlage schreiben
         </button>
         <span style={{ fontSize: 11, color: c.textSub, marginLeft: 'auto' }}>
-          Lade alle bestehenden Mails hoch — daraus wird eine Vorlage generiert (.eml · .txt · .html)
+          Lade alle bestehenden Mails hoch — daraus werden Vorlagen, Tonalität und Signatur abgeleitet
         </span>
       </div>
 
@@ -1830,6 +1855,23 @@ function TemplateRow({
             fontFamily: 'var(--font-inter), sans-serif',
           }}
         />
+        {template.type && (
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: c.accent,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              background: c.bgCard,
+              border: `1px solid ${c.borderStrong}`,
+              borderRadius: 4,
+              padding: '2px 6px',
+            }}
+          >
+            {templateTypeLabel(template.type)}
+          </span>
+        )}
         <span
           style={{
             fontSize: 10,
