@@ -16,22 +16,29 @@ export async function POST(req: NextRequest) {
   }
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const setup = (body.setup ?? null) as Record<string, unknown> | null;
 
-  const client = getAdminClient();
-  const { data: profile } = await client
-    .from('tenant_ai_profile')
-    .select('*')
-    .eq('tenant_id', ctx.tenantId)
-    .maybeSingle();
+  // Resolve the selected Angebotsprofil (full row) for the current tenant.
+  const angebotsProfileId =
+    setup && typeof setup.angebots_profile_id === 'string' ? setup.angebots_profile_id : null;
 
-  // Pass through whatever the caller sent (freetext, setup, config, ...),
-  // plus server-side context (tenant, user, profile, timestamp).
+  let angebotsProfile: Record<string, unknown> | null = null;
+  if (angebotsProfileId) {
+    const client = getAdminClient();
+    const { data } = await client
+      .from('angebots_profile')
+      .select(
+        'id, name, unternehmen, beschreibung, pain_points, value_proposition, referenzen',
+      )
+      .eq('tenant_id', ctx.tenantId)
+      .eq('id', angebotsProfileId)
+      .maybeSingle();
+    angebotsProfile = data ?? null;
+  }
+
   const payload = {
-    ...body,
-    tenant_id: ctx.tenantId,
-    user_id: ctx.userId,
-    profile: profile ?? null,
-    requested_at: new Date().toISOString(),
+    setup,
+    angebots_profile: angebotsProfile,
   };
 
   const res = await fetch(WEBHOOK_URL, {

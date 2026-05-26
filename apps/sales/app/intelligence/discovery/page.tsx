@@ -2959,7 +2959,6 @@ export default function DiscoveryPage() {
     if (!activeSession) return;
     if (activeSession.deepGenerating || activeSession.deepPreScoring) return;
     const setup = activeSession.deepSetup ?? emptyDeepSetup();
-    const config = activeSession.deepConfig ?? emptyDeepConfig();
     const profile = angebotsProfile.find((p) => p.id === setup.angebotsProfileId);
     const title =
       [profile?.name, setup.orte[0], setup.weitereQueries[0]].filter(Boolean).join(' · ') || 'Deep-Suche';
@@ -2974,10 +2973,6 @@ export default function DiscoveryPage() {
       time: 'gerade eben',
     });
 
-    const freetext = [setup.rechercheFokus, ...setup.weitereQueries, ...setup.kriterien]
-      .filter((v) => v && v.length > 0)
-      .join(' · ');
-
     let parsed: DeepResult[] = [];
     let error: string | null = null;
 
@@ -2986,23 +2981,13 @@ export default function DiscoveryPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          freetext,
-          mode: 'deep',
           setup: {
             angebots_profile_id: setup.angebotsProfileId,
-            angebots_profile_name: profile?.name ?? null,
             recherche_fokus: setup.rechercheFokus,
             weitere_queries: setup.weitereQueries,
             kriterien: setup.kriterien,
             orte: setup.orte,
           },
-          config: {
-            sources: config.sources,
-            scoring_fit: config.scoringFit,
-            scoring_intent: config.scoringIntent,
-            scoring_timing: config.scoringTiming,
-          },
-          sources: Array.from(activeSession.sources ?? []),
         }),
       });
 
