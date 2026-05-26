@@ -2139,19 +2139,6 @@ function DeepResultCard({
           {r.score}
         </div>
       )}
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          padding: '3px 8px',
-          borderRadius: 99,
-          background: sourceColor + '18',
-          color: sourceColor,
-          flexShrink: 0,
-        }}
-      >
-        {r.source}
-      </span>
       {url ? (
         <a
           data-no-toggle
@@ -2159,28 +2146,60 @@ function DeepResultCard({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
+          title={url}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 4,
-            padding: '5px 10px',
-            borderRadius: 8,
-            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-            border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.08)',
-            color: c.text,
-            fontSize: 11,
+            gap: 5,
+            fontSize: 10,
             fontWeight: 700,
-            textDecoration: 'none',
+            padding: '4px 9px',
+            borderRadius: 99,
+            background: sourceColor + '18',
+            color: sourceColor,
             flexShrink: 0,
+            textDecoration: 'none',
             fontFamily: 'inherit',
+            cursor: 'pointer',
+            transition: 'background 120ms ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = sourceColor + '28';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = sourceColor + '18';
           }}
         >
-          Website
-          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M6 3h7v7M13 3L4 12" />
+          {r.source}
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6 3h7v7" />
+            <path d="M13 3L4 12" />
           </svg>
         </a>
-      ) : null}
+      ) : (
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            padding: '3px 8px',
+            borderRadius: 99,
+            background: sourceColor + '18',
+            color: sourceColor,
+            flexShrink: 0,
+          }}
+        >
+          {r.source}
+        </span>
+      )}
     </div>
   );
 }
