@@ -283,6 +283,33 @@ function getResponse(text: string) {
   return DEMO_RESPONSES.find((r) => r.keywords.some((k) => lower.includes(k))) ?? FALLBACK;
 }
 
+// ─── Find anything URL-like in arbitrary object values ─────────────────────
+const URL_LIKE = /\b((?:https?:\/\/)?(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s"',]*)?)/i;
+const SKIP_DOMAINS = ['linkedin.com', 'twitter.com', 'x.com', 'facebook.com', 'instagram.com'];
+
+function deepFindUrl(obj: unknown, depth = 0): string | null {
+  if (!obj || depth > 3) return null;
+  if (typeof obj === 'string') {
+    const m = obj.match(URL_LIKE);
+    if (m && !SKIP_DOMAINS.some((d) => m[1].toLowerCase().includes(d))) return m[1];
+    return null;
+  }
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const found = deepFindUrl(item, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (typeof obj === 'object') {
+    for (const v of Object.values(obj as Record<string, unknown>)) {
+      const found = deepFindUrl(v, depth + 1);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 // ─── Webhook response → DeepResult[] (flexible parser) ──────────────────────
 function extractDeepLeads(payload: unknown): DeepResult[] {
   if (!payload) return [];
@@ -313,9 +340,23 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
     const employees = str(r.employees ?? r.employee_count ?? r.mitarbeiter ?? r.size ?? '');
     const source = str(r.source ?? r.quelle ?? 'Web');
     const urlRaw = str(
-      r.url ?? r.website ?? r.homepage ?? r.link ?? r.domain ?? r.web ?? '',
+      r.url ??
+        r.website ??
+        r.homepage ??
+        r.link ??
+        r.domain ??
+        r.web ??
+        r.company_url ??
+        r.firma_url ??
+        r.webseite ??
+        r.web_url ??
+        r.site ??
+        r.href ??
+        '',
     );
-    const url = urlRaw ? (normalizeUrl(urlRaw) ?? undefined) : undefined;
+    // Fallback: deep-scan the lead object for any URL-like string.
+    const fallback = urlRaw ? null : deepFindUrl(r);
+    const url = normalizeUrl(urlRaw || fallback) ?? undefined;
     const scoreRaw = r.score ?? r.fit_score ?? r.lead_score;
     const score =
       typeof scoreRaw === 'number'
@@ -3191,6 +3232,11 @@ export default function DiscoveryPage() {
 
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+
+      // Debug: log the raw webhook response so we can inspect the schema
+      // when fields like URL aren't being picked up correctly.
+      // eslint-disable-next-line no-console
+      console.log('[discovery-agent] raw webhook response:', json.data ?? json);
 
       parsed = extractDeepLeads(json.data ?? json);
     } catch (e) {
