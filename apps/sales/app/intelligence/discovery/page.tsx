@@ -133,7 +133,19 @@ const ENRICH_SOURCES: string[] = [
 
 type DeepStep = 'setup' | 'scoring';
 
-type DeepResult = DiscoveryResult & { score?: number };
+type DeepResult = DiscoveryResult & { score?: number; url?: string };
+
+function deepLeadKey(r: DeepResult, i: number): string {
+  return r.url || `${r.name}__${r.city}__${i}`;
+}
+
+function normalizeUrl(u: string | undefined | null): string | null {
+  if (!u) return null;
+  const trimmed = u.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
 
 type ChatSession = {
   id: string;
@@ -157,6 +169,7 @@ type ChatSession = {
   deepConfig?: DeepConfig;
   deepRawResults?: DeepResult[];
   deepResults?: DeepResult[];
+  deepSelectedKeys?: string[];
   deepGenerating?: boolean;
   deepPreScoring?: boolean;
   deepLaunching?: boolean;
@@ -299,6 +312,10 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
     const industry = str(r.industry ?? r.branche ?? r.sector ?? '');
     const employees = str(r.employees ?? r.employee_count ?? r.mitarbeiter ?? r.size ?? '');
     const source = str(r.source ?? r.quelle ?? 'Web');
+    const urlRaw = str(
+      r.url ?? r.website ?? r.homepage ?? r.link ?? r.domain ?? r.web ?? '',
+    );
+    const url = urlRaw ? (normalizeUrl(urlRaw) ?? undefined) : undefined;
     const scoreRaw = r.score ?? r.fit_score ?? r.lead_score;
     const score =
       typeof scoreRaw === 'number'
@@ -306,7 +323,7 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
         : typeof scoreRaw === 'string' && scoreRaw.length > 0
           ? Math.round(Number(scoreRaw))
           : undefined;
-    return { name, city, industry, employees, source, score };
+    return { name, city, industry, employees, source, score, url };
   });
 }
 
@@ -1905,16 +1922,24 @@ function DeepListeCard({
   results,
   generating,
   preScoring,
+  selectedKeys,
+  onToggleSelect,
+  onToggleAll,
   c,
   isDark,
 }: {
   results: DeepResult[] | undefined;
   generating: boolean;
   preScoring: boolean;
+  selectedKeys: string[];
+  onToggleSelect: (key: string) => void;
+  onToggleAll: () => void;
   c: ReturnType<typeof colors>;
   isDark: boolean;
 }) {
   const hasResults = !!results && results.length > 0;
+  const selectedSet = new Set(selectedKeys);
+  const allSelected = hasResults && selectedSet.size === results!.length;
   return (
     <>
       <div
@@ -1924,14 +1949,36 @@ function DeepListeCard({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: 12,
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>Liste</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>Liste</div>
+          {hasResults && !preScoring && (
+            <button
+              onClick={onToggleAll}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                fontSize: 11,
+                fontWeight: 600,
+                color: c.accent,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                textDecoration: 'underline',
+                textUnderlineOffset: 3,
+              }}
+            >
+              {allSelected ? 'Alle abwählen' : 'Alle auswählen'}
+            </button>
+          )}
+        </div>
         <div style={{ fontSize: 11, color: c.textMuted, fontWeight: 600 }}>
           {preScoring
             ? 'Pre-Scoring läuft…'
             : hasResults
-              ? `${results!.length} Leads`
+              ? `${selectedSet.size} / ${results!.length} ausgewählt`
               : 'Noch keine Treffer'}
         </div>
       </div>
@@ -1940,18 +1987,28 @@ function DeepListeCard({
           <BulkLoadingState c={c} isDark={isDark} />
         ) : hasResults ? (
           <AnimatePresence initial={false}>
-            {results!.map((r, i) => (
-              <motion.div
-                key={`${r.name}-${i}-${r.city}`}
-                layout
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, x: -20 }}
-                transition={{ delay: i * 0.04, duration: 0.3, ease: 'easeOut' }}
-              >
-                <DeepResultCard r={r} c={c} isDark={isDark} preScoring={preScoring} />
-              </motion.div>
-            ))}
+            {results!.map((r, i) => {
+              const key = deepLeadKey(r, i);
+              return (
+                <motion.div
+                  key={key}
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, x: -20 }}
+                  transition={{ delay: i * 0.04, duration: 0.3, ease: 'easeOut' }}
+                >
+                  <DeepResultCard
+                    r={r}
+                    c={c}
+                    isDark={isDark}
+                    preScoring={preScoring}
+                    selected={selectedSet.has(key)}
+                    onToggle={() => onToggleSelect(key)}
+                  />
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         ) : (
           <BulkEmptyState c={c} isDark={isDark} />
@@ -1967,30 +2024,68 @@ function DeepResultCard({
   c,
   isDark,
   preScoring,
+  selected,
+  onToggle,
 }: {
   r: DeepResult;
   c: ReturnType<typeof colors>;
   isDark: boolean;
   preScoring: boolean;
+  selected: boolean;
+  onToggle: () => void;
 }) {
   const sourceColor = r.source === 'LinkedIn' ? '#10B981' : r.source === 'Web' ? '#F97316' : '#EF4444';
+  const url = r.url;
+  const handleRowClick = (e: React.MouseEvent) => {
+    if (preScoring) return;
+    // Don't toggle if the click came from the website button or the checkbox.
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-no-toggle]')) return;
+    onToggle();
+  };
   return (
     <div
+      onClick={handleRowClick}
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 12,
         padding: '11px 14px',
-        background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.62)',
+        background: selected
+          ? c.accent + (isDark ? '1c' : '12')
+          : isDark
+            ? 'rgba(255,255,255,0.05)'
+            : 'rgba(255,255,255,0.62)',
         borderRadius: 11,
-        border: isDark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(255,255,255,0.72)',
+        border: selected
+          ? `1px solid ${c.accent}55`
+          : isDark
+            ? '1px solid rgba(255,255,255,0.09)'
+            : '1px solid rgba(255,255,255,0.72)',
         boxShadow: isDark ? 'none' : 'inset 1px 1px 2px rgba(255,255,255,0.55)',
         marginBottom: 6,
         opacity: preScoring ? 0.6 : 1,
         filter: preScoring ? 'saturate(0.8)' : 'none',
-        transition: 'opacity 0.4s ease-out, filter 0.4s ease-out',
+        transition:
+          'opacity 0.4s ease-out, filter 0.4s ease-out, background 0.15s ease, border-color 0.15s ease',
+        cursor: preScoring ? 'default' : 'pointer',
       }}
     >
+      <input
+        data-no-toggle
+        type="checkbox"
+        checked={selected}
+        onChange={onToggle}
+        onClick={(e) => e.stopPropagation()}
+        disabled={preScoring}
+        style={{
+          width: 16,
+          height: 16,
+          accentColor: c.accent,
+          cursor: preScoring ? 'default' : 'pointer',
+          flexShrink: 0,
+        }}
+      />
       <div
         style={{
           width: 34,
@@ -2022,7 +2117,7 @@ function DeepResultCard({
           {r.name}
         </div>
         <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>
-          {r.city} · {r.industry} · {r.employees} MA
+          {[r.city, r.industry, r.employees ? `${r.employees} MA` : null].filter(Boolean).join(' · ')}
         </div>
       </div>
       {typeof r.score === 'number' && (
@@ -2057,6 +2152,35 @@ function DeepResultCard({
       >
         {r.source}
       </span>
+      {url ? (
+        <a
+          data-no-toggle
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '5px 10px',
+            borderRadius: 8,
+            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.08)',
+            color: c.text,
+            fontSize: 11,
+            fontWeight: 700,
+            textDecoration: 'none',
+            flexShrink: 0,
+            fontFamily: 'inherit',
+          }}
+        >
+          Website
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M6 3h7v7M13 3L4 12" />
+          </svg>
+        </a>
+      ) : null}
     </div>
   );
 }
@@ -2174,6 +2298,8 @@ function DeepPanel({
   onSetStep,
   onLaunch,
   onClose,
+  onToggleSelect,
+  onToggleAll,
   c,
   isDark,
 }: {
@@ -2185,12 +2311,16 @@ function DeepPanel({
   onSetStep: (step: DeepStep) => void;
   onLaunch: () => void;
   onClose: () => void;
+  onToggleSelect: (key: string) => void;
+  onToggleAll: () => void;
   c: ReturnType<typeof colors>;
   isDark: boolean;
 }) {
   const setup = session.deepSetup ?? emptyDeepSetup();
   const config = session.deepConfig ?? emptyDeepConfig();
   const results = session.deepResults;
+  const selectedKeys = session.deepSelectedKeys ?? [];
+  const selectedCount = selectedKeys.length;
   const generating = !!session.deepGenerating;
   const preScoring = !!session.deepPreScoring;
   const hasResults = !!results && results.length > 0;
@@ -2198,6 +2328,9 @@ function DeepPanel({
   const launching = !!session.deepLaunching;
   const launched = !!session.deepLaunched;
   const busy = generating || preScoring;
+  // After generation in the setup step, the list takes the full width
+  // (the search card disappears). The user can return via "Neue Suche".
+  const listFullWidth = (hasResults && step === 'setup') || launched;
 
   function patchSetup(patch: Partial<DeepSetup>) {
     onChange({ deepSetup: { ...setup, ...patch } });
@@ -2330,14 +2463,16 @@ function DeepPanel({
         transition={motionTransition}
         style={{
           display: 'grid',
-          gridTemplateColumns: launched ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1.05fr)',
+          gridTemplateColumns: listFullWidth
+            ? 'minmax(0, 1fr)'
+            : 'minmax(0, 1fr) minmax(0, 1.05fr)',
           gap: 18,
           flex: 1,
           minHeight: 0,
         }}
       >
         <AnimatePresence mode="popLayout" initial={false}>
-          {!launched && step === 'setup' && (
+          {!launched && step === 'setup' && !hasResults && (
             <motion.div
               key="deep-search-card"
               layout
@@ -2363,6 +2498,9 @@ function DeepPanel({
               results={results}
               generating={generating}
               preScoring={preScoring}
+              selectedKeys={selectedKeys}
+              onToggleSelect={onToggleSelect}
+              onToggleAll={onToggleAll}
               c={c}
               isDark={isDark}
             />
@@ -2404,27 +2542,59 @@ function DeepPanel({
               <>
                 {hasResults && !busy && (
                   <span style={{ fontSize: 12, color: c.textMuted, fontWeight: 600 }}>
-                    Liste aktualisieren mit aktuellen Einstellungen
+                    {selectedCount} von {results!.length} Leads ausgewählt
                   </span>
+                )}
+                {hasResults && !busy && (
+                  <button
+                    onClick={onGenerate}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'transparent',
+                      border: isDark
+                        ? '1px solid rgba(255,255,255,0.12)'
+                        : '1px solid rgba(0,0,0,0.10)',
+                      color: c.text,
+                      borderRadius: 10,
+                      padding: '10px 16px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Neue Suche
+                  </button>
                 )}
                 <button
                   onClick={hasResults ? () => onSetStep('scoring') : onGenerate}
-                  disabled={busy}
+                  disabled={busy || (hasResults && selectedCount === 0)}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 8,
-                    background: busy ? (isDark ? `${c.accent}77` : '#A5B4FC') : c.accent,
+                    background:
+                      busy || (hasResults && selectedCount === 0)
+                        ? isDark
+                          ? `${c.accent}55`
+                          : '#A5B4FC'
+                        : c.accent,
                     color: '#fff',
                     border: 'none',
                     borderRadius: 10,
                     padding: '11px 22px',
                     fontSize: 13,
                     fontWeight: 700,
-                    cursor: busy ? 'not-allowed' : 'pointer',
+                    cursor:
+                      busy || (hasResults && selectedCount === 0) ? 'not-allowed' : 'pointer',
                     fontFamily: 'inherit',
                     transition: 'background 150ms ease-out',
-                    boxShadow: busy ? 'none' : `0 6px 20px ${c.accent}38`,
+                    boxShadow:
+                      busy || (hasResults && selectedCount === 0)
+                        ? 'none'
+                        : `0 6px 20px ${c.accent}38`,
                     minWidth: 110,
                     justifyContent: 'center',
                   }}
@@ -2460,7 +2630,7 @@ function DeepPanel({
                   ) : hasResults ? (
                     <>
                       <ArrowUpIcon size={13} />
-                      Weiter
+                      Weiter mit {selectedCount}
                     </>
                   ) : (
                     <>
@@ -2473,7 +2643,7 @@ function DeepPanel({
             ) : (
               <>
                 <span style={{ fontSize: 12, color: c.textMuted, fontWeight: 600 }}>
-                  {(results?.length ?? 0)} Top-Leads · {config.sources.length} Quelle(n)
+                  {selectedCount} ausgewählte Leads · {config.sources.length} Quelle(n)
                 </span>
                 {(() => {
                   const disabled = config.sources.length === 0 || launching;
@@ -2969,6 +3139,7 @@ export default function DiscoveryPage() {
       deepPreScoring: false,
       deepRawResults: undefined,
       deepResults: undefined,
+      deepSelectedKeys: [],
       title,
       time: 'gerade eben',
     });
@@ -3034,6 +3205,8 @@ export default function DiscoveryPage() {
       ? [...parsed].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
       : parsed;
 
+    const allKeys = finalResults.map((r, i) => deepLeadKey(r, i));
+
     setSessions((prev) =>
       prev.map((s) =>
         s.id === activeId
@@ -3041,6 +3214,7 @@ export default function DiscoveryPage() {
               ...s,
               deepPreScoring: false,
               deepResults: finalResults,
+              deepSelectedKeys: allKeys,
               preview:
                 finalResults.length > 0
                   ? `${finalResults.length} Leads gefunden`
@@ -3048,6 +3222,30 @@ export default function DiscoveryPage() {
             }
           : s,
       ),
+    );
+  }
+
+  function toggleDeepSelect(key: string) {
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id !== activeId) return s;
+        const current = new Set(s.deepSelectedKeys ?? []);
+        if (current.has(key)) current.delete(key);
+        else current.add(key);
+        return { ...s, deepSelectedKeys: Array.from(current) };
+      }),
+    );
+  }
+
+  function toggleDeepSelectAll() {
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id !== activeId) return s;
+        const all = (s.deepResults ?? []).map((r, i) => deepLeadKey(r, i));
+        const current = s.deepSelectedKeys ?? [];
+        const next = current.length === all.length ? [] : all;
+        return { ...s, deepSelectedKeys: next };
+      }),
     );
   }
 
@@ -3064,14 +3262,12 @@ export default function DiscoveryPage() {
   async function launchDeep() {
     if (!activeSession) return;
     if (activeSession.deepLaunching || activeSession.deepLaunched) return;
+    const selectedCount = activeSession.deepSelectedKeys?.length ?? 0;
     patchActiveSession({ deepLaunching: true });
     toast('Anreicherung wird gestartet…', 'info');
     await new Promise((r) => setTimeout(r, 1200));
     patchActiveSession({ deepLaunching: false, deepLaunched: true });
-    toast(
-      `Anreicherung gestartet — Daten werden für ${activeSession.deepResults?.length ?? 0} Leads geladen`,
-      'success',
-    );
+    toast(`Anreicherung gestartet — Daten werden für ${selectedCount} Leads geladen`, 'success');
   }
 
   function closeDeepCampaign() {
@@ -3319,6 +3515,8 @@ export default function DiscoveryPage() {
             onSetStep={setDeepStep}
             onLaunch={launchDeep}
             onClose={closeDeepCampaign}
+            onToggleSelect={toggleDeepSelect}
+            onToggleAll={toggleDeepSelectAll}
             c={c}
             isDark={isDark}
           />
