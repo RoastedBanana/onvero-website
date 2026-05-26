@@ -7761,6 +7761,21 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
     }
   }
 
+  // Lock body scroll + Escape to close while the modal is open.
+  useEffect(() => {
+    if (!apolloOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setApolloOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [apolloOpen]);
+
   // Load Absender + Angebots profiles the first time the popup opens.
   useEffect(() => {
     if (!apolloOpen) return;
@@ -7970,38 +7985,63 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
 
             {/* Mehr Ansprechpartner via Apollo */}
             <div style={{ marginTop: lead.contacts.length > 0 ? 12 : 0 }}>
-              {!apolloOpen ? (
-                <button
-                  type="button"
-                  onClick={() => void loadApolloPersons()}
+              <button
+                type="button"
+                onClick={() => void loadApolloPersons()}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  border: `1px dashed ${isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)'}`,
+                  background: 'transparent',
+                  color: c.textMuted,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-inter), sans-serif',
+                }}
+              >
+                Mehr Ansprechpartner laden
+              </button>
+              {apolloOpen && typeof document !== 'undefined' && createPortal(
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  onClick={() => setApolloOpen(false)}
                   style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 12,
-                    border: `1px dashed ${isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)'}`,
-                    background: 'transparent',
-                    color: c.textMuted,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 1000,
+                    background: 'rgba(0,0,0,0.55)',
+                    backdropFilter: 'blur(6px)',
+                    WebkitBackdropFilter: 'blur(6px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 24,
                     fontFamily: 'var(--font-inter), sans-serif',
                   }}
                 >
-                  Mehr Ansprechpartner laden
-                </button>
-              ) : (
-                <div
-                  style={{
-                    ...glassCard(isDark),
-                    borderRadius: 14,
-                    padding: '16px 18px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 12,
-                  }}
-                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: 'min(560px, 100%)',
+                      maxHeight: '85vh',
+                      overflowY: 'auto',
+                      borderRadius: 18,
+                      padding: '20px 22px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 14,
+                      background: isDark ? 'rgba(20,20,24,0.96)' : 'rgba(255,255,255,0.98)',
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                      boxShadow: isDark
+                        ? '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
+                        : '0 30px 80px rgba(15,23,42,0.25)',
+                    }}
+                  >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: c.text }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>
                       Apollo Ansprechpartner
                     </div>
                     <button
@@ -8244,7 +8284,9 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
                       </button>
                     </div>
                   )}
-                </div>
+                  </div>
+                </div>,
+                document.body,
               )}
             </div>
           </div>
