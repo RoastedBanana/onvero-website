@@ -7712,6 +7712,8 @@ function InfoTab({
 
 // ─── Outbound Tab ─────────────────────────────────────────────────────────────
 
+type ProfileOption = { id: string; label: string };
+
 function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
   // Apollo people loader (below Ansprechpartner list)
   const [apolloOpen, setApolloOpen] = useState(false);
@@ -7720,29 +7722,102 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
   const [apolloPersons, setApolloPersons] = useState<ApolloPerson[] | null>(null);
   const [apolloSelectedId, setApolloSelectedId] = useState<string | null>(null);
 
+  // Generate options
+  const [absenderProfiles, setAbsenderProfiles] = useState<ProfileOption[]>([]);
+  const [angebotsProfiles, setAngebotsProfiles] = useState<ProfileOption[]>([]);
+  const [absenderProfilId, setAbsenderProfilId] = useState<string>('');
+  const [angebotsProfilId, setAngebotsProfilId] = useState<string>('');
+  const [getEmail, setGetEmail] = useState(true);
+  const [getTelephone, setGetTelephone] = useState(false);
+  const [generateEmail, setGenerateEmail] = useState(true);
+
+  // Outbound-generate state
+  const [genLoading, setGenLoading] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [genSuccess, setGenSuccess] = useState<string | null>(null);
+
   async function loadApolloPersons() {
     setApolloOpen(true);
     if (apolloPersons || apolloLoading) return;
     setApolloLoading(true);
     setApolloError(null);
     try {
-      const res = await fetch('/api/proxy/n8n', {
+      const res = await fetch('/api/generate/apollo-people', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'apollo-people', lead_id: lead.id }),
+        body: JSON.stringify({ lead_id: lead.id }),
       });
       const data = await res.json();
       if (!res.ok) {
         setApolloError(typeof data?.error === 'string' ? data.error : 'Anfrage fehlgeschlagen');
         return;
       }
-      const root = Array.isArray(data) ? data[0] : data;
-      const persons = Array.isArray(root?.persons) ? (root.persons as ApolloPerson[]) : [];
+      const persons = Array.isArray(data?.persons) ? (data.persons as ApolloPerson[]) : [];
       setApolloPersons(persons);
     } catch (err) {
       setApolloError(err instanceof Error ? err.message : 'Netzwerkfehler');
     } finally {
       setApolloLoading(false);
+    }
+  }
+
+  // Load Absender + Angebots profiles the first time the popup opens.
+  useEffect(() => {
+    if (!apolloOpen) return;
+    if (absenderProfiles.length || angebotsProfiles.length) return;
+    type AbsenderRow = { id: string; profile_name?: string | null; sender_first_name?: string | null; sender_last_name?: string | null };
+    type AngebotsRow = { id: string; name?: string | null };
+    void Promise.all([
+      fetch('/api/absender-profile').then((r) => (r.ok ? r.json() : { profiles: [] })).catch(() => ({ profiles: [] })),
+      fetch('/api/angebots-profile').then((r) => (r.ok ? r.json() : { profiles: [] })).catch(() => ({ profiles: [] })),
+    ]).then(([a, b]: [{ profiles?: AbsenderRow[] }, { profiles?: AngebotsRow[] }]) => {
+      const ab: ProfileOption[] = (a.profiles ?? []).map((p) => ({
+        id: p.id,
+        label:
+          p.profile_name ||
+          [p.sender_first_name, p.sender_last_name].filter(Boolean).join(' ') ||
+          'Absender-Profil',
+      }));
+      const an: ProfileOption[] = (b.profiles ?? []).map((p) => ({
+        id: p.id,
+        label: p.name || 'Angebots-Profil',
+      }));
+      setAbsenderProfiles(ab);
+      setAngebotsProfiles(an);
+      if (ab.length && !absenderProfilId) setAbsenderProfilId(ab[0].id);
+      if (an.length && !angebotsProfilId) setAngebotsProfilId(an[0].id);
+    });
+  }, [apolloOpen, absenderProfiles.length, angebotsProfiles.length, absenderProfilId, angebotsProfilId]);
+
+  async function generateOutbound() {
+    if (!apolloSelectedId || genLoading) return;
+    setGenLoading(true);
+    setGenError(null);
+    setGenSuccess(null);
+    try {
+      const res = await fetch('/api/generate/person-enrich', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: lead.id,
+          apollo_person_id: apolloSelectedId,
+          get_email: getEmail,
+          get_telephone: getTelephone,
+          generate_email: generateEmail,
+          absender_profil_id: absenderProfilId || null,
+          angebots_profil_id: angebotsProfilId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data?.success === false) {
+        setGenError(typeof data?.error === 'string' ? data.error : data?.message || 'Generierung fehlgeschlagen');
+        return;
+      }
+      setGenSuccess(typeof data?.message === 'string' ? data.message : 'Outbound generiert.');
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : 'Netzwerkfehler');
+    } finally {
+      setGenLoading(false);
     }
   }
 
@@ -8025,6 +8100,148 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
                           </label>
                         );
                       })}
+                    </div>
+                  )}
+
+                  {/* Outbound-Generierung */}
+                  {!apolloLoading && apolloPersons && apolloPersons.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 4,
+                        padding: '14px 14px 16px',
+                        borderRadius: 12,
+                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                        background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          color: c.textMuted,
+                        }}
+                      >
+                        Outbound generieren
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>Absender-Profil</span>
+                          <select
+                            value={absenderProfilId}
+                            onChange={(e) => setAbsenderProfilId(e.target.value)}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+                              background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
+                              color: c.text,
+                              fontSize: 12,
+                              fontFamily: 'var(--font-inter), sans-serif',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {absenderProfiles.length === 0 && <option value="">— keine Profile —</option>}
+                            {absenderProfiles.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>Angebots-Profil</span>
+                          <select
+                            value={angebotsProfilId}
+                            onChange={(e) => setAngebotsProfilId(e.target.value)}
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: 8,
+                              border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+                              background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
+                              color: c.text,
+                              fontSize: 12,
+                              fontFamily: 'var(--font-inter), sans-serif',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {angebotsProfiles.length === 0 && <option value="">— keine Profile —</option>}
+                            {angebotsProfiles.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: c.text, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={getEmail}
+                            onChange={(e) => setGetEmail(e.target.checked)}
+                            style={{ accentColor: c.accent, cursor: 'pointer' }}
+                          />
+                          E-Mail-Adresse abrufen
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: c.text, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={getTelephone}
+                            onChange={(e) => setGetTelephone(e.target.checked)}
+                            style={{ accentColor: c.accent, cursor: 'pointer' }}
+                          />
+                          Telefonnummer abrufen
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: c.text, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={generateEmail}
+                            onChange={(e) => setGenerateEmail(e.target.checked)}
+                            style={{ accentColor: c.accent, cursor: 'pointer' }}
+                          />
+                          E-Mail generieren
+                        </label>
+                      </div>
+
+                      {genError && (
+                        <div style={{ fontSize: 12, color: '#EF4444' }}>Fehler: {genError}</div>
+                      )}
+                      {genSuccess && (
+                        <div style={{ fontSize: 12, color: '#10B981' }}>{genSuccess}</div>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={!apolloSelectedId || genLoading}
+                        onClick={() => void generateOutbound()}
+                        style={{
+                          alignSelf: 'flex-end',
+                          padding: '9px 16px',
+                          borderRadius: 10,
+                          border: 'none',
+                          background:
+                            !apolloSelectedId || genLoading
+                              ? isDark
+                                ? 'rgba(255,255,255,0.08)'
+                                : 'rgba(0,0,0,0.08)'
+                              : c.accent,
+                          color: !apolloSelectedId || genLoading ? c.textMuted : '#fff',
+                          fontSize: 13,
+                          fontWeight: 800,
+                          cursor: !apolloSelectedId || genLoading ? 'not-allowed' : 'pointer',
+                          fontFamily: 'var(--font-inter), sans-serif',
+                          transition: 'background 0.12s',
+                        }}
+                      >
+                        {genLoading ? 'Generiere…' : 'Outbound generieren'}
+                      </button>
                     </div>
                   )}
                 </div>

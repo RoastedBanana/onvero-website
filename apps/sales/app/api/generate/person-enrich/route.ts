@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
       get_email: body.get_email ?? false,
       get_telephone: body.get_telephone ?? false,
       generate_email: body.generate_email ?? false,
+      absender_profil_id: body.absender_profil_id ?? null,
+      angebots_profil_id: body.angebots_profil_id ?? null,
     }),
   });
 
