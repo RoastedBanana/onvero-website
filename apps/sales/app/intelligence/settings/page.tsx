@@ -60,14 +60,38 @@ type AbsenderProfileRow = {
   sender_last_name: string | null;
   sender_role: string | null;
   sender_email: string | null;
+  sender_linkedin_url: string | null;
+  sender_photo_url: string | null;
   outreach_goal: string | null;
   writing_style: string | null;
   formality: string | null;
+  greeting_style: string | null;
+  max_email_words: number | null;
   language: string | null;
   angebots_profile_id: string | null;
   email_templates: EmailTemplate[] | null;
+  email_signature_html: string | null;
   calendar_link: string | null;
+  target_seniority: string[] | null;
+  target_industries: string[] | null;
+  client_industries: string[] | null;
+  certifications: string[] | null;
+  company_pitch_short: string | null;
+  company_pitch_medium: string | null;
+  key_differentiators: string[] | null;
+  case_studies: string[] | null;
+  proof_points: string[] | null;
+  forbidden_phrases: string[] | null;
+  forbidden_claims: string[] | null;
+  priority: number | null;
+  is_default: boolean | null;
+  is_active: boolean | null;
 };
+
+function asStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((x): x is string => typeof x === 'string');
+}
 
 function absenderRowToProfile(row: AbsenderProfileRow): AbsenderProfile {
   return {
@@ -77,13 +101,32 @@ function absenderRowToProfile(row: AbsenderProfileRow): AbsenderProfile {
     lastName: row.sender_last_name ?? '',
     role: row.sender_role ?? '',
     fromEmail: row.sender_email ?? '',
+    linkedinUrl: row.sender_linkedin_url ?? '',
+    photoUrl: row.sender_photo_url ?? '',
     outreachGoal: row.outreach_goal ?? '',
     writingStyle: row.writing_style ?? '',
-    formality: (row.formality === 'du' ? 'du' : 'sie'),
+    formality: row.formality === 'du' ? 'du' : 'sie',
+    greetingStyle: row.greeting_style ?? 'formal',
+    maxEmailWords: row.max_email_words ?? 120,
     language: row.language ?? 'de',
     angebotsProfileId: row.angebots_profile_id,
     emailTemplates: Array.isArray(row.email_templates) ? row.email_templates : [],
+    emailSignatureHtml: row.email_signature_html ?? '',
     calendarLink: row.calendar_link ?? '',
+    targetSeniority: asStringArray(row.target_seniority),
+    targetIndustries: asStringArray(row.target_industries),
+    clientIndustries: asStringArray(row.client_industries),
+    certifications: asStringArray(row.certifications),
+    companyPitchShort: row.company_pitch_short ?? '',
+    companyPitchMedium: row.company_pitch_medium ?? '',
+    keyDifferentiators: asStringArray(row.key_differentiators),
+    caseStudies: asStringArray(row.case_studies),
+    proofPoints: asStringArray(row.proof_points),
+    forbiddenPhrases: asStringArray(row.forbidden_phrases),
+    forbiddenClaims: asStringArray(row.forbidden_claims),
+    priority: row.priority ?? 0,
+    isDefault: row.is_default ?? false,
+    isActive: row.is_active ?? true,
   };
 }
 
@@ -94,13 +137,32 @@ function absenderPatchToRow(patch: Partial<AbsenderProfile>): Record<string, unk
   if ('lastName' in patch) out.sender_last_name = patch.lastName;
   if ('role' in patch) out.sender_role = patch.role;
   if ('fromEmail' in patch) out.sender_email = patch.fromEmail;
+  if ('linkedinUrl' in patch) out.sender_linkedin_url = patch.linkedinUrl;
+  if ('photoUrl' in patch) out.sender_photo_url = patch.photoUrl;
   if ('outreachGoal' in patch) out.outreach_goal = patch.outreachGoal;
   if ('writingStyle' in patch) out.writing_style = patch.writingStyle;
   if ('formality' in patch) out.formality = patch.formality;
+  if ('greetingStyle' in patch) out.greeting_style = patch.greetingStyle;
+  if ('maxEmailWords' in patch) out.max_email_words = patch.maxEmailWords;
   if ('language' in patch) out.language = patch.language;
   if ('angebotsProfileId' in patch) out.angebots_profile_id = patch.angebotsProfileId;
   if ('emailTemplates' in patch) out.email_templates = patch.emailTemplates;
+  if ('emailSignatureHtml' in patch) out.email_signature_html = patch.emailSignatureHtml;
   if ('calendarLink' in patch) out.calendar_link = patch.calendarLink;
+  if ('targetSeniority' in patch) out.target_seniority = patch.targetSeniority;
+  if ('targetIndustries' in patch) out.target_industries = patch.targetIndustries;
+  if ('clientIndustries' in patch) out.client_industries = patch.clientIndustries;
+  if ('certifications' in patch) out.certifications = patch.certifications;
+  if ('companyPitchShort' in patch) out.company_pitch_short = patch.companyPitchShort;
+  if ('companyPitchMedium' in patch) out.company_pitch_medium = patch.companyPitchMedium;
+  if ('keyDifferentiators' in patch) out.key_differentiators = patch.keyDifferentiators;
+  if ('caseStudies' in patch) out.case_studies = patch.caseStudies;
+  if ('proofPoints' in patch) out.proof_points = patch.proofPoints;
+  if ('forbiddenPhrases' in patch) out.forbidden_phrases = patch.forbiddenPhrases;
+  if ('forbiddenClaims' in patch) out.forbidden_claims = patch.forbiddenClaims;
+  if ('priority' in patch) out.priority = patch.priority;
+  if ('isDefault' in patch) out.is_default = patch.isDefault;
+  if ('isActive' in patch) out.is_active = patch.isActive;
   return out;
 }
 
@@ -125,13 +187,32 @@ type AbsenderProfile = {
   lastName: string;
   role: string;
   fromEmail: string;
+  linkedinUrl: string;
+  photoUrl: string;
   outreachGoal: string;
   writingStyle: string;
   formality: 'du' | 'sie';
+  greetingStyle: string;
+  maxEmailWords: number;
   language: string;
   angebotsProfileId: string | null;
   emailTemplates: EmailTemplate[];
+  emailSignatureHtml: string;
   calendarLink: string;
+  targetSeniority: string[];
+  targetIndustries: string[];
+  clientIndustries: string[];
+  certifications: string[];
+  companyPitchShort: string;
+  companyPitchMedium: string;
+  keyDifferentiators: string[];
+  caseStudies: string[];
+  proofPoints: string[];
+  forbiddenPhrases: string[];
+  forbiddenClaims: string[];
+  priority: number;
+  isDefault: boolean;
+  isActive: boolean;
 };
 
 function uid() {
@@ -157,13 +238,32 @@ function emptyAbsenderSeed(): Partial<AbsenderProfile> {
     lastName: '',
     role: '',
     fromEmail: '',
+    linkedinUrl: '',
+    photoUrl: '',
     outreachGoal: '',
     writingStyle: '',
     formality: 'sie',
+    greetingStyle: 'formal',
+    maxEmailWords: 120,
     language: 'de',
     angebotsProfileId: null,
     emailTemplates: [],
+    emailSignatureHtml: '',
     calendarLink: '',
+    targetSeniority: [],
+    targetIndustries: [],
+    clientIndustries: [],
+    certifications: [],
+    companyPitchShort: '',
+    companyPitchMedium: '',
+    keyDifferentiators: [],
+    caseStudies: [],
+    proofPoints: [],
+    forbiddenPhrases: [],
+    forbiddenClaims: [],
+    priority: 0,
+    isDefault: false,
+    isActive: true,
   };
 }
 
@@ -1123,6 +1223,25 @@ function AbsenderEditor({
               c={c}
             />
           </Field>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="LinkedIn-URL" sub="Profil des Absenders" c={c}>
+              <TextField
+                value={profile.linkedinUrl}
+                onChange={(v) => onChange({ linkedinUrl: v })}
+                placeholder="https://www.linkedin.com/in/…"
+                c={c}
+              />
+            </Field>
+            <Field label="Foto-URL" sub="Optional, für Personalisierung" c={c}>
+              <TextField
+                value={profile.photoUrl}
+                onChange={(v) => onChange({ photoUrl: v })}
+                placeholder="https://…/avatar.jpg"
+                c={c}
+              />
+            </Field>
+          </div>
         </div>
       </Card>
 
@@ -1182,6 +1301,134 @@ function AbsenderEditor({
               />
             </Field>
           </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 12 }}>
+            <Field label="Begrüßungsstil" sub="z.B. formal, casual, hi-firstname" c={c}>
+              <TextField
+                value={profile.greetingStyle}
+                onChange={(v) => onChange({ greetingStyle: v })}
+                placeholder="formal"
+                c={c}
+              />
+            </Field>
+            <Field label="Max. Wörter" sub="Maximale Mail-Länge" c={c}>
+              <NumberField
+                value={profile.maxEmailWords}
+                onChange={(v) => onChange({ maxEmailWords: v })}
+                min={20}
+                max={500}
+                c={c}
+              />
+            </Field>
+          </div>
+        </div>
+      </Card>
+
+      {/* Zielgruppe */}
+      <Card title="Zielgruppe" sub="Wen erreicht dieser Absender besonders gut?" c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Field label="Seniority" sub="z.B. C-Level, VP, Director — Enter bestätigt." c={c}>
+            <TagInput
+              values={profile.targetSeniority}
+              onChange={(v) => onChange({ targetSeniority: v })}
+              placeholder="z.B. C-Level"
+              c={c}
+            />
+          </Field>
+          <Field label="Branchen" sub="Welche Branchen?" c={c}>
+            <TagInput
+              values={profile.targetIndustries}
+              onChange={(v) => onChange({ targetIndustries: v })}
+              placeholder="z.B. SaaS"
+              c={c}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      {/* Pitch & Belege */}
+      <Card title="Pitch & Belege" sub="Was sagt der Absender über das Unternehmen — und mit welchen Belegen?" c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Field label="Kurzer Pitch" sub="1 Satz" c={c}>
+            <TextArea
+              value={profile.companyPitchShort}
+              onChange={(v) => onChange({ companyPitchShort: v })}
+              placeholder="z.B. Wir helfen B2B-Teams, in 60 Sekunden personalisierte Outreach zu schreiben."
+              rows={2}
+              c={c}
+            />
+          </Field>
+          <Field label="Mittlerer Pitch" sub="2–3 Sätze" c={c}>
+            <TextArea
+              value={profile.companyPitchMedium}
+              onChange={(v) => onChange({ companyPitchMedium: v })}
+              placeholder="Länger ausgearbeiteter Pitch für Discovery-Calls"
+              rows={3}
+              c={c}
+            />
+          </Field>
+          <Field label="Key Differentiators" sub="Was ist einzigartig?" c={c}>
+            <TagInput
+              values={profile.keyDifferentiators}
+              onChange={(v) => onChange({ keyDifferentiators: v })}
+              placeholder="z.B. tiefe Recherche pro Lead"
+              c={c}
+            />
+          </Field>
+          <Field label="Case Studies" sub="Stichworte oder Links zu Cases" c={c}>
+            <TagInput
+              values={profile.caseStudies}
+              onChange={(v) => onChange({ caseStudies: v })}
+              placeholder="z.B. Hermes: 3x Reply-Rate"
+              c={c}
+            />
+          </Field>
+          <Field label="Proof Points" sub="Belegbare Zahlen, Auszeichnungen" c={c}>
+            <TagInput
+              values={profile.proofPoints}
+              onChange={(v) => onChange({ proofPoints: v })}
+              placeholder="z.B. 200+ Kunden in DACH"
+              c={c}
+            />
+          </Field>
+          <Field label="Branchen mit Erfahrung" sub="Wo gibt es bestehende Kunden?" c={c}>
+            <TagInput
+              values={profile.clientIndustries}
+              onChange={(v) => onChange({ clientIndustries: v })}
+              placeholder="z.B. Logistik"
+              c={c}
+            />
+          </Field>
+          <Field label="Zertifizierungen" sub="ISO, SOC2 etc." c={c}>
+            <TagInput
+              values={profile.certifications}
+              onChange={(v) => onChange({ certifications: v })}
+              placeholder="z.B. ISO 27001"
+              c={c}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      {/* Guardrails */}
+      <Card title="Guardrails" sub="Phrasen und Claims, die der Absender vermeiden soll" c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Field label="Verbotene Phrasen" sub="z.B. Buzzwords, die vermieden werden sollen" c={c}>
+            <TagInput
+              values={profile.forbiddenPhrases}
+              onChange={(v) => onChange({ forbiddenPhrases: v })}
+              placeholder="z.B. Game-Changer"
+              c={c}
+            />
+          </Field>
+          <Field label="Verbotene Claims" sub="Behauptungen, die nicht aufgestellt werden dürfen" c={c}>
+            <TagInput
+              values={profile.forbiddenClaims}
+              onChange={(v) => onChange({ forbiddenClaims: v })}
+              placeholder="z.B. Marktführer"
+              c={c}
+            />
+          </Field>
         </div>
       </Card>
 
@@ -1198,6 +1445,19 @@ function AbsenderEditor({
         />
       </Card>
 
+      {/* Signatur */}
+      <Card title="E-Mail-Signatur" sub="HTML-Signatur, die unter jeder Mail eingefügt wird" c={c}>
+        <Field label="Signatur (HTML)" c={c}>
+          <TextArea
+            value={profile.emailSignatureHtml}
+            onChange={(v) => onChange({ emailSignatureHtml: v })}
+            placeholder="<p>Beste Grüße<br/>Hans Lacher<br/>Onvero</p>"
+            rows={5}
+            c={c}
+          />
+        </Field>
+      </Card>
+
       {/* Kalenderlink */}
       <Card title="Kalenderlink" sub="cal.com / Calendly-Link, der in Mails als Booking-CTA verwendet wird" c={c}>
         <Field label="Link" c={c}>
@@ -1208,6 +1468,40 @@ function AbsenderEditor({
             c={c}
           />
         </Field>
+      </Card>
+
+      {/* Status */}
+      <Card title="Status" sub="Aktivierung und Priorität dieses Profils" c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <Toggle
+            label="Aktiv"
+            sub="Inaktive Profile werden für neue Kampagnen ausgeblendet"
+            checked={profile.isActive}
+            onChange={(v) => onChange({ isActive: v })}
+            c={c}
+          />
+          <Toggle
+            label="Standard-Absender"
+            sub="Dieser Absender wird automatisch gewählt, wenn nichts anderes gesetzt ist"
+            checked={profile.isDefault}
+            onChange={(v) => onChange({ isDefault: v })}
+            c={c}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 12, alignItems: 'end' }}>
+            <Field label="Priorität" sub="Höher = bevorzugt" c={c}>
+              <NumberField
+                value={profile.priority}
+                onChange={(v) => onChange({ priority: v })}
+                min={0}
+                max={100}
+                c={c}
+              />
+            </Field>
+            <div style={{ fontSize: 11, color: c.textSub, paddingBottom: 10 }}>
+              Bei mehreren Kandidaten gewinnt das Profil mit der höheren Priorität.
+            </div>
+          </div>
+        </div>
       </Card>
 
       {/* Action bar */}
@@ -1257,6 +1551,102 @@ function AbsenderEditor({
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Number field ────────────────────────────────────────────────────────────
+
+function NumberField({
+  value,
+  onChange,
+  min,
+  max,
+  c,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <input
+      type="number"
+      value={Number.isFinite(value) ? value : ''}
+      min={min}
+      max={max}
+      onChange={(e) => {
+        const n = e.target.value === '' ? 0 : Number(e.target.value);
+        if (Number.isFinite(n)) onChange(n);
+      }}
+      style={inputStyle(c)}
+      onFocus={(e) => (e.currentTarget.style.borderColor = c.accent)}
+      onBlur={(e) => (e.currentTarget.style.borderColor = c.border)}
+    />
+  );
+}
+
+// ─── Toggle ──────────────────────────────────────────────────────────────────
+
+function Toggle({
+  label,
+  sub,
+  checked,
+  onChange,
+  c,
+}: {
+  label: string;
+  sub?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <label
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 14,
+        cursor: 'pointer',
+        userSelect: 'none',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{label}</div>
+        {sub && <div style={{ fontSize: 11, color: c.textSub, marginTop: 2 }}>{sub}</div>}
+      </div>
+      <span
+        onClick={(e) => {
+          e.preventDefault();
+          onChange(!checked);
+        }}
+        style={{
+          flexShrink: 0,
+          width: 36,
+          height: 20,
+          borderRadius: 999,
+          background: checked ? c.accent : c.border,
+          position: 'relative',
+          transition: 'background 0.15s',
+          marginTop: 2,
+        }}
+      >
+        <span
+          style={{
+            position: 'absolute',
+            top: 2,
+            left: checked ? 18 : 2,
+            width: 16,
+            height: 16,
+            borderRadius: '50%',
+            background: '#FFFFFF',
+            transition: 'left 0.15s',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+          }}
+        />
+      </span>
+    </label>
   );
 }
 
