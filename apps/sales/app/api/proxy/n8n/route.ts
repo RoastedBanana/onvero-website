@@ -15,6 +15,7 @@ const WEBHOOK_MAP: Record<string, string> = {
   'meeting-analyzer': 'N8N_WEBHOOK_MEETING_ANALYZER',
   'meeting-auto-suggest': 'N8N_WEBHOOK_MEETING_AUTO_SUGGEST',
   'vector-store': 'N8N_WEBHOOK_VECTOR_STORE',
+  'apollo-people': 'N8N_WEBHOOK_APOLLO_PEOPLE',
 };
 
 export async function POST(req: NextRequest) {

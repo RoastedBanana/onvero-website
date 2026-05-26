@@ -26,6 +26,16 @@ interface Contact {
   source: 'linkedin' | 'openregister' | 'salesnavigator' | 'manual' | 'website';
 }
 
+interface ApolloPerson {
+  id: string;
+  first_name?: string;
+  last_name_obfuscated?: string;
+  title?: string | null;
+  has_email?: boolean;
+  has_direct_phone?: string;
+  last_refreshed_at?: string;
+}
+
 interface ReviewEntry {
   score: number;
   platform: string;
@@ -7703,6 +7713,39 @@ function InfoTab({
 // ─── Outbound Tab ─────────────────────────────────────────────────────────────
 
 function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
+  // Apollo people loader (below Ansprechpartner list)
+  const [apolloOpen, setApolloOpen] = useState(false);
+  const [apolloLoading, setApolloLoading] = useState(false);
+  const [apolloError, setApolloError] = useState<string | null>(null);
+  const [apolloPersons, setApolloPersons] = useState<ApolloPerson[] | null>(null);
+  const [apolloSelectedId, setApolloSelectedId] = useState<string | null>(null);
+
+  async function loadApolloPersons() {
+    setApolloOpen(true);
+    if (apolloPersons || apolloLoading) return;
+    setApolloLoading(true);
+    setApolloError(null);
+    try {
+      const res = await fetch('/api/proxy/n8n', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'apollo-people', lead_id: lead.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setApolloError(typeof data?.error === 'string' ? data.error : 'Anfrage fehlgeschlagen');
+        return;
+      }
+      const root = Array.isArray(data) ? data[0] : data;
+      const persons = Array.isArray(root?.persons) ? (root.persons as ApolloPerson[]) : [];
+      setApolloPersons(persons);
+    } catch (err) {
+      setApolloError(err instanceof Error ? err.message : 'Netzwerkfehler');
+    } finally {
+      setApolloLoading(false);
+    }
+  }
+
   const card: React.CSSProperties = {
     ...glassCard(isDark),
     borderRadius: 16,
@@ -7731,9 +7774,9 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
         {/* LEFT */}
         <div>
           {/* Contacts */}
-          {lead.contacts.length > 0 && (
-            <div>
-              <div style={{ ...sectionTitle, marginBottom: 14 }}>Ansprechpartner</div>
+          <div>
+            <div style={{ ...sectionTitle, marginBottom: 14 }}>Ansprechpartner</div>
+            {lead.contacts.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
                 {lead.contacts.map((ct, i) => {
                   const src = SOURCE_BADGE_MAP[ct.source];
@@ -7848,8 +7891,146 @@ function OutboundTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
                   );
                 })}
               </div>
+            )}
+
+            {/* Mehr Ansprechpartner via Apollo */}
+            <div style={{ marginTop: lead.contacts.length > 0 ? 12 : 0 }}>
+              {!apolloOpen ? (
+                <button
+                  type="button"
+                  onClick={() => void loadApolloPersons()}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    border: `1px dashed ${isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)'}`,
+                    background: 'transparent',
+                    color: c.textMuted,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-inter), sans-serif',
+                  }}
+                >
+                  Mehr Ansprechpartner laden
+                </button>
+              ) : (
+                <div
+                  style={{
+                    ...glassCard(isDark),
+                    borderRadius: 14,
+                    padding: '16px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: c.text }}>
+                      Apollo Ansprechpartner
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setApolloOpen(false)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: c.textMuted,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        fontFamily: 'var(--font-inter), sans-serif',
+                      }}
+                    >
+                      Schließen
+                    </button>
+                  </div>
+
+                  {apolloLoading && (
+                    <div style={{ fontSize: 12, color: c.textMuted }}>Lade Ansprechpartner…</div>
+                  )}
+                  {apolloError && (
+                    <div style={{ fontSize: 12, color: '#EF4444' }}>
+                      Fehler: {apolloError}
+                    </div>
+                  )}
+                  {!apolloLoading && !apolloError && apolloPersons && apolloPersons.length === 0 && (
+                    <div style={{ fontSize: 12, color: c.textMuted }}>
+                      Keine Ansprechpartner gefunden.
+                    </div>
+                  )}
+                  {!apolloLoading && apolloPersons && apolloPersons.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 360, overflowY: 'auto' }}>
+                      {apolloPersons.map((p) => {
+                        const checked = apolloSelectedId === p.id;
+                        const fullName = [p.first_name, p.last_name_obfuscated].filter(Boolean).join(' ') || 'Unbenannt';
+                        const phoneYes = p.has_direct_phone === 'Yes';
+                        return (
+                          <label
+                            key={p.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: `1px solid ${checked ? c.accent : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                              background: checked ? c.accent + '14' : 'transparent',
+                              cursor: 'pointer',
+                              transition: 'background 0.12s, border-color 0.12s',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name={`apollo-person-${lead.id}`}
+                              checked={checked}
+                              onChange={() => setApolloSelectedId(p.id)}
+                              style={{ accentColor: c.accent, cursor: 'pointer' }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{fullName}</div>
+                              {p.title && (
+                                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{p.title}</div>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              {p.has_email && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    color: '#10B981',
+                                    background: 'rgba(16,185,129,0.12)',
+                                    padding: '3px 8px',
+                                    borderRadius: 999,
+                                  }}
+                                >
+                                  E-Mail
+                                </span>
+                              )}
+                              {phoneYes && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    color: '#818CF8',
+                                    background: 'rgba(129,140,248,0.12)',
+                                    padding: '3px 8px',
+                                    borderRadius: 999,
+                                  }}
+                                >
+                                  Telefon
+                                </span>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Tone of Voice */}
           {lead.toneOfVoice && (
