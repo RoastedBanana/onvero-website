@@ -8222,7 +8222,7 @@ function OutboundTab({
                             </span>
                             {ct.linkedin && (
                               <a
-                                href={`https://${ct.linkedin}`}
+                                href={/^https?:\/\//i.test(ct.linkedin) ? ct.linkedin : `https://${ct.linkedin}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
