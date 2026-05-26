@@ -3,7 +3,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useLayoutEffect, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useLayoutEffect, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpIcon, Users, Calendar, Globe, Phone, Info, ChevronDown } from 'lucide-react';
 import { useTheme, colors } from '../../layout';
@@ -7862,223 +7862,31 @@ function ApolloLoader({ isDark, c }: { isDark: boolean; c: ReturnType<typeof col
   );
 }
 
-function GenerateLoader({
-  isDark,
-  c,
-  getEmail,
-  getTelephone,
-  generateEmail,
-}: {
-  isDark: boolean;
-  c: ReturnType<typeof colors>;
-  getEmail: boolean;
-  getTelephone: boolean;
-  generateEmail: boolean;
-}) {
-  const stages = useMemo(() => {
-    const s: { label: string; duration: number }[] = [
-      { label: 'Apollo-Profil wird abgerufen', duration: 12 },
-    ];
-    if (getEmail) s.push({ label: 'E-Mail-Adresse wird verifiziert', duration: 18 });
-    if (getTelephone) s.push({ label: 'Telefonnummer wird angefragt', duration: 12 });
-    s.push({ label: 'Lead-Kontext wird analysiert', duration: 15 });
-    if (generateEmail) s.push({ label: 'Personalisierter E-Mail-Entwurf wird verfasst', duration: 55 });
-    s.push({ label: 'Kontakt wird gespeichert', duration: 6 });
-    return s;
-  }, [getEmail, getTelephone, generateEmail]);
-
-  const totalEstimated = stages.reduce((sum, st) => sum + st.duration, 0);
-
+function GenerateLoader({ isDark, c }: { isDark: boolean; c: ReturnType<typeof colors> }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     const start = Date.now();
-    const t = setInterval(() => setElapsed((Date.now() - start) / 1000), 250);
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 500);
     return () => clearInterval(t);
   }, []);
 
-  let cumul = 0;
-  let currentIdx = stages.length - 1;
-  for (let i = 0; i < stages.length; i++) {
-    if (elapsed < cumul + stages[i].duration) {
-      currentIdx = i;
-      break;
-    }
-    cumul += stages[i].duration;
-  }
-  const progressPct = Math.min(95, (elapsed / totalEstimated) * 100);
-  const remainingSec = Math.max(0, Math.round(totalEstimated - elapsed));
-
-  const trackBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0' }}>
-      {/* Centerpiece: pulsing rings */}
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 2px' }}>
-        <div style={{ position: 'relative', width: 84, height: 84 }}>
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              animate={{ scale: [1, 1.7], opacity: [0.55, 0] }}
-              transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.7, ease: 'easeOut' }}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                borderRadius: '50%',
-                border: `2px solid ${c.accent}`,
-              }}
-            />
-          ))}
-          <motion.div
-            animate={{ scale: [1, 1.04, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: '50%',
-              background: `radial-gradient(circle at 30% 30%, ${c.accent}55, ${c.accent}11)`,
-              border: `2px solid ${c.accent}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: c.accent,
-              fontSize: 30,
-              fontWeight: 800,
-            }}
-          >
-            {generateEmail ? '✉' : '⚡'}
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Headline message */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentIdx}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.3 }}
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: c.text,
-            textAlign: 'center',
-            letterSpacing: '-0.005em',
-          }}
-        >
-          {stages[currentIdx].label}…
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Stages checklist */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {stages.map((s, idx) => {
-          const isDone = idx < currentIdx;
-          const isCurrent = idx === currentIdx;
-          return (
-            <div
-              key={idx}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                opacity: idx <= currentIdx ? 1 : 0.45,
-                transition: 'opacity 0.3s',
-              }}
-            >
-              <div
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: isDone ? c.accent : 'transparent',
-                  border: `1.5px solid ${
-                    isDone || isCurrent ? c.accent : isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.15)'
-                  }`,
-                  flexShrink: 0,
-                  color: '#fff',
-                  fontSize: 11,
-                  fontWeight: 900,
-                  lineHeight: 1,
-                }}
-              >
-                {isDone ? (
-                  '✓'
-                ) : isCurrent ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      border: `1.5px solid ${c.accent}`,
-                      borderTopColor: 'transparent',
-                    }}
-                  />
-                ) : null}
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: isCurrent ? 700 : 500,
-                  color: isCurrent ? c.text : c.textMuted,
-                }}
-              >
-                {s.label}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Progress bar */}
-      <div
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 2px' }}>
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
         style={{
-          position: 'relative',
-          width: '100%',
-          height: 6,
-          borderRadius: 3,
-          background: trackBg,
-          overflow: 'hidden',
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          border: `2px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'}`,
+          borderTopColor: c.accent,
+          boxSizing: 'border-box',
+          flexShrink: 0,
         }}
-      >
-        <motion.div
-          animate={{ width: `${progressPct}%` }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '100%',
-            background: `linear-gradient(90deg, ${c.accent}, ${c.accent}cc)`,
-            borderRadius: 3,
-          }}
-        />
-        <motion.div
-          initial={{ x: '-100%' }}
-          animate={{ x: '320%' }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '100%',
-            width: '30%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent)',
-          }}
-        />
-      </div>
-
-      {/* Time hint */}
-      <div style={{ fontSize: 11, color: c.textMuted, textAlign: 'center', lineHeight: 1.5 }}>
-        {Math.floor(elapsed)}s vergangen
-        {remainingSec > 0 ? ` · noch ca. ${remainingSec}s` : ' · gleich fertig'}
-        <br />
-        Das Fenster kann offen bleiben — die Generierung läuft im Hintergrund weiter.
+      />
+      <div style={{ fontSize: 12, color: c.textMuted }}>
+        Wird generiert… <span style={{ opacity: 0.6 }}>({elapsed}s, kann bis zu 2 Min. dauern)</span>
       </div>
     </div>
   );
@@ -8700,13 +8508,7 @@ function OutboundTab({
                       </div>
 
                       {genLoading ? (
-                        <GenerateLoader
-                          isDark={isDark}
-                          c={c}
-                          getEmail={getEmail}
-                          getTelephone={getTelephone}
-                          generateEmail={generateEmail}
-                        />
+                        <GenerateLoader isDark={isDark} c={c} />
                       ) : (
                       <>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
