@@ -7862,6 +7862,49 @@ function ApolloLoader({ isDark, c }: { isDark: boolean; c: ReturnType<typeof col
   );
 }
 
+function GenerateDone({ c }: { c: ReturnType<typeof colors> }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '12px 0 6px' }}>
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 18 }}
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: '#10B98122',
+          border: '2px solid #10B981',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <motion.svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <motion.path
+            d="M5 12.5L10 17L19 7.5"
+            stroke="#10B981"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.35, delay: 0.15, ease: 'easeOut' }}
+          />
+        </motion.svg>
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.25 }}
+        style={{ fontSize: 13, fontWeight: 700, color: c.text }}
+      >
+        Fertig — Kontakt gespeichert
+      </motion.div>
+    </div>
+  );
+}
+
 function GenerateLoader({ isDark, c }: { isDark: boolean; c: ReturnType<typeof colors> }) {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -7925,6 +7968,7 @@ function OutboundTab({
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [genSuccess, setGenSuccess] = useState<string | null>(null);
+  const [genDone, setGenDone] = useState(false);
 
   // Inline email-draft expander (one open at a time)
   const [expandedDraftIdx, setExpandedDraftIdx] = useState<number | null>(null);
@@ -8033,6 +8077,13 @@ function OutboundTab({
       setGenSuccess(typeof data?.message === 'string' ? data.message : 'Outbound generiert.');
       // Reload the lead so the new contact + email draft appear in the Ansprechpartner list.
       await onLeadRefresh?.();
+      // Play a brief "done" animation, then auto-close the modal.
+      setGenDone(true);
+      setTimeout(() => {
+        setApolloOpen(false);
+        setGenDone(false);
+        setGenSuccess(null);
+      }, 1400);
     } catch (err) {
       setGenError(err instanceof Error ? err.message : 'Netzwerkfehler');
     } finally {
@@ -8507,7 +8558,9 @@ function OutboundTab({
                         Outbound generieren
                       </div>
 
-                      {genLoading ? (
+                      {genDone ? (
+                        <GenerateDone c={c} />
+                      ) : genLoading ? (
                         <GenerateLoader isDark={isDark} c={c} />
                       ) : (
                       <>
