@@ -72,20 +72,9 @@ type AbsenderProfileRow = {
   email_templates: EmailTemplate[] | null;
   email_signature_html: string | null;
   calendar_link: string | null;
-  target_seniority: string[] | null;
-  target_industries: string[] | null;
-  client_industries: string[] | null;
-  certifications: string[] | null;
-  company_pitch_short: string | null;
-  company_pitch_medium: string | null;
   key_differentiators: string[] | null;
-  case_studies: string[] | null;
-  proof_points: string[] | null;
   forbidden_phrases: string[] | null;
   forbidden_claims: string[] | null;
-  priority: number | null;
-  is_default: boolean | null;
-  is_active: boolean | null;
 };
 
 function asStringArray(v: unknown): string[] {
@@ -113,20 +102,9 @@ function absenderRowToProfile(row: AbsenderProfileRow): AbsenderProfile {
     emailTemplates: Array.isArray(row.email_templates) ? row.email_templates : [],
     emailSignatureHtml: row.email_signature_html ?? '',
     calendarLink: row.calendar_link ?? '',
-    targetSeniority: asStringArray(row.target_seniority),
-    targetIndustries: asStringArray(row.target_industries),
-    clientIndustries: asStringArray(row.client_industries),
-    certifications: asStringArray(row.certifications),
-    companyPitchShort: row.company_pitch_short ?? '',
-    companyPitchMedium: row.company_pitch_medium ?? '',
     keyDifferentiators: asStringArray(row.key_differentiators),
-    caseStudies: asStringArray(row.case_studies),
-    proofPoints: asStringArray(row.proof_points),
     forbiddenPhrases: asStringArray(row.forbidden_phrases),
     forbiddenClaims: asStringArray(row.forbidden_claims),
-    priority: row.priority ?? 0,
-    isDefault: row.is_default ?? false,
-    isActive: row.is_active ?? true,
   };
 }
 
@@ -149,20 +127,9 @@ function absenderPatchToRow(patch: Partial<AbsenderProfile>): Record<string, unk
   if ('emailTemplates' in patch) out.email_templates = patch.emailTemplates;
   if ('emailSignatureHtml' in patch) out.email_signature_html = patch.emailSignatureHtml;
   if ('calendarLink' in patch) out.calendar_link = patch.calendarLink;
-  if ('targetSeniority' in patch) out.target_seniority = patch.targetSeniority;
-  if ('targetIndustries' in patch) out.target_industries = patch.targetIndustries;
-  if ('clientIndustries' in patch) out.client_industries = patch.clientIndustries;
-  if ('certifications' in patch) out.certifications = patch.certifications;
-  if ('companyPitchShort' in patch) out.company_pitch_short = patch.companyPitchShort;
-  if ('companyPitchMedium' in patch) out.company_pitch_medium = patch.companyPitchMedium;
   if ('keyDifferentiators' in patch) out.key_differentiators = patch.keyDifferentiators;
-  if ('caseStudies' in patch) out.case_studies = patch.caseStudies;
-  if ('proofPoints' in patch) out.proof_points = patch.proofPoints;
   if ('forbiddenPhrases' in patch) out.forbidden_phrases = patch.forbiddenPhrases;
   if ('forbiddenClaims' in patch) out.forbidden_claims = patch.forbiddenClaims;
-  if ('priority' in patch) out.priority = patch.priority;
-  if ('isDefault' in patch) out.is_default = patch.isDefault;
-  if ('isActive' in patch) out.is_active = patch.isActive;
   return out;
 }
 
@@ -199,20 +166,9 @@ type AbsenderProfile = {
   emailTemplates: EmailTemplate[];
   emailSignatureHtml: string;
   calendarLink: string;
-  targetSeniority: string[];
-  targetIndustries: string[];
-  clientIndustries: string[];
-  certifications: string[];
-  companyPitchShort: string;
-  companyPitchMedium: string;
   keyDifferentiators: string[];
-  caseStudies: string[];
-  proofPoints: string[];
   forbiddenPhrases: string[];
   forbiddenClaims: string[];
-  priority: number;
-  isDefault: boolean;
-  isActive: boolean;
 };
 
 function uid() {
@@ -250,20 +206,9 @@ function emptyAbsenderSeed(): Partial<AbsenderProfile> {
     emailTemplates: [],
     emailSignatureHtml: '',
     calendarLink: '',
-    targetSeniority: [],
-    targetIndustries: [],
-    clientIndustries: [],
-    certifications: [],
-    companyPitchShort: '',
-    companyPitchMedium: '',
     keyDifferentiators: [],
-    caseStudies: [],
-    proofPoints: [],
     forbiddenPhrases: [],
     forbiddenClaims: [],
-    priority: 0,
-    isDefault: false,
-    isActive: true,
   };
 }
 
@@ -1224,24 +1169,22 @@ function AbsenderEditor({
             />
           </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Field label="LinkedIn-URL" sub="Profil des Absenders" c={c}>
-              <TextField
-                value={profile.linkedinUrl}
-                onChange={(v) => onChange({ linkedinUrl: v })}
-                placeholder="https://www.linkedin.com/in/…"
-                c={c}
-              />
-            </Field>
-            <Field label="Foto-URL" sub="Optional, für Personalisierung" c={c}>
-              <TextField
-                value={profile.photoUrl}
-                onChange={(v) => onChange({ photoUrl: v })}
-                placeholder="https://…/avatar.jpg"
-                c={c}
-              />
-            </Field>
-          </div>
+          <Field label="LinkedIn-URL" sub="Profil des Absenders" c={c}>
+            <TextField
+              value={profile.linkedinUrl}
+              onChange={(v) => onChange({ linkedinUrl: v })}
+              placeholder="https://www.linkedin.com/in/…"
+              c={c}
+            />
+          </Field>
+
+          <Field label="Foto" sub="PNG/JPG/WEBP/GIF, max 5 MB" c={c}>
+            <PhotoUpload
+              url={profile.photoUrl}
+              onChange={(url) => onChange({ photoUrl: url })}
+              c={c}
+            />
+          </Field>
         </div>
       </Card>
 
@@ -1324,50 +1267,10 @@ function AbsenderEditor({
         </div>
       </Card>
 
-      {/* Zielgruppe */}
-      <Card title="Zielgruppe" sub="Wen erreicht dieser Absender besonders gut?" c={c}>
+      {/* Guardrails */}
+      <Card title="Guardrails" sub="Was den Absender ausmacht und was er vermeiden soll" c={c}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="Seniority" sub="z.B. C-Level, VP, Director — Enter bestätigt." c={c}>
-            <TagInput
-              values={profile.targetSeniority}
-              onChange={(v) => onChange({ targetSeniority: v })}
-              placeholder="z.B. C-Level"
-              c={c}
-            />
-          </Field>
-          <Field label="Branchen" sub="Welche Branchen?" c={c}>
-            <TagInput
-              values={profile.targetIndustries}
-              onChange={(v) => onChange({ targetIndustries: v })}
-              placeholder="z.B. SaaS"
-              c={c}
-            />
-          </Field>
-        </div>
-      </Card>
-
-      {/* Pitch & Belege */}
-      <Card title="Pitch & Belege" sub="Was sagt der Absender über das Unternehmen — und mit welchen Belegen?" c={c}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="Kurzer Pitch" sub="1 Satz" c={c}>
-            <TextArea
-              value={profile.companyPitchShort}
-              onChange={(v) => onChange({ companyPitchShort: v })}
-              placeholder="z.B. Wir helfen B2B-Teams, in 60 Sekunden personalisierte Outreach zu schreiben."
-              rows={2}
-              c={c}
-            />
-          </Field>
-          <Field label="Mittlerer Pitch" sub="2–3 Sätze" c={c}>
-            <TextArea
-              value={profile.companyPitchMedium}
-              onChange={(v) => onChange({ companyPitchMedium: v })}
-              placeholder="Länger ausgearbeiteter Pitch für Discovery-Calls"
-              rows={3}
-              c={c}
-            />
-          </Field>
-          <Field label="Key Differentiators" sub="Was ist einzigartig?" c={c}>
+          <Field label="Key Differentiators" sub="Was macht dieses Angebot einzigartig?" c={c}>
             <TagInput
               values={profile.keyDifferentiators}
               onChange={(v) => onChange({ keyDifferentiators: v })}
@@ -1375,45 +1278,7 @@ function AbsenderEditor({
               c={c}
             />
           </Field>
-          <Field label="Case Studies" sub="Stichworte oder Links zu Cases" c={c}>
-            <TagInput
-              values={profile.caseStudies}
-              onChange={(v) => onChange({ caseStudies: v })}
-              placeholder="z.B. Hermes: 3x Reply-Rate"
-              c={c}
-            />
-          </Field>
-          <Field label="Proof Points" sub="Belegbare Zahlen, Auszeichnungen" c={c}>
-            <TagInput
-              values={profile.proofPoints}
-              onChange={(v) => onChange({ proofPoints: v })}
-              placeholder="z.B. 200+ Kunden in DACH"
-              c={c}
-            />
-          </Field>
-          <Field label="Branchen mit Erfahrung" sub="Wo gibt es bestehende Kunden?" c={c}>
-            <TagInput
-              values={profile.clientIndustries}
-              onChange={(v) => onChange({ clientIndustries: v })}
-              placeholder="z.B. Logistik"
-              c={c}
-            />
-          </Field>
-          <Field label="Zertifizierungen" sub="ISO, SOC2 etc." c={c}>
-            <TagInput
-              values={profile.certifications}
-              onChange={(v) => onChange({ certifications: v })}
-              placeholder="z.B. ISO 27001"
-              c={c}
-            />
-          </Field>
-        </div>
-      </Card>
-
-      {/* Guardrails */}
-      <Card title="Guardrails" sub="Phrasen und Claims, die der Absender vermeiden soll" c={c}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="Verbotene Phrasen" sub="z.B. Buzzwords, die vermieden werden sollen" c={c}>
+          <Field label="Verbotene Phrasen" sub="Buzzwords, die nicht in den Mails landen sollen" c={c}>
             <TagInput
               values={profile.forbiddenPhrases}
               onChange={(v) => onChange({ forbiddenPhrases: v })}
@@ -1468,40 +1333,6 @@ function AbsenderEditor({
             c={c}
           />
         </Field>
-      </Card>
-
-      {/* Status */}
-      <Card title="Status" sub="Aktivierung und Priorität dieses Profils" c={c}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Toggle
-            label="Aktiv"
-            sub="Inaktive Profile werden für neue Kampagnen ausgeblendet"
-            checked={profile.isActive}
-            onChange={(v) => onChange({ isActive: v })}
-            c={c}
-          />
-          <Toggle
-            label="Standard-Absender"
-            sub="Dieser Absender wird automatisch gewählt, wenn nichts anderes gesetzt ist"
-            checked={profile.isDefault}
-            onChange={(v) => onChange({ isDefault: v })}
-            c={c}
-          />
-          <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 12, alignItems: 'end' }}>
-            <Field label="Priorität" sub="Höher = bevorzugt" c={c}>
-              <NumberField
-                value={profile.priority}
-                onChange={(v) => onChange({ priority: v })}
-                min={0}
-                max={100}
-                c={c}
-              />
-            </Field>
-            <div style={{ fontSize: 11, color: c.textSub, paddingBottom: 10 }}>
-              Bei mehreren Kandidaten gewinnt das Profil mit der höheren Priorität.
-            </div>
-          </div>
-        </div>
       </Card>
 
       {/* Action bar */}
@@ -1586,67 +1417,125 @@ function NumberField({
   );
 }
 
-// ─── Toggle ──────────────────────────────────────────────────────────────────
+// ─── Photo upload ────────────────────────────────────────────────────────────
 
-function Toggle({
-  label,
-  sub,
-  checked,
+function PhotoUpload({
+  url,
   onChange,
   c,
 }: {
-  label: string;
-  sub?: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
+  url: string;
+  onChange: (url: string) => void;
   c: ReturnType<typeof colors>;
 }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFile(file: File | null) {
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch('/api/absender-profile/upload-photo', { method: 'POST', body: form });
+      const json = await res.json();
+      if (!res.ok || !json?.url) {
+        setError(json?.error ?? 'Upload fehlgeschlagen');
+        return;
+      }
+      onChange(json.url as string);
+    } catch {
+      setError('Upload fehlgeschlagen');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
-    <label
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: 14,
-        cursor: 'pointer',
-        userSelect: 'none',
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: c.textSub, marginTop: 2 }}>{sub}</div>}
-      </div>
-      <span
-        onClick={(e) => {
-          e.preventDefault();
-          onChange(!checked);
-        }}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div
         style={{
+          width: 64,
+          height: 64,
+          borderRadius: '50%',
+          background: c.bgPage,
+          border: `1px solid ${c.border}`,
+          overflow: 'hidden',
           flexShrink: 0,
-          width: 36,
-          height: 20,
-          borderRadius: 999,
-          background: checked ? c.accent : c.border,
-          position: 'relative',
-          transition: 'background 0.15s',
-          marginTop: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <span
-          style={{
-            position: 'absolute',
-            top: 2,
-            left: checked ? 18 : 2,
-            width: 16,
-            height: 16,
-            borderRadius: '50%',
-            background: '#FFFFFF',
-            transition: 'left 0.15s',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-          }}
-        />
-      </span>
-    </label>
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={c.textSub} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: c.accent,
+              color: c.bgPage === '#FFFFFF' ? '#fff' : c.bgPage,
+              border: 'none',
+              borderRadius: 7,
+              padding: '7px 12px',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: uploading ? 'wait' : 'pointer',
+              fontFamily: 'var(--font-inter), sans-serif',
+              opacity: uploading ? 0.6 : 1,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 12V3M4 7l4-4 4 4M3 13h10" />
+            </svg>
+            {uploading ? 'Lade hoch…' : url ? 'Foto ersetzen' : 'Foto hochladen'}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={(e) => {
+                handleFile(e.target.files?.[0] ?? null);
+                e.currentTarget.value = '';
+              }}
+              disabled={uploading}
+              style={{ display: 'none' }}
+            />
+          </label>
+          {url && (
+            <button
+              onClick={() => onChange('')}
+              disabled={uploading}
+              style={{
+                background: 'transparent',
+                color: c.textSub,
+                border: `1px solid ${c.border}`,
+                borderRadius: 7,
+                padding: '7px 12px',
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-inter), sans-serif',
+              }}
+            >
+              Entfernen
+            </button>
+          )}
+        </div>
+        {error && <span style={{ fontSize: 11, color: c.danger, fontWeight: 600 }}>{error}</span>}
+      </div>
+    </div>
   );
 }
 
