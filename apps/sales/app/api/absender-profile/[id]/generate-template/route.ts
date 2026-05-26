@@ -114,7 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const wbRes = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ emails, tenant_id: ctx.tenantId }),
+      body: JSON.stringify({ emails, tenant_id: ctx.tenantId, absender_profile_id: id }),
       signal: controller.signal,
     });
     if (!wbRes.ok) {
