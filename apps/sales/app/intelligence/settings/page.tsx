@@ -1,11 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTheme, colors } from '../layout';
 
 // ─── Konstanten ───────────────────────────────────────────────────────────────
 
-const STORAGE_ABSENDER = 'onvero.settings.absenderProfile.v1';
 const STORAGE_TAB = 'onvero.settings.activeTab.v1';
 const STORAGE_ACTIVE_ANGEBOT = 'onvero.settings.activeAngebot.v1';
 const STORAGE_ACTIVE_ABSENDER = 'onvero.settings.activeAbsender.v1';
@@ -45,6 +44,66 @@ function profilePatchToRow(patch: Partial<AngebotsProfile>): Record<string, unkn
   return out;
 }
 
+// ─── API mapping: Absender ────────────────────────────────────────────────────
+
+type EmailTemplate = {
+  name: string;
+  subject: string;
+  body: string;
+  source: 'manual' | 'uploaded';
+};
+
+type AbsenderProfileRow = {
+  id: string;
+  profile_name: string | null;
+  sender_first_name: string | null;
+  sender_last_name: string | null;
+  sender_role: string | null;
+  sender_email: string | null;
+  outreach_goal: string | null;
+  writing_style: string | null;
+  formality: string | null;
+  language: string | null;
+  angebots_profile_id: string | null;
+  email_templates: EmailTemplate[] | null;
+  calendar_link: string | null;
+};
+
+function absenderRowToProfile(row: AbsenderProfileRow): AbsenderProfile {
+  return {
+    id: row.id,
+    profileName: row.profile_name ?? '',
+    firstName: row.sender_first_name ?? '',
+    lastName: row.sender_last_name ?? '',
+    role: row.sender_role ?? '',
+    fromEmail: row.sender_email ?? '',
+    outreachGoal: row.outreach_goal ?? '',
+    writingStyle: row.writing_style ?? '',
+    formality: (row.formality === 'du' ? 'du' : 'sie'),
+    language: row.language ?? 'de',
+    angebotsProfileId: row.angebots_profile_id,
+    emailTemplates: Array.isArray(row.email_templates) ? row.email_templates : [],
+    calendarLink: row.calendar_link ?? '',
+  };
+}
+
+function absenderPatchToRow(patch: Partial<AbsenderProfile>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if ('profileName' in patch) out.profile_name = patch.profileName;
+  if ('firstName' in patch) out.sender_first_name = patch.firstName;
+  if ('lastName' in patch) out.sender_last_name = patch.lastName;
+  if ('role' in patch) out.sender_role = patch.role;
+  if ('fromEmail' in patch) out.sender_email = patch.fromEmail;
+  if ('outreachGoal' in patch) out.outreach_goal = patch.outreachGoal;
+  if ('writingStyle' in patch) out.writing_style = patch.writingStyle;
+  if ('formality' in patch) out.formality = patch.formality;
+  if ('language' in patch) out.language = patch.language;
+  if ('angebotsProfileId' in patch) out.angebots_profile_id = patch.angebotsProfileId;
+  if ('emailTemplates' in patch) out.email_templates = patch.emailTemplates;
+  if ('calendarLink' in patch) out.calendar_link = patch.calendarLink;
+  return out;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Tab = 'angebot' | 'absender';
@@ -61,7 +120,18 @@ type AngebotsProfile = {
 
 type AbsenderProfile = {
   id: string;
-  name: string;
+  profileName: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  fromEmail: string;
+  outreachGoal: string;
+  writingStyle: string;
+  formality: 'du' | 'sie';
+  language: string;
+  angebotsProfileId: string | null;
+  emailTemplates: EmailTemplate[];
+  calendarLink: string;
 };
 
 function uid() {
@@ -80,10 +150,20 @@ function emptyAngebot(): AngebotsProfile {
   };
 }
 
-function emptyAbsender(): AbsenderProfile {
+function emptyAbsenderSeed(): Partial<AbsenderProfile> {
   return {
-    id: uid(),
-    name: 'Neues Absender-Profil',
+    profileName: 'Neues Absender-Profil',
+    firstName: '',
+    lastName: '',
+    role: '',
+    fromEmail: '',
+    outreachGoal: '',
+    writingStyle: '',
+    formality: 'sie',
+    language: 'de',
+    angebotsProfileId: null,
+    emailTemplates: [],
+    calendarLink: '',
   };
 }
 
@@ -334,33 +414,38 @@ export default function SettingsPage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [dirtyAngebotIds, setDirtyAngebotIds] = useState<Set<string>>(() => new Set());
   const [savingAngebotId, setSavingAngebotId] = useState<string | null>(null);
+  const [dirtyAbsenderIds, setDirtyAbsenderIds] = useState<Set<string>>(() => new Set());
+  const [savingAbsenderId, setSavingAbsenderId] = useState<string | null>(null);
 
-  // Load Angebots-Profile from API, Absender + UI state from localStorage
+  // Load Angebots- + Absender-Profile from API, UI tab/active-id from localStorage
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const abs = JSON.parse(localStorage.getItem(STORAGE_ABSENDER) ?? '[]') as AbsenderProfile[];
         const t = localStorage.getItem(STORAGE_TAB) as Tab | null;
         const aAng = localStorage.getItem(STORAGE_ACTIVE_ANGEBOT);
         const aAbs = localStorage.getItem(STORAGE_ACTIVE_ABSENDER);
+        if (!cancelled && (t === 'angebot' || t === 'absender')) setTab(t);
 
-        if (!cancelled) {
-          setAbsenderProfile(Array.isArray(abs) ? abs : []);
-          if (t === 'angebot' || t === 'absender') setTab(t);
-          if (aAbs && abs.some((p) => p.id === aAbs)) setActiveAbsenderId(aAbs);
-          else if (abs.length) setActiveAbsenderId(abs[0].id);
-        }
+        const [angRes, absRes] = await Promise.all([
+          fetch('/api/angebots-profile', { cache: 'no-store' }),
+          fetch('/api/absender-profile', { cache: 'no-store' }),
+        ]);
+        const angJson = await angRes.json();
+        const absJson = await absRes.json();
 
-        const res = await fetch('/api/angebots-profile', { cache: 'no-store' });
-        const json = await res.json();
-        const rows = Array.isArray(json?.profiles) ? (json.profiles as AngebotsProfileRow[]) : [];
-        const ang = rows.map(rowToProfile);
+        const angRows = Array.isArray(angJson?.profiles) ? (angJson.profiles as AngebotsProfileRow[]) : [];
+        const absRows = Array.isArray(absJson?.profiles) ? (absJson.profiles as AbsenderProfileRow[]) : [];
+        const ang = angRows.map(rowToProfile);
+        const abs = absRows.map(absenderRowToProfile);
 
         if (cancelled) return;
         setAngebotsProfile(ang);
+        setAbsenderProfile(abs);
         if (aAng && ang.some((p) => p.id === aAng)) setActiveAngebotId(aAng);
         else if (ang.length) setActiveAngebotId(ang[0].id);
+        if (aAbs && abs.some((p) => p.id === aAbs)) setActiveAbsenderId(aAbs);
+        else if (abs.length) setActiveAbsenderId(abs[0].id);
       } catch {
         // ignore — UI starts empty
       } finally {
@@ -383,12 +468,6 @@ export default function SettingsPage() {
     if (loaded && activeAbsenderId) localStorage.setItem(STORAGE_ACTIVE_ABSENDER, activeAbsenderId);
   }, [activeAbsenderId, loaded]);
 
-  const persistAbsender = useCallback((next: AbsenderProfile[]) => {
-    setAbsenderProfile(next);
-    localStorage.setItem(STORAGE_ABSENDER, JSON.stringify(next));
-    setSavedAt(new Date());
-  }, []);
-
   async function createAngebot() {
     const seed = emptyAngebot();
     try {
@@ -408,10 +487,23 @@ export default function SettingsPage() {
     }
   }
 
-  function createAbsender() {
-    const p = emptyAbsender();
-    persistAbsender([...absenderProfile, p]);
-    setActiveAbsenderId(p.id);
+  async function createAbsender() {
+    const seed = emptyAbsenderSeed();
+    try {
+      const res = await fetch('/api/absender-profile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(absenderPatchToRow(seed)),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.profile) return;
+      const created = absenderRowToProfile(json.profile as AbsenderProfileRow);
+      setAbsenderProfile((prev) => [created, ...prev]);
+      setActiveAbsenderId(created.id);
+      setSavedAt(new Date());
+    } catch {
+      // ignore
+    }
   }
 
   function updateAngebot(id: string, patch: Partial<AngebotsProfile>) {
@@ -471,13 +563,59 @@ export default function SettingsPage() {
   }
 
   function updateAbsender(id: string, patch: Partial<AbsenderProfile>) {
-    persistAbsender(absenderProfile.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    setAbsenderProfile((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    setDirtyAbsenderIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
   }
 
-  function deleteAbsender(id: string) {
-    const next = absenderProfile.filter((p) => p.id !== id);
-    persistAbsender(next);
-    if (activeAbsenderId === id) setActiveAbsenderId(next[0]?.id ?? null);
+  async function saveAbsender(id: string) {
+    const profile = absenderProfile.find((p) => p.id === id);
+    if (!profile) return;
+    setSavingAbsenderId(id);
+    try {
+      const res = await fetch(`/api/absender-profile/${id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(absenderPatchToRow(profile)),
+      });
+      if (res.ok) {
+        setSavedAt(new Date());
+        setDirtyAbsenderIds((prev) => {
+          if (!prev.has(id)) return prev;
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    } catch {
+      // ignore — caller can retry
+    } finally {
+      setSavingAbsenderId((curr) => (curr === id ? null : curr));
+    }
+  }
+
+  async function deleteAbsender(id: string) {
+    setDirtyAbsenderIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setAbsenderProfile((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      if (activeAbsenderId === id) setActiveAbsenderId(next[0]?.id ?? null);
+      return next;
+    });
+    try {
+      await fetch(`/api/absender-profile/${id}`, { method: 'DELETE' });
+      setSavedAt(new Date());
+    } catch {
+      // ignore
+    }
   }
 
   const activeAngebot = useMemo(
@@ -613,14 +751,18 @@ export default function SettingsPage() {
           ) : activeAbsender ? (
             <AbsenderEditor
               profile={activeAbsender}
+              angebotsProfile={angebotsProfile}
               onChange={(patch) => updateAbsender(activeAbsender.id, patch)}
+              onSave={() => saveAbsender(activeAbsender.id)}
               onDelete={() => deleteAbsender(activeAbsender.id)}
+              dirty={dirtyAbsenderIds.has(activeAbsender.id)}
+              saving={savingAbsenderId === activeAbsender.id}
               c={c}
             />
           ) : (
             <EmptyState
               title="Noch kein Absender-Profil"
-              hint="Hier kannst Du gleich Deine Absender konfigurieren — Felder folgen."
+              hint="Lege einen Absender an, der die Outreach-Mails verschickt — mit Tonalität, Vorlagen und Kalenderlink."
               cta="Profil erstellen"
               onCta={createAbsender}
               c={c}
@@ -660,7 +802,14 @@ function ProfileSidebar({
   const profiles =
     tab === 'angebot'
       ? angebotsProfile.map((p) => ({ id: p.id, label: p.name, hint: p.unternehmen || '—' }))
-      : absenderProfile.map((p) => ({ id: p.id, label: p.name, hint: '' }));
+      : absenderProfile.map((p) => {
+          const fullName = [p.firstName, p.lastName].filter(Boolean).join(' ').trim();
+          return {
+            id: p.id,
+            label: p.profileName || fullName || '—',
+            hint: p.role || fullName || '',
+          };
+        });
   const activeId = tab === 'angebot' ? activeAngebotId : activeAbsenderId;
   const onSelect = tab === 'angebot' ? onSelectAngebot : onSelectAbsender;
   const onCreate = tab === 'angebot' ? onCreateAngebot : onCreateAbsender;
@@ -893,52 +1042,179 @@ function AngebotsEditor({
   );
 }
 
-// ─── Editor: Absender-Profil (Platzhalter) ───────────────────────────────────
+// ─── Editor: Absender-Profil ─────────────────────────────────────────────────
+
+const LANGUAGE_OPTIONS = [
+  { value: 'de', label: 'Deutsch' },
+  { value: 'en', label: 'Englisch' },
+  { value: 'fr', label: 'Französisch' },
+  { value: 'es', label: 'Spanisch' },
+  { value: 'it', label: 'Italienisch' },
+];
 
 function AbsenderEditor({
   profile,
+  angebotsProfile,
   onChange,
+  onSave,
   onDelete,
+  dirty,
+  saving,
   c,
 }: {
   profile: AbsenderProfile;
+  angebotsProfile: AngebotsProfile[];
   onChange: (patch: Partial<AbsenderProfile>) => void;
+  onSave: () => void;
   onDelete: () => void;
+  dirty: boolean;
+  saving: boolean;
   c: ReturnType<typeof colors>;
 }) {
+  const displayLabel = profile.profileName || [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Absender';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Card title="Absender-Profil" sub="Definiere im nächsten Schritt die Felder für dieses Profil" c={c}>
+      {/* Identität + Rolle */}
+      <Card title="Absender-Profil" sub="Wer schreibt, in welchem Stil, mit welchem Ziel" c={c}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Field label="Name" sub="Interner Profilname" c={c}>
+          <Field label="Name" sub="Interner Profilname (nur für Dich)" c={c}>
             <TextField
-              value={profile.name}
-              onChange={(v) => onChange({ name: v })}
-              placeholder="z.B. Max Mustermann — Sales"
+              value={profile.profileName}
+              onChange={(v) => onChange({ profileName: v })}
+              placeholder="z.B. Hans — CEO Outreach"
               c={c}
             />
           </Field>
-          <div
-            style={{
-              background: c.bgPage,
-              border: `1px dashed ${c.borderStrong}`,
-              borderRadius: 10,
-              padding: 18,
-              fontSize: 12,
-              color: c.textSub,
-              lineHeight: 1.55,
-            }}
-          >
-            Felder für Absender-Profile sind noch nicht definiert. Sobald Du sagst, welche Felder dieses Profil
-            haben soll (z.B. E-Mail, Rolle, Signatur, Tonalität …), erweitere ich diesen Editor.
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Vorname" c={c}>
+              <TextField
+                value={profile.firstName}
+                onChange={(v) => onChange({ firstName: v })}
+                placeholder="Hans"
+                c={c}
+              />
+            </Field>
+            <Field label="Nachname" c={c}>
+              <TextField
+                value={profile.lastName}
+                onChange={(v) => onChange({ lastName: v })}
+                placeholder="Lacher"
+                c={c}
+              />
+            </Field>
+          </div>
+
+          <Field label="Rolle / Titel" sub="Wie der Absender unterzeichnet" c={c}>
+            <TextField
+              value={profile.role}
+              onChange={(v) => onChange({ role: v })}
+              placeholder="z.B. Gründer & CEO"
+              c={c}
+            />
+          </Field>
+
+          <Field label="From-Email" sub="Absender-Adresse für die Outreach-Kampagne" c={c}>
+            <TextField
+              value={profile.fromEmail}
+              onChange={(v) => onChange({ fromEmail: v })}
+              placeholder="hans@onvero.de"
+              c={c}
+            />
+          </Field>
+        </div>
+      </Card>
+
+      {/* Outreach-Konfiguration */}
+      <Card title="Outreach-Konfiguration" sub="Worum es geht und wie es klingen soll" c={c}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Field label="Ziel des Outreach" sub="Was soll der Empfänger tun?" c={c}>
+            <TextArea
+              value={profile.outreachGoal}
+              onChange={(v) => onChange({ outreachGoal: v })}
+              placeholder="z.B. 15-Min Discovery-Call buchen, um KI-gestützten Vertrieb für Mittelstand zu zeigen"
+              rows={3}
+              c={c}
+            />
+          </Field>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 12 }}>
+            <Field label="Anrede" sub="Du oder Sie" c={c}>
+              <SelectField
+                value={profile.formality}
+                onChange={(v) => onChange({ formality: v === 'du' ? 'du' : 'sie' })}
+                options={[
+                  { value: 'sie', label: 'Sie (formell)' },
+                  { value: 'du', label: 'Du (locker)' },
+                ]}
+                c={c}
+              />
+            </Field>
+            <Field label="Tonalität" sub="Wie soll der Stil klingen?" c={c}>
+              <TextField
+                value={profile.writingStyle}
+                onChange={(v) => onChange({ writingStyle: v })}
+                placeholder="z.B. direkt, freundlich, ohne Buzzwords, kurze Sätze"
+                c={c}
+              />
+            </Field>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 12 }}>
+            <Field label="Sprache" sub="Sprache der Mails" c={c}>
+              <SelectField
+                value={profile.language}
+                onChange={(v) => onChange({ language: v })}
+                options={LANGUAGE_OPTIONS}
+                c={c}
+              />
+            </Field>
+            <Field label="Produktprofil" sub="Welches Angebots-Profil benutzt dieser Absender?" c={c}>
+              <SelectField
+                value={profile.angebotsProfileId ?? ''}
+                onChange={(v) => onChange({ angebotsProfileId: v || null })}
+                options={[
+                  { value: '', label: '— Kein Produktprofil —' },
+                  ...angebotsProfile.map((p) => ({ value: p.id, label: p.name || '(unbenannt)' })),
+                ]}
+                c={c}
+              />
+            </Field>
           </div>
         </div>
       </Card>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      {/* E-Mail-Vorlagen */}
+      <Card
+        title="E-Mail-Vorlagen"
+        sub="Lade Beispiel-Mails (.eml/.txt/.html) hoch oder schreibe eine Vorlage manuell"
+        c={c}
+      >
+        <EmailTemplatesEditor
+          templates={profile.emailTemplates}
+          onChange={(next) => onChange({ emailTemplates: next })}
+          c={c}
+        />
+      </Card>
+
+      {/* Kalenderlink */}
+      <Card title="Kalenderlink" sub="cal.com / Calendly-Link, der in Mails als Booking-CTA verwendet wird" c={c}>
+        <Field label="Link" c={c}>
+          <TextField
+            value={profile.calendarLink}
+            onChange={(v) => onChange({ calendarLink: v })}
+            placeholder="https://cal.com/dein-handle/discovery"
+            c={c}
+          />
+        </Field>
+      </Card>
+
+      {/* Action bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
         <button
           onClick={() => {
-            if (confirm(`Profil "${profile.name}" wirklich löschen?`)) onDelete();
+            if (confirm(`Profil "${displayLabel}" wirklich löschen?`)) onDelete();
           }}
           style={{
             background: 'transparent',
@@ -954,7 +1230,370 @@ function AbsenderEditor({
         >
           Profil löschen
         </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {dirty && !saving && (
+            <span style={{ fontSize: 11, fontWeight: 600, color: c.textSub }}>
+              Ungespeicherte Änderungen
+            </span>
+          )}
+          <button
+            onClick={onSave}
+            disabled={!dirty || saving}
+            style={{
+              background: dirty && !saving ? c.accent : c.border,
+              color: dirty && !saving ? (c.bgPage === '#FFFFFF' ? '#fff' : c.bgPage) : c.textSub,
+              border: 'none',
+              borderRadius: 8,
+              padding: '8px 18px',
+              fontSize: 12,
+              fontWeight: 800,
+              cursor: dirty && !saving ? 'pointer' : 'not-allowed',
+              fontFamily: 'var(--font-inter), sans-serif',
+              transition: 'background 0.12s, color 0.12s',
+            }}
+          >
+            {saving ? 'Speichere…' : 'Speichern'}
+          </button>
+        </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Select field ────────────────────────────────────────────────────────────
+
+function SelectField({
+  value,
+  onChange,
+  options,
+  c,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  c: ReturnType<typeof colors>;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        ...inputStyle(c),
+        appearance: 'none',
+        paddingRight: 32,
+        backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none' stroke='${encodeURIComponent(
+          c.textSub,
+        )}' stroke-width='2' stroke-linecap='round'><path d='M4 6l4 4 4-4'/></svg>")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 10px center',
+        backgroundSize: 12,
+        cursor: 'pointer',
+      }}
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// ─── E-Mail-Vorlagen Editor ──────────────────────────────────────────────────
+
+function EmailTemplatesEditor({
+  templates,
+  onChange,
+  c,
+}: {
+  templates: EmailTemplate[];
+  onChange: (next: EmailTemplate[]) => void;
+  c: ReturnType<typeof colors>;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  function addManual() {
+    onChange([
+      ...templates,
+      { name: `Vorlage ${templates.length + 1}`, subject: '', body: '', source: 'manual' },
+    ]);
+  }
+
+  function updateTemplate(idx: number, patch: Partial<EmailTemplate>) {
+    onChange(templates.map((t, i) => (i === idx ? { ...t, ...patch } : t)));
+  }
+
+  function removeTemplate(idx: number) {
+    onChange(templates.filter((_, i) => i !== idx));
+  }
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const uploaded: EmailTemplate[] = [];
+      for (const file of Array.from(files)) {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch('/api/absender-profile/upload-template', { method: 'POST', body: form });
+        const json = await res.json();
+        if (!res.ok || !json?.template) {
+          setUploadError(json?.error ?? `Upload von "${file.name}" fehlgeschlagen`);
+          continue;
+        }
+        uploaded.push(json.template as EmailTemplate);
+      }
+      if (uploaded.length) onChange([...templates, ...uploaded]);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Action row */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <label
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: c.bgPage,
+            color: c.text,
+            border: `1px solid ${c.border}`,
+            borderRadius: 7,
+            padding: '7px 12px',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: uploading ? 'wait' : 'pointer',
+            fontFamily: 'var(--font-inter), sans-serif',
+            opacity: uploading ? 0.6 : 1,
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 12V3M4 7l4-4 4 4M3 13h10" />
+          </svg>
+          {uploading ? 'Lade hoch…' : 'Vorlage hochladen'}
+          <input
+            type="file"
+            accept=".eml,.txt,.html,.htm,message/rfc822,text/plain,text/html"
+            multiple
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.currentTarget.value = '';
+            }}
+            disabled={uploading}
+            style={{ display: 'none' }}
+          />
+        </label>
+        <button
+          onClick={addManual}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: c.accent,
+            color: c.bgPage === '#FFFFFF' ? '#fff' : c.bgPage,
+            border: 'none',
+            borderRadius: 7,
+            padding: '7px 12px',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-inter), sans-serif',
+          }}
+        >
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M8 3v10M3 8h10" />
+          </svg>
+          Vorlage schreiben
+        </button>
+        <span style={{ fontSize: 11, color: c.textSub, marginLeft: 'auto' }}>
+          Unterstützt: .eml · .txt · .html (max. 512 KB)
+        </span>
+      </div>
+
+      {uploadError && (
+        <div style={{ fontSize: 12, color: c.danger, fontWeight: 600 }}>{uploadError}</div>
+      )}
+
+      {/* Templates list */}
+      {templates.length === 0 ? (
+        <div
+          style={{
+            background: c.bgPage,
+            border: `1px dashed ${c.borderStrong}`,
+            borderRadius: 10,
+            padding: 18,
+            fontSize: 12,
+            color: c.textSub,
+            textAlign: 'center',
+            lineHeight: 1.55,
+          }}
+        >
+          Noch keine Vorlagen. Lade Beispiel-Mails hoch oder schreibe eine manuell — wir nutzen sie, um den Stil
+          des Absenders zu lernen.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {templates.map((tpl, idx) => (
+            <TemplateRow
+              key={idx}
+              template={tpl}
+              onChange={(patch) => updateTemplate(idx, patch)}
+              onRemove={() => removeTemplate(idx)}
+              c={c}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TemplateRow({
+  template,
+  onChange,
+  onRemove,
+  c,
+}: {
+  template: EmailTemplate;
+  onChange: (patch: Partial<EmailTemplate>) => void;
+  onRemove: () => void;
+  c: ReturnType<typeof colors>;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      style={{
+        background: c.bgPage,
+        border: `1px solid ${c.border}`,
+        borderRadius: 10,
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '10px 12px',
+        }}
+      >
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            width: 22,
+            height: 22,
+            background: 'transparent',
+            border: 'none',
+            color: c.textSub,
+            cursor: 'pointer',
+            padding: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          aria-label={open ? 'Einklappen' : 'Aufklappen'}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.12s' }}
+          >
+            <path d="M6 4l4 4-4 4" />
+          </svg>
+        </button>
+        <input
+          value={template.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+          placeholder="Vorlagen-Name"
+          style={{
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            fontSize: 13,
+            fontWeight: 700,
+            color: c.text,
+            fontFamily: 'var(--font-inter), sans-serif',
+          }}
+        />
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: c.textSub,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            background: c.bgCard,
+            border: `1px solid ${c.border}`,
+            borderRadius: 4,
+            padding: '2px 6px',
+          }}
+        >
+          {template.source === 'uploaded' ? 'Upload' : 'Manuell'}
+        </span>
+        <button
+          onClick={onRemove}
+          aria-label="Entfernen"
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 5,
+            border: 'none',
+            background: 'transparent',
+            color: c.textSub,
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      </div>
+      {open && (
+        <div
+          style={{
+            padding: '12px 12px 14px',
+            borderTop: `1px solid ${c.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <Field label="Betreff" c={c}>
+            <TextField
+              value={template.subject}
+              onChange={(v) => onChange({ subject: v })}
+              placeholder="z.B. Kurze Frage zu {{firma}}"
+              c={c}
+            />
+          </Field>
+          <Field label="Body" c={c}>
+            <TextArea
+              value={template.body}
+              onChange={(v) => onChange({ body: v })}
+              placeholder="Hallo {{vorname}}, …"
+              rows={8}
+              c={c}
+            />
+          </Field>
+        </div>
+      )}
     </div>
   );
 }
