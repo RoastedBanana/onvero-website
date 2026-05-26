@@ -1211,6 +1211,21 @@ function AbsenderEditor({
         </div>
       </Card>
 
+      {/* E-Mail-Vorlagen */}
+      <Card
+        title="E-Mail-Vorlagen"
+        sub="Lade alle bestehenden Mails hoch — daraus werden Vorlagen, Tonalität und Signatur abgeleitet"
+        c={c}
+      >
+        <EmailTemplatesEditor
+          profileId={profile.id}
+          templates={profile.emailTemplates}
+          onChange={(next) => onChange({ emailTemplates: next })}
+          onServerSync={onServerSync}
+          c={c}
+        />
+      </Card>
+
       {/* Outreach-Konfiguration */}
       <Card title="Outreach-Konfiguration" sub="Worum es geht und wie es klingen soll" c={c}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1320,21 +1335,6 @@ function AbsenderEditor({
             />
           </Field>
         </div>
-      </Card>
-
-      {/* E-Mail-Vorlagen */}
-      <Card
-        title="E-Mail-Vorlagen"
-        sub="Lade alle bestehenden Mails hoch — daraus werden Vorlagen, Tonalität und Signatur abgeleitet"
-        c={c}
-      >
-        <EmailTemplatesEditor
-          profileId={profile.id}
-          templates={profile.emailTemplates}
-          onChange={(next) => onChange({ emailTemplates: next })}
-          onServerSync={onServerSync}
-          c={c}
-        />
       </Card>
 
       {/* Signatur */}

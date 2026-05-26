@@ -237,7 +237,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const existingTemplates = Array.isArray(existing.email_templates)
       ? (existing.email_templates as EmailTemplate[])
       : [];
-    patch.email_templates = [...existingTemplates, ...newTemplates];
+    const keyOf = (t: { subject?: string; body?: string }) =>
+      `${(t.subject ?? '').trim()}\n${(t.body ?? '').trim()}`;
+    const existingKeys = new Set(existingTemplates.map(keyOf));
+    const freshTemplates = newTemplates.filter((t) => !existingKeys.has(keyOf(t)));
+    if (freshTemplates.length) {
+      patch.email_templates = [...existingTemplates, ...freshTemplates];
+    }
   }
 
   const newClaims = pickStringArray(item, 'forbidden_claims');
@@ -256,8 +262,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     patch.forbidden_phrases = Array.from(new Set([...existingPhrases, ...newPhrases]));
   }
 
+  // If everything was already written (e.g. n8n updated the row directly), just refetch
   if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: 'Stil-Agent hat keine Felder zurückgegeben' }, { status: 502 });
+    const { data: current, error: refetchErr } = await admin
+      .from(TABLE)
+      .select(SELECT_COLS)
+      .eq('id', id)
+      .eq('tenant_id', ctx.tenantId)
+      .single();
+    if (refetchErr || !current) {
+      return NextResponse.json({ error: 'Profil konnte nicht neu geladen werden' }, { status: 500 });
+    }
+    return NextResponse.json({ profile: current, addedTemplates: newTemplates });
   }
 
   const { data: updated, error: upErr } = await admin
