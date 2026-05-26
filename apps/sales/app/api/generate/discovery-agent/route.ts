@@ -15,11 +15,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = await req.json().catch(() => ({}));
-  const freetext = typeof body.freetext === 'string' ? body.freetext : '';
-  if (!freetext.trim()) {
-    return NextResponse.json({ error: 'freetext is required' }, { status: 400 });
-  }
+  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
   const client = getAdminClient();
   const { data: profile } = await client
@@ -28,10 +24,12 @@ export async function POST(req: NextRequest) {
     .eq('tenant_id', ctx.tenantId)
     .maybeSingle();
 
+  // Pass through whatever the caller sent (freetext, setup, config, ...),
+  // plus server-side context (tenant, user, profile, timestamp).
   const payload = {
+    ...body,
     tenant_id: ctx.tenantId,
     user_id: ctx.userId,
-    freetext,
     profile: profile ?? null,
     requested_at: new Date().toISOString(),
   };

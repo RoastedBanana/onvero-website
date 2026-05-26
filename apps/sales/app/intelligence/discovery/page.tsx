@@ -270,6 +270,46 @@ function getResponse(text: string) {
   return DEMO_RESPONSES.find((r) => r.keywords.some((k) => lower.includes(k))) ?? FALLBACK;
 }
 
+// ─── Webhook response → DeepResult[] (flexible parser) ──────────────────────
+function extractDeepLeads(payload: unknown): DeepResult[] {
+  if (!payload) return [];
+
+  let arr: unknown[] = [];
+  if (Array.isArray(payload)) {
+    arr = payload;
+  } else if (typeof payload === 'object') {
+    const obj = payload as Record<string, unknown>;
+    for (const key of ['leads', 'companies', 'results', 'items', 'data']) {
+      const v = obj[key];
+      if (Array.isArray(v)) {
+        arr = v;
+        break;
+      }
+    }
+    if (arr.length === 0 && (obj.company_name || obj.name || obj.website || obj.domain)) {
+      arr = [obj];
+    }
+  }
+
+  return arr.map((raw) => {
+    const r = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+    const str = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v));
+    const name = str(r.company_name ?? r.name ?? r.firma ?? 'Unbekannt');
+    const city = str(r.city ?? r.location ?? r.standort ?? r.ort ?? '');
+    const industry = str(r.industry ?? r.branche ?? r.sector ?? '');
+    const employees = str(r.employees ?? r.employee_count ?? r.mitarbeiter ?? r.size ?? '');
+    const source = str(r.source ?? r.quelle ?? 'Web');
+    const scoreRaw = r.score ?? r.fit_score ?? r.lead_score;
+    const score =
+      typeof scoreRaw === 'number'
+        ? Math.round(scoreRaw)
+        : typeof scoreRaw === 'string' && scoreRaw.length > 0
+          ? Math.round(Number(scoreRaw))
+          : undefined;
+    return { name, city, industry, employees, source, score };
+  });
+}
+
 // ─── Seed sessions ─────────────────────────────────────────────────────────────
 
 const möbelResponse = DEMO_RESPONSES[0];
@@ -2924,7 +2964,7 @@ export default function DiscoveryPage() {
     const title =
       [profile?.name, setup.orte[0], setup.weitereQueries[0]].filter(Boolean).join(' · ') || 'Deep-Suche';
 
-    // Phase 1: load raw list
+    // Phase 1: kick off webhook call
     patchActiveSession({
       deepGenerating: true,
       deepPreScoring: false,
@@ -2934,17 +2974,59 @@ export default function DiscoveryPage() {
       time: 'gerade eben',
     });
 
-    await new Promise((r) => setTimeout(r, 1400));
+    const freetext = [setup.rechercheFokus, ...setup.weitereQueries, ...setup.kriterien]
+      .filter((v) => v && v.length > 0)
+      .join(' · ');
 
-    const seed =
-      [setup.weitereQueries[0], setup.rechercheFokus, setup.kriterien[0]].find((v) => v && v.length > 0) ?? 'mode';
-    const { results } = getResponse(String(seed));
-    const raw: DeepResult[] = results
-      .concat(FALLBACK.results)
-      .slice(0, 10)
-      .map((r) => ({ ...r }));
+    let parsed: DeepResult[] = [];
+    let error: string | null = null;
 
-    // Phase 2: pre-scoring with star animation
+    try {
+      const res = await fetch('/api/generate/discovery-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          freetext,
+          mode: 'deep',
+          setup: {
+            angebots_profile_id: setup.angebotsProfileId,
+            angebots_profile_name: profile?.name ?? null,
+            recherche_fokus: setup.rechercheFokus,
+            weitere_queries: setup.weitereQueries,
+            kriterien: setup.kriterien,
+            orte: setup.orte,
+          },
+          config: {
+            sources: config.sources,
+            scoring_fit: config.scoringFit,
+            scoring_intent: config.scoringIntent,
+            scoring_timing: config.scoringTiming,
+          },
+          sources: Array.from(activeSession.sources ?? []),
+        }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+
+      parsed = extractDeepLeads(json.data ?? json);
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Unbekannter Fehler';
+    }
+
+    if (error) {
+      patchActiveSession({
+        deepGenerating: false,
+        deepPreScoring: false,
+        deepRawResults: [],
+        deepResults: [],
+        preview: 'Discovery fehlgeschlagen',
+      });
+      toast(`Discovery-Agent: ${error}`, 'error');
+      return;
+    }
+
+    // Phase 2: show raw list with pre-scoring animation
     setSessions((prev) =>
       prev.map((s) =>
         s.id === activeId
@@ -2952,19 +3034,20 @@ export default function DiscoveryPage() {
               ...s,
               deepGenerating: false,
               deepPreScoring: true,
-              deepRawResults: raw,
-              deepResults: raw,
+              deepRawResults: parsed,
+              deepResults: parsed,
             }
           : s,
       ),
     );
 
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 1200));
 
-    // Phase 3: assign scores, sort by score (keep all results)
-    const scored = raw
-      .map((r, i) => ({ ...r, score: Math.round(60 + Math.random() * 38 - i * 1.2) }))
-      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    // Phase 3: sort by score if present; otherwise keep webhook order
+    const hasScores = parsed.some((r) => typeof r.score === 'number');
+    const finalResults = hasScores
+      ? [...parsed].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+      : parsed;
 
     setSessions((prev) =>
       prev.map((s) =>
@@ -2972,8 +3055,11 @@ export default function DiscoveryPage() {
           ? {
               ...s,
               deepPreScoring: false,
-              deepResults: scored,
-              preview: `${scored.length} Leads nach Pre-Scoring`,
+              deepResults: finalResults,
+              preview:
+                finalResults.length > 0
+                  ? `${finalResults.length} Leads gefunden`
+                  : 'Keine Leads gefunden',
             }
           : s,
       ),
