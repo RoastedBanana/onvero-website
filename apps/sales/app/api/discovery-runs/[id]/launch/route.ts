@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionContext, getAdminClient } from '@onvero/lib/tenant-server';
+import { ingestScoringResult } from '../_scoring';
 
 const SCORING_WEBHOOK_URL = process.env.N8N_WEBHOOK_DEEP_RESEARCH_PARALLEL ?? '';
 
@@ -169,9 +170,12 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
     );
   }
 
-  // Fire scoring webhook per lead in parallel — fully fire-and-forget so the
-  // HTTP response can return immediately. n8n hits us back per lead via the
-  // callback_url; the client doesn't wait on this round-trip.
+  // Fire scoring webhook per lead in parallel. The HTTP response returns
+  // immediately (UI moves on), but we keep listening for each n8n response
+  // body — if it carries the success payload synchronously, we materialize
+  // the notification + flip gescored right there. (A separate callback POST
+  // to callback_url still works as a fallback path.)
+  const tenantIdForCallback = ctx.tenantId;
   void Promise.allSettled(
     promoted.map(({ lead_id, potential_lead_id }) =>
       fetch(SCORING_WEBHOOK_URL, {
@@ -184,18 +188,53 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
         },
         body: JSON.stringify({
           lead_id,
-          tenant_id: ctx.tenantId,
+          tenant_id: tenantIdForCallback,
           potential_lead_id,
           discovery_run_id: runId,
           callback_url: callbackUrl,
         }),
       })
-        .then((res) => {
+        .then(async (res) => {
+          const text = await res.text().catch(() => '');
           if (!res.ok) {
-            console.error('[launch] scoring webhook non-2xx', lead_id, res.status);
-          } else {
-            console.log('[launch] scoring webhook fired', lead_id, res.status);
+            console.error('[launch] scoring webhook non-2xx', lead_id, res.status, text.slice(0, 200));
+            return;
           }
+          console.log('[launch] scoring webhook fired', lead_id, res.status);
+
+          // If n8n responds synchronously with the success body, handle it
+          // inline so the notification appears without waiting for the
+          // (potentially unreachable in dev) callback round-trip.
+          let parsed: Record<string, unknown> | null = null;
+          try {
+            parsed = text ? JSON.parse(text) : null;
+          } catch {
+            return; // not JSON — nothing to ingest
+          }
+          if (!parsed) return;
+          const payload = (Array.isArray(parsed) ? parsed[0] : parsed) as Record<string, unknown>;
+          if (!payload || typeof payload !== 'object') return;
+          const responseLeadId =
+            typeof payload.lead_id === 'string' ? payload.lead_id : lead_id;
+          if (responseLeadId !== lead_id) {
+            console.warn('[launch] response lead_id mismatch', { sent: lead_id, got: responseLeadId });
+          }
+          await ingestScoringResult({
+            client,
+            tenantId: tenantIdForCallback,
+            leadId: lead_id,
+            potentialLeadId: potential_lead_id,
+            discoveryRunId: runId,
+            companyName: typeof payload.company_name === 'string' ? payload.company_name : undefined,
+            structuralFieldsUpdated:
+              typeof payload.structural_fields_updated === 'number'
+                ? payload.structural_fields_updated
+                : null,
+            hrbMatchStatus:
+              typeof payload.hrb_match_status === 'string' ? payload.hrb_match_status : null,
+            scoringComplete:
+              typeof payload.scoring_complete === 'boolean' ? payload.scoring_complete : true,
+          });
         })
         .catch((err) => console.error('[launch] scoring webhook rejected', lead_id, err)),
     ),
