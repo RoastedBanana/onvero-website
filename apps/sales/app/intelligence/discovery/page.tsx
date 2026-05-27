@@ -152,7 +152,8 @@ function formatRevenue(cents: number): string {
 }
 
 function deepLeadKey(r: DeepResult, i: number): string {
-  return r.url || `${r.name}__${r.city}__${i}`;
+  // Always include the index so duplicate URLs/names can't collide.
+  return `${r.url || r.name || 'lead'}__${i}`;
 }
 
 function normalizeUrl(u: string | undefined | null): string | null {
