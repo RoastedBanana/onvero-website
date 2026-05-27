@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionContext, getAdminClient } from '@onvero/lib/tenant-server';
-import { ingestScoringResult } from '../_scoring';
+import { ingestScoringResult } from '../../_scoring';
 
 const SCORING_WEBHOOK_URL = process.env.N8N_WEBHOOK_DEEP_RESEARCH_PARALLEL ?? '';
 
