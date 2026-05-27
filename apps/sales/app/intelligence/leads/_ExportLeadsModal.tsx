@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { colors } from '../layout';
-import { EXPORT_FIELD_GROUPS, DEFAULT_SELECTED_FIELDS } from './_export-fields';
+import { EXPORT_FIELD_GROUPS, DEFAULT_SELECTED_FIELDS, fieldId } from './_export-fields';
 
 type Scope = 'selected' | 'filtered' | 'all';
 type Format = 'csv' | 'xlsx';
@@ -69,8 +69,9 @@ export function ExportLeadsModal({
     setFields((prev) => {
       const next = new Set(prev);
       for (const f of group.fields) {
-        if (on) next.add(f.key);
-        else next.delete(f.key);
+        const id = fieldId(f);
+        if (on) next.add(id);
+        else next.delete(id);
       }
       return next;
     });
@@ -79,7 +80,7 @@ export function ExportLeadsModal({
   const groupCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const g of EXPORT_FIELD_GROUPS) {
-      counts[g.id] = g.fields.filter((f) => fields.has(f.key)).length;
+      counts[g.id] = g.fields.filter((f) => fields.has(fieldId(f))).length;
     }
     return counts;
   }, [fields]);
@@ -350,10 +351,11 @@ export function ExportLeadsModal({
                         }}
                       >
                         {group.fields.map((f) => {
-                          const checked = fields.has(f.key);
+                          const id = fieldId(f);
+                          const checked = fields.has(id);
                           return (
                             <label
-                              key={f.key}
+                              key={id}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -369,7 +371,7 @@ export function ExportLeadsModal({
                               <span
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  toggleField(f.key);
+                                  toggleField(id);
                                 }}
                                 style={{
                                   width: 16,
@@ -393,7 +395,7 @@ export function ExportLeadsModal({
                               <input
                                 type="checkbox"
                                 checked={checked}
-                                onChange={() => toggleField(f.key)}
+                                onChange={() => toggleField(id)}
                                 style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
                                 tabIndex={-1}
                               />

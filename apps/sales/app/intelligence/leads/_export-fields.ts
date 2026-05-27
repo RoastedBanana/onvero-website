@@ -3,8 +3,9 @@
 // Group order = order shown in the modal.
 
 export type ExportField = {
-  key: string; // Supabase column on `leads`
+  key: string; // Supabase column name (on `leads` or on `lead_contacts`)
   label: string; // German label shown in the modal & as the column header
+  source?: 'lead' | 'contact'; // omit = 'lead'
 };
 
 export type ExportFieldGroup = {
@@ -12,6 +13,26 @@ export type ExportFieldGroup = {
   label: string; // German group title
   fields: ExportField[];
 };
+
+// Separator used when joining multiple contact values into a single lead row's cell.
+export const CONTACT_VALUE_SEPARATOR = ' | ';
+
+// A qualified field id is `${source}:${column}` (e.g. "contact:email", "lead:phone").
+// We use this so the same column name on `leads` vs `lead_contacts` (email, phone, city…)
+// doesn't collide in the selected-set or in the API payload.
+export function fieldId(f: ExportField): string {
+  return `${f.source ?? 'lead'}:${f.key}`;
+}
+
+export function parseFieldId(id: string): { source: 'lead' | 'contact'; key: string } | null {
+  const idx = id.indexOf(':');
+  if (idx < 1) return null;
+  const source = id.slice(0, idx);
+  const key = id.slice(idx + 1);
+  if (source !== 'lead' && source !== 'contact') return null;
+  if (!key) return null;
+  return { source, key };
+}
 
 export const EXPORT_FIELD_GROUPS: ExportFieldGroup[] = [
   {
@@ -26,6 +47,35 @@ export const EXPORT_FIELD_GROUPS: ExportFieldGroup[] = [
       { key: 'city', label: 'Stadt' },
       { key: 'country', label: 'Land' },
       { key: 'registered_seat', label: 'Sitz' },
+    ],
+  },
+  {
+    id: 'personen',
+    label: 'Personen (Outbound)',
+    fields: [
+      { key: 'full_name', label: 'Voller Name', source: 'contact' },
+      { key: 'first_name', label: 'Vorname', source: 'contact' },
+      { key: 'last_name', label: 'Nachname', source: 'contact' },
+      { key: 'title', label: 'Position', source: 'contact' },
+      { key: 'email', label: 'E-Mail', source: 'contact' },
+      { key: 'email_status', label: 'E-Mail-Status', source: 'contact' },
+      { key: 'phone', label: 'Telefon (Person)', source: 'contact' },
+      { key: 'mobile_phone', label: 'Mobil', source: 'contact' },
+      { key: 'linkedin_url', label: 'LinkedIn (Person)', source: 'contact' },
+      { key: 'twitter_url', label: 'X / Twitter (Person)', source: 'contact' },
+      { key: 'seniority', label: 'Seniorität', source: 'contact' },
+      { key: 'departments', label: 'Abteilung(en)', source: 'contact' },
+      { key: 'functions', label: 'Funktion(en)', source: 'contact' },
+      { key: 'headline', label: 'Headline', source: 'contact' },
+      { key: 'city', label: 'Stadt (Person)', source: 'contact' },
+      { key: 'country', label: 'Land (Person)', source: 'contact' },
+      { key: 'is_primary', label: 'Primärkontakt', source: 'contact' },
+      { key: 'decision_maker_score', label: 'Entscheider-Score', source: 'contact' },
+      { key: 'contact_quality_score', label: 'Kontakt-Qualität', source: 'contact' },
+      { key: 'status', label: 'Outbound-Status', source: 'contact' },
+      { key: 'last_contacted_at', label: 'Zuletzt kontaktiert', source: 'contact' },
+      { key: 'email_draft_subject', label: 'Mail-Entwurf (Betreff)', source: 'contact' },
+      { key: 'email_draft_body', label: 'Mail-Entwurf (Text)', source: 'contact' },
     ],
   },
   {
@@ -232,24 +282,26 @@ export const EXPORT_FIELD_GROUPS: ExportFieldGroup[] = [
   },
 ];
 
-// Default selection — the fields ticked when the modal opens.
+// Default selection — the fields ticked when the modal opens (qualified ids).
 export const DEFAULT_SELECTED_FIELDS: string[] = [
-  'company_name',
-  'phone',
-  'website',
-  'city',
-  'industry',
-  'num_employees',
-  'lead_score',
-  'tier',
+  'lead:company_name',
+  'lead:phone',
+  'lead:website',
+  'lead:city',
+  'lead:industry',
+  'lead:num_employees',
+  'lead:lead_score',
+  'lead:tier',
 ];
 
-export function getFieldLabel(key: string): string {
+export function getFieldLabel(id: string): string {
+  const parsed = parseFieldId(id);
+  if (!parsed) return id;
   for (const group of EXPORT_FIELD_GROUPS) {
-    const f = group.fields.find((x) => x.key === key);
+    const f = group.fields.find((x) => x.key === parsed.key && (x.source ?? 'lead') === parsed.source);
     if (f) return f.label;
   }
-  return key;
+  return id;
 }
 
 // Format a raw Supabase value for a flat cell (CSV/XLSX).
