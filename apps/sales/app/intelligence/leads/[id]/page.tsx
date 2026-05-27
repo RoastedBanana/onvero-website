@@ -178,7 +178,23 @@ interface LeadDetail {
   shipping_has_own_warehouse?: boolean;
   shipping_international_pct?: number;
   shipping_countries?: string[];
-  shipping_pain_signals?: { signal: string; severity?: string; evidence?: string }[];
+  shipping_pain_signals?: {
+    signal: string;
+    severity?: string;
+    evidence?: string;
+    source?: string;
+    source_url?: string;
+  }[];
+  shipping_carrier_complaints?: { carrier?: string; complaint?: string; frequency?: string }[];
+  shipping_recommended_services?: { service: string; reason?: string }[];
+  shipping_analysis_summary?: string;
+  shipping_approach_angle?: string;
+  shipping_delivery_promise?: string;
+  shipping_return_policy?: string;
+  shipping_free_threshold_eur?: number;
+  shipping_warehouse_m2?: number;
+  shipping_tech_integration?: string;
+  shipping_volume_method?: string;
   shipping_analyzed_at?: string;
   legal_form?: string;
   hrb_number?: string;
@@ -624,8 +640,38 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
         : undefined,
     shipping_countries: Array.isArray(d.shipping_countries) ? (d.shipping_countries as string[]) : [],
     shipping_pain_signals: Array.isArray(d.shipping_pain_signals)
-      ? (d.shipping_pain_signals as { signal: string; severity?: string; evidence?: string }[])
+      ? (d.shipping_pain_signals as {
+          signal: string;
+          severity?: string;
+          evidence?: string;
+          source?: string;
+          source_url?: string;
+        }[])
       : [],
+    shipping_carrier_complaints: Array.isArray(d.shipping_carrier_complaints)
+      ? (d.shipping_carrier_complaints as {
+          carrier?: string;
+          complaint?: string;
+          frequency?: string;
+        }[])
+      : [],
+    shipping_recommended_services: Array.isArray(d.shipping_recommended_services)
+      ? (d.shipping_recommended_services as { service: string; reason?: string }[])
+      : [],
+    shipping_analysis_summary: d.shipping_analysis_summary as string | undefined,
+    shipping_approach_angle: d.shipping_approach_angle as string | undefined,
+    shipping_delivery_promise: d.shipping_delivery_promise as string | undefined,
+    shipping_return_policy: d.shipping_return_policy as string | undefined,
+    shipping_free_threshold_eur:
+      typeof d.shipping_free_threshold_eur === 'number'
+        ? (d.shipping_free_threshold_eur as number)
+        : undefined,
+    shipping_warehouse_m2:
+      typeof d.shipping_warehouse_m2 === 'number'
+        ? (d.shipping_warehouse_m2 as number)
+        : undefined,
+    shipping_tech_integration: d.shipping_tech_integration as string | undefined,
+    shipping_volume_method: d.shipping_volume_method as string | undefined,
     shipping_analyzed_at: d.shipping_analyzed_at as string | undefined,
     legal_form: d.legal_form as string | undefined,
     hrb_number: d.hrb_number as string | undefined,
@@ -6427,6 +6473,51 @@ function BewertungenDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnTyp
   );
 }
 
+// Parses inline [https://...] citations in agent-written text and renders
+// them as small clickable ↗ badges. Returns an array of React nodes.
+function renderWithCitations(text: string | undefined): React.ReactNode {
+  if (!text) return null;
+  const seen = new Map<string, number>();
+  const parts = text.split(/(\[https?:\/\/[^\]\s]+\])/g);
+  return parts.map((part, idx) => {
+    const m = part.match(/^\[(https?:\/\/[^\]\s]+)\]$/);
+    if (m) {
+      const url = m[1];
+      if (!seen.has(url)) seen.set(url, seen.size + 1);
+      const n = seen.get(url)!;
+      return (
+        <a
+          key={`c-${idx}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={url}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 2,
+            padding: '0 5px',
+            marginLeft: 3,
+            marginRight: 1,
+            fontSize: 10,
+            fontWeight: 700,
+            color: '#0EA5E9',
+            background: 'rgba(14,165,233,0.1)',
+            border: '1px solid rgba(14,165,233,0.22)',
+            borderRadius: 4,
+            textDecoration: 'none',
+            verticalAlign: 'baseline',
+            cursor: 'pointer',
+          }}
+        >
+          [{n}]
+        </a>
+      );
+    }
+    return <span key={`t-${idx}`}>{part}</span>;
+  });
+}
+
 function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
   const cardBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.025)';
   const cardBorder = isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)';
@@ -6444,16 +6535,24 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
   const carriers = lead.shipping_carriers_detected ?? [];
   const countries = lead.shipping_countries ?? [];
   const pains = lead.shipping_pain_signals ?? [];
+  const carrierComplaints = lead.shipping_carrier_complaints ?? [];
+  const recommendedServices = lead.shipping_recommended_services ?? [];
 
   const hasAny =
     typeof score === 'number' ||
     carriers.length > 0 ||
     countries.length > 0 ||
     pains.length > 0 ||
+    carrierComplaints.length > 0 ||
+    recommendedServices.length > 0 ||
+    lead.shipping_analysis_summary ||
+    lead.shipping_approach_angle ||
     lead.shipping_fulfillment_model ||
     lead.shipping_estimated_volume ||
     lead.shipping_logistics_complexity ||
     lead.shipping_savings_potential ||
+    lead.shipping_delivery_promise ||
+    lead.shipping_return_policy ||
     typeof lead.shipping_has_own_warehouse === 'boolean' ||
     typeof lead.shipping_international_pct === 'number';
 
@@ -6521,13 +6620,40 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
           <div style={labelStyle}>Reasoning</div>
           {lead.shipping_sps_fit_reasoning ? (
             <p style={{ fontSize: 13, lineHeight: 1.6, color: c.text, margin: 0, whiteSpace: 'pre-wrap' as const }}>
-              {lead.shipping_sps_fit_reasoning}
+              {renderWithCitations(lead.shipping_sps_fit_reasoning)}
             </p>
           ) : (
             <p style={{ fontSize: 13, color: c.textMuted, margin: 0 }}>—</p>
           )}
         </div>
       </div>
+
+      {/* Analysis summary */}
+      {lead.shipping_analysis_summary && (
+        <div style={cardStyle}>
+          <div style={labelStyle}>Analyse-Zusammenfassung</div>
+          <p style={{ fontSize: 13, lineHeight: 1.65, color: c.text, margin: 0, whiteSpace: 'pre-wrap' as const }}>
+            {renderWithCitations(lead.shipping_analysis_summary)}
+          </p>
+        </div>
+      )}
+
+      {/* Approach angle — high-signal sales hook */}
+      {lead.shipping_approach_angle && (
+        <div
+          style={{
+            background: 'rgba(14,165,233,0.08)',
+            border: '1px solid rgba(14,165,233,0.25)',
+            borderRadius: 12,
+            padding: '16px 18px',
+          }}
+        >
+          <div style={{ ...labelStyle, color: '#0EA5E9' }}>Outreach-Aufhänger</div>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: c.text, margin: 0, whiteSpace: 'pre-wrap' as const, fontWeight: 500 }}>
+            {renderWithCitations(lead.shipping_approach_angle)}
+          </p>
+        </div>
+      )}
 
       {/* Carriers + Countries */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -6593,7 +6719,11 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
       >
         {[
           { label: 'Fulfillment-Modell', value: lead.shipping_fulfillment_model },
-          { label: 'Geschätztes Volumen', value: lead.shipping_estimated_volume },
+          {
+            label: 'Geschätztes Volumen',
+            value: lead.shipping_estimated_volume,
+            hint: lead.shipping_volume_method,
+          },
           { label: 'Logistik-Komplexität', value: lead.shipping_logistics_complexity },
           {
             label: 'Eigenes Lager',
@@ -6602,6 +6732,10 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
                 ? lead.shipping_has_own_warehouse
                   ? 'Ja'
                   : 'Nein'
+                : undefined,
+            hint:
+              typeof lead.shipping_warehouse_m2 === 'number'
+                ? `${lead.shipping_warehouse_m2.toLocaleString('de-DE')} m²`
                 : undefined,
           },
           {
@@ -6612,11 +6746,22 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
                 : undefined,
           },
           { label: 'Einspar-Potenzial', value: lead.shipping_savings_potential },
+          { label: 'Tech-Integration', value: lead.shipping_tech_integration },
+          {
+            label: 'Gratis-Versand ab',
+            value:
+              typeof lead.shipping_free_threshold_eur === 'number'
+                ? `${lead.shipping_free_threshold_eur.toLocaleString('de-DE')} €`
+                : undefined,
+          },
         ].map((kv, i) =>
           kv.value ? (
             <div key={i} style={cardStyle}>
               <div style={labelStyle}>{kv.label}</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{kv.value}</div>
+              {kv.hint && (
+                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>{kv.hint}</div>
+              )}
             </div>
           ) : null,
         )}
@@ -6627,57 +6772,267 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
         <div style={cardStyle}>
           <div style={{ ...labelStyle, color: '#EF4444' }}>Pain Signals ({pains.length})</div>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-            {pains.map((p, i) => (
+            {pains.map((p, i) => {
+              const sevColor =
+                p.severity?.toLowerCase() === 'high'
+                  ? '#EF4444'
+                  : p.severity?.toLowerCase() === 'medium'
+                    ? '#F59E0B'
+                    : p.severity?.toLowerCase() === 'low'
+                      ? '#0EA5E9'
+                      : '#EF4444';
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '11px 13px',
+                    background: 'rgba(239,68,68,0.05)',
+                    border: '1px solid rgba(239,68,68,0.18)',
+                    borderRadius: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: sevColor,
+                      marginTop: 6,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{p.signal}</div>
+                    {p.evidence && (
+                      <div style={{ fontSize: 12, color: c.textSub, marginTop: 3, lineHeight: 1.5 }}>
+                        {p.evidence}
+                      </div>
+                    )}
+                    {(p.source_url || p.source) && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          marginTop: 6,
+                          flexWrap: 'wrap' as const,
+                        }}
+                      >
+                        {p.source_url && (
+                          <a
+                            href={p.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={p.source_url}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: '#0EA5E9',
+                              background: 'rgba(14,165,233,0.1)',
+                              border: '1px solid rgba(14,165,233,0.22)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              textDecoration: 'none',
+                              maxWidth: 360,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap' as const,
+                            }}
+                          >
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M14 3h7v7" />
+                              <path d="M21 3l-9 9" />
+                              <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
+                            </svg>
+                            {(() => {
+                              try {
+                                return new URL(p.source_url).hostname.replace(/^www\./, '');
+                              } catch {
+                                return 'Quelle';
+                              }
+                            })()}
+                          </a>
+                        )}
+                        {p.source && !p.source_url && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: c.textMuted,
+                              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              textTransform: 'uppercase' as const,
+                              letterSpacing: '0.05em',
+                            }}
+                          >
+                            {p.source}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {p.severity && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '2px 7px',
+                        borderRadius: 99,
+                        background: sevColor + '22',
+                        color: sevColor,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {p.severity}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Carrier complaints */}
+      {carrierComplaints.length > 0 && (
+        <div style={cardStyle}>
+          <div style={labelStyle}>Carrier-Beschwerden ({carrierComplaints.length})</div>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+            {carrierComplaints.map((cc, i) => (
               <div
                 key={i}
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: 10,
-                  padding: '10px 12px',
-                  background: 'rgba(239,68,68,0.05)',
-                  border: '1px solid rgba(239,68,68,0.18)',
+                  padding: '9px 12px',
+                  background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
                   borderRadius: 8,
+                  border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.04)',
                 }}
               >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: '#EF4444',
-                    marginTop: 6,
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{p.signal}</div>
-                  {p.evidence && (
-                    <div style={{ fontSize: 12, color: c.textSub, marginTop: 3, lineHeight: 1.5 }}>
-                      {p.evidence}
-                    </div>
-                  )}
-                </div>
-                {p.severity && (
+                {cc.carrier && (
                   <span
                     style={{
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: 700,
-                      padding: '2px 7px',
-                      borderRadius: 99,
-                      background: 'rgba(239,68,68,0.12)',
-                      color: '#EF4444',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
+                      padding: '3px 8px',
+                      borderRadius: 6,
+                      background: 'rgba(14,165,233,0.1)',
+                      color: '#0EA5E9',
                       flexShrink: 0,
                     }}
                   >
-                    {p.severity}
+                    {cc.carrier}
+                  </span>
+                )}
+                <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: c.text, lineHeight: 1.5 }}>
+                  {cc.complaint ?? '—'}
+                </div>
+                {cc.frequency && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: c.textMuted,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {cc.frequency}
                   </span>
                 )}
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Recommended SPS services */}
+      {recommendedServices.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ ...labelStyle, color: '#10B981' }}>
+            Empfohlene SPS-Services ({recommendedServices.length})
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 8,
+            }}
+          >
+            {recommendedServices.map((rs, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: '11px 13px',
+                  background: 'rgba(16,185,129,0.06)',
+                  border: '1px solid rgba(16,185,129,0.2)',
+                  borderRadius: 8,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#10B981',
+                    marginBottom: rs.reason ? 4 : 0,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 8l3 3 7-7" />
+                  </svg>
+                  {rs.service}
+                </div>
+                {rs.reason && (
+                  <div style={{ fontSize: 12, color: c.textSub, lineHeight: 1.5 }}>{rs.reason}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Delivery & Returns */}
+      {(lead.shipping_delivery_promise || lead.shipping_return_policy) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          {lead.shipping_delivery_promise && (
+            <div style={cardStyle}>
+              <div style={labelStyle}>Lieferversprechen</div>
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: c.text, margin: 0 }}>
+                {renderWithCitations(lead.shipping_delivery_promise)}
+              </p>
+            </div>
+          )}
+          {lead.shipping_return_policy && (
+            <div style={cardStyle}>
+              <div style={labelStyle}>Retourenpolitik</div>
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: c.text, margin: 0 }}>
+                {renderWithCitations(lead.shipping_return_policy)}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
