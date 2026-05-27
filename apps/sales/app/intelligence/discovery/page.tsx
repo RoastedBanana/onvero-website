@@ -3071,6 +3071,7 @@ function ChatSidebar({
   sessions,
   activeId,
   collapsed,
+  runsLoading,
   onToggleCollapsed,
   onSelect,
   onNew,
@@ -3082,6 +3083,7 @@ function ChatSidebar({
   sessions: ChatSession[];
   activeId: string;
   collapsed: boolean;
+  runsLoading: boolean;
   onToggleCollapsed: () => void;
   onSelect: (id: string) => void;
   onNew: () => void;
@@ -3241,6 +3243,12 @@ function ChatSidebar({
       {/* Grouped sessions — only when expanded */}
       {!collapsed && (
         <div style={{ flex: 1, padding: '0 6px 16px', overflowY: 'auto', overflowX: 'hidden' }}>
+          <style>{`
+            @keyframes onveroSkeletonShimmer {
+              0% { background-position: -200px 0; }
+              100% { background-position: calc(200px + 100%) 0; }
+            }
+          `}</style>
           {GROUP_ORDER.map((group) => {
             const items = grouped[group];
             if (items.length === 0) return null;
@@ -3462,6 +3470,43 @@ function ChatSidebar({
               </div>
             );
           })}
+          {runsLoading && (
+            <div style={{ paddingTop: 4 }}>
+              {[0, 1, 2, 3].map((i) => {
+                const widths = ['72%', '58%', '84%', '46%'];
+                return (
+                  <div
+                    key={`skeleton-${i}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 10px',
+                      height: 34,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: 12,
+                        width: widths[i],
+                        borderRadius: 4,
+                        background: `linear-gradient(90deg, ${
+                          isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                        } 0px, ${
+                          isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)'
+                        } 80px, ${
+                          isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                        } 160px)`,
+                        backgroundSize: '200px 100%',
+                        animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                        animationDelay: `${i * 0.12}s`,
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </motion.aside>
@@ -3489,6 +3534,7 @@ export default function DiscoveryPage() {
   ]);
   const [activeId, setActiveId] = useState<string>('__fresh_default__');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [runsLoading, setRunsLoading] = useState(true);
 
   useEffect(() => {
     try {
@@ -3516,6 +3562,8 @@ export default function DiscoveryPage() {
         });
       } catch {
         // ignore
+      } finally {
+        if (!cancelled) setRunsLoading(false);
       }
     })();
     return () => {
@@ -4156,6 +4204,7 @@ export default function DiscoveryPage() {
         sessions={sessions}
         activeId={activeId}
         collapsed={sidebarCollapsed}
+        runsLoading={runsLoading}
         onToggleCollapsed={toggleSidebar}
         onSelect={(id) => {
           setActiveId(id);
