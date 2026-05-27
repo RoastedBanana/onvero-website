@@ -174,6 +174,8 @@ type ChatSession = {
   deepPreScoring?: boolean;
   deepLaunching?: boolean;
   deepLaunched?: boolean;
+  discoveryRunId?: string;
+  discoveryRunLoaded?: boolean;
 };
 
 const DEMO_RESPONSES: { keywords: string[]; reply: string; results: DiscoveryResult[] }[] = [
@@ -308,6 +310,41 @@ function deepFindUrl(obj: unknown, depth = 0): string | null {
     }
   }
   return null;
+}
+
+interface ApiPotentialLead {
+  id: string;
+  company_name: string;
+  city: string | null;
+  country: string | null;
+  website_url: string | null;
+  linkedin_url: string | null;
+  employee_count: number | null;
+  raw_data: Record<string, unknown> | null;
+  created_at: string;
+}
+
+function apiLeadToDeepResult(l: ApiPotentialLead): DeepResult {
+  const raw = (l.raw_data ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v));
+  const industry = str(raw.industry ?? raw.branche ?? raw.sector ?? '');
+  const source = str(raw.source ?? raw.quelle ?? 'Web');
+  const scoreRaw = raw.score ?? raw.fit_score ?? raw.lead_score;
+  const score =
+    typeof scoreRaw === 'number'
+      ? Math.round(scoreRaw)
+      : typeof scoreRaw === 'string' && scoreRaw.length > 0
+        ? Math.round(Number(scoreRaw))
+        : undefined;
+  return {
+    name: l.company_name,
+    city: l.city ?? str(raw.city) ?? '',
+    industry,
+    employees: l.employee_count != null ? String(l.employee_count) : str(raw.employees),
+    source,
+    score,
+    url: l.website_url ?? undefined,
+  };
 }
 
 // ─── Webhook response → DeepResult[] (flexible parser) ──────────────────────
@@ -525,6 +562,72 @@ const GROUP_LABELS: Record<SessionGroup, string> = {
   'Diese Woche': 'DIESE WOCHE',
   Früher: 'FRÜHER',
 };
+
+function groupForDate(d: Date): SessionGroup {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday);
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfWeek.getDate() - 7);
+  if (d >= startOfToday) return 'Heute';
+  if (d >= startOfYesterday) return 'Gestern';
+  if (d >= startOfWeek) return 'Diese Woche';
+  return 'Früher';
+}
+
+function timeAgo(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'gerade eben';
+  if (m < 60) return `vor ${m} Min.`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `vor ${h} Std.`;
+  const days = Math.floor(h / 24);
+  return `vor ${days} Tag${days === 1 ? '' : 'en'}`;
+}
+
+interface DiscoveryRunApi {
+  id: string;
+  name: string;
+  status: string;
+  lead_count: number;
+  setup: {
+    angebots_profile_id?: string | null;
+    recherche_fokus?: string;
+    weitere_queries?: string[];
+    kriterien?: string[];
+    orte?: string[];
+  } | null;
+  angebots_profile_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function runToSession(run: DiscoveryRunApi): ChatSession {
+  const setup = run.setup ?? {};
+  return {
+    id: `run_${run.id}`,
+    title: run.name || 'Neue Suche',
+    preview: run.lead_count > 0 ? `${run.lead_count} Leads` : 'Keine Leads',
+    time: timeAgo(run.created_at),
+    group: groupForDate(new Date(run.created_at)),
+    messages: [],
+    sources: new Set(),
+    mode: 'deep',
+    discoveryRunId: run.id,
+    discoveryRunLoaded: false,
+    deepStep: 'setup',
+    deepSetup: {
+      angebotsProfileId: run.angebots_profile_id ?? setup.angebots_profile_id ?? null,
+      rechercheFokus: setup.recherche_fokus ?? '',
+      weitereQueries: setup.weitere_queries ?? [],
+      kriterien: setup.kriterien ?? [],
+      orte: setup.orte ?? [],
+    },
+  };
+}
 
 // ─── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -2788,6 +2891,8 @@ function ChatSidebar({
   onToggleCollapsed,
   onSelect,
   onNew,
+  onRename,
+  onDelete,
 }: {
   c: ReturnType<typeof colors>;
   isDark: boolean;
@@ -2797,8 +2902,35 @@ function ChatSidebar({
   onToggleCollapsed: () => void;
   onSelect: (id: string) => void;
   onNew: () => void;
+  onRename: (sessionId: string, newName: string) => Promise<void> | void;
+  onDelete: (sessionId: string) => Promise<void> | void;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const close = () => setMenuOpenId(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [menuOpenId]);
+
+  function startRename(s: ChatSession) {
+    setMenuOpenId(null);
+    setRenamingId(s.id);
+    setRenameValue(s.title);
+  }
+
+  async function commitRename(s: ChatSession) {
+    const next = renameValue.trim();
+    if (next && next !== s.title) {
+      await onRename(s.id, next);
+    }
+    setRenamingId(null);
+    setRenameValue('');
+  }
 
   const hoverBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.055)';
   const activeBg = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
@@ -2937,42 +3069,211 @@ function ChatSidebar({
                 {items.map((session) => {
                   const isActive = session.id === activeId;
                   const isHovered = hoveredId === session.id;
+                  const isRenaming = renamingId === session.id;
+                  const canManage = !!session.discoveryRunId;
+                  const menuOpen = menuOpenId === session.id;
                   return (
-                    <button
+                    <div
                       key={session.id}
-                      onClick={() => onSelect(session.id)}
                       onMouseEnter={() => setHoveredId(session.id)}
                       onMouseLeave={() => setHoveredId(null)}
                       style={{
-                        width: '100%',
+                        position: 'relative',
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '0 10px',
+                        padding: '0 4px 0 10px',
                         height: 34,
                         borderRadius: 8,
-                        cursor: 'pointer',
+                        cursor: isRenaming ? 'text' : 'pointer',
                         background: isActive ? activeBg : isHovered ? hoverBg : 'transparent',
-                        border: 'none',
-                        textAlign: 'left',
-                        fontFamily: 'var(--font-inter), Inter, sans-serif',
                         transition: 'background 80ms ease-out',
-                        boxSizing: 'border-box',
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: isActive ? 600 : 400,
-                          color: isActive ? c.text : c.textSub,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          width: '100%',
-                        }}
-                      >
-                        {session.title}
-                      </span>
-                    </button>
+                      {isRenaming ? (
+                        <input
+                          autoFocus
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onBlur={() => void commitRename(session)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') void commitRename(session);
+                            if (e.key === 'Escape') {
+                              setRenamingId(null);
+                              setRenameValue('');
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: c.text,
+                            background: isDark
+                              ? 'rgba(255,255,255,0.08)'
+                              : 'rgba(0,0,0,0.04)',
+                            border: `1px solid ${
+                              isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'
+                            }`,
+                            borderRadius: 6,
+                            padding: '4px 6px',
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => onSelect(session.id)}
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              height: '100%',
+                              padding: 0,
+                              background: 'transparent',
+                              border: 'none',
+                              textAlign: 'left',
+                              fontFamily: 'inherit',
+                              cursor: 'pointer',
+                              color: 'inherit',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 13,
+                                fontWeight: isActive ? 600 : 400,
+                                color: isActive ? c.text : c.textSub,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                width: '100%',
+                              }}
+                            >
+                              {session.title}
+                            </span>
+                          </button>
+                          {canManage && (isHovered || isActive || menuOpen) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuOpenId(menuOpen ? null : session.id);
+                              }}
+                              title="Aktionen"
+                              aria-label="Aktionen"
+                              style={{
+                                width: 24,
+                                height: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 6,
+                                border: 'none',
+                                background: menuOpen ? hoverBg : 'transparent',
+                                color: c.textMuted,
+                                cursor: 'pointer',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 16 16"
+                                fill="currentColor"
+                                aria-hidden="true"
+                              >
+                                <circle cx="3" cy="8" r="1.4" />
+                                <circle cx="8" cy="8" r="1.4" />
+                                <circle cx="13" cy="8" r="1.4" />
+                              </svg>
+                            </button>
+                          )}
+                          {menuOpen && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'absolute',
+                                top: 32,
+                                right: 4,
+                                zIndex: 30,
+                                minWidth: 160,
+                                background: isDark
+                                  ? 'rgba(20,22,38,0.96)'
+                                  : 'rgba(255,255,255,0.98)',
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                                border: isDark
+                                  ? '1px solid rgba(255,255,255,0.10)'
+                                  : '1px solid rgba(0,0,0,0.08)',
+                                borderRadius: 8,
+                                padding: 4,
+                                boxShadow: isDark
+                                  ? '0 12px 32px rgba(0,0,0,0.45)'
+                                  : '0 12px 32px rgba(0,0,0,0.12)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                              }}
+                            >
+                              <button
+                                onClick={() => startRename(session)}
+                                style={{
+                                  textAlign: 'left',
+                                  padding: '7px 10px',
+                                  borderRadius: 6,
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: c.text,
+                                  fontSize: 13,
+                                  cursor: 'pointer',
+                                  fontFamily: 'inherit',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = hoverBg;
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                Umbenennen
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setMenuOpenId(null);
+                                  if (
+                                    confirm(
+                                      `Run „${session.title}" wirklich löschen? Alle Leads dieser Run gehen verloren.`,
+                                    )
+                                  ) {
+                                    void onDelete(session.id);
+                                  }
+                                }}
+                                style={{
+                                  textAlign: 'left',
+                                  padding: '7px 10px',
+                                  borderRadius: 6,
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: '#EF4444',
+                                  fontSize: 13,
+                                  cursor: 'pointer',
+                                  fontFamily: 'inherit',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = isDark
+                                    ? 'rgba(239,68,68,0.12)'
+                                    : 'rgba(239,68,68,0.08)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                Löschen
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -3002,7 +3303,6 @@ export default function DiscoveryPage() {
       messages: [],
       sources: new Set<SourceId>(['google_maps', 'linkedin', 'web']),
     },
-    ...SEED_SESSIONS,
   ]);
   const [activeId, setActiveId] = useState<string>('__fresh_default__');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -3014,6 +3314,30 @@ export default function DiscoveryPage() {
     } catch {
       // ignore
     }
+  }, []);
+
+  // Load persisted discovery runs as sessions.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/discovery-runs', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as { runs?: DiscoveryRunApi[] };
+        if (cancelled || !Array.isArray(json.runs)) return;
+        const runSessions = json.runs.map(runToSession);
+        setSessions((prev) => {
+          const fresh = prev.find((s) => s.id === '__fresh_default__');
+          const head: ChatSession[] = fresh ? [fresh] : [];
+          return [...head, ...runSessions];
+        });
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function toggleSidebar() {
@@ -3083,6 +3407,45 @@ export default function DiscoveryPage() {
   const needsModePick = !hasMessages && !activeMode;
   const isBulkView = activeMode === 'bulk';
   const isDeepView = activeMode === 'deep';
+
+  // Lazy-load leads for a run session that the user selected from the sidebar.
+  useEffect(() => {
+    if (!activeSession) return;
+    if (!activeSession.discoveryRunId) return;
+    if (activeSession.discoveryRunLoaded) return;
+    if (activeSession.deepGenerating || activeSession.deepPreScoring) return;
+    const runId = activeSession.discoveryRunId;
+    const sessionId = activeSession.id;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/discovery-runs/${runId}/leads`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as { leads?: ApiPotentialLead[] };
+        if (cancelled || !Array.isArray(json.leads)) return;
+        const results: DeepResult[] = json.leads.map(apiLeadToDeepResult);
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId
+              ? {
+                  ...s,
+                  deepResults: results,
+                  deepRawResults: results,
+                  deepSelectedKeys: [],
+                  discoveryRunLoaded: true,
+                  deepStep: 'setup',
+                }
+              : s,
+          ),
+        );
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSession]);
 
   function pickMode(mode: ResearchMode) {
     setSessions((prev) =>
@@ -3214,6 +3577,8 @@ export default function DiscoveryPage() {
 
     let parsed: DeepResult[] = [];
     let error: string | null = null;
+    let runId: string | null = null;
+    let runName: string | null = null;
 
     try {
       const res = await fetch('/api/generate/discovery-agent', {
@@ -3233,12 +3598,12 @@ export default function DiscoveryPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
 
-      // Debug: log the raw webhook response so we can inspect the schema
-      // when fields like URL aren't being picked up correctly.
       // eslint-disable-next-line no-console
       console.log('[discovery-agent] raw webhook response:', json.data ?? json);
 
       parsed = extractDeepLeads(json.data ?? json);
+      runId = typeof json.discovery_run_id === 'string' ? json.discovery_run_id : null;
+      runName = typeof json.run_name === 'string' ? json.run_name : null;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Unbekannter Fehler';
     }
@@ -3278,14 +3643,20 @@ export default function DiscoveryPage() {
       ? [...parsed].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
       : parsed;
 
+    const newSessionId = runId ? `run_${runId}` : activeId;
+
     setSessions((prev) =>
       prev.map((s) =>
         s.id === activeId
           ? {
               ...s,
+              id: newSessionId,
+              title: runName ?? s.title,
               deepPreScoring: false,
               deepResults: finalResults,
               deepSelectedKeys: [],
+              discoveryRunId: runId ?? s.discoveryRunId,
+              discoveryRunLoaded: true,
               preview:
                 finalResults.length > 0
                   ? `${finalResults.length} Leads gefunden`
@@ -3294,6 +3665,10 @@ export default function DiscoveryPage() {
           : s,
       ),
     );
+
+    if (runId && newSessionId !== activeId) {
+      setActiveId(newSessionId);
+    }
   }
 
   function toggleDeepSelect(key: string) {
@@ -3440,6 +3815,65 @@ export default function DiscoveryPage() {
     if (textareaRef.current) textareaRef.current.style.height = '24px';
   }
 
+  async function renameRunSession(sessionId: string, newName: string) {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session?.discoveryRunId) return;
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, title: newName } : s)),
+    );
+    try {
+      const res = await fetch(`/api/discovery-runs/${session.discoveryRunId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+    } catch (e) {
+      toast(
+        `Umbenennen fehlgeschlagen: ${e instanceof Error ? e.message : 'Unbekannt'}`,
+        'error',
+      );
+    }
+  }
+
+  async function deleteRunSession(sessionId: string) {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session?.discoveryRunId) return;
+    const wasActive = activeId === sessionId;
+    setSessions((prev) => {
+      const next = prev.filter((s) => s.id !== sessionId);
+      if (wasActive) {
+        const fallback = next[0];
+        if (fallback) {
+          setActiveId(fallback.id);
+        } else {
+          const fresh = createNewSession();
+          setActiveId(fresh.id);
+          return [fresh];
+        }
+      }
+      return next;
+    });
+    try {
+      const res = await fetch(`/api/discovery-runs/${session.discoveryRunId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+      toast('Run gelöscht', 'success');
+    } catch (e) {
+      toast(
+        `Löschen fehlgeschlagen: ${e instanceof Error ? e.message : 'Unbekannt'}`,
+        'error',
+      );
+    }
+  }
+
   async function send(text?: string) {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
@@ -3548,6 +3982,8 @@ export default function DiscoveryPage() {
             scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
         }}
         onNew={handleNewSession}
+        onRename={renameRunSession}
+        onDelete={deleteRunSession}
       />
 
       {/* Chat area */}
