@@ -2307,7 +2307,6 @@ function DeepResultCard({
   selected: boolean;
   onToggle: () => void;
 }) {
-  const sourceColor = r.source === 'LinkedIn' ? '#10B981' : r.source === 'Web' ? '#F97316' : '#EF4444';
   const url = r.url;
   const handleRowClick = (e: React.MouseEvent) => {
     if (preScoring) return;
@@ -2422,19 +2421,6 @@ function DeepResultCard({
           {r.score}
         </div>
       )}
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          padding: '3px 8px',
-          borderRadius: 99,
-          background: sourceColor + '18',
-          color: sourceColor,
-          flexShrink: 0,
-        }}
-      >
-        {r.source}
-      </span>
       {r.linkedinUrl ? (
         <a
           data-no-toggle
