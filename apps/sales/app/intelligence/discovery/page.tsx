@@ -3103,6 +3103,18 @@ function ChatSidebar({
     setRenameValue('');
   }
 
+  // Inject shimmer keyframes once on mount — avoids rendering a <style>
+  // node inside the SSR tree which can trip hydration mismatches.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('onvero-skeleton-shimmer-style')) return;
+    const el = document.createElement('style');
+    el.id = 'onvero-skeleton-shimmer-style';
+    el.textContent =
+      '@keyframes onveroSkeletonShimmer{0%{background-position:-200px 0}100%{background-position:calc(200px + 100%) 0}}';
+    document.head.appendChild(el);
+  }, []);
+
   const hoverBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.055)';
   const activeBg = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
 
@@ -3229,12 +3241,6 @@ function ChatSidebar({
       {/* Grouped sessions — only when expanded */}
       {!collapsed && (
         <div style={{ flex: 1, padding: '0 6px 16px', overflowY: 'auto', overflowX: 'hidden' }}>
-          <style>{`
-            @keyframes onveroSkeletonShimmer {
-              0% { background-position: -200px 0; }
-              100% { background-position: calc(200px + 100%) 0; }
-            }
-          `}</style>
           {GROUP_ORDER.map((group) => {
             const items = grouped[group];
             if (items.length === 0) return null;
