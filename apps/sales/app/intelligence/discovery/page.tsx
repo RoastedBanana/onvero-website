@@ -193,6 +193,7 @@ type ChatSession = {
   deepLaunched?: boolean;
   discoveryRunId?: string;
   discoveryRunLoaded?: boolean;
+  discoveryRunLoading?: boolean;
 };
 
 const DEMO_RESPONSES: { keywords: string[]; reply: string; results: DiscoveryResult[] }[] = [
@@ -2135,6 +2136,7 @@ function DeepListeCard({
   results,
   generating,
   preScoring,
+  loadingFromDb,
   selectedKeys,
   onToggleSelect,
   onToggleAll,
@@ -2144,6 +2146,7 @@ function DeepListeCard({
   results: DeepResult[] | undefined;
   generating: boolean;
   preScoring: boolean;
+  loadingFromDb: boolean;
   selectedKeys: string[];
   onToggleSelect: (key: string) => void;
   onToggleAll: () => void;
@@ -2196,7 +2199,7 @@ function DeepListeCard({
         </div>
       </div>
       <div style={{ flex: 1, position: 'relative', padding: '14px 14px', overflowY: 'auto', minHeight: 0 }}>
-        {generating ? (
+        {generating || loadingFromDb ? (
           <BulkLoadingState c={c} isDark={isDark} />
         ) : hasResults ? (
           <AnimatePresence initial={false}>
@@ -2839,6 +2842,7 @@ function DeepPanel({
               results={results}
               generating={generating}
               preScoring={preScoring}
+              loadingFromDb={!!session.discoveryRunLoading}
               selectedKeys={selectedKeys}
               onToggleSelect={onToggleSelect}
               onToggleAll={onToggleAll}
@@ -3633,21 +3637,33 @@ export default function DiscoveryPage() {
   const isDeepView = activeMode === 'deep';
 
   // Lazy-load leads for a run session that the user selected from the sidebar.
+  // Depends on activeId so it only re-fires when the user actually switches.
   useEffect(() => {
-    if (!activeSession) return;
-    if (!activeSession.discoveryRunId) return;
-    if (activeSession.discoveryRunLoaded) return;
-    if (activeSession.deepGenerating || activeSession.deepPreScoring) return;
-    const runId = activeSession.discoveryRunId;
-    const sessionId = activeSession.id;
+    const session = sessions.find((s) => s.id === activeId);
+    if (!session) return;
+    if (!session.discoveryRunId) return;
+    if (session.discoveryRunLoaded) return;
+    if (session.discoveryRunLoading) return;
+    if (session.deepGenerating || session.deepPreScoring) return;
+    const runId = session.discoveryRunId;
+    const sessionId = session.id;
     let cancelled = false;
+
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === sessionId ? { ...s, discoveryRunLoading: true } : s,
+      ),
+    );
+
     (async () => {
       try {
         const res = await fetch(`/api/discovery-runs/${runId}/leads`, { cache: 'no-store' });
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = (await res.json()) as { leads?: ApiPotentialLead[] };
-        if (cancelled || !Array.isArray(json.leads)) return;
-        const results: DeepResult[] = json.leads.map(apiLeadToDeepResult);
+        if (cancelled) return;
+        const results: DeepResult[] = Array.isArray(json.leads)
+          ? json.leads.map(apiLeadToDeepResult)
+          : [];
         setSessions((prev) =>
           prev.map((s) =>
             s.id === sessionId
@@ -3657,19 +3673,27 @@ export default function DiscoveryPage() {
                   deepRawResults: results,
                   deepSelectedKeys: [],
                   discoveryRunLoaded: true,
+                  discoveryRunLoading: false,
                   deepStep: 'setup',
                 }
               : s,
           ),
         );
       } catch {
-        // ignore
+        if (cancelled) return;
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId ? { ...s, discoveryRunLoading: false } : s,
+          ),
+        );
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [activeSession]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
 
   function pickMode(mode: ResearchMode) {
     setSessions((prev) =>
