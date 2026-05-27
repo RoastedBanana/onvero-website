@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = {
+    tenant_id: ctx.tenantId,
     setup,
     angebots_profile: angebotsProfile,
   };
