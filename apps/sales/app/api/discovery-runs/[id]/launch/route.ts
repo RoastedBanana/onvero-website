@@ -83,7 +83,10 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
   }
 
   // Promote each potential_lead to a leads row.
-  const callbackUrl = `${req.nextUrl.origin}/api/webhooks/discovery-scoring-complete`;
+  // PUBLIC_BASE_URL lets the dev host point n8n at a tunnel (ngrok/cloudflared)
+  // because the production callback obviously can't be http://localhost:3001.
+  const callbackBase = process.env.PUBLIC_BASE_URL?.replace(/\/$/, '') ?? req.nextUrl.origin;
+  const callbackUrl = `${callbackBase}/api/webhooks/discovery-scoring-complete`;
   const promoted: { potential_lead_id: string; lead_id: string }[] = [];
   const failed: { potential_lead_id: string; error: string }[] = [];
 
