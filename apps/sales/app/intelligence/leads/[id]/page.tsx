@@ -195,6 +195,7 @@ interface LeadDetail {
   shipping_warehouse_m2?: number;
   shipping_tech_integration?: string;
   shipping_volume_method?: string;
+  shipping_carriers_evidence?: Array<Record<string, unknown> | string>;
   shipping_analyzed_at?: string;
   legal_form?: string;
   hrb_number?: string;
@@ -672,6 +673,9 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
         : undefined,
     shipping_tech_integration: d.shipping_tech_integration as string | undefined,
     shipping_volume_method: d.shipping_volume_method as string | undefined,
+    shipping_carriers_evidence: Array.isArray(d.shipping_carriers_evidence)
+      ? (d.shipping_carriers_evidence as Array<Record<string, unknown> | string>)
+      : [],
     shipping_analyzed_at: d.shipping_analyzed_at as string | undefined,
     legal_form: d.legal_form as string | undefined,
     hrb_number: d.hrb_number as string | undefined,
@@ -6473,6 +6477,38 @@ function BewertungenDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnTyp
   );
 }
 
+// Extracts all [https://...] URLs from a text block, deduplicated, preserving
+// first-seen order. Used to aggregate evidence URLs for the "Quellen" section.
+function extractCitationUrls(text: string | undefined): string[] {
+  if (!text) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const re = /\[(https?:\/\/[^\]\s]+)\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      out.push(m[1]);
+    }
+  }
+  return out;
+}
+
+// Maps a pain-signal `source` tag to whatever review/maps URL is available on
+// the lead so a "reviews" pain becomes clickable.
+function reviewUrlFor(source: string | undefined, lead: LeadDetail): string | null {
+  if (!source) return null;
+  const s = source.toLowerCase();
+  if (s === 'reviews' || s.includes('google')) {
+    return lead.google_reviews_url ?? lead.trustpilot_url ?? lead.kununu_url ?? lead.provenexpert_url ?? null;
+  }
+  if (s.includes('trustpilot')) return lead.trustpilot_url ?? null;
+  if (s.includes('kununu')) return lead.kununu_url ?? null;
+  if (s.includes('provenexpert')) return lead.provenexpert_url ?? null;
+  if (s.includes('linkedin')) return lead.linkedin_url ?? null;
+  return null;
+}
+
 // Parses inline [https://...] citations in agent-written text and renders
 // them as small clickable ↗ badges. Returns an array of React nodes.
 function renderWithCitations(text: string | undefined): React.ReactNode {
@@ -6811,82 +6847,90 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
                         {p.evidence}
                       </div>
                     )}
-                    {(p.source_url || p.source) && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          marginTop: 6,
-                          flexWrap: 'wrap' as const,
-                        }}
-                      >
-                        {p.source_url && (
-                          <a
-                            href={p.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title={p.source_url}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              color: '#0EA5E9',
-                              background: 'rgba(14,165,233,0.1)',
-                              border: '1px solid rgba(14,165,233,0.22)',
-                              borderRadius: 6,
-                              padding: '3px 8px',
-                              textDecoration: 'none',
-                              maxWidth: 360,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap' as const,
-                            }}
-                          >
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden="true"
+                    {(() => {
+                      // Direct source_url wins; otherwise fall back to the
+                      // lead's review/maps URL that matches p.source.
+                      const linkUrl = p.source_url ?? reviewUrlFor(p.source, lead);
+                      const sourceTag = p.source && !p.source_url ? p.source : null;
+                      if (!linkUrl && !sourceTag) return null;
+                      return (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            marginTop: 6,
+                            flexWrap: 'wrap' as const,
+                          }}
+                        >
+                          {linkUrl && (
+                            <a
+                              href={linkUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={linkUrl}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: '#0EA5E9',
+                                background: 'rgba(14,165,233,0.1)',
+                                border: '1px solid rgba(14,165,233,0.22)',
+                                borderRadius: 6,
+                                padding: '3px 8px',
+                                textDecoration: 'none',
+                                maxWidth: 360,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap' as const,
+                              }}
                             >
-                              <path d="M14 3h7v7" />
-                              <path d="M21 3l-9 9" />
-                              <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
-                            </svg>
-                            {(() => {
-                              try {
-                                return new URL(p.source_url).hostname.replace(/^www\./, '');
-                              } catch {
-                                return 'Quelle';
-                              }
-                            })()}
-                          </a>
-                        )}
-                        {p.source && !p.source_url && (
-                          <span
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 700,
-                              color: c.textMuted,
-                              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              textTransform: 'uppercase' as const,
-                              letterSpacing: '0.05em',
-                            }}
-                          >
-                            {p.source}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                              <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M14 3h7v7" />
+                                <path d="M21 3l-9 9" />
+                                <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
+                              </svg>
+                              {(() => {
+                                try {
+                                  return new URL(linkUrl).hostname.replace(/^www\./, '');
+                                } catch {
+                                  return 'Quelle';
+                                }
+                              })()}
+                              {p.source && !p.source_url ? ` · ${p.source}` : ''}
+                            </a>
+                          )}
+                          {sourceTag && !linkUrl && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: c.textMuted,
+                                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                                borderRadius: 4,
+                                padding: '2px 6px',
+                                textTransform: 'uppercase' as const,
+                                letterSpacing: '0.05em',
+                              }}
+                            >
+                              {sourceTag}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   {p.severity && (
                     <span
@@ -7035,6 +7079,117 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
           )}
         </div>
       )}
+
+      {(() => {
+        // Aggregate every link-evidence we have for this lead's shipping
+        // analysis: inline citations across all text fields, pain-signal
+        // source_urls, plus the lead's own review/maps profiles so the rep
+        // can verify any claim with one click.
+        const seen = new Set<string>();
+        const sources: { url: string; label: string }[] = [];
+        const add = (url: string | null | undefined, label?: string) => {
+          if (!url) return;
+          if (seen.has(url)) return;
+          seen.add(url);
+          let host = label;
+          if (!host) {
+            try {
+              host = new URL(url).hostname.replace(/^www\./, '');
+            } catch {
+              host = 'Quelle';
+            }
+          }
+          sources.push({ url, label: host });
+        };
+
+        for (const txt of [
+          lead.shipping_sps_fit_reasoning,
+          lead.shipping_analysis_summary,
+          lead.shipping_approach_angle,
+          lead.shipping_delivery_promise,
+          lead.shipping_return_policy,
+        ]) {
+          extractCitationUrls(txt).forEach((u) => add(u));
+        }
+        for (const p of pains) {
+          if (p.source_url) add(p.source_url);
+        }
+        // Lead-level review / map profiles — high-value verification points
+        // the agent often relies on but doesn't always cite explicitly.
+        add(lead.google_reviews_url, 'Google Maps');
+        add(lead.trustpilot_url, 'Trustpilot');
+        add(lead.kununu_url, 'Kununu');
+        add(lead.provenexpert_url, 'ProvenExpert');
+
+        if (sources.length === 0) return null;
+        return (
+          <div style={cardStyle}>
+            <div style={labelStyle}>Quellen &amp; Belege ({sources.length})</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+              {sources.map((s, i) => (
+                <a
+                  key={i}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={s.url}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '5px 10px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: '#0EA5E9',
+                    background: 'rgba(14,165,233,0.08)',
+                    border: '1px solid rgba(14,165,233,0.2)',
+                    borderRadius: 7,
+                    textDecoration: 'none',
+                    maxWidth: 280,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap' as const,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 4,
+                      background: 'rgba(14,165,233,0.18)',
+                      color: '#0EA5E9',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  {s.label}
+                  <svg
+                    width="9"
+                    height="9"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M14 3h7v7" />
+                    <path d="M21 3l-9 9" />
+                    <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
+                  </svg>
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
         <SourceBadge label="Shipping-Agent" />
