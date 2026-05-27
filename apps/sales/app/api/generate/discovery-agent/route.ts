@@ -75,11 +75,36 @@ interface PotentialLeadInsert {
   discovery_query: string | null;
   company_name: string;
   city: string | null;
+  postal_code: string | null;
+  address: string | null;
   country: string | null;
   website_url: string | null;
   linkedin_url: string | null;
+  email: string | null;
+  phone: string | null;
   employee_count: number | null;
+  revenue_cents: number | null;
+  incorporated_at: string | null;
+  apollo_organization_id: string | null;
+  apollo_domain: string | null;
   raw_data: Record<string, unknown>;
+}
+
+function isoDate(v: unknown): string | null {
+  const s = str(v).trim();
+  if (!s) return null;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
+function bigNum(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return Math.round(v);
+  if (typeof v === 'string' && v.trim().length > 0) {
+    const n = Number(v);
+    if (Number.isFinite(n)) return Math.round(n);
+  }
+  return null;
 }
 
 function mapLeadForInsert(
@@ -101,6 +126,7 @@ function mapLeadForInsert(
         raw.homepage ??
         raw.link ??
         raw.domain ??
+        raw.apollo_domain ??
         raw.web ??
         raw.company_url ??
         raw.firma_url ??
@@ -110,6 +136,7 @@ function mapLeadForInsert(
   const website = urlRaw ? normalizeUrl(urlRaw) : null;
 
   const linkedin = str(raw.linkedin_url ?? raw.linkedin ?? '').trim();
+  const apolloDomain = str(raw.apollo_domain ?? '').trim() || null;
 
   return {
     tenant_id: tenantId,
@@ -118,10 +145,18 @@ function mapLeadForInsert(
     discovery_query: query,
     company_name: companyName,
     city: str(raw.city ?? raw.location ?? raw.standort ?? raw.ort).trim() || null,
+    postal_code: str(raw.postal_code ?? raw.zip ?? raw.plz).trim() || null,
+    address: str(raw.address ?? raw.adresse).trim() || null,
     country: str(raw.country ?? raw.land).trim() || null,
     website_url: website,
     linkedin_url: linkedin ? normalizeUrl(linkedin) : null,
+    email: str(raw.email).trim() || null,
+    phone: str(raw.phone ?? raw.telefon).trim() || null,
     employee_count: num(raw.employee_count ?? raw.employees ?? raw.mitarbeiter ?? raw.size),
+    revenue_cents: bigNum(raw.revenue_cents ?? raw.revenue),
+    incorporated_at: isoDate(raw.incorporated_at ?? raw.founded ?? raw.founded_at),
+    apollo_organization_id: str(raw.apollo_organization_id).trim() || null,
+    apollo_domain: apolloDomain,
     raw_data: raw,
   };
 }

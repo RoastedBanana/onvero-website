@@ -133,7 +133,23 @@ const ENRICH_SOURCES: string[] = [
 
 type DeepStep = 'setup' | 'scoring';
 
-type DeepResult = DiscoveryResult & { score?: number; url?: string };
+type DeepResult = DiscoveryResult & {
+  score?: number;
+  url?: string;
+  logoUrl?: string;
+  linkedinUrl?: string;
+  phone?: string;
+  revenueCents?: number;
+  foundedYear?: number;
+};
+
+function formatRevenue(cents: number): string {
+  const eur = cents / 100;
+  if (eur >= 1_000_000_000) return `${(eur / 1_000_000_000).toFixed(1)} Mrd. €`;
+  if (eur >= 1_000_000) return `${(eur / 1_000_000).toFixed(1)} Mio. €`;
+  if (eur >= 1_000) return `${Math.round(eur / 1_000)} Tsd. €`;
+  return `${Math.round(eur)} €`;
+}
 
 function deepLeadKey(r: DeepResult, i: number): string {
   return r.url || `${r.name}__${r.city}__${i}`;
@@ -320,6 +336,10 @@ interface ApiPotentialLead {
   website_url: string | null;
   linkedin_url: string | null;
   employee_count: number | null;
+  phone: string | null;
+  revenue_cents: number | null;
+  incorporated_at: string | null;
+  discovery_source: string | null;
   raw_data: Record<string, unknown> | null;
   created_at: string;
 }
@@ -328,7 +348,7 @@ function apiLeadToDeepResult(l: ApiPotentialLead): DeepResult {
   const raw = (l.raw_data ?? {}) as Record<string, unknown>;
   const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v));
   const industry = str(raw.industry ?? raw.branche ?? raw.sector ?? '');
-  const source = str(raw.source ?? raw.quelle ?? 'Web');
+  const source = str(l.discovery_source ?? raw.source ?? raw.quelle ?? 'Web');
   const scoreRaw = raw.score ?? raw.fit_score ?? raw.lead_score;
   const score =
     typeof scoreRaw === 'number'
@@ -336,6 +356,14 @@ function apiLeadToDeepResult(l: ApiPotentialLead): DeepResult {
       : typeof scoreRaw === 'string' && scoreRaw.length > 0
         ? Math.round(Number(scoreRaw))
         : undefined;
+  const logoRaw = str(raw.logo_url ?? raw.logo ?? '');
+  const logoUrl = logoRaw ? normalizeUrl(logoRaw) ?? undefined : undefined;
+  const incISO = l.incorporated_at ?? str(raw.incorporated_at);
+  let foundedYear: number | undefined;
+  if (incISO) {
+    const d = new Date(incISO);
+    if (!Number.isNaN(d.getTime())) foundedYear = d.getFullYear();
+  }
   return {
     name: l.company_name,
     city: l.city ?? str(raw.city) ?? '',
@@ -344,6 +372,11 @@ function apiLeadToDeepResult(l: ApiPotentialLead): DeepResult {
     source,
     score,
     url: l.website_url ?? undefined,
+    linkedinUrl: l.linkedin_url ?? undefined,
+    logoUrl,
+    phone: l.phone ?? undefined,
+    revenueCents: l.revenue_cents ?? undefined,
+    foundedYear,
   };
 }
 
@@ -375,13 +408,17 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
     const city = str(r.city ?? r.location ?? r.standort ?? r.ort ?? '');
     const industry = str(r.industry ?? r.branche ?? r.sector ?? '');
     const employees = str(r.employees ?? r.employee_count ?? r.mitarbeiter ?? r.size ?? '');
-    const source = str(r.source ?? r.quelle ?? 'Web');
+    const source = str(
+      r.source ?? r.quelle ?? r.discovery_source ?? 'Web',
+    );
     const urlRaw = str(
       r.url ??
         r.website ??
+        r.website_url ??
         r.homepage ??
         r.link ??
         r.domain ??
+        r.apollo_domain ??
         r.web ??
         r.company_url ??
         r.firma_url ??
@@ -394,6 +431,24 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
     // Fallback: deep-scan the lead object for any URL-like string.
     const fallback = urlRaw ? null : deepFindUrl(r);
     const url = normalizeUrl(urlRaw || fallback) ?? undefined;
+    const linkedinRaw = str(r.linkedin_url ?? r.linkedin ?? '');
+    const linkedinUrl = linkedinRaw ? normalizeUrl(linkedinRaw) ?? undefined : undefined;
+    const logoRaw = str(r.logo_url ?? r.logo ?? '');
+    const logoUrl = logoRaw ? normalizeUrl(logoRaw) ?? undefined : undefined;
+    const phone = str(r.phone ?? r.telefon ?? '').trim() || undefined;
+    const revenueRaw = r.revenue_cents ?? r.revenue;
+    const revenueCents =
+      typeof revenueRaw === 'number' && Number.isFinite(revenueRaw)
+        ? Math.round(revenueRaw)
+        : typeof revenueRaw === 'string' && revenueRaw.length > 0
+          ? Math.round(Number(revenueRaw))
+          : undefined;
+    const incRaw = str(r.incorporated_at ?? r.founded ?? r.founded_at ?? '');
+    let foundedYear: number | undefined;
+    if (incRaw) {
+      const d = new Date(incRaw);
+      if (!Number.isNaN(d.getTime())) foundedYear = d.getFullYear();
+    }
     const scoreRaw = r.score ?? r.fit_score ?? r.lead_score;
     const score =
       typeof scoreRaw === 'number'
@@ -401,7 +456,20 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
         : typeof scoreRaw === 'string' && scoreRaw.length > 0
           ? Math.round(Number(scoreRaw))
           : undefined;
-    return { name, city, industry, employees, source, score, url };
+    return {
+      name,
+      city,
+      industry,
+      employees,
+      source,
+      score,
+      url,
+      logoUrl,
+      linkedinUrl,
+      phone,
+      revenueCents,
+      foundedYear,
+    };
   });
 }
 
@@ -2163,6 +2231,67 @@ function DeepListeCard({
   );
 }
 
+function CompanyAvatar({
+  name,
+  logoUrl,
+  accent,
+  isDark,
+}: {
+  name: string;
+  logoUrl?: string;
+  accent: string;
+  isDark: boolean;
+}) {
+  const [errored, setErrored] = useState(false);
+  const initials = name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase() || '·';
+  if (logoUrl && !errored) {
+    return (
+      <div
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 9,
+          flexShrink: 0,
+          background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logoUrl}
+          alt={name}
+          loading="lazy"
+          onError={() => setErrored(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: 9,
+        background: accent + '14',
+        color: accent,
+        fontWeight: 800,
+        fontSize: 11,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 function DeepResultCard({
   r,
   c,
@@ -2230,23 +2359,12 @@ function DeepResultCard({
           flexShrink: 0,
         }}
       />
-      <div
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 9,
-          background: c.accent + '14',
-          color: c.accent,
-          fontWeight: 800,
-          fontSize: 11,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        {r.name.slice(0, 2).toUpperCase()}
-      </div>
+      <CompanyAvatar
+        name={r.name}
+        logoUrl={r.logoUrl}
+        accent={c.accent}
+        isDark={isDark}
+      />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -2260,8 +2378,29 @@ function DeepResultCard({
         >
           {r.name}
         </div>
-        <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>
-          {[r.city, r.industry, r.employees ? `${r.employees} MA` : null].filter(Boolean).join(' · ')}
+        <div
+          style={{
+            fontSize: 11,
+            color: c.textMuted,
+            marginTop: 2,
+            display: 'flex',
+            flexWrap: 'wrap',
+            columnGap: 8,
+            rowGap: 2,
+          }}
+        >
+          {[
+            r.city,
+            r.industry,
+            r.employees ? `${r.employees} MA` : null,
+            r.revenueCents != null ? formatRevenue(r.revenueCents) : null,
+            r.foundedYear ? `gegr. ${r.foundedYear}` : null,
+            r.phone,
+          ]
+            .filter(Boolean)
+            .map((part, i) => (
+              <span key={i}>{part}</span>
+            ))}
         </div>
       </div>
       {typeof r.score === 'number' && (
@@ -2296,6 +2435,50 @@ function DeepResultCard({
       >
         {r.source}
       </span>
+      {r.linkedinUrl ? (
+        <a
+          data-no-toggle
+          href={r.linkedinUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="LinkedIn öffnen"
+          aria-label="LinkedIn öffnen"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 30,
+            height: 30,
+            borderRadius: 8,
+            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+            border: isDark
+              ? '1px solid rgba(255,255,255,0.10)'
+              : '1px solid rgba(0,0,0,0.08)',
+            color: c.text,
+            textDecoration: 'none',
+            flexShrink: 0,
+            cursor: 'pointer',
+            transition: 'background 120ms ease, color 120ms ease, transform 120ms ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#0A66C214';
+            e.currentTarget.style.color = '#0A66C2';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = isDark
+              ? 'rgba(255,255,255,0.06)'
+              : 'rgba(0,0,0,0.04)';
+            e.currentTarget.style.color = c.text;
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.13 1.45-2.13 2.94v5.66H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z" />
+          </svg>
+        </a>
+      ) : null}
       {url ? (
         <a
           data-no-toggle
