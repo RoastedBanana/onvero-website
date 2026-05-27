@@ -1825,6 +1825,118 @@ function BulkEmptyState({ c, isDark }: { c: ReturnType<typeof colors>; isDark: b
   );
 }
 
+function LeadListSkeleton({ isDark }: { isDark: boolean }) {
+  const base = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+  const highlight = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.09)';
+  const shimmer = `linear-gradient(90deg, ${base} 0px, ${highlight} 80px, ${base} 160px)`;
+  return (
+    <div style={{ padding: '4px 0' }}>
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const meta1 = ['38%', '52%', '44%', '60%', '36%', '48%'][i];
+        const meta2 = ['64%', '48%', '70%', '42%', '58%', '54%'][i];
+        return (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 14px',
+              background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.55)',
+              borderRadius: 11,
+              border: isDark
+                ? '1px solid rgba(255,255,255,0.07)'
+                : '1px solid rgba(255,255,255,0.6)',
+              marginBottom: 6,
+            }}
+          >
+            <div
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 4,
+                background: shimmer,
+                backgroundSize: '200px 100%',
+                animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.08}s`,
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 9,
+                background: shimmer,
+                backgroundSize: '200px 100%',
+                animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.08 + 0.05}s`,
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}
+            >
+              <div
+                style={{
+                  height: 12,
+                  width: meta1,
+                  borderRadius: 4,
+                  background: shimmer,
+                  backgroundSize: '200px 100%',
+                  animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                  animationDelay: `${i * 0.08 + 0.1}s`,
+                }}
+              />
+              <div
+                style={{
+                  height: 9,
+                  width: meta2,
+                  borderRadius: 4,
+                  background: shimmer,
+                  backgroundSize: '200px 100%',
+                  animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                  animationDelay: `${i * 0.08 + 0.15}s`,
+                }}
+              />
+            </div>
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: shimmer,
+                backgroundSize: '200px 100%',
+                animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.08 + 0.2}s`,
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: shimmer,
+                backgroundSize: '200px 100%',
+                animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.08 + 0.25}s`,
+                flexShrink: 0,
+              }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function BulkLoadingState({ c, isDark }: { c: ReturnType<typeof colors>; isDark: boolean }) {
   return (
     <div style={{ padding: '4px 0' }}>
@@ -2199,7 +2311,9 @@ function DeepListeCard({
         </div>
       </div>
       <div style={{ flex: 1, position: 'relative', padding: '14px 14px', overflowY: 'auto', minHeight: 0 }}>
-        {generating || loadingFromDb ? (
+        {loadingFromDb ? (
+          <LeadListSkeleton isDark={isDark} />
+        ) : generating ? (
           <BulkLoadingState c={c} isDark={isDark} />
         ) : hasResults ? (
           <AnimatePresence initial={false}>
