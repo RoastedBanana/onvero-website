@@ -3112,14 +3112,14 @@ function DeepPanel({
                   </button>
                 )}
                 <button
-                  onClick={hasResults ? () => onSetStep('scoring') : onGenerate}
-                  disabled={busy || (hasResults && selectedCount === 0)}
+                  onClick={hasResults ? onLaunch : onGenerate}
+                  disabled={busy || launching || (hasResults && selectedCount === 0)}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 8,
                     background:
-                      busy || (hasResults && selectedCount === 0)
+                      busy || launching || (hasResults && selectedCount === 0)
                         ? isDark
                           ? `${c.accent}55`
                           : '#A5B4FC'
@@ -3131,11 +3131,13 @@ function DeepPanel({
                     fontSize: 13,
                     fontWeight: 700,
                     cursor:
-                      busy || (hasResults && selectedCount === 0) ? 'not-allowed' : 'pointer',
+                      busy || launching || (hasResults && selectedCount === 0)
+                        ? 'not-allowed'
+                        : 'pointer',
                     fontFamily: 'inherit',
                     transition: 'background 150ms ease-out',
                     boxShadow:
-                      busy || (hasResults && selectedCount === 0)
+                      busy || launching || (hasResults && selectedCount === 0)
                         ? 'none'
                         : `0 6px 20px ${c.accent}38`,
                     minWidth: 110,
@@ -3169,6 +3171,19 @@ function DeepPanel({
                         <SparklesIcon size={13} />
                       </motion.span>
                       Scoring…
+                    </>
+                  ) : launching ? (
+                    <>
+                      <motion.span
+                        style={{ display: 'inline-block', width: 13, height: 13 }}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                        </svg>
+                      </motion.span>
+                      Startet…
                     </>
                   ) : hasResults ? (
                     <>
