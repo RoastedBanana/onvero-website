@@ -166,9 +166,10 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
     );
   }
 
-  // Fire scoring webhook for each promoted lead in parallel — fire and forget,
-  // but await once with allSettled so we can at least log transport failures.
-  const webhookResults = await Promise.allSettled(
+  // Fire scoring webhook per lead in parallel — fully fire-and-forget so the
+  // HTTP response can return immediately. n8n hits us back per lead via the
+  // callback_url; the client doesn't wait on this round-trip.
+  void Promise.allSettled(
     promoted.map(({ lead_id, potential_lead_id }) =>
       fetch(SCORING_WEBHOOK_URL, {
         method: 'POST',
@@ -185,24 +186,17 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
           discovery_run_id: runId,
           callback_url: callbackUrl,
         }),
-      }).then(async (res) => ({
-        lead_id,
-        status: res.status,
-        ok: res.ok,
-        body: await res.text().catch(() => ''),
-      })),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            console.error('[launch] scoring webhook non-2xx', lead_id, res.status);
+          } else {
+            console.log('[launch] scoring webhook fired', lead_id, res.status);
+          }
+        })
+        .catch((err) => console.error('[launch] scoring webhook rejected', lead_id, err)),
     ),
   );
-
-  webhookResults.forEach((r) => {
-    if (r.status === 'rejected') {
-      console.error('[launch] scoring webhook rejected', r.reason);
-    } else if (!r.value.ok) {
-      console.error('[launch] scoring webhook non-2xx', r.value);
-    } else {
-      console.log('[launch] scoring webhook fired', r.value.lead_id, r.value.status);
-    }
-  });
 
   return NextResponse.json({
     ok: true,
@@ -210,10 +204,5 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
     failed,
     webhook_url: SCORING_WEBHOOK_URL,
     callback_url: callbackUrl,
-    webhook_results: webhookResults.map((r) =>
-      r.status === 'fulfilled'
-        ? { ok: r.value.ok, status: r.value.status, lead_id: r.value.lead_id }
-        : { ok: false, error: String(r.reason) },
-    ),
   });
 }
