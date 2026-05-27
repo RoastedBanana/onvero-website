@@ -134,6 +134,7 @@ const ENRICH_SOURCES: string[] = [
 type DeepStep = 'setup' | 'scoring';
 
 type DeepResult = DiscoveryResult & {
+  id?: string; // potential_leads.id once the lead is persisted
   score?: number;
   url?: string;
   logoUrl?: string;
@@ -141,6 +142,7 @@ type DeepResult = DiscoveryResult & {
   phone?: string;
   revenueCents?: number;
   foundedYear?: number;
+  gescored?: boolean;
 };
 
 function formatRevenue(cents: number): string {
@@ -342,6 +344,7 @@ interface ApiPotentialLead {
   revenue_cents: number | null;
   incorporated_at: string | null;
   discovery_source: string | null;
+  gescored: boolean | null;
   raw_data: Record<string, unknown> | null;
   created_at: string;
 }
@@ -367,6 +370,7 @@ function apiLeadToDeepResult(l: ApiPotentialLead): DeepResult {
     if (!Number.isNaN(d.getTime())) foundedYear = d.getFullYear();
   }
   return {
+    id: l.id,
     name: l.company_name,
     city: l.city ?? str(raw.city) ?? '',
     industry,
@@ -379,6 +383,7 @@ function apiLeadToDeepResult(l: ApiPotentialLead): DeepResult {
     phone: l.phone ?? undefined,
     revenueCents: l.revenue_cents ?? undefined,
     foundedYear,
+    gescored: !!l.gescored,
   };
 }
 
@@ -2426,8 +2431,10 @@ function DeepResultCard({
   onToggle: () => void;
 }) {
   const url = r.url;
+  const isScored = !!r.gescored;
+  const interactionDisabled = preScoring || isScored;
   const handleRowClick = (e: React.MouseEvent) => {
-    if (preScoring) return;
+    if (interactionDisabled) return;
     // Don't toggle if the click came from the website button or the checkbox.
     const target = e.target as HTMLElement;
     if (target.closest('[data-no-toggle]')) return;
@@ -2441,38 +2448,46 @@ function DeepResultCard({
         alignItems: 'center',
         gap: 12,
         padding: '11px 14px',
-        background: selected
-          ? c.accent + (isDark ? '1c' : '12')
-          : isDark
-            ? 'rgba(255,255,255,0.05)'
-            : 'rgba(255,255,255,0.62)',
+        background: isScored
+          ? isDark
+            ? 'rgba(255,255,255,0.02)'
+            : 'rgba(0,0,0,0.025)'
+          : selected
+            ? c.accent + (isDark ? '1c' : '12')
+            : isDark
+              ? 'rgba(255,255,255,0.05)'
+              : 'rgba(255,255,255,0.62)',
         borderRadius: 11,
-        border: selected
-          ? `1px solid ${c.accent}55`
-          : isDark
-            ? '1px solid rgba(255,255,255,0.09)'
-            : '1px solid rgba(255,255,255,0.72)',
-        boxShadow: isDark ? 'none' : 'inset 1px 1px 2px rgba(255,255,255,0.55)',
+        border: isScored
+          ? isDark
+            ? '1px solid rgba(255,255,255,0.04)'
+            : '1px solid rgba(0,0,0,0.04)'
+          : selected
+            ? `1px solid ${c.accent}55`
+            : isDark
+              ? '1px solid rgba(255,255,255,0.09)'
+              : '1px solid rgba(255,255,255,0.72)',
+        boxShadow: isDark || isScored ? 'none' : 'inset 1px 1px 2px rgba(255,255,255,0.55)',
         marginBottom: 6,
-        opacity: preScoring ? 0.6 : 1,
-        filter: preScoring ? 'saturate(0.8)' : 'none',
+        opacity: isScored ? 0.5 : preScoring ? 0.6 : 1,
+        filter: preScoring ? 'saturate(0.8)' : isScored ? 'saturate(0.6)' : 'none',
         transition:
           'opacity 0.4s ease-out, filter 0.4s ease-out, background 0.15s ease, border-color 0.15s ease',
-        cursor: preScoring ? 'default' : 'pointer',
+        cursor: interactionDisabled ? 'default' : 'pointer',
       }}
     >
       <input
         data-no-toggle
         type="checkbox"
-        checked={selected}
+        checked={selected && !isScored}
         onChange={onToggle}
         onClick={(e) => e.stopPropagation()}
-        disabled={preScoring}
+        disabled={interactionDisabled}
         style={{
           width: 16,
           height: 16,
           accentColor: c.accent,
-          cursor: preScoring ? 'default' : 'pointer',
+          cursor: interactionDisabled ? 'default' : 'pointer',
           flexShrink: 0,
         }}
       />
@@ -2520,6 +2535,29 @@ function DeepResultCard({
             ))}
         </div>
       </div>
+      {isScored && (
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            background: '#10B98114',
+            color: '#10B981',
+            fontSize: 10,
+            fontWeight: 800,
+            padding: '4px 8px',
+            borderRadius: 99,
+            flexShrink: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 8l3 3 7-7" />
+          </svg>
+          Gescored
+        </div>
+      )}
       {typeof r.score === 'number' && (
         <div
           style={{
@@ -2914,6 +2952,52 @@ function DeepPanel({
           </button>
         )}
       </div>
+
+      {launched && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
+            padding: '14px 18px',
+            background: isDark ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.06)',
+            border: '1px solid rgba(16,185,129,0.22)',
+            borderRadius: 12,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: 'rgba(16,185,129,0.15)',
+              color: '#10B981',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <motion.span
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: 'linear' }}
+              style={{ display: 'inline-flex' }}
+            >
+              <SparklesIcon size={14} />
+            </motion.span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: c.text, marginBottom: 2 }}>
+              Anreicherung &amp; Scoring laufen im Hintergrund
+            </div>
+            <div style={{ fontSize: 12, color: c.textMuted, lineHeight: 1.5 }}>
+              Du kannst das Fenster schließen — sobald ein Lead fertig ist, bekommst
+              du eine Benachrichtigung. Fertige Leads werden hier ausgegraut.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Two-column body with animated swap */}
       <motion.div
@@ -3809,6 +3893,48 @@ export default function DiscoveryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
 
+  // When a scoring-complete notification arrives, refresh the matching run's
+  // leads silently so the row flips to "Gescored" + greyed out without a
+  // full page reload.
+  useEffect(() => {
+    function onNotif(e: Event) {
+      const detail = (e as CustomEvent).detail as
+        | { type?: string; payload?: { discovery_run_id?: string } }
+        | undefined;
+      if (!detail || detail.type !== 'lead_scoring_complete') return;
+      const runId = detail.payload?.discovery_run_id;
+      if (!runId) return;
+      const sessionId = `run_${runId}`;
+      (async () => {
+        try {
+          const res = await fetch(`/api/discovery-runs/${runId}/leads`, {
+            cache: 'no-store',
+          });
+          if (!res.ok) return;
+          const json = (await res.json()) as { leads?: ApiPotentialLead[] };
+          if (!Array.isArray(json.leads)) return;
+          const results: DeepResult[] = json.leads.map(apiLeadToDeepResult);
+          setSessions((prev) =>
+            prev.map((s) => {
+              if (s.id !== sessionId) return s;
+              // Preserve user's current selection set across refreshes.
+              return {
+                ...s,
+                deepResults: results,
+                deepRawResults: results,
+                discoveryRunLoaded: true,
+              };
+            }),
+          );
+        } catch {
+          // ignore
+        }
+      })();
+    }
+    window.addEventListener('onvero:notification-arrived', onNotif);
+    return () => window.removeEventListener('onvero:notification-arrived', onNotif);
+  }, []);
+
   function pickMode(mode: ResearchMode) {
     setSessions((prev) =>
       prev.map((s) =>
@@ -3961,9 +4087,16 @@ export default function DiscoveryPage() {
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
 
       // eslint-disable-next-line no-console
-      console.log('[discovery-agent] raw webhook response:', json.data ?? json);
+      console.log('[discovery-agent] response:', json);
 
-      parsed = extractDeepLeads(json.data ?? json);
+      // Prefer the persisted rows (they carry the potential_lead ids we'll
+      // later need to launch enrichment). Fall back to webhook-only parsing
+      // if the server didn't return them for some reason.
+      if (Array.isArray(json.leads) && json.leads.length > 0) {
+        parsed = (json.leads as ApiPotentialLead[]).map(apiLeadToDeepResult);
+      } else {
+        parsed = extractDeepLeads(json.data ?? json);
+      }
       runId = typeof json.discovery_run_id === 'string' ? json.discovery_run_id : null;
       runName = typeof json.run_name === 'string' ? json.run_name : null;
     } catch (e) {
@@ -4070,12 +4203,55 @@ export default function DiscoveryPage() {
   async function launchDeep() {
     if (!activeSession) return;
     if (activeSession.deepLaunching || activeSession.deepLaunched) return;
-    const selectedCount = activeSession.deepSelectedKeys?.length ?? 0;
+    if (!activeSession.discoveryRunId) {
+      toast('Run noch nicht gespeichert.', 'error');
+      return;
+    }
+
+    // Map selected keys back to potential_lead.ids by walking the same
+    // (result, index) pair generateDeep / DeepResultCard use.
+    const results = activeSession.deepResults ?? [];
+    const selected = new Set(activeSession.deepSelectedKeys ?? []);
+    const potentialLeadIds: string[] = [];
+    results.forEach((r, i) => {
+      const key = deepLeadKey(r, i);
+      if (selected.has(key) && r.id) {
+        potentialLeadIds.push(r.id);
+      }
+    });
+
+    if (potentialLeadIds.length === 0) {
+      toast('Keine ausgewählten Leads mit gültiger ID.', 'error');
+      return;
+    }
+
     patchActiveSession({ deepLaunching: true });
-    toast('Anreicherung wird gestartet…', 'info');
-    await new Promise((r) => setTimeout(r, 1200));
-    patchActiveSession({ deepLaunching: false, deepLaunched: true });
-    toast(`Anreicherung gestartet — Daten werden für ${selectedCount} Leads geladen`, 'success');
+
+    try {
+      const res = await fetch(
+        `/api/discovery-runs/${activeSession.discoveryRunId}/launch`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ potential_lead_ids: potentialLeadIds }),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+
+      const promotedCount = Array.isArray(json.promoted) ? json.promoted.length : 0;
+      patchActiveSession({ deepLaunching: false, deepLaunched: true });
+      toast(
+        `Anreicherung & Scoring laufen für ${promotedCount} Leads. Du wirst benachrichtigt, sobald sie fertig sind.`,
+        'success',
+      );
+    } catch (e) {
+      patchActiveSession({ deepLaunching: false });
+      toast(
+        `Anreicherung fehlgeschlagen: ${e instanceof Error ? e.message : 'Unbekannt'}`,
+        'error',
+      );
+    }
   }
 
   function closeDeepCampaign() {

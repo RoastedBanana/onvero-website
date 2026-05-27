@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, ctxParam: { params: Promise<{ id: s
   const { data, error } = await client
     .from('potential_leads')
     .select(
-      'id, company_name, city, country, website_url, linkedin_url, employee_count, phone, revenue_cents, incorporated_at, discovery_source, raw_data, created_at',
+      'id, company_name, city, country, website_url, linkedin_url, employee_count, phone, revenue_cents, incorporated_at, discovery_source, gescored, raw_data, created_at',
     )
     .eq('tenant_id', ctx.tenantId)
     .eq('discovery_run_id', id)

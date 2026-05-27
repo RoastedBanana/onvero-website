@@ -292,8 +292,14 @@ export async function POST(req: NextRequest) {
     .map((l) => mapLeadForInsert(l, ctx.tenantId, run.id, query))
     .filter((v): v is PotentialLeadInsert => v !== null);
 
+  let insertedLeads: unknown[] = [];
   if (inserts.length > 0) {
-    const { error: insertErr } = await client.from('potential_leads').insert(inserts);
+    const { data: rows, error: insertErr } = await client
+      .from('potential_leads')
+      .insert(inserts)
+      .select(
+        'id, company_name, city, country, website_url, linkedin_url, employee_count, phone, revenue_cents, incorporated_at, discovery_source, gescored, raw_data, created_at',
+      );
     if (insertErr) {
       await client
         .from('discovery_runs')
@@ -304,6 +310,7 @@ export async function POST(req: NextRequest) {
         { status: 500 },
       );
     }
+    insertedLeads = rows ?? [];
   }
 
   await client
@@ -316,6 +323,7 @@ export async function POST(req: NextRequest) {
     discovery_run_id: run.id,
     run_name: run.name,
     lead_count: inserts.length,
+    leads: insertedLeads,
     data: webhookData,
   });
 }
