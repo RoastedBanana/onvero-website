@@ -110,7 +110,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
       apollo_organization_id: p.apollo_organization_id,
       source: 'discovery_agent',
       status: 'new',
-      enrichment_status: 'pending',
+      enrichment_status: 'raw',
       // Social links lifted from the webhook payload stored in raw_data.
       logo_url: str(raw.logo_url),
       facebook_url: str(raw.facebook_url),
@@ -131,7 +131,16 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
       .single();
 
     if (insErr || !newLead) {
-      failed.push({ potential_lead_id: p.id, error: insErr?.message ?? 'insert failed' });
+      console.error('[launch] lead insert failed', {
+        potential_lead_id: p.id,
+        company_name: p.company_name,
+        error: insErr,
+      });
+      failed.push({
+        potential_lead_id: p.id,
+        company_name: p.company_name,
+        error: insErr?.message ?? 'insert failed',
+      });
       continue;
     }
 
@@ -143,8 +152,23 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
     promoted.push({ potential_lead_id: p.id, lead_id: newLead.id });
   }
 
-  // Fire scoring webhook for each promoted lead in parallel — fire and forget.
-  void Promise.allSettled(
+  // If every single insert failed, surface that to the caller so we don't
+  // pretend success while no webhook ever gets fired.
+  if (promoted.length === 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'Kein Lead konnte angelegt werden',
+        promoted,
+        failed,
+      },
+      { status: 500 },
+    );
+  }
+
+  // Fire scoring webhook for each promoted lead in parallel — fire and forget,
+  // but await once with allSettled so we can at least log transport failures.
+  const webhookResults = await Promise.allSettled(
     promoted.map(({ lead_id, potential_lead_id }) =>
       fetch(SCORING_WEBHOOK_URL, {
         method: 'POST',
@@ -161,14 +185,35 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
           discovery_run_id: runId,
           callback_url: callbackUrl,
         }),
-      }).catch(() => undefined),
+      }).then(async (res) => ({
+        lead_id,
+        status: res.status,
+        ok: res.ok,
+        body: await res.text().catch(() => ''),
+      })),
     ),
   );
+
+  webhookResults.forEach((r) => {
+    if (r.status === 'rejected') {
+      console.error('[launch] scoring webhook rejected', r.reason);
+    } else if (!r.value.ok) {
+      console.error('[launch] scoring webhook non-2xx', r.value);
+    } else {
+      console.log('[launch] scoring webhook fired', r.value.lead_id, r.value.status);
+    }
+  });
 
   return NextResponse.json({
     ok: true,
     promoted,
     failed,
+    webhook_url: SCORING_WEBHOOK_URL,
     callback_url: callbackUrl,
+    webhook_results: webhookResults.map((r) =>
+      r.status === 'fulfilled'
+        ? { ok: r.value.ok, status: r.value.status, lead_id: r.value.lead_id }
+        : { ok: false, error: String(r.reason) },
+    ),
   });
 }

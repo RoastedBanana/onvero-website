@@ -4252,14 +4252,29 @@ export default function DiscoveryPage() {
         },
       );
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      // eslint-disable-next-line no-console
+      console.log('[launch] response:', json);
+      if (!res.ok) {
+        const detail = Array.isArray(json.failed) && json.failed.length > 0
+          ? `: ${json.failed[0]?.error ?? 'Insert fehlgeschlagen'}`
+          : '';
+        throw new Error((json.error || `HTTP ${res.status}`) + detail);
+      }
 
       const promotedCount = Array.isArray(json.promoted) ? json.promoted.length : 0;
+      const failedCount = Array.isArray(json.failed) ? json.failed.length : 0;
       patchActiveSession({ deepLaunching: false, deepLaunched: true });
-      toast(
-        `Anreicherung & Scoring laufen für ${promotedCount} Leads. Du wirst benachrichtigt, sobald sie fertig sind.`,
-        'success',
-      );
+      if (failedCount > 0) {
+        toast(
+          `${promotedCount} Leads gestartet, ${failedCount} fehlgeschlagen. Siehe Konsole.`,
+          'info',
+        );
+      } else {
+        toast(
+          `Anreicherung & Scoring laufen für ${promotedCount} Leads. Du wirst benachrichtigt, sobald sie fertig sind.`,
+          'success',
+        );
+      }
     } catch (e) {
       patchActiveSession({ deepLaunching: false });
       toast(
