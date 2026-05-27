@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme, colors } from '../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
+import { ExportLeadsModal } from './_ExportLeadsModal';
 
 // ─── Types & Data ─────────────────────────────────────────────────────────────
 
@@ -853,6 +854,7 @@ export default function LeadsPage() {
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<Status | null>(null);
@@ -961,20 +963,8 @@ export default function LeadsPage() {
     }).catch(() => {});
   }
 
-  function exportSelected() {
-    const toExport = selectedIds.size > 0 ? leads.filter((l) => selectedIds.has(l.id)) : filtered;
-    const header = 'Name,Stadt,Branche,System,Carrier,Score,Status,Hinzugefügt';
-    const rows = toExport.map((l) =>
-      [l.name, l.city, l.industry, l.system, l.carrier, l.score, l.status, l.added].join(',')
-    );
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leads-export-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  function openExportModal() {
+    setShowExportModal(true);
   }
 
   function handleDragStart(id: string) {
@@ -1397,7 +1387,7 @@ export default function LeadsPage() {
             </select>
           )}
           <button
-            onClick={exportSelected}
+            onClick={openExportModal}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -2070,7 +2060,7 @@ export default function LeadsPage() {
 
           {/* Exportieren */}
           <button
-            onClick={exportSelected}
+            onClick={openExportModal}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -2220,6 +2210,17 @@ export default function LeadsPage() {
           onCancel={() => setShowDeleteModal(false)}
           isDark={isDark}
           c={c}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportLeadsModal
+          isDark={isDark}
+          c={c}
+          selectedIds={Array.from(selectedIds)}
+          filteredIds={filtered.map((l) => l.id)}
+          allIds={leads.map((l) => l.id)}
+          onClose={() => setShowExportModal(false)}
         />
       )}
     </div>

@@ -28,6 +28,7 @@
     "clsx": "^2.1.1",
     "cobe": "^2.0.1",
     "color-bits": "^1.1.1",
+    "exceljs": "^4.4.0",
     "framer-motion": "^12.38.0",
     "groq-sdk": "^1.1.2",
     "iconsax-react": "^0.0.8",
