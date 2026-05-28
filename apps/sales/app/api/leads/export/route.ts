@@ -42,6 +42,26 @@ type ContactRow = Record<string, unknown> & {
   created_at: string;
 };
 
+// Columns that actually exist on each table. The two tables overlap but are not
+// identical (e.g. `headline` only on enrichments; `is_primary`/`decision_maker_score`
+// only on lead_contacts), so we intersect the requested columns per table before
+// building each select string — otherwise one bad column nukes the whole query.
+const LEAD_CONTACTS_COLUMNS = new Set([
+  'id', 'lead_id', 'tenant_id', 'apollo_person_id', 'apollo_contact_id', 'first_name', 'last_name',
+  'full_name', 'email', 'email_status', 'phone', 'mobile_phone', 'title', 'seniority', 'departments',
+  'functions', 'linkedin_url', 'twitter_url', 'github_url', 'city', 'state', 'country',
+  'employment_history', 'photo_url', 'is_primary', 'decision_maker_score', 'contact_quality_score',
+  'is_excluded', 'exclusion_reason', 'status', 'last_contacted_at', 'email_draft_subject',
+  'email_draft_body', 'raw_apollo_person', 'created_at', 'updated_at', 'facebook_url', 'role', 'role_type',
+]);
+const ENRICHMENT_COLUMNS = new Set([
+  'id', 'lead_contact_id', 'lead_id', 'tenant_id', 'apollo_person_id', 'first_name', 'last_name',
+  'full_name', 'title', 'seniority', 'departments', 'functions', 'email', 'email_status', 'phone',
+  'mobile_phone', 'linkedin_url', 'twitter_url', 'github_url', 'facebook_url', 'photo_url', 'headline',
+  'city', 'state', 'country', 'employment_history', 'email_draft_subject', 'email_draft_body',
+  'status', 'created_at', 'updated_at',
+]);
+
 // Mirror useContacts: merge `lead_contacts` + `lead_contact_enrichments`, dedupe
 // by apollo_person_id, enrichment row wins (richer data) but missing fields are
 // backfilled from the contact row. Returns a Map<leadId, sorted contacts>.
@@ -54,20 +74,21 @@ async function fetchContactsForLeads(
   const result = new Map<string, ContactRow[]>();
   if (leadIds.length === 0) return result;
 
-  const baseCols = new Set([
+  const wanted = new Set<string>([
     'id',
     'lead_id',
     'apollo_person_id',
     'is_primary',
     'decision_maker_score',
     'created_at',
+    ...contactColumns,
   ]);
-  for (const c of contactColumns) baseCols.add(c);
-  const selectStr = Array.from(baseCols).join(',');
+  const selectFor = (cols: Set<string>) =>
+    Array.from(wanted).filter((c) => cols.has(c)).join(',');
 
   const [r1, r2] = await Promise.all([
-    supabase.from('lead_contacts').select(selectStr).eq('tenant_id', tenantId).in('lead_id', leadIds),
-    supabase.from('lead_contact_enrichments').select(selectStr).in('lead_id', leadIds),
+    supabase.from('lead_contacts').select(selectFor(LEAD_CONTACTS_COLUMNS)).eq('tenant_id', tenantId).in('lead_id', leadIds),
+    supabase.from('lead_contact_enrichments').select(selectFor(ENRICHMENT_COLUMNS)).in('lead_id', leadIds),
   ]);
 
   const grouped = new Map<string, Map<string, ContactRow>>();
