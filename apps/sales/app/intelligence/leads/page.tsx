@@ -75,6 +75,7 @@ function mapApiLead(row: any): Lead {
     employees: row.num_employees ? String(row.num_employees) : (row.estimated_employees_scraped ?? ''),
     revenue: formatRevenue(row.fin_revenue_eur, row.estimated_revenue_scraped),
     added: row.created_at ? new Date(row.created_at as string).toLocaleDateString('de-DE') : '',
+    addedTs: row.created_at ? new Date(row.created_at as string).getTime() : 0,
     signals: signals > 0 ? signals : undefined,
     enrichmentStatus: (row.enrichment_status as string) ?? 'raw',
     logo_url: (row.logo_url as string | undefined) ?? undefined,
@@ -100,6 +101,7 @@ interface Lead {
   employees: string;
   revenue: string;
   added: string;
+  addedTs: number;
   signals?: number;
   enrichmentStatus?: string;
   logo_url?: string;
@@ -873,7 +875,7 @@ export default function LeadsPage() {
     .sort((a, b) => {
       if (sortBy === 'score') return b.score - a.score;
       if (sortBy === 'name') return a.name.localeCompare(b.name);
-      return b.added.localeCompare(a.added);
+      return b.addedTs - a.addedTs;
     });
 
   const hot = leads.filter((l) => l.status === 'hot').length;
@@ -1383,7 +1385,7 @@ export default function LeadsPage() {
             >
               <option value="score">Score</option>
               <option value="name">Name</option>
-              <option value="added">Hinzugefügt</option>
+              <option value="added">Neueste zuerst</option>
             </select>
           )}
           <button
