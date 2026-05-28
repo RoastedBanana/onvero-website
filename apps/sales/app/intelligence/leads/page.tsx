@@ -185,7 +185,10 @@ function glassCard(isDark: boolean, extra: React.CSSProperties = {}): React.CSSP
     backdropFilter: 'blur(22px)',
     WebkitBackdropFilter: 'blur(22px)',
     borderRadius: 16,
-    border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
+    borderTop: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
+    borderRight: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
+    borderBottom: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
+    borderLeft: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
     boxShadow: isDark
       ? 'inset 1px 1px 2px rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.32)'
       : 'inset 2px 2px 3px rgba(255,255,255,0.50), 0 4px 20px rgba(0,0,0,0.06)',
