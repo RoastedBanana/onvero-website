@@ -11,6 +11,8 @@ import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { GlassButton } from '@/components/ui/glass-button';
 import { TypingEffect } from '@/components/ui/typing-effect';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1028,29 +1030,119 @@ function DataRow({
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
 
-const QUICK_PROMPTS = ['Besten Pitch zeigen', 'Wettbewerber analysieren', 'Was übersehe ich?', 'Wann kontaktieren?'];
-const BOT_RESPONSES: Record<string, string> = {
-  pitch:
-    'Basierend auf den Signalen: Spreche die aktuellen Carrier-Probleme direkt an und biete einen konkreten SLA-Vergleich mit 3 Referenzkunden aus der gleichen Branche.',
-  wettbewerb:
-    'Die Hauptwettbewerber sind DHL, GLS und DPD. Der Lead hat zuletzt negative Bewertungen für DHL erhalten — das ist dein Einstieg.',
-  übersehe:
-    'Das Unternehmen ist gerade intern in Umstrukturierung. Die neue Operations-Stelle deutet auf eine Professionalisierung des Fulfillments hin — guter Zeitpunkt.',
-  zeitpunkt:
-    'Optimaler Zeitpunkt: Diese Woche. Das Funding ist frisch, die Logistics-Stelle noch offen — der Entscheider ist im Evaluationsmodus.',
-  fallback:
-    'Basierend auf Score, Signalen und Firmendaten: Ein Erstkontakt per LinkedIn mit personalisierten Signal-Referenzen hat die höchste Erfolgswahrscheinlichkeit.',
-};
-function getBotReply(text: string) {
-  const l = text.toLowerCase();
-  if (l.includes('pitch')) return BOT_RESPONSES.pitch;
-  if (l.includes('wettbewerb') || l.includes('konkurrenz')) return BOT_RESPONSES.wettbewerb;
-  if (l.includes('übersehe') || l.includes('vergessen')) return BOT_RESPONSES.übersehe;
-  if (l.includes('zeitpunkt') || l.includes('wann') || l.includes('kontakt')) return BOT_RESPONSES.zeitpunkt;
-  return BOT_RESPONSES.fallback;
+const QUICK_PROMPTS = [
+  'Was macht dieses Unternehmen?',
+  'Wie ist die Online-Reputation?',
+  'Gibt es Widersprüche im Außenauftritt?',
+  'Zusammenfassung aller Quellen',
+];
+
+const RESEARCH_CHAT_ENDPOINT = '/api/leads/research-chat';
+
+let _chatMsgSeq = 0;
+function nextMsgId(suffix: string) {
+  return `${++_chatMsgSeq}_${suffix}`;
 }
 
-type ChatMsg = { id: string; role: 'user' | 'bot'; text: string; loading?: boolean };
+function statusLabel(status: string | null, details: string | null): string {
+  if (details && details.trim()) return details.trim();
+  if (status === 'searching') return 'Durchsuche verfügbare Datenquellen…';
+  if (status === 'fetching') return 'Lade detaillierte Quelldaten…';
+  return 'Analysiere…';
+}
+
+// Markdown renderer themed with inline styles (this page uses inline styles, not Tailwind).
+function MarkdownMessage({ text, c, isDark }: { text: string; c: ReturnType<typeof colors>; isDark: boolean }) {
+  const link = isDark ? '#818CF8' : '#4F46E5';
+  const codeBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+  const borderCol = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)';
+  return (
+    <div style={{ fontSize: 14, lineHeight: 1.6, color: c.text }}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p style={{ margin: '0 0 8px' }}>{children}</p>,
+          strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+          em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
+          ul: ({ children }) => <ul style={{ margin: '4px 0 10px', paddingLeft: 20, listStyle: 'disc' }}>{children}</ul>,
+          ol: ({ children }) => (
+            <ol style={{ margin: '4px 0 10px', paddingLeft: 20, listStyle: 'decimal' }}>{children}</ol>
+          ),
+          li: ({ children }) => <li style={{ margin: '2px 0' }}>{children}</li>,
+          h1: ({ children }) => <h1 style={{ fontSize: 18, fontWeight: 800, margin: '10px 0 6px' }}>{children}</h1>,
+          h2: ({ children }) => <h2 style={{ fontSize: 16, fontWeight: 800, margin: '10px 0 6px' }}>{children}</h2>,
+          h3: ({ children }) => <h3 style={{ fontSize: 14, fontWeight: 700, margin: '8px 0 4px' }}>{children}</h3>,
+          a: ({ children, href }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: link, textDecoration: 'underline' }}
+            >
+              {children}
+            </a>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote
+              style={{ margin: '6px 0', paddingLeft: 12, borderLeft: `3px solid ${borderCol}`, color: c.textSub }}
+            >
+              {children}
+            </blockquote>
+          ),
+          code: ({ children }) => {
+            const isBlock = String(children).includes('\n');
+            return isBlock ? (
+              <code style={{ fontFamily: 'var(--font-geist-mono), monospace', fontSize: 12.5 }}>{children}</code>
+            ) : (
+              <code
+                style={{
+                  background: codeBg,
+                  padding: '1px 5px',
+                  borderRadius: 4,
+                  fontSize: 12.5,
+                  fontFamily: 'var(--font-geist-mono), monospace',
+                }}
+              >
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre
+              style={{ background: codeBg, padding: 12, borderRadius: 8, overflowX: 'auto', margin: '6px 0', fontSize: 12.5 }}
+            >
+              {children}
+            </pre>
+          ),
+          table: ({ children }) => (
+            <div style={{ overflowX: 'auto', margin: '8px 0' }}>
+              <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>{children}</table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th
+              style={{
+                border: `1px solid ${borderCol}`,
+                padding: '6px 9px',
+                textAlign: 'left',
+                fontWeight: 700,
+                background: codeBg,
+              }}
+            >
+              {children}
+            </th>
+          ),
+          td: ({ children }) => <td style={{ border: `1px solid ${borderCol}`, padding: '6px 9px' }}>{children}</td>,
+          hr: () => <hr style={{ border: 'none', borderTop: `1px solid ${borderCol}`, margin: '10px 0' }} />,
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+type ChatMsg = { id: string; role: 'user' | 'bot'; text: string; loading?: boolean; error?: boolean };
 
 function ChatTypingDots({ c }: { c: ReturnType<typeof colors> }) {
   return (
@@ -1072,8 +1164,11 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [statusText, setStatusText] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -1090,20 +1185,128 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [msgs]);
+  }, [msgs, statusText]);
+
+  // Load prior conversation for this lead (persisted per lead + user).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${RESEARCH_CHAT_ENDPOINT}?leadId=${encodeURIComponent(lead.id)}`);
+        if (!res.ok) return;
+        const data: { messages?: { role: string; content: string; created_at: string }[] } = await res.json();
+        if (cancelled || !data.messages?.length) return;
+        const loaded: ChatMsg[] = data.messages.map((m, i) => ({
+          id: `h${i}_${m.created_at}`,
+          role: m.role === 'user' ? 'user' : 'bot',
+          text: m.content,
+        }));
+        // Don't clobber an in-progress conversation (fast send before history resolves).
+        setMsgs((prev) => (prev.length ? prev : loaded));
+      } catch {
+        /* history is best-effort */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [lead.id]);
+
+  // Stop polling + abort any in-flight request on unmount.
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    setStatusText(null);
+  }, []);
+
+  const startPolling = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${RESEARCH_CHAT_ENDPOINT}/status?leadId=${encodeURIComponent(lead.id)}`);
+        if (!res.ok) return;
+        const data: { status?: { status: string; details: string | null } | null } = await res.json();
+        if (data.status) setStatusText(statusLabel(data.status.status, data.status.details));
+      } catch {
+        /* ignore transient poll errors */
+      }
+    }, 1100);
+  }, [lead.id]);
+
+  const runRequest = useCallback(
+    async (msg: string, loadingId: string) => {
+      setBusy(true);
+      setStatusText(null);
+      startPolling();
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const timeout = setTimeout(() => controller.abort(), 290_000);
+
+      try {
+        const res = await fetch(RESEARCH_CHAT_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: lead.id, message: msg }),
+          signal: controller.signal,
+        });
+        const data: { reply?: string; error?: string } = await res.json().catch(() => ({}));
+        if (!res.ok || !data.reply) throw new Error(data.error || 'Die Anfrage ist fehlgeschlagen.');
+        setMsgs((p) => [
+          ...p.filter((m) => m.id !== loadingId && !m.loading),
+          { id: nextMsgId('r'), role: 'bot', text: data.reply as string },
+        ]);
+      } catch (err) {
+        const aborted = err instanceof DOMException && err.name === 'AbortError';
+        const text = aborted
+          ? 'Zeitüberschreitung — die Recherche hat zu lange gedauert. Bitte erneut versuchen.'
+          : err instanceof Error
+            ? err.message
+            : 'Unbekannter Fehler.';
+        setMsgs((p) => [
+          ...p.filter((m) => m.id !== loadingId && !m.loading),
+          { id: nextMsgId('e'), role: 'bot', text, error: true },
+        ]);
+      } finally {
+        clearTimeout(timeout);
+        abortRef.current = null;
+        stopPolling();
+        setBusy(false);
+      }
+    },
+    [lead.id, startPolling, stopPolling],
+  );
 
   async function send(text?: string) {
     const msg = (text ?? input).trim();
     if (!msg || busy) return;
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = '24px';
-    const userMsg: ChatMsg = { id: `${Date.now()}_u`, role: 'user', text: msg };
-    const loadMsg: ChatMsg = { id: `${Date.now()}_l`, role: 'bot', text: '', loading: true };
-    setMsgs((p) => [...p, userMsg, loadMsg]);
-    setBusy(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setMsgs((p) => [...p.filter((m) => !m.loading), { id: `${Date.now()}_r`, role: 'bot', text: getBotReply(msg) }]);
-    setBusy(false);
+    const loadingId = nextMsgId('l');
+    setMsgs((p) => [
+      ...p.filter((m) => !m.error),
+      { id: nextMsgId('u'), role: 'user', text: msg },
+      { id: loadingId, role: 'bot', text: '', loading: true },
+    ]);
+    await runRequest(msg, loadingId);
+  }
+
+  function retry() {
+    if (busy) return;
+    const lastUser = [...msgs].reverse().find((m) => m.role === 'user' && !m.error);
+    if (!lastUser) return;
+    const loadingId = nextMsgId('l');
+    setMsgs((p) => [...p.filter((m) => !m.error), { id: loadingId, role: 'bot', text: '', loading: true }]);
+    void runRequest(lastUser.text, loadingId);
   }
 
   const hasMessages = msgs.length > 0;
@@ -1218,39 +1421,102 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
                           : 'inset 2px 2px 3px rgba(255,255,255,0.55)',
                       }}
                     >
-                      <ChatTypingDots c={c} />
+                      {statusText ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 9,
+                            padding: '11px 16px',
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: c.textSub,
+                          }}
+                        >
+                          <motion.span
+                            style={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: '50%',
+                              background: isDark ? '#818CF8' : '#4F46E5',
+                              display: 'block',
+                              flexShrink: 0,
+                            }}
+                            animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.15, 0.8] }}
+                            transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+                          />
+                          <span>{statusText}</span>
+                        </div>
+                      ) : (
+                        <ChatTypingDots c={c} />
+                      )}
                     </div>
-                  ) : (
+                  ) : m.error ? (
+                    <div
+                      style={{
+                        maxWidth: '88%',
+                        padding: '11px 16px',
+                        borderRadius: '16px 16px 16px 4px',
+                        background: isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)',
+                        border: '1px solid rgba(239,68,68,0.35)',
+                        fontSize: 14,
+                        lineHeight: 1.55,
+                        color: isDark ? '#fca5a5' : '#b91c1c',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 9,
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <span>{m.text}</span>
+                      <GlassButton
+                        size="sm"
+                        isDark={isDark}
+                        onClick={retry}
+                        disabled={busy}
+                        style={{ fontSize: 12, fontWeight: 700, fontFamily: 'inherit', color: c.text }}
+                      >
+                        Erneut versuchen
+                      </GlassButton>
+                    </div>
+                  ) : m.role === 'user' ? (
                     <div
                       style={{
                         maxWidth: '80%',
                         padding: '11px 16px',
-                        borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                        borderRadius: '16px 16px 4px 16px',
                         backdropFilter: 'blur(16px)',
                         WebkitBackdropFilter: 'blur(16px)',
                         fontSize: 14,
                         lineHeight: 1.55,
-                        fontWeight: m.role === 'user' ? 600 : 400,
-                        ...(m.role === 'user'
-                          ? {
-                              background: isDark ? 'rgba(99,102,241,0.28)' : 'rgba(79,70,229,0.13)',
-                              border: isDark ? '1px solid rgba(124,58,237,0.45)' : '1px solid rgba(79,70,229,0.28)',
-                              boxShadow: isDark
-                                ? 'inset 1px 1px 2px rgba(124,58,237,0.18)'
-                                : 'inset 2px 2px 3px rgba(255,255,255,0.45)',
-                              color: isDark ? '#c4b5fd' : '#3730a3',
-                            }
-                          : {
-                              background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.52)',
-                              border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.65)',
-                              boxShadow: isDark
-                                ? 'inset 1px 1px 2px rgba(255,255,255,0.06)'
-                                : 'inset 2px 2px 3px rgba(255,255,255,0.55)',
-                              color: c.text,
-                            }),
+                        fontWeight: 600,
+                        whiteSpace: 'pre-wrap',
+                        background: isDark ? 'rgba(99,102,241,0.28)' : 'rgba(79,70,229,0.13)',
+                        border: isDark ? '1px solid rgba(124,58,237,0.45)' : '1px solid rgba(79,70,229,0.28)',
+                        boxShadow: isDark
+                          ? 'inset 1px 1px 2px rgba(124,58,237,0.18)'
+                          : 'inset 2px 2px 3px rgba(255,255,255,0.45)',
+                        color: isDark ? '#c4b5fd' : '#3730a3',
                       }}
                     >
                       {m.text}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        maxWidth: '92%',
+                        padding: '10px 16px 4px',
+                        borderRadius: '16px 16px 16px 4px',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.52)',
+                        border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.65)',
+                        boxShadow: isDark
+                          ? 'inset 1px 1px 2px rgba(255,255,255,0.06)'
+                          : 'inset 2px 2px 3px rgba(255,255,255,0.55)',
+                      }}
+                    >
+                      <MarkdownMessage text={m.text} c={c} isDark={isDark} />
                     </div>
                   )}
                 </motion.div>
