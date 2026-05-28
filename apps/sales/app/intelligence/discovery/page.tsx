@@ -819,6 +819,7 @@ function ModeCard({
   c,
   isDark,
   delay = 0,
+  disabled = false,
 }: {
   Icon: React.ElementType;
   title: string;
@@ -827,21 +828,25 @@ function ModeCard({
   c: ReturnType<typeof colors>;
   isDark: boolean;
   delay?: number;
+  disabled?: boolean;
 }) {
-  const [hovered, setHovered] = useState(false);
+  const [hoveredRaw, setHoveredRaw] = useState(false);
+  const hovered = hoveredRaw && !disabled;
   return (
     <motion.button
       initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: disabled ? 0.55 : 1, y: 0 }}
       transition={{ delay, duration: 0.35, ease: 'easeOut' }}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHoveredRaw(true)}
+      onMouseLeave={() => setHoveredRaw(false)}
       style={{
+        position: 'relative',
         flex: '1 1 280px',
         maxWidth: 320,
         textAlign: 'left',
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
         background: isDark
           ? hovered
             ? 'rgba(255,255,255,0.10)'
@@ -871,8 +876,28 @@ function ModeCard({
           : isDark
             ? '0 4px 16px rgba(0,0,0,0.22)'
             : 'inset 2px 2px 3px rgba(255,255,255,0.55), 0 4px 14px rgba(0,0,0,0.05)',
+        filter: disabled ? 'grayscale(1)' : 'none',
       }}
     >
+      {disabled && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 14,
+            right: 14,
+            fontSize: 10,
+            fontWeight: 700,
+            color: c.textMuted,
+            background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            padding: '3px 8px',
+            borderRadius: 6,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Bald
+        </span>
+      )}
       <div
         style={{
           width: 40,
@@ -4658,6 +4683,7 @@ export default function DiscoveryPage() {
                     c={c}
                     isDark={isDark}
                     delay={0.05}
+                    disabled
                   />
                   <ModeCard
                     Icon={TelescopeIcon}
