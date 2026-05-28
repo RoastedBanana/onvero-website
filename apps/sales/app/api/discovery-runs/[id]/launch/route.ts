@@ -39,17 +39,14 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
   const ctx = await getSessionContext();
   if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!SCORING_WEBHOOK_URL) {
-    return NextResponse.json(
-      { error: 'N8N_WEBHOOK_DEEP_RESEARCH_PARALLEL not configured' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'N8N_WEBHOOK_DEEP_RESEARCH_PARALLEL not configured' }, { status: 500 });
   }
 
   const body = (await req.json().catch(() => ({}))) as {
     potential_lead_ids?: unknown;
   };
   const ids = Array.isArray(body.potential_lead_ids)
-    ? (body.potential_lead_ids.filter((v): v is string => typeof v === 'string'))
+    ? body.potential_lead_ids.filter((v): v is string => typeof v === 'string')
     : [];
   if (ids.length === 0) {
     return NextResponse.json({ error: 'potential_lead_ids is required' }, { status: 400 });
@@ -70,7 +67,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
   const { data: potentials, error: selErr } = await client
     .from('potential_leads')
     .select(
-      'id, tenant_id, company_name, city, postal_code, address, country, website_url, linkedin_url, email, phone, employee_count, revenue_cents, incorporated_at, apollo_organization_id, raw_data',
+      'id, tenant_id, company_name, city, postal_code, address, country, website_url, linkedin_url, email, phone, employee_count, revenue_cents, incorporated_at, apollo_organization_id, raw_data'
     )
     .eq('tenant_id', ctx.tenantId)
     .eq('discovery_run_id', runId)
@@ -89,7 +86,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
   const callbackBase = process.env.PUBLIC_BASE_URL?.replace(/\/$/, '') ?? req.nextUrl.origin;
   const callbackUrl = `${callbackBase}/api/webhooks/discovery-scoring-complete`;
   const promoted: { potential_lead_id: string; lead_id: string }[] = [];
-  const failed: { potential_lead_id: string; error: string }[] = [];
+  const failed: { potential_lead_id: string; company_name?: string; error: string }[] = [];
 
   for (const p of potentials as PotentialLeadRow[]) {
     const raw = (p.raw_data ?? {}) as Record<string, unknown>;
@@ -128,11 +125,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
       custom_fields: { discovery_run_id: runId, potential_lead_id: p.id, raw },
     };
 
-    const { data: newLead, error: insErr } = await client
-      .from('leads')
-      .insert(leadInsert)
-      .select('id')
-      .single();
+    const { data: newLead, error: insErr } = await client.from('leads').insert(leadInsert).select('id').single();
 
     if (insErr || !newLead) {
       console.error('[launch] lead insert failed', {
@@ -166,7 +159,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
         promoted,
         failed,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
@@ -182,9 +175,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(process.env.N8N_WEBHOOK_SECRET
-            ? { 'x-onvero-secret': process.env.N8N_WEBHOOK_SECRET }
-            : {}),
+          ...(process.env.N8N_WEBHOOK_SECRET ? { 'x-onvero-secret': process.env.N8N_WEBHOOK_SECRET } : {}),
         },
         body: JSON.stringify({
           lead_id,
@@ -214,8 +205,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
           if (!parsed) return;
           const payload = (Array.isArray(parsed) ? parsed[0] : parsed) as Record<string, unknown>;
           if (!payload || typeof payload !== 'object') return;
-          const responseLeadId =
-            typeof payload.lead_id === 'string' ? payload.lead_id : lead_id;
+          const responseLeadId = typeof payload.lead_id === 'string' ? payload.lead_id : lead_id;
           if (responseLeadId !== lead_id) {
             console.warn('[launch] response lead_id mismatch', { sent: lead_id, got: responseLeadId });
           }
@@ -227,17 +217,13 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
             discoveryRunId: runId,
             companyName: typeof payload.company_name === 'string' ? payload.company_name : undefined,
             structuralFieldsUpdated:
-              typeof payload.structural_fields_updated === 'number'
-                ? payload.structural_fields_updated
-                : null,
-            hrbMatchStatus:
-              typeof payload.hrb_match_status === 'string' ? payload.hrb_match_status : null,
-            scoringComplete:
-              typeof payload.scoring_complete === 'boolean' ? payload.scoring_complete : true,
+              typeof payload.structural_fields_updated === 'number' ? payload.structural_fields_updated : null,
+            hrbMatchStatus: typeof payload.hrb_match_status === 'string' ? payload.hrb_match_status : null,
+            scoringComplete: typeof payload.scoring_complete === 'boolean' ? payload.scoring_complete : true,
           });
         })
-        .catch((err) => console.error('[launch] scoring webhook rejected', lead_id, err)),
-    ),
+        .catch((err) => console.error('[launch] scoring webhook rejected', lead_id, err))
+    )
   );
 
   return NextResponse.json({

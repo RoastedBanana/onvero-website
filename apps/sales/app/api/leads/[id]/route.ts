@@ -34,7 +34,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       client
         .from('lead_contacts')
         .select(
-          'id, apollo_person_id, first_name, last_name, full_name, title, role, seniority, email, email_status, phone, mobile_phone, linkedin_url, photo_url, city, country, status, is_primary, created_at',
+          'id, apollo_person_id, first_name, last_name, full_name, title, role, seniority, email, email_status, phone, mobile_phone, linkedin_url, photo_url, city, country, status, is_primary, created_at'
         )
         .eq('lead_id', id)
         .eq('tenant_id', tenantId)
@@ -44,7 +44,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     if (leadRes.error) {
       console.error('[leads/[id]] supabase error:', leadRes.error);
-      return NextResponse.json({ lead: null, activities: [], contacts: [], error: leadRes.error.message }, { status: 500 });
+      return NextResponse.json(
+        { lead: null, activities: [], contacts: [], error: leadRes.error.message },
+        { status: 500 }
+      );
     }
 
     // For each contact, pull the latest enrichment with an actual email draft.
@@ -128,18 +131,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (key in body) safeFields[key] = body[key];
   }
 
-  const client = getAdmin() ?? getAdminClient();
-
-  // Try with session tenant first
-  let tenantId = await getSessionTenantId();
-
-  // Fallback: if no session, look up tenant from the lead itself (service role only)
-  if (!tenantId && getAdmin()) {
-    const { data: lead } = await client.from('leads').select('tenant_id').eq('id', id).single();
-    tenantId = lead?.tenant_id ?? null;
-  }
-
+  const tenantId = await getSessionTenantId();
   if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const client = getAdminClient();
 
   const { data, error } = await client
     .from('leads')

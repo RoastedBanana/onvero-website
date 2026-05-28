@@ -88,7 +88,7 @@ export function useUser() {
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 
-type NavItem = { label: string; href: string; Icon: React.ElementType };
+type NavItem = { label: string; href: string; Icon: React.ElementType; disabled?: boolean };
 type NavSection = { heading: string; items: NavItem[] };
 
 const NAV_TOP: NavItem = { label: 'Home', href: '/intelligence', Icon: Home2 };
@@ -98,8 +98,8 @@ const NAV_SECTIONS: NavSection[] = [
     heading: 'Discovery',
     items: [
       { label: 'Lead Scout', href: '/intelligence/discovery', Icon: MessageText1 },
-      { label: 'Netzwerk', href: '/intelligence/network', Icon: Share },
-      { label: 'Intent Monitor', href: '/intelligence/intent', Icon: Activity },
+      { label: 'Netzwerk', href: '/intelligence/network', Icon: Share, disabled: true },
+      { label: 'Intent Monitor', href: '/intelligence/intent', Icon: Activity, disabled: true },
     ],
   },
   {
@@ -112,7 +112,7 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 const NAV_SYSTEM: NavItem[] = [
-  { label: 'Analytics', href: '/intelligence/analytics', Icon: ChartSquare },
+  { label: 'Analytics', href: '/intelligence/analytics', Icon: ChartSquare, disabled: true },
   { label: 'Integrationen', href: '/intelligence/integrations', Icon: Routing },
   { label: 'Einstellungen', href: '/intelligence/settings', Icon: Setting2 },
 ];
@@ -135,16 +135,96 @@ function Sidebar({ theme }: { theme: Theme }) {
     const [pressed, setPressed] = useState(false);
     const active = isActive(item.href);
     const { Icon } = item;
+    const disabled = item.disabled ?? false;
 
     const bg = active
       ? isDark
         ? 'rgba(255,255,255,0.10)'
         : 'rgba(0,0,0,0.07)'
-      : hovered
+      : hovered && !disabled
         ? isDark
           ? 'rgba(255,255,255,0.05)'
           : 'rgba(0,0,0,0.04)'
         : 'transparent';
+
+    const inner = (
+      <>
+        {active && !disabled && (
+          <span
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 3,
+              height: 16,
+              borderRadius: 99,
+              background: c.text,
+            }}
+          />
+        )}
+        <Icon
+          size={17}
+          variant="Linear"
+          color={disabled ? c.textMuted : active ? c.text : c.textMuted}
+          style={{ flexShrink: 0, opacity: disabled ? 0.4 : 1 }}
+        />
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: active ? 700 : 500,
+            color: disabled ? c.textMuted : active ? c.text : c.textSub,
+            whiteSpace: 'nowrap',
+            opacity: expanded ? (disabled ? 0.45 : 1) : 0,
+            transition: 'opacity 150ms ease-out',
+            pointerEvents: expanded ? 'auto' : 'none',
+            flex: 1,
+          }}
+        >
+          {item.label}
+        </span>
+        {disabled && expanded && (
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: c.textMuted,
+              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              padding: '2px 5px',
+              borderRadius: 4,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              opacity: expanded ? 1 : 0,
+              transition: 'opacity 150ms ease-out',
+            }}
+          >
+            Bald
+          </span>
+        )}
+      </>
+    );
+
+    if (disabled) {
+      return (
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 9,
+            padding: '0 10px',
+            height: 34,
+            borderRadius: 9,
+            background: 'transparent',
+            cursor: 'default',
+            flexShrink: 0,
+          }}
+        >
+          {inner}
+        </div>
+      );
+    }
 
     return (
       <Link
@@ -171,34 +251,7 @@ function Sidebar({ theme }: { theme: Theme }) {
           flexShrink: 0,
         }}
       >
-        {active && (
-          <span
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: 3,
-              height: 16,
-              borderRadius: 99,
-              background: c.text,
-            }}
-          />
-        )}
-        <Icon size={17} variant="Linear" color={active ? c.text : c.textMuted} style={{ flexShrink: 0 }} />
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: active ? 700 : 500,
-            color: active ? c.text : c.textSub,
-            whiteSpace: 'nowrap',
-            opacity: expanded ? 1 : 0,
-            transition: 'opacity 150ms ease-out',
-            pointerEvents: expanded ? 'auto' : 'none',
-          }}
-        >
-          {item.label}
-        </span>
+        {inner}
       </Link>
     );
   }
