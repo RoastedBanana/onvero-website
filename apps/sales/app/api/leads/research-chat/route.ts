@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
     .eq('tenant_id', ctx.tenantId)
     .eq('user_id', ctx.userId)
     .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
     .limit(200);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

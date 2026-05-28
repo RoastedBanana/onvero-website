@@ -1165,6 +1165,7 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(false);
   const [statusText, setStatusText] = useState<string | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1188,6 +1189,7 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
   }, [msgs, statusText]);
 
   // Load prior conversation for this lead (persisted per lead + user).
+  // ChatTab is keyed by lead id, so this effect runs once per lead mount.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1197,7 +1199,7 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
         const data: { messages?: { role: string; content: string; created_at: string }[] } = await res.json();
         if (cancelled || !data.messages?.length) return;
         const loaded: ChatMsg[] = data.messages.map((m, i) => ({
-          id: `h${i}_${m.created_at}`,
+          id: `h${i}_${m.created_at}_${m.role}`,
           role: m.role === 'user' ? 'user' : 'bot',
           text: m.content,
         }));
@@ -1205,6 +1207,8 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
         setMsgs((prev) => (prev.length ? prev : loaded));
       } catch {
         /* history is best-effort */
+      } finally {
+        if (!cancelled) setLoadingHistory(false);
       }
     })();
     return () => {
@@ -1333,8 +1337,34 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Message area */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '0 0 8px', minHeight: 0 }}>
+        {loadingHistory && !hasMessages && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              minHeight: 320,
+              color: c.textMuted,
+            }}
+          >
+            <motion.div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                border: `2px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'}`,
+                borderTopColor: isDark ? '#818CF8' : '#4F46E5',
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+            />
+            <span style={{ fontSize: 12.5 }}>Lade bisherige Unterhaltung…</span>
+          </div>
+        )}
         <AnimatePresence>
-          {!hasMessages && (
+          {!hasMessages && !loadingHistory && (
             <motion.div
               key="empty"
               initial={{ opacity: 0, y: 12 }}
@@ -10494,7 +10524,7 @@ export default function LeadDetailPage() {
             {activeTab === 'outbound' && (
               <OutboundTab lead={lead!} c={c} isDark={isDark} onLeadRefresh={() => loadLead({ showSpinner: false })} />
             )}
-            {activeTab === 'bot' && <ChatTab lead={lead!} c={c} isDark={isDark} />}
+            {activeTab === 'bot' && <ChatTab key={lead!.id} lead={lead!} c={c} isDark={isDark} />}
           </>
         )}
       </div>
