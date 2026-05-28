@@ -1052,10 +1052,72 @@ function statusLabel(status: string | null, details: string | null): string {
 }
 
 // Markdown renderer themed with inline styles (this page uses inline styles, not Tailwind).
-function MarkdownMessage({ text, c, isDark }: { text: string; c: ReturnType<typeof colors>; isDark: boolean }) {
+type CiteSource = { n: string; label: string; url: string };
+
+// Split a "**Quellen:**" footnote section off the message body and parse its entries.
+function splitSources(text: string): { body: string; sources: CiteSource[] } {
+  const headerRe = /\n[ \t]*(?:-{3,}[ \t]*\n+)?[ \t]*\*{0,2}\s*Quellen\s*:?\s*\*{0,2}[ \t]*(?:\n|$)/i;
+  const match = text.match(headerRe);
+  if (!match || match.index === undefined) return { body: text, sources: [] };
+  const body = text.slice(0, match.index).trimEnd();
+  const tail = text.slice(match.index + match[0].length);
+  const sources: CiteSource[] = [];
+  for (const rawLine of tail.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const m = line.match(/^\[(\d+)\]\s*(.+)$/);
+    if (!m) continue;
+    let rest = m[2].trim();
+    let url = '';
+    const mdLink = rest.match(/\[([^\]]*)\]\((https?:\/\/[^)]+)\)/);
+    if (mdLink && mdLink.index !== undefined) {
+      url = mdLink[2];
+      rest = (rest.slice(0, mdLink.index) + ' ' + (mdLink[1] ?? '')).trim();
+    } else {
+      const urlM = rest.match(/(https?:\/\/\S+)/);
+      if (urlM && urlM.index !== undefined) {
+        url = urlM[1];
+        rest = rest.slice(0, urlM.index).trim();
+      }
+    }
+    const label = rest.replace(/[\s—–:-]+$/, '').trim();
+    sources.push({ n: m[1], label, url });
+  }
+  return { body, sources };
+}
+
+function MarkdownMessage({
+  text,
+  c,
+  isDark,
+  msgId,
+}: {
+  text: string;
+  c: ReturnType<typeof colors>;
+  isDark: boolean;
+  msgId: string;
+}) {
   const link = isDark ? '#818CF8' : '#4F46E5';
   const codeBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
   const borderCol = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)';
+  const badgeBg = isDark ? 'rgba(129,140,248,0.22)' : 'rgba(79,70,229,0.12)';
+  const badgeColor = isDark ? '#a5b4fc' : '#4338ca';
+  const anchorBase = msgId.replace(/[^a-zA-Z0-9_-]/g, '');
+  const [flash, setFlash] = useState<string | null>(null);
+
+  const { body, sources } = splitSources(text);
+  const sourceByN = new Map(sources.map((s) => [s.n, s]));
+  // Turn inline [n] footnotes into clickable anchors (skip [n](...) that are already links).
+  const processed = body.replace(/\[(\d+)\](?!\()/g, (_m, n) => `[${n}](#__cite__${anchorBase}__${n})`);
+
+  function goToSource(n: string) {
+    const el = typeof document !== 'undefined' ? document.getElementById(`src-${anchorBase}-${n}`) : null;
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setFlash(n);
+    window.setTimeout(() => setFlash((cur) => (cur === n ? null : cur)), 1400);
+  }
+
   return (
     <div style={{ fontSize: 14, lineHeight: 1.6, color: c.text }}>
       <ReactMarkdown
@@ -1072,16 +1134,53 @@ function MarkdownMessage({ text, c, isDark }: { text: string; c: ReturnType<type
           h1: ({ children }) => <h1 style={{ fontSize: 18, fontWeight: 800, margin: '10px 0 6px' }}>{children}</h1>,
           h2: ({ children }) => <h2 style={{ fontSize: 16, fontWeight: 800, margin: '10px 0 6px' }}>{children}</h2>,
           h3: ({ children }) => <h3 style={{ fontSize: 14, fontWeight: 700, margin: '8px 0 4px' }}>{children}</h3>,
-          a: ({ children, href }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: link, textDecoration: 'underline' }}
-            >
-              {children}
-            </a>
-          ),
+          a: ({ children, href }) => {
+            const cite = href?.match(/^#__cite__.+__(\d+)$/);
+            if (cite) {
+              const n = cite[1];
+              const src = sourceByN.get(n);
+              return (
+                <sup style={{ lineHeight: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => goToSource(n)}
+                    title={src ? `[${n}] ${src.label}${src.url ? ` — ${src.url}` : ''}` : `Quelle ${n}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: 16,
+                      height: 16,
+                      padding: '0 4px',
+                      margin: '0 1px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: badgeBg,
+                      color: badgeColor,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      verticalAlign: 'super',
+                    }}
+                  >
+                    {n}
+                  </button>
+                </sup>
+              );
+            }
+            return (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: link, textDecoration: 'underline' }}
+              >
+                {children}
+              </a>
+            );
+          },
           blockquote: ({ children }) => (
             <blockquote
               style={{ margin: '6px 0', paddingLeft: 12, borderLeft: `3px solid ${borderCol}`, color: c.textSub }}
@@ -1136,8 +1235,81 @@ function MarkdownMessage({ text, c, isDark }: { text: string; c: ReturnType<type
           hr: () => <hr style={{ border: 'none', borderTop: `1px solid ${borderCol}`, margin: '10px 0' }} />,
         }}
       >
-        {text}
+        {processed}
       </ReactMarkdown>
+
+      {sources.length > 0 && (
+        <div
+          style={{
+            marginTop: 10,
+            paddingTop: 10,
+            borderTop: `1px solid ${borderCol}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 5,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: c.textMuted,
+              marginBottom: 2,
+            }}
+          >
+            Quellen
+          </div>
+          {sources.map((s) => (
+            <div
+              key={s.n}
+              id={`src-${anchorBase}-${s.n}`}
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 8,
+                padding: '3px 6px',
+                borderRadius: 6,
+                background: flash === s.n ? badgeBg : 'transparent',
+                transition: 'background 0.4s ease',
+              }}
+            >
+              <span
+                style={{
+                  flexShrink: 0,
+                  minWidth: 16,
+                  height: 16,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 8,
+                  background: badgeBg,
+                  color: badgeColor,
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}
+              >
+                {s.n}
+              </span>
+              <span style={{ fontSize: 12.5, lineHeight: 1.45, minWidth: 0 }}>
+                {s.label && <span style={{ fontWeight: 600, color: c.text }}>{s.label}</span>}
+                {s.label && s.url && <span style={{ color: c.textMuted }}> — </span>}
+                {s.url && (
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: link, textDecoration: 'underline', wordBreak: 'break-all' }}
+                  >
+                    {s.url}
+                  </a>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1636,7 +1808,7 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
                           : 'inset 2px 2px 3px rgba(255,255,255,0.55)',
                       }}
                     >
-                      <MarkdownMessage text={m.text} c={c} isDark={isDark} />
+                      <MarkdownMessage text={m.text} c={c} isDark={isDark} msgId={m.id} />
                     </div>
                   )}
                 </motion.div>
