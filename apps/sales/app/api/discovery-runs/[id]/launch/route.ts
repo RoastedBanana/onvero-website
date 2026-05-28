@@ -44,6 +44,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
 
   const body = (await req.json().catch(() => ({}))) as {
     potential_lead_ids?: unknown;
+    agents?: unknown;
   };
   const ids = Array.isArray(body.potential_lead_ids)
     ? body.potential_lead_ids.filter((v): v is string => typeof v === 'string')
@@ -51,6 +52,21 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
   if (ids.length === 0) {
     return NextResponse.json({ error: 'potential_lead_ids is required' }, { status: 400 });
   }
+
+  // Which scoring agents to run, as explicit booleans. When the client sends
+  // an `agents` object we honor each flag; if it's absent (older client) we
+  // default every agent on so nothing silently gets skipped.
+  const rawAgents =
+    body.agents && typeof body.agents === 'object'
+      ? (body.agents as Record<string, unknown>)
+      : null;
+  const agents = {
+    finanzen: rawAgents ? rawAgents.finanzen === true : true,
+    leadership: rawAgents ? rawAgents.leadership === true : true,
+    versand: rawAgents ? rawAgents.versand === true : true,
+    bewertungen: rawAgents ? rawAgents.bewertungen === true : true,
+    social_media: rawAgents ? rawAgents.social_media === true : true,
+  };
 
   const client = getAdminClient();
 
@@ -182,6 +198,7 @@ export async function POST(req: NextRequest, ctxParam: { params: Promise<{ id: s
           tenant_id: tenantIdForCallback,
           potential_lead_id,
           discovery_run_id: runId,
+          agents,
           callback_url: callbackUrl,
         }),
       })

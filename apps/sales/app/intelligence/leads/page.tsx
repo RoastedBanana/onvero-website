@@ -9,7 +9,6 @@ import { ExportLeadsModal } from './_ExportLeadsModal';
 // ─── Types & Data ─────────────────────────────────────────────────────────────
 
 type Status = 'hot' | 'warm' | 'cold';
-type ViewMode = 'table' | 'kanban';
 
 const SHOP_SYSTEM_KEYWORDS = [
   'Shopify',
@@ -107,12 +106,6 @@ interface Lead {
   logo_url?: string;
 }
 
-const STATUS_META: Record<Status, { label: string; bg: string; color: string; headerBg: string }> = {
-  hot: { label: 'Hot', bg: 'rgba(239,68,68,0.12)', color: '#EF4444', headerBg: 'rgba(239,68,68,0.08)' },
-  warm: { label: 'Warm', bg: 'rgba(249,115,22,0.12)', color: '#F97316', headerBg: 'rgba(249,115,22,0.08)' },
-  cold: { label: 'Kalt', bg: 'rgba(148,163,184,0.12)', color: '#94A3B8', headerBg: 'rgba(148,163,184,0.08)' },
-};
-
 const AVATAR_PALETTE = [
   { bg: '#EEF0FF', color: '#4F46E5' },
   { bg: '#ECFDF5', color: '#059669' },
@@ -186,19 +179,16 @@ function LogoAvatar({
   );
 }
 
-function scoreColor(s: number) {
-  if (s >= 80) return '#10B981';
-  if (s >= 65) return '#F97316';
-  return '#EF4444';
-}
-
 function glassCard(isDark: boolean, extra: React.CSSProperties = {}): React.CSSProperties {
   return {
     background: isDark ? 'rgba(10,12,24,0.46)' : 'rgba(255,255,255,0.22)',
     backdropFilter: 'blur(22px)',
     WebkitBackdropFilter: 'blur(22px)',
     borderRadius: 16,
-    border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
+    borderTop: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
+    borderRight: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
+    borderBottom: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
+    borderLeft: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.55)',
     boxShadow: isDark
       ? 'inset 1px 1px 2px rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.32)'
       : 'inset 2px 2px 3px rgba(255,255,255,0.50), 0 4px 20px rgba(0,0,0,0.06)',
@@ -207,40 +197,6 @@ function glassCard(isDark: boolean, extra: React.CSSProperties = {}): React.CSSP
 }
 
 // ─── Visual components ────────────────────────────────────────────────────────
-
-function ScoreRing({ score }: { score: number }) {
-  const r = 13;
-  const circ = 2 * Math.PI * r;
-  const dash = circ * (score / 100);
-  const color = scoreColor(score);
-  return (
-    <svg width="34" height="34" viewBox="0 0 34 34" style={{ flexShrink: 0 }}>
-      <circle cx="17" cy="17" r={r} fill="none" stroke="#F1F5F9" strokeWidth="3" />
-      <circle
-        cx="17"
-        cy="17"
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeDasharray={`${dash} ${circ}`}
-        transform="rotate(-90 17 17)"
-      />
-      <text
-        x="17"
-        y="21"
-        textAnchor="middle"
-        fontSize="9.5"
-        fontWeight="800"
-        fill={color}
-        fontFamily="var(--font-inter), sans-serif"
-      >
-        {score}
-      </text>
-    </svg>
-  );
-}
 
 function LayerBar({ l1, l2, l3, l4 }: { l1: boolean; l2: boolean; l3: boolean; l4: boolean }) {
   const layers = [l1, l2, l3, l4];
@@ -330,279 +286,6 @@ function SignalBadge({ count }: { count: number }) {
         }}
       />
       <span style={{ fontSize: 11, fontWeight: 700, color: '#D97706' }}>{count}</span>
-    </div>
-  );
-}
-
-function generateTrend(id: string, score: number): number[] {
-  const seed = id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const points: number[] = [];
-  let val = Math.max(20, score - 18 - (seed % 12));
-  for (let i = 0; i < 10; i++) {
-    points.push(Math.min(100, Math.max(5, Math.round(val))));
-    const noise = ((seed * (i + 3)) % 11) - 5;
-    val += (score - val) * 0.28 + noise * 0.4;
-  }
-  return points;
-}
-
-function Sparkline({ data, score }: { data: number[]; score: number }) {
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const isUp = data[data.length - 1] >= data[0];
-  const upColor = '#059669';
-  const downColor = '#DC2626';
-  const color = isUp ? upColor : downColor;
-
-  const pts = data
-    .map((v, i) => {
-      const x = (i / (data.length - 1)) * 52;
-      const y = 18 - ((v - min) / range) * 14;
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  const lastX = 52;
-  const lastY = 18 - ((data[data.length - 1] - min) / range) * 14;
-
-  return (
-    <svg width="56" height="22" viewBox="0 0 56 22" style={{ display: 'block', overflow: 'visible' }}>
-      <polyline
-        points={pts}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx={lastX} cy={lastY} r="2.5" fill={color} />
-    </svg>
-  );
-}
-
-function TierBars({ score }: { score: number }) {
-  const bars = score >= 80 ? 3 : score >= 65 ? 2 : 1;
-  const color = score >= 80 ? '#DC2626' : score >= 65 ? '#D97706' : '#94A3B8';
-  const label = score >= 80 ? 'Hoch' : score >= 65 ? 'Mittel' : 'Gering';
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2 }}>
-        {[1, 2, 3].map((b) => (
-          <div
-            key={b}
-            style={{
-              width: 4,
-              height: b === 1 ? 6 : b === 2 ? 10 : 14,
-              borderRadius: 2,
-              background: b <= bars ? color : '#E8ECF0',
-            }}
-          />
-        ))}
-      </div>
-      <span style={{ fontSize: 10, fontWeight: 700, color, letterSpacing: '0.03em' }}>{label}</span>
-    </div>
-  );
-}
-
-// ─── Kanban card ─────────────────────────────────────────────────────────────
-
-function KanbanCard({
-  lead,
-  onDragStart,
-  selected,
-  onToggleSelect,
-  onClick,
-  isDark,
-  c,
-}: {
-  lead: Lead;
-  onDragStart: (id: string) => void;
-  selected: boolean;
-  onToggleSelect: (id: string) => void;
-  onClick: (id: string) => void;
-  isDark: boolean;
-  c: ReturnType<typeof colors>;
-}) {
-  const av = avatarFor(lead.name);
-  return (
-    <div
-      draggable
-      onDragStart={() => onDragStart(lead.id)}
-      onClick={(e) => {
-        if (e.shiftKey) {
-          e.preventDefault();
-          onToggleSelect(lead.id);
-        } else {
-          onClick(lead.id);
-        }
-      }}
-      style={{
-        background: isDark ? 'rgba(10,12,24,0.52)' : 'rgba(255,255,255,0.30)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: selected
-          ? '2px solid #EF4444'
-          : isDark
-            ? '1px solid rgba(255,255,255,0.10)'
-            : '1px solid rgba(255,255,255,0.60)',
-        borderRadius: 12,
-        padding: '14px 16px',
-        cursor: 'pointer',
-        userSelect: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-        boxShadow: selected
-          ? '0 0 0 3px rgba(239,68,68,0.18)'
-          : isDark
-            ? '0 4px 16px rgba(0,0,0,0.24)'
-            : '0 4px 16px rgba(0,0,0,0.06)',
-        transition: 'box-shadow 0.15s, border-color 0.15s',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, flex: 1, minWidth: 0 }}>
-          <LogoAvatar
-            name={lead.name}
-            logoUrl={lead.logo_url}
-            size={30}
-            radius={8}
-            fontSize={10}
-            isDark={isDark}
-            av={av}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: c.text, lineHeight: 1.3 }}>{lead.name}</div>
-            <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>
-              {lead.city} · {lead.industry}
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <ScoreRing score={lead.score} />
-          <Checkbox checked={selected} onChange={() => onToggleSelect(lead.id)} isDark={isDark} c={c} />
-        </div>
-      </div>
-
-      <LayerBar l1={lead.l1} l2={lead.l2} l3={lead.l3} l4={lead.l4} />
-
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-        {[
-          { val: lead.fit, bg: '#EEF0FF', color: '#4F46E5', label: 'F' },
-          { val: lead.volume, bg: '#ECFEFF', color: '#0891B2', label: 'V' },
-          { val: lead.timing, bg: '#FDF2F8', color: '#DB2777', label: 'T' },
-        ].map(({ val, bg, color, label }) => (
-          <span
-            key={label}
-            style={{ padding: '2px 6px', background: bg, color, borderRadius: 5, fontSize: 11, fontWeight: 700 }}
-          >
-            {label} {val}
-          </span>
-        ))}
-        {lead.signals && <SignalBadge count={lead.signals} />}
-      </div>
-
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-        <SystemPill name={lead.system} />
-        <CarrierPill name={lead.carrier} isDark={isDark} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Kanban column ────────────────────────────────────────────────────────────
-
-function KanbanColumn({
-  status,
-  leads,
-  dragOver,
-  onDragOver,
-  onDrop,
-  onDragStart,
-  selectedIds,
-  onToggleSelect,
-  onCardClick,
-  isDark,
-  c,
-}: {
-  status: Status;
-  leads: Lead[];
-  dragOver: boolean;
-  onDragOver: (s: Status) => void;
-  onDrop: (s: Status) => void;
-  onDragStart: (id: string) => void;
-  selectedIds: Set<string>;
-  onToggleSelect: (id: string) => void;
-  onCardClick: (id: string) => void;
-  isDark: boolean;
-  c: ReturnType<typeof colors>;
-}) {
-  const meta = STATUS_META[status];
-  return (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        onDragOver(status);
-      }}
-      onDrop={() => onDrop(status)}
-      style={{
-        flex: 1,
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 0,
-        background: dragOver ? (isDark ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.06)') : 'transparent',
-        borderRadius: 14,
-        border: dragOver ? '2px dashed #EF4444' : '2px dashed transparent',
-        transition: 'background 0.15s, border-color 0.15s',
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        style={{
-          padding: '14px 16px',
-          background: isDark ? meta.color + '22' : meta.headerBg,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
-        <span style={{ fontSize: 13, fontWeight: 800, color: meta.color }}>{meta.label}</span>
-        <span
-          style={{
-            background: meta.color,
-            color: '#fff',
-            borderRadius: 20,
-            fontSize: 11,
-            fontWeight: 700,
-            padding: '1px 8px',
-          }}
-        >
-          {leads.length}
-        </span>
-      </div>
-      <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 120 }}>
-        {leads.map((lead) => (
-          <KanbanCard
-            key={lead.id}
-            lead={lead}
-            onDragStart={onDragStart}
-            selected={selectedIds.has(lead.id)}
-            onToggleSelect={onToggleSelect}
-            onClick={onCardClick}
-            isDark={isDark}
-            c={c}
-          />
-        ))}
-        {leads.length === 0 && (
-          <div
-            style={{ textAlign: 'center', color: c.textMuted, fontSize: 12, padding: '24px 0', fontStyle: 'italic' }}
-          >
-            Keine Leads
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -842,45 +525,26 @@ export default function LeadsPage() {
   }, [showArchive]);
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<Status | 'all'>(() => {
-    if (typeof window === 'undefined') return 'all';
-    return (localStorage.getItem('leads-filter') as Status | 'all') ?? 'all';
-  });
-  const [sortBy, setSortBy] = useState<'score' | 'name' | 'added'>(() => {
-    if (typeof window === 'undefined') return 'score';
-    return (localStorage.getItem('leads-sort') as 'score' | 'name' | 'added') ?? 'score';
-  });
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (typeof window === 'undefined') return 'table';
-    return (localStorage.getItem('leads-view') as ViewMode) ?? 'table';
+  const [sortBy, setSortBy] = useState<'name' | 'added'>(() => {
+    if (typeof window === 'undefined') return 'added';
+    return (localStorage.getItem('leads-sort') as 'name' | 'added') ?? 'added';
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dragOverCol, setDragOverCol] = useState<Status | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
 
   const filtered = leads
     .filter((l) => {
-      const matchSearch =
-        l.name.toLowerCase().includes(search.toLowerCase()) ||
-        l.city.toLowerCase().includes(search.toLowerCase()) ||
-        l.industry.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === 'all' || l.status === statusFilter;
-      return matchSearch && matchStatus;
+      const q = search.toLowerCase();
+      return l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.industry.toLowerCase().includes(q);
     })
     .sort((a, b) => {
-      if (sortBy === 'score') return b.score - a.score;
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       return b.addedTs - a.addedTs;
     });
 
-  const hot = leads.filter((l) => l.status === 'hot').length;
-  const warm = leads.filter((l) => l.status === 'warm').length;
-  const cold = leads.filter((l) => l.status === 'cold').length;
   const total = leads.length;
 
   function toggleSelect(id: string) {
@@ -932,12 +596,6 @@ export default function LeadsPage() {
     setShowDeleteModal(false);
   }
 
-  function changeStatus(newStatus: Status) {
-    setLeads((prev) => prev.map((l) => (selectedIds.has(l.id) ? { ...l, status: newStatus } : l)));
-    setSelectedIds(new Set());
-    setShowStatusMenu(false);
-  }
-
   function archiveSelected() {
     const ids = new Set(selectedIds);
     setLeads((prev) => prev.filter((l) => !ids.has(l.id)));
@@ -968,18 +626,6 @@ export default function LeadsPage() {
   function openExportModal() {
     setShowExportModal(true);
   }
-
-  function handleDragStart(id: string) {
-    setDragId(id);
-  }
-  function handleDrop(targetStatus: Status) {
-    if (!dragId) return;
-    setLeads((prev) => prev.map((l) => (l.id === dragId ? { ...l, status: targetStatus } : l)));
-    setDragId(null);
-    setDragOverCol(null);
-  }
-
-  const kanbanCols: Status[] = ['hot', 'warm', 'cold'];
 
   return (
     <div
@@ -1053,174 +699,61 @@ export default function LeadsPage() {
           </div>
         </div>
         <p style={{ fontSize: 13, color: c.textMuted, margin: '8px 0 0' }}>
-          {hot} Hot · {warm} Warm · {cold} Kalt
+          {total} {total === 1 ? 'Lead' : 'Leads'}
         </p>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-          {[
-            {
-              label: 'Gesamt',
-              value: total,
-              color: '#10B981',
-              bg: 'rgba(16,185,129,0.12)',
-              sub: `${hot} Hot · ${warm} Warm · ${cold} Kalt`,
-              bar: (
-                <div
-                  style={{ display: 'flex', height: 3, borderRadius: 99, overflow: 'hidden', marginTop: 10, gap: 1 }}
-                >
-                  <div style={{ flex: hot, background: '#EF4444', borderRadius: 99 }} />
-                  <div style={{ flex: warm, background: '#F97316', borderRadius: 99 }} />
-                  <div style={{ flex: Math.max(cold, 0.1), background: '#94A3B8', borderRadius: 99 }} />
-                </div>
-              ),
-            },
-            {
-              label: 'Hot',
-              value: hot,
-              color: '#EF4444',
-              bg: 'rgba(239,68,68,0.12)',
-              sub: 'Score ≥ 80',
-              bar: null,
-            },
-            {
-              label: 'Warm',
-              value: warm,
-              color: '#F97316',
-              bg: 'rgba(249,115,22,0.12)',
-              sub: 'Score 65–79',
-              bar: null,
-            },
-            {
-              label: 'Kalt',
-              value: cold,
-              color: '#94A3B8',
-              bg: 'rgba(148,163,184,0.12)',
-              sub: 'Score < 65',
-              bar: null,
-            },
-          ].map((s) => (
+        <div style={{ display: 'flex', gap: 14 }}>
+          <div
+            style={{
+              ...glassCard(isDark),
+              borderRadius: 12,
+              padding: '16px 20px',
+              borderTop: '3px solid #10B981',
+              position: 'relative',
+              overflow: 'hidden',
+              minWidth: 200,
+            }}
+          >
             <div
-              key={s.label}
               style={{
-                ...glassCard(isDark),
-                borderRadius: 12,
-                padding: '16px 20px',
-                borderTop: `3px solid ${s.color}`,
-                position: 'relative',
-                overflow: 'hidden',
+                position: 'absolute',
+                top: 14,
+                right: 18,
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: 'rgba(16,185,129,0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 14,
-                  right: 18,
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: s.bg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: s.color }} />
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: c.textMuted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: 6,
-                }}
-              >
-                {s.label}
-              </div>
-              <div style={{ fontSize: 30, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>{s.sub}</div>
-              {s.bar}
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981' }} />
             </div>
-          ))}
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: c.textMuted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: 6,
+              }}
+            >
+              Gesamt
+            </div>
+            <div style={{ fontSize: 30, fontWeight: 800, color: '#10B981', lineHeight: 1 }}>{total}</div>
+            <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>
+              {total === 1 ? 'Lead' : 'Leads'}
+            </div>
+          </div>
         </div>
 
         {/* Filter bar */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {/* View toggle */}
-          <div
-            style={{
-              display: 'flex',
-              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-              border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.08)',
-              borderRadius: 9,
-              padding: 3,
-              gap: 2,
-              flexShrink: 0,
-            }}
-          >
-            {(['table', 'kanban'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => {
-                  setViewMode(m);
-                  localStorage.setItem('leads-view', m);
-                }}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: 6,
-                  border: 'none',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  background: viewMode === m ? c.text : 'transparent',
-                  color: viewMode === m ? (isDark ? c.bgPage : '#fff') : c.textMuted,
-                  fontFamily: 'var(--font-inter), sans-serif',
-                  transition: 'all 0.15s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                {m === 'table' ? (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                  >
-                    <rect x="2" y="3" width="12" height="10" rx="1.5" />
-                    <line x1="2" y1="6.5" x2="14" y2="6.5" />
-                    <line x1="2" y1="10" x2="14" y2="10" />
-                    <line x1="6" y1="3" x2="6" y2="13" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect x="1.5" y="2" width="4" height="12" rx="1.5" />
-                    <rect x="6" y="2" width="4" height="12" rx="1.5" />
-                    <rect x="10.5" y="2" width="4" height="12" rx="1.5" />
-                  </svg>
-                )}
-                {m === 'table' ? 'Tabelle' : 'Kanban'}
-              </button>
-            ))}
-          </div>
-
           {/* Archiv-Toggle */}
           <button
             onClick={() => setShowArchive((v) => !v)}
@@ -1316,78 +849,30 @@ export default function LeadsPage() {
               }}
             />
           </div>
-          <div
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              const v = e.target.value as typeof sortBy;
+              setSortBy(v);
+              localStorage.setItem('leads-sort', v);
+            }}
             style={{
-              display: 'flex',
-              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-              border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.07)',
+              padding: '8px 12px',
+              border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.10)',
               borderRadius: 9,
-              padding: 3,
-              gap: 2,
+              fontSize: 12,
+              fontFamily: 'inherit',
+              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)',
+              backdropFilter: 'blur(12px)',
+              color: c.text,
+              cursor: 'pointer',
+              outline: 'none',
+              fontWeight: 600,
             }}
           >
-            {(['all', 'hot', 'warm', 'cold'] as const).map((s) => {
-              const labels = { all: 'Alle', hot: 'Hot', warm: 'Warm', cold: 'Kalt' };
-              const statusColors: Record<string, string> = {
-                hot: '#EF4444',
-                warm: '#F97316',
-                cold: '#94A3B8',
-                all: c.text,
-              };
-              const active = statusFilter === s;
-              return (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setStatusFilter(s);
-                    localStorage.setItem('leads-filter', s);
-                  }}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: 7,
-                    border: 'none',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    background: active ? (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.70)') : 'transparent',
-                    color: active ? statusColors[s] : c.textMuted,
-                    boxShadow: active ? '0 1px 4px rgba(10,37,64,0.08)' : 'none',
-                    fontFamily: 'inherit',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {labels[s]}
-                </button>
-              );
-            })}
-          </div>
-          {viewMode === 'table' && (
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                const v = e.target.value as typeof sortBy;
-                setSortBy(v);
-                localStorage.setItem('leads-sort', v);
-              }}
-              style={{
-                padding: '8px 12px',
-                border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.10)',
-                borderRadius: 9,
-                fontSize: 12,
-                fontFamily: 'inherit',
-                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)',
-                backdropFilter: 'blur(12px)',
-                color: c.text,
-                cursor: 'pointer',
-                outline: 'none',
-                fontWeight: 600,
-              }}
-            >
-              <option value="score">Score</option>
-              <option value="name">Name</option>
-              <option value="added">Neueste zuerst</option>
-            </select>
-          )}
+            <option value="added">Neueste zuerst</option>
+            <option value="name">Name</option>
+          </select>
           <button
             onClick={openExportModal}
             style={{
@@ -1425,8 +910,7 @@ export default function LeadsPage() {
         </div>
 
         {/* ── TABLE VIEW ─────────────────────────────────────────────────── */}
-        {viewMode === 'table' && (
-          <div style={{ ...glassCard(isDark), borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ ...glassCard(isDark), borderRadius: 14, overflow: 'hidden' }}>
             {initialLoading ? (
               <div style={{ padding: '24px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[1, 2, 3].map((i) => (
@@ -1474,13 +958,9 @@ export default function LeadsPage() {
                         'Unternehmen',
                         'Stadt',
                         'Branche',
-                        'Shop-System',
                         'Carrier',
                         'Layer',
-                        'Score',
-                        'Fit · Vol · Zeit',
                         'Signale',
-                        'Status',
                         'Aktion',
                       ].map((h) => (
                         <th
@@ -1503,7 +983,6 @@ export default function LeadsPage() {
                   </thead>
                   <tbody>
                     {filtered.map((lead) => {
-                      const sm = STATUS_META[lead.status];
                       const isSelected = selectedIds.has(lead.id);
                       const isHovered = hoveredRow === lead.id;
                       const isNew = newLeadIds.has(lead.id);
@@ -1580,51 +1059,10 @@ export default function LeadsPage() {
                             </span>
                           </td>
                           <td style={{ padding: '10px 14px' }}>
-                            <SystemPill name={lead.system} />
-                          </td>
-                          <td style={{ padding: '10px 14px' }}>
                             <CarrierPill name={lead.carrier} isDark={isDark} />
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             <LayerBar l1={lead.l1} l2={lead.l2} l3={lead.l3} l4={lead.l4} />
-                          </td>
-
-                          {/* Score ring */}
-                          <td style={{ padding: '10px 14px' }}>
-                            <ScoreRing score={lead.score} />
-                          </td>
-
-                          {/* Sub-scores */}
-                          <td style={{ padding: '10px 14px' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                              {[
-                                { val: lead.fit, color: '#4F46E5', bg: '#EEF0FF', label: 'F' },
-                                { val: lead.volume, color: '#0891B2', bg: '#ECFEFF', label: 'V' },
-                                { val: lead.timing, color: '#DB2777', bg: '#FDF2F8', label: 'T' },
-                              ].map(({ val, color, bg, label }) => (
-                                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <span style={{ fontSize: 9, fontWeight: 700, color, width: 8 }}>{label}</span>
-                                  <div
-                                    style={{
-                                      width: 50,
-                                      height: 4,
-                                      background: isDark ? c.border : '#F1F5F9',
-                                      borderRadius: 99,
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        width: `${val}%`,
-                                        height: '100%',
-                                        background: color,
-                                        borderRadius: 99,
-                                      }}
-                                    />
-                                  </div>
-                                  <span style={{ fontSize: 10, fontWeight: 700, color, minWidth: 18 }}>{val}</span>
-                                </div>
-                              ))}
-                            </div>
                           </td>
 
                           {/* Signals */}
@@ -1634,32 +1072,6 @@ export default function LeadsPage() {
                             ) : (
                               <span style={{ fontSize: 11, color: c.textMuted }}>—</span>
                             )}
-                          </td>
-
-                          {/* Status */}
-                          <td style={{ padding: '10px 14px' }}>
-                            <span
-                              style={{
-                                padding: '3px 9px',
-                                background: isDark ? sm.color + '22' : sm.bg,
-                                color: isDark
-                                  ? lead.status === 'hot'
-                                    ? '#FCA5A5'
-                                    : lead.status === 'warm'
-                                      ? '#FCD34D'
-                                      : '#94A3B8'
-                                  : sm.color,
-                                borderRadius: 6,
-                                fontSize: 11,
-                                fontWeight: 700,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 5,
-                              }}
-                            >
-                              <div style={{ width: 5, height: 5, borderRadius: '50%', background: sm.color }} />
-                              {sm.label}
-                            </span>
                           </td>
 
                           <td style={{ padding: '10px 14px', width: 90 }}>
@@ -1715,35 +1127,6 @@ export default function LeadsPage() {
               </>
             )}
           </div>
-        )}
-
-        {/* ── KANBAN VIEW ────────────────────────────────────────────────── */}
-        {viewMode === 'kanban' && (
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            {kanbanCols.map((col) => (
-              <KanbanColumn
-                key={col}
-                status={col}
-                leads={leads.filter((l) => {
-                  const matchSearch =
-                    l.name.toLowerCase().includes(search.toLowerCase()) ||
-                    l.city.toLowerCase().includes(search.toLowerCase()) ||
-                    l.industry.toLowerCase().includes(search.toLowerCase());
-                  return l.status === col && matchSearch && (statusFilter === 'all' || statusFilter === col);
-                })}
-                dragOver={dragOverCol === col}
-                onDragOver={setDragOverCol}
-                onDrop={handleDrop}
-                onDragStart={handleDragStart}
-                selectedIds={selectedIds}
-                onToggleSelect={toggleSelect}
-                onCardClick={(id) => router.push(`/intelligence/leads/${id}`)}
-                isDark={isDark}
-                c={c}
-              />
-            ))}
-          </div>
-        )}
 
         {/* ── ARCHIV VIEW ────────────────────────────────────────────────── */}
         {showArchive && (
@@ -1790,7 +1173,7 @@ export default function LeadsPage() {
                       borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
                     }}
                   >
-                    {['Unternehmen', 'Branche', 'System', 'Score', 'Status', ''].map((h, i) => (
+                    {['Unternehmen', 'Branche', 'System', ''].map((h, i) => (
                       <th
                         key={i}
                         style={{
@@ -1822,21 +1205,6 @@ export default function LeadsPage() {
                       <td style={{ padding: '11px 16px', fontSize: 12, color: c.textSub }}>{l.industry}</td>
                       <td style={{ padding: '11px 16px' }}>
                         <SystemPill name={l.system} />
-                      </td>
-                      <td style={{ padding: '11px 16px', fontWeight: 700, color: scoreColor(l.score) }}>{l.score}</td>
-                      <td style={{ padding: '11px 16px' }}>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: isDark ? STATUS_META[l.status].color : STATUS_META[l.status].color,
-                            background: isDark ? STATUS_META[l.status].color + '22' : STATUS_META[l.status].bg,
-                            padding: '2px 8px',
-                            borderRadius: 5,
-                          }}
-                        >
-                          {STATUS_META[l.status].label}
-                        </span>
                       </td>
                       <td style={{ padding: '11px 16px', textAlign: 'right' }}>
                         <button
@@ -1926,139 +1294,6 @@ export default function LeadsPage() {
           </div>
 
           <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.1)', margin: '0 4px' }} />
-
-          {/* Status ändern */}
-          <div style={{ position: 'relative' }}>
-            {showStatusMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 44,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: c.bgCard,
-                  borderRadius: 12,
-                  boxShadow: '0 8px 32px rgba(10,37,64,0.18)',
-                  border: `1px solid ${c.border}`,
-                  overflow: 'hidden',
-                  minWidth: 160,
-                }}
-              >
-                <div
-                  style={{
-                    padding: '8px 12px 6px',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: c.textMuted,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.07em',
-                  }}
-                >
-                  Status setzen
-                </div>
-                {[
-                  {
-                    s: 'hot' as Status,
-                    label: 'Hot',
-                    color: '#EF4444',
-                    bg: isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.08)',
-                  },
-                  {
-                    s: 'warm' as Status,
-                    label: 'Warm',
-                    color: '#F97316',
-                    bg: isDark ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.08)',
-                  },
-                  {
-                    s: 'cold' as Status,
-                    label: 'Kalt',
-                    color: '#94A3B8',
-                    bg: isDark ? 'rgba(148,163,184,0.10)' : 'rgba(148,163,184,0.08)',
-                  },
-                ].map(({ s, label, color, bg }) => (
-                  <button
-                    key={s}
-                    onClick={() => changeStatus(s)}
-                    style={{
-                      width: '100%',
-                      padding: '9px 14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 9,
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: c.text,
-                      textAlign: 'left',
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 24,
-                        height: 18,
-                        borderRadius: 5,
-                        background: bg,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-                    </span>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-            <button
-              onClick={() => setShowStatusMenu((v) => !v)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '7px 13px',
-                borderRadius: 9,
-                border: 'none',
-                background: showStatusMenu ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)',
-                color: '#fff',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                transition: 'background 0.15s',
-              }}
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <circle cx="8" cy="8" r="3" />
-                <circle cx="8" cy="8" r="6.5" />
-              </svg>
-              Status
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ transform: showStatusMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}
-              >
-                <polyline points="4 6 8 10 12 6" />
-              </svg>
-            </button>
-          </div>
 
           {/* Exportieren */}
           <button
@@ -2173,7 +1408,6 @@ export default function LeadsPage() {
           <button
             onClick={() => {
               setSelectedIds(new Set());
-              setShowStatusMenu(false);
             }}
             style={{
               width: 28,

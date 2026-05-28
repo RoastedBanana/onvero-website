@@ -109,26 +109,30 @@ function emptyDeepSetup(): DeepSetup {
   return { angebotsProfileId: null, rechercheFokus: '', weitereQueries: [], kriterien: [], orte: [] };
 }
 
+type ScoringAgentKey = 'finanzen' | 'leadership' | 'versand' | 'bewertungen' | 'social_media';
+
 type DeepConfig = {
-  sources: string[];
-  scoringFit: number;
-  scoringIntent: number;
-  scoringTiming: number;
+  agents: Record<ScoringAgentKey, boolean>;
 };
 
 function emptyDeepConfig(): DeepConfig {
-  return { sources: ['LinkedIn-Profile', 'Tech-Stack', 'News & Signals'], scoringFit: 50, scoringIntent: 30, scoringTiming: 20 };
+  return {
+    agents: {
+      finanzen: true,
+      leadership: true,
+      versand: true,
+      bewertungen: true,
+      social_media: true,
+    },
+  };
 }
 
-const ENRICH_SOURCES: string[] = [
-  'LinkedIn-Profile',
-  'Tech-Stack',
-  'Mitarbeiter & Rollen',
-  'News & Signals',
-  'Website-Inhalt',
-  'Finanzen / Funding',
-  'Job-Postings',
-  'Tracker / Pixel',
+const SCORING_AGENTS: { key: ScoringAgentKey; label: string; sub: string }[] = [
+  { key: 'finanzen', label: 'Finanzen', sub: 'Umsatz, Bonität, Funding' },
+  { key: 'leadership', label: 'Leadership', sub: 'Geschäftsführung & Entscheider' },
+  { key: 'versand', label: 'Versand', sub: 'Fulfillment & Logistik' },
+  { key: 'bewertungen', label: 'Bewertungen', sub: 'Google, Trustpilot, Kununu' },
+  { key: 'social_media', label: 'Social Media', sub: 'LinkedIn, Instagram, Signale' },
 ];
 
 type DeepStep = 'setup' | 'scoring';
@@ -815,6 +819,7 @@ function ModeCard({
   c,
   isDark,
   delay = 0,
+  disabled = false,
 }: {
   Icon: React.ElementType;
   title: string;
@@ -823,21 +828,25 @@ function ModeCard({
   c: ReturnType<typeof colors>;
   isDark: boolean;
   delay?: number;
+  disabled?: boolean;
 }) {
-  const [hovered, setHovered] = useState(false);
+  const [hoveredRaw, setHoveredRaw] = useState(false);
+  const hovered = hoveredRaw && !disabled;
   return (
     <motion.button
       initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: disabled ? 0.55 : 1, y: 0 }}
       transition={{ delay, duration: 0.35, ease: 'easeOut' }}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHoveredRaw(true)}
+      onMouseLeave={() => setHoveredRaw(false)}
       style={{
+        position: 'relative',
         flex: '1 1 280px',
         maxWidth: 320,
         textAlign: 'left',
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
         background: isDark
           ? hovered
             ? 'rgba(255,255,255,0.10)'
@@ -867,15 +876,35 @@ function ModeCard({
           : isDark
             ? '0 4px 16px rgba(0,0,0,0.22)'
             : 'inset 2px 2px 3px rgba(255,255,255,0.55), 0 4px 14px rgba(0,0,0,0.05)',
+        filter: disabled ? 'grayscale(1)' : 'none',
       }}
     >
+      {disabled && (
+        <span
+          style={{
+            position: 'absolute',
+            top: 14,
+            right: 14,
+            fontSize: 10,
+            fontWeight: 700,
+            color: c.textMuted,
+            background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            padding: '3px 8px',
+            borderRadius: 6,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Bald
+        </span>
+      )}
       <div
         style={{
           width: 40,
           height: 40,
           borderRadius: 11,
           background: hovered ? c.accent : c.accent + '18',
-          color: hovered ? '#fff' : c.accent,
+          color: hovered ? (isDark ? c.bgPage : '#fff') : c.accent,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -2692,11 +2721,10 @@ function ScoringCard({
   c: ReturnType<typeof colors>;
   isDark: boolean;
 }) {
-  function toggleSource(s: string) {
-    onPatchConfig({
-      sources: config.sources.includes(s) ? config.sources.filter((x) => x !== s) : [...config.sources, s],
-    });
+  function toggleAgent(key: ScoringAgentKey) {
+    onPatchConfig({ agents: { ...config.agents, [key]: !config.agents[key] } });
   }
+  const activeCount = SCORING_AGENTS.filter((a) => config.agents[a.key]).length;
   return (
     <>
       <div
@@ -2708,77 +2736,78 @@ function ScoringCard({
           justifyContent: 'space-between',
         }}
       >
-        <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>Anreichern & Scoring</div>
-        <div style={{ fontSize: 11, color: c.textMuted, fontWeight: 600 }}>Quellen & Gewichtung</div>
-      </div>
-      <div style={{ padding: '18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <div>
-          <BulkFieldLabel label="Anreicherungs-Quellen" sub="Woher sollen weitere Daten geladen werden?" c={c} />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {ENRICH_SOURCES.map((s) => {
-              const active = config.sources.includes(s);
-              return (
-                <button
-                  key={s}
-                  onClick={() => toggleSource(s)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 7,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    border: `1px solid ${active ? c.accent : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)'}`,
-                    background: active ? c.accent : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.62)',
-                    color: active ? '#fff' : c.textSub,
-                    transition: 'all 0.12s',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  {s}
-                </button>
-              );
-            })}
-          </div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>Scoring-Setup</div>
+        <div style={{ fontSize: 11, color: c.textMuted, fontWeight: 600 }}>
+          {activeCount} von {SCORING_AGENTS.length} aktiv
         </div>
-
-        <div>
-          <BulkFieldLabel label="Scoring-Gewichtung" sub="Welche Dimensionen zählen wie viel?" c={c} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {(
-              [
-                { key: 'scoringFit' as const, label: 'Fit (Profilpassung)', val: config.scoringFit, color: '#6366F1' },
-                {
-                  key: 'scoringIntent' as const,
-                  label: 'Intent (Kaufabsicht)',
-                  val: config.scoringIntent,
-                  color: '#10B981',
-                },
-                { key: 'scoringTiming' as const, label: 'Timing (Aktualität)', val: config.scoringTiming, color: '#F97316' },
-              ]
-            ).map((s) => (
-              <div key={s.key}>
-                <div
+      </div>
+      <div style={{ padding: '18px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <BulkFieldLabel
+          label="Scoring-Agenten"
+          sub="Welche Agenten sollen die ausgewählten Leads analysieren?"
+          c={c}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {SCORING_AGENTS.map((agent) => {
+            const active = config.agents[agent.key];
+            return (
+              <button
+                key={agent.key}
+                onClick={() => toggleAgent(agent.key)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  border: `1px solid ${active ? c.accent : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)'}`,
+                  background: active
+                    ? isDark
+                      ? `${c.accent}1F`
+                      : `${c.accent}12`
+                    : isDark
+                      ? 'rgba(255,255,255,0.04)'
+                      : 'rgba(255,255,255,0.62)',
+                  boxShadow: active ? `0 0 0 1px ${c.accent}55 inset` : 'none',
+                  transition: 'all 0.12s',
+                }}
+              >
+                <span
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
+                    flexShrink: 0,
+                    width: 20,
+                    height: 20,
+                    borderRadius: 6,
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    marginBottom: 4,
+                    justifyContent: 'center',
+                    border: `1.5px solid ${active ? c.accent : isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.18)'}`,
+                    background: active ? c.accent : 'transparent',
+                    color: '#fff',
+                    transition: 'all 0.12s',
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 600, color: c.text }}>{s.label}</span>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{s.val}</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={s.val}
-                  onChange={(e) => onPatchConfig({ [s.key]: Number(e.target.value) } as Partial<DeepConfig>)}
-                  style={{ width: '100%', accentColor: s.color, cursor: 'pointer' }}
-                />
-              </div>
-            ))}
-          </div>
+                  {active && (
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3.5 8.5l3 3 6-7" />
+                    </svg>
+                  )}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: c.text }}>
+                    {agent.label}
+                  </span>
+                  <span style={{ display: 'block', fontSize: 11, fontWeight: 500, color: c.textMuted }}>
+                    {agent.sub}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </>
@@ -2824,6 +2853,7 @@ function DeepPanel({
   const launching = !!session.deepLaunching;
   const launched = !!session.deepLaunched;
   const busy = generating || preScoring;
+  const activeAgentCount = Object.values(config.agents).filter(Boolean).length;
   // After generation in the setup step, the list takes the full width
   // (the search card disappears). The user can return via "Neue Suche".
   const listFullWidth = (hasResults && step === 'setup') || launched;
@@ -2890,7 +2920,7 @@ function DeepPanel({
           {!launched && (
             <span style={{ fontSize: 12, color: c.textMuted, fontWeight: 600 }}>
               Schritt {step === 'setup' ? '1 / 2' : '2 / 2'} ·{' '}
-              <span style={{ color: c.text }}>{step === 'setup' ? 'Suche' : 'Anreichern & Scoring'}</span>
+              <span style={{ color: c.text }}>{step === 'setup' ? 'Suche' : 'Scoring-Setup'}</span>
             </span>
           )}
           {!launched && step === 'scoring' && (
@@ -3112,7 +3142,7 @@ function DeepPanel({
                   </button>
                 )}
                 <button
-                  onClick={hasResults ? onLaunch : onGenerate}
+                  onClick={hasResults ? () => onSetStep('scoring') : onGenerate}
                   disabled={busy || launching || (hasResults && selectedCount === 0)}
                   style={{
                     display: 'inline-flex',
@@ -3201,10 +3231,10 @@ function DeepPanel({
             ) : (
               <>
                 <span style={{ fontSize: 12, color: c.textMuted, fontWeight: 600 }}>
-                  {selectedCount} ausgewählte Leads · {config.sources.length} Quelle(n)
+                  {selectedCount} ausgewählte Leads · {activeAgentCount} Agent(en)
                 </span>
                 {(() => {
-                  const disabled = config.sources.length === 0 || launching;
+                  const disabled = activeAgentCount === 0 || launching;
                   return (
                     <button
                       onClick={onLaunch}
@@ -4242,13 +4272,15 @@ export default function DiscoveryPage() {
 
     patchActiveSession({ deepLaunching: true });
 
+    const agents = (activeSession.deepConfig ?? emptyDeepConfig()).agents;
+
     try {
       const res = await fetch(
         `/api/discovery-runs/${activeSession.discoveryRunId}/launch`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ potential_lead_ids: potentialLeadIds }),
+          body: JSON.stringify({ potential_lead_ids: potentialLeadIds, agents }),
         },
       );
       const json = await res.json().catch(() => ({}));
@@ -4651,6 +4683,7 @@ export default function DiscoveryPage() {
                     c={c}
                     isDark={isDark}
                     delay={0.05}
+                    disabled
                   />
                   <ModeCard
                     Icon={TelescopeIcon}

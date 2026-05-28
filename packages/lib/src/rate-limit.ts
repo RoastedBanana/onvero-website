@@ -6,18 +6,25 @@ import { Redis } from '@upstash/redis';
 
 const useUpstash = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
-// Upstash limiters (lazy-initialized)
-let chatLimiter: Ratelimit | null = null;
-let contactLimiter: Ratelimit | null = null;
-let defaultLimiter: Ratelimit | null = null;
+// One Upstash limiter per distinct {maxRequests, windowMs} config, lazily created
+// and reused. A dedicated Redis key prefix per config keeps counters separate so
+// different tiers never share a window.
+const upstashLimiters = new Map<string, Ratelimit>();
 
 function getUpstashLimiter(maxRequests: number, windowMs: number): Ratelimit {
   const windowSec = Math.ceil(windowMs / 1000);
-  return new Ratelimit({
-    redis: Redis.fromEnv(),
-    limiter: Ratelimit.slidingWindow(maxRequests, `${windowSec} s`),
-    analytics: false,
-  });
+  const configKey = `${maxRequests}:${windowSec}`;
+  let limiter = upstashLimiters.get(configKey);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(maxRequests, `${windowSec} s`),
+      analytics: false,
+      prefix: `rl:${configKey}`,
+    });
+    upstashLimiters.set(configKey, limiter);
+  }
+  return limiter;
 }
 
 // In-memory fallback
@@ -40,18 +47,7 @@ export async function rateLimit(
 ): Promise<{ success: boolean; remaining: number }> {
   if (useUpstash) {
     try {
-      // Reuse limiter instances per config
-      let limiter: Ratelimit;
-      if (maxRequests === 30 && windowMs === 3600000) {
-        chatLimiter ??= getUpstashLimiter(30, 3600000);
-        limiter = chatLimiter;
-      } else if (maxRequests === 5 && windowMs === 900000) {
-        contactLimiter ??= getUpstashLimiter(5, 900000);
-        limiter = contactLimiter;
-      } else {
-        defaultLimiter ??= getUpstashLimiter(maxRequests, windowMs);
-        limiter = defaultLimiter;
-      }
+      const limiter = getUpstashLimiter(maxRequests, windowMs);
       const result = await limiter.limit(key);
       return { success: result.success, remaining: result.remaining };
     } catch {
