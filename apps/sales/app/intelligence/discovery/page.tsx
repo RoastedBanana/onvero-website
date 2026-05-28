@@ -879,7 +879,7 @@ function ModeCard({
           height: 40,
           borderRadius: 11,
           background: hovered ? c.accent : c.accent + '18',
-          color: hovered ? '#fff' : c.accent,
+          color: hovered ? (isDark ? c.bgPage : '#fff') : c.accent,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
