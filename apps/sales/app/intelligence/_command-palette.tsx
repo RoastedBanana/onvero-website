@@ -21,7 +21,6 @@ const PAGES = [
   { label: 'Netzwerk', href: '/intelligence/network', icon: 'network' },
   { label: 'Qualifizierung', href: '/intelligence/qualifizierung', icon: 'qualify' },
   { label: 'Leads', href: '/intelligence/leads', icon: 'users' },
-  { label: 'Archiv', href: '/intelligence/archiv', icon: 'archive' },
   { label: 'Analytics', href: '/intelligence/analytics', icon: 'bar' },
   { label: 'Integrationen', href: '/intelligence/integrations', icon: 'integrations' },
   { label: 'Einstellungen', href: '/intelligence/settings', icon: 'settings' },

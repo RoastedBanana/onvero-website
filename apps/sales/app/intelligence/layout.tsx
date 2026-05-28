@@ -9,7 +9,6 @@ import {
   MessageText1,
   Share,
   Activity,
-  Archive,
   Profile2User,
   ChartSquare,
   Routing,
@@ -105,7 +104,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     heading: 'Qualifizierung',
     items: [
-      { label: 'Archiv', href: '/intelligence/archiv', Icon: Archive },
       { label: 'Leads', href: '/intelligence/leads', Icon: Profile2User },
     ],
   },
@@ -402,7 +400,6 @@ const PAGE_LABELS: Record<string, string> = {
   '/intelligence/intent': 'Intent Monitor',
   '/intelligence/qualifizierung': 'Qualifizierung',
   '/intelligence/leads': 'Leads',
-  '/intelligence/archiv': 'Archiv',
   '/intelligence/analytics': 'Analytics',
   '/intelligence/integrations': 'Integrationen',
   '/intelligence/settings': 'Einstellungen',
