@@ -21,8 +21,9 @@ import {
   Logout,
 } from 'iconsax-react';
 import { CommandPaletteProvider, usePalette } from './_command-palette';
-import { ToastProvider } from './_toast';
+import { ToastProvider, useToast } from './_toast';
 import { OnboardingProvider, useOnboarding } from './_onboarding';
+import { useNotifications } from './_use-notifications';
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
@@ -87,7 +88,7 @@ export function useUser() {
 
 // ─── Nav config ───────────────────────────────────────────────────────────────
 
-type NavItem = { label: string; href: string; Icon: React.ElementType };
+type NavItem = { label: string; href: string; Icon: React.ElementType; disabled?: boolean };
 type NavSection = { heading: string; items: NavItem[] };
 
 const NAV_TOP: NavItem = { label: 'Home', href: '/intelligence', Icon: Home2 };
@@ -97,8 +98,8 @@ const NAV_SECTIONS: NavSection[] = [
     heading: 'Discovery',
     items: [
       { label: 'Lead Scout', href: '/intelligence/discovery', Icon: MessageText1 },
-      { label: 'Netzwerk', href: '/intelligence/network', Icon: Share },
-      { label: 'Intent Monitor', href: '/intelligence/intent', Icon: Activity },
+      { label: 'Netzwerk', href: '/intelligence/network', Icon: Share, disabled: true },
+      { label: 'Intent Monitor', href: '/intelligence/intent', Icon: Activity, disabled: true },
     ],
   },
   {
@@ -111,7 +112,7 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 const NAV_SYSTEM: NavItem[] = [
-  { label: 'Analytics', href: '/intelligence/analytics', Icon: ChartSquare },
+  { label: 'Analytics', href: '/intelligence/analytics', Icon: ChartSquare, disabled: true },
   { label: 'Integrationen', href: '/intelligence/integrations', Icon: Routing },
   { label: 'Einstellungen', href: '/intelligence/settings', Icon: Setting2 },
 ];
@@ -134,16 +135,96 @@ function Sidebar({ theme }: { theme: Theme }) {
     const [pressed, setPressed] = useState(false);
     const active = isActive(item.href);
     const { Icon } = item;
+    const disabled = item.disabled ?? false;
 
     const bg = active
       ? isDark
         ? 'rgba(255,255,255,0.10)'
         : 'rgba(0,0,0,0.07)'
-      : hovered
+      : hovered && !disabled
         ? isDark
           ? 'rgba(255,255,255,0.05)'
           : 'rgba(0,0,0,0.04)'
         : 'transparent';
+
+    const inner = (
+      <>
+        {active && !disabled && (
+          <span
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 3,
+              height: 16,
+              borderRadius: 99,
+              background: c.text,
+            }}
+          />
+        )}
+        <Icon
+          size={17}
+          variant="Linear"
+          color={disabled ? c.textMuted : active ? c.text : c.textMuted}
+          style={{ flexShrink: 0, opacity: disabled ? 0.4 : 1 }}
+        />
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: active ? 700 : 500,
+            color: disabled ? c.textMuted : active ? c.text : c.textSub,
+            whiteSpace: 'nowrap',
+            opacity: expanded ? (disabled ? 0.45 : 1) : 0,
+            transition: 'opacity 150ms ease-out',
+            pointerEvents: expanded ? 'auto' : 'none',
+            flex: 1,
+          }}
+        >
+          {item.label}
+        </span>
+        {disabled && expanded && (
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: c.textMuted,
+              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              padding: '2px 5px',
+              borderRadius: 4,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              opacity: expanded ? 1 : 0,
+              transition: 'opacity 150ms ease-out',
+            }}
+          >
+            Bald
+          </span>
+        )}
+      </>
+    );
+
+    if (disabled) {
+      return (
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 9,
+            padding: '0 10px',
+            height: 34,
+            borderRadius: 9,
+            background: 'transparent',
+            cursor: 'default',
+            flexShrink: 0,
+          }}
+        >
+          {inner}
+        </div>
+      );
+    }
 
     return (
       <Link
@@ -170,34 +251,7 @@ function Sidebar({ theme }: { theme: Theme }) {
           flexShrink: 0,
         }}
       >
-        {active && (
-          <span
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: 3,
-              height: 16,
-              borderRadius: 99,
-              background: c.text,
-            }}
-          />
-        )}
-        <Icon size={17} variant="Linear" color={active ? c.text : c.textMuted} style={{ flexShrink: 0 }} />
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: active ? 700 : 500,
-            color: active ? c.text : c.textSub,
-            whiteSpace: 'nowrap',
-            opacity: expanded ? 1 : 0,
-            transition: 'opacity 150ms ease-out',
-            pointerEvents: expanded ? 'auto' : 'none',
-          }}
-        >
-          {item.label}
-        </span>
+        {inner}
       </Link>
     );
   }
@@ -408,9 +462,33 @@ function Topbar({ theme, toggleTheme, user }: { theme: Theme; toggleTheme: () =>
   const c = colors(theme);
   const pathname = usePathname();
   const { open } = usePalette();
+  const { toast } = useToast();
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchPressed, setSearchPressed] = useState(false);
+
+  const { notifications, unreadCount, deleteOne, markAllRead } = useNotifications({
+    onNew: (n) => {
+      toast(n.title, 'success');
+    },
+  });
+
+  function timeAgoShort(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'gerade eben';
+    if (m < 60) return `vor ${m} Min.`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `vor ${h} Std.`;
+    const d = Math.floor(h / 24);
+    return `vor ${d} Tag${d === 1 ? '' : 'en'}`;
+  }
+
+  useEffect(() => {
+    if (notifOpen && unreadCount > 0) {
+      void markAllRead();
+    }
+  }, [notifOpen, unreadCount, markAllRead]);
 
   const pageLabel =
     Object.entries(PAGE_LABELS).find(([key]) =>
@@ -545,18 +623,20 @@ function Topbar({ theme, toggleTheme, user }: { theme: Theme; toggleTheme: () =>
           }}
         >
           <Notification size={20} variant="Linear" color="currentColor" />
-          <span
-            style={{
-              position: 'absolute',
-              top: 4,
-              right: 4,
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: c.danger,
-              border: `1.5px solid ${c.topbar}`,
-            }}
-          />
+          {unreadCount > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: c.danger,
+                border: `1.5px solid ${c.topbar}`,
+              }}
+            />
+          )}
         </button>
         {notifOpen && (
           <>
@@ -566,13 +646,16 @@ function Topbar({ theme, toggleTheme, user }: { theme: Theme; toggleTheme: () =>
                 position: 'absolute',
                 right: 0,
                 top: 42,
-                width: 292,
+                width: 320,
+                maxHeight: 480,
                 background: c.bgCard,
                 border: `1px solid ${c.border}`,
                 borderRadius: 12,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.13)',
                 zIndex: 50,
                 overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
               <div
@@ -584,34 +667,128 @@ function Topbar({ theme, toggleTheme, user }: { theme: Theme; toggleTheme: () =>
                   color: c.textMuted,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
+                  flexShrink: 0,
                 }}
               >
                 Benachrichtigungen
               </div>
-              {[
-                { title: 'Neuer Hot Lead', body: 'Fashion House GmbH — Score 91', time: 'vor 2h', dot: '#DC2626' },
-                {
-                  title: 'Kaufsignal erkannt',
-                  body: 'SportGear Online — 3 neg. DHL-Reviews',
-                  time: 'vor 5h',
-                  dot: c.accent,
-                },
-                { title: 'Daten-Update', body: '47 Leads aktualisiert', time: 'gestern', dot: c.success },
-              ].map((n, i) => (
-                <div
-                  key={i}
-                  style={{ display: 'flex', gap: 10, padding: '11px 16px', borderBottom: `1px solid ${c.border}` }}
-                >
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {notifications.length === 0 ? (
                   <div
-                    style={{ width: 6, height: 6, borderRadius: '50%', background: n.dot, flexShrink: 0, marginTop: 6 }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{n.title}</div>
-                    <div style={{ fontSize: 12, color: c.textSub, marginTop: 2 }}>{n.body}</div>
-                    <div style={{ fontSize: 11, color: c.textMuted, marginTop: 3 }}>{n.time}</div>
+                    style={{
+                      padding: '24px 16px',
+                      fontSize: 12,
+                      color: c.textMuted,
+                      textAlign: 'center',
+                    }}
+                  >
+                    Noch keine Benachrichtigungen
                   </div>
-                </div>
-              ))}
+                ) : (
+                  notifications.map((n) => {
+                    const isUnread = !n.read_at;
+                    return (
+                      <div
+                        key={n.id}
+                        style={{
+                          display: 'flex',
+                          gap: 10,
+                          padding: '11px 12px 11px 16px',
+                          borderBottom: `1px solid ${c.border}`,
+                          background: isUnread
+                            ? c.accent === '#F1F5F9'
+                              ? 'rgba(255,255,255,0.03)'
+                              : 'rgba(0,0,0,0.025)'
+                            : 'transparent',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            background: isUnread ? c.success : c.textMuted,
+                            flexShrink: 0,
+                            marginTop: 6,
+                          }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: c.text,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {n.link ? (
+                              <Link
+                                href={n.link}
+                                onClick={() => setNotifOpen(false)}
+                                style={{ color: 'inherit', textDecoration: 'none' }}
+                              >
+                                {n.title}
+                              </Link>
+                            ) : (
+                              n.title
+                            )}
+                          </div>
+                          {n.body && (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: c.textSub,
+                                marginTop: 2,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {n.body}
+                            </div>
+                          )}
+                          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 3 }}>
+                            {timeAgoShort(n.created_at)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => void deleteOne(n.id)}
+                          title="Benachrichtigung löschen"
+                          aria-label="Löschen"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: c.textMuted,
+                            padding: 4,
+                            display: 'flex',
+                            alignItems: 'center',
+                            flexShrink: 0,
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLElement).style.color = c.danger;
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.color = c.textMuted;
+                          }}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          >
+                            <path d="M4 4l8 8M12 4l-8 8" />
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </>
         )}

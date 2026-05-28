@@ -5,12 +5,14 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useLayoutEffect, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpIcon, Users, Calendar, Globe, Phone, Info, ChevronDown } from 'lucide-react';
+import { ArrowUpIcon, Users, Calendar, Globe, Phone, Info, ChevronDown, Trash2 } from 'lucide-react';
 import { useTheme, colors } from '../../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { GlassButton } from '@/components/ui/glass-button';
 import { TypingEffect } from '@/components/ui/typing-effect';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -167,6 +169,36 @@ interface LeadDetail {
   lead_summary?: string;
   tech_stack?: string[];
   tech_maturity_label?: string;
+  // Shipping (SPS-relevant)
+  shipping_sps_fit_score?: number;
+  shipping_sps_fit_reasoning?: string;
+  shipping_carriers_detected?: string[];
+  shipping_fulfillment_model?: string;
+  shipping_estimated_volume?: string;
+  shipping_logistics_complexity?: string;
+  shipping_savings_potential?: string;
+  shipping_has_own_warehouse?: boolean;
+  shipping_international_pct?: number;
+  shipping_countries?: string[];
+  shipping_pain_signals?: {
+    signal: string;
+    severity?: string;
+    evidence?: string;
+    source?: string;
+    source_url?: string;
+  }[];
+  shipping_carrier_complaints?: { carrier?: string; complaint?: string; frequency?: string }[];
+  shipping_recommended_services?: { service: string; reason?: string }[];
+  shipping_analysis_summary?: string;
+  shipping_approach_angle?: string;
+  shipping_delivery_promise?: string;
+  shipping_return_policy?: string;
+  shipping_free_threshold_eur?: number;
+  shipping_warehouse_m2?: number;
+  shipping_tech_integration?: string;
+  shipping_volume_method?: string;
+  shipping_carriers_evidence?: Array<Record<string, unknown> | string>;
+  shipping_analyzed_at?: string;
   legal_form?: string;
   hrb_number?: string;
   court?: string;
@@ -591,6 +623,62 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
     lead_summary: d.lead_summary as string | undefined,
     tech_stack: Array.isArray(d.tech_stack) ? (d.tech_stack as string[]) : [],
     tech_maturity_label: d.tech_maturity_label as string | undefined,
+    shipping_sps_fit_score:
+      typeof d.shipping_sps_fit_score === 'number' ? (d.shipping_sps_fit_score as number) : undefined,
+    shipping_sps_fit_reasoning: d.shipping_sps_fit_reasoning as string | undefined,
+    shipping_carriers_detected: Array.isArray(d.shipping_carriers_detected)
+      ? (d.shipping_carriers_detected as string[])
+      : [],
+    shipping_fulfillment_model: d.shipping_fulfillment_model as string | undefined,
+    shipping_estimated_volume: d.shipping_estimated_volume as string | undefined,
+    shipping_logistics_complexity: d.shipping_logistics_complexity as string | undefined,
+    shipping_savings_potential: d.shipping_savings_potential as string | undefined,
+    shipping_has_own_warehouse:
+      typeof d.shipping_has_own_warehouse === 'boolean'
+        ? (d.shipping_has_own_warehouse as boolean)
+        : undefined,
+    shipping_international_pct:
+      typeof d.shipping_international_pct === 'number'
+        ? (d.shipping_international_pct as number)
+        : undefined,
+    shipping_countries: Array.isArray(d.shipping_countries) ? (d.shipping_countries as string[]) : [],
+    shipping_pain_signals: Array.isArray(d.shipping_pain_signals)
+      ? (d.shipping_pain_signals as {
+          signal: string;
+          severity?: string;
+          evidence?: string;
+          source?: string;
+          source_url?: string;
+        }[])
+      : [],
+    shipping_carrier_complaints: Array.isArray(d.shipping_carrier_complaints)
+      ? (d.shipping_carrier_complaints as {
+          carrier?: string;
+          complaint?: string;
+          frequency?: string;
+        }[])
+      : [],
+    shipping_recommended_services: Array.isArray(d.shipping_recommended_services)
+      ? (d.shipping_recommended_services as { service: string; reason?: string }[])
+      : [],
+    shipping_analysis_summary: d.shipping_analysis_summary as string | undefined,
+    shipping_approach_angle: d.shipping_approach_angle as string | undefined,
+    shipping_delivery_promise: d.shipping_delivery_promise as string | undefined,
+    shipping_return_policy: d.shipping_return_policy as string | undefined,
+    shipping_free_threshold_eur:
+      typeof d.shipping_free_threshold_eur === 'number'
+        ? (d.shipping_free_threshold_eur as number)
+        : undefined,
+    shipping_warehouse_m2:
+      typeof d.shipping_warehouse_m2 === 'number'
+        ? (d.shipping_warehouse_m2 as number)
+        : undefined,
+    shipping_tech_integration: d.shipping_tech_integration as string | undefined,
+    shipping_volume_method: d.shipping_volume_method as string | undefined,
+    shipping_carriers_evidence: Array.isArray(d.shipping_carriers_evidence)
+      ? (d.shipping_carriers_evidence as Array<Record<string, unknown> | string>)
+      : [],
+    shipping_analyzed_at: d.shipping_analyzed_at as string | undefined,
     legal_form: d.legal_form as string | undefined,
     hrb_number: d.hrb_number as string | undefined,
     court: d.court as string | undefined,
@@ -942,29 +1030,291 @@ function DataRow({
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
 
-const QUICK_PROMPTS = ['Besten Pitch zeigen', 'Wettbewerber analysieren', 'Was übersehe ich?', 'Wann kontaktieren?'];
-const BOT_RESPONSES: Record<string, string> = {
-  pitch:
-    'Basierend auf den Signalen: Spreche die aktuellen Carrier-Probleme direkt an und biete einen konkreten SLA-Vergleich mit 3 Referenzkunden aus der gleichen Branche.',
-  wettbewerb:
-    'Die Hauptwettbewerber sind DHL, GLS und DPD. Der Lead hat zuletzt negative Bewertungen für DHL erhalten — das ist dein Einstieg.',
-  übersehe:
-    'Das Unternehmen ist gerade intern in Umstrukturierung. Die neue Operations-Stelle deutet auf eine Professionalisierung des Fulfillments hin — guter Zeitpunkt.',
-  zeitpunkt:
-    'Optimaler Zeitpunkt: Diese Woche. Das Funding ist frisch, die Logistics-Stelle noch offen — der Entscheider ist im Evaluationsmodus.',
-  fallback:
-    'Basierend auf Score, Signalen und Firmendaten: Ein Erstkontakt per LinkedIn mit personalisierten Signal-Referenzen hat die höchste Erfolgswahrscheinlichkeit.',
-};
-function getBotReply(text: string) {
-  const l = text.toLowerCase();
-  if (l.includes('pitch')) return BOT_RESPONSES.pitch;
-  if (l.includes('wettbewerb') || l.includes('konkurrenz')) return BOT_RESPONSES.wettbewerb;
-  if (l.includes('übersehe') || l.includes('vergessen')) return BOT_RESPONSES.übersehe;
-  if (l.includes('zeitpunkt') || l.includes('wann') || l.includes('kontakt')) return BOT_RESPONSES.zeitpunkt;
-  return BOT_RESPONSES.fallback;
+const QUICK_PROMPTS = [
+  'Was macht dieses Unternehmen?',
+  'Wie ist die Online-Reputation?',
+  'Gibt es Widersprüche im Außenauftritt?',
+  'Zusammenfassung aller Quellen',
+];
+
+const RESEARCH_CHAT_ENDPOINT = '/api/leads/research-chat';
+
+let _chatMsgSeq = 0;
+function nextMsgId(suffix: string) {
+  return `${++_chatMsgSeq}_${suffix}`;
 }
 
-type ChatMsg = { id: string; role: 'user' | 'bot'; text: string; loading?: boolean };
+function statusLabel(status: string | null, details: string | null): string {
+  if (details && details.trim()) return details.trim();
+  if (status === 'searching') return 'Durchsuche verfügbare Datenquellen…';
+  if (status === 'fetching') return 'Lade detaillierte Quelldaten…';
+  return 'Analysiere…';
+}
+
+// Markdown renderer themed with inline styles (this page uses inline styles, not Tailwind).
+type CiteSource = { n: string; label: string; url: string };
+
+// Split a "**Quellen:**" footnote section off the message body and parse its entries.
+function splitSources(text: string): { body: string; sources: CiteSource[] } {
+  const headerRe = /\n[ \t]*(?:-{3,}[ \t]*\n+)?[ \t]*\*{0,2}\s*Quellen\s*:?\s*\*{0,2}[ \t]*(?:\n|$)/i;
+  const match = text.match(headerRe);
+  if (!match || match.index === undefined) return { body: text, sources: [] };
+  const body = text.slice(0, match.index).trimEnd();
+  const tail = text.slice(match.index + match[0].length);
+  const sources: CiteSource[] = [];
+  for (const rawLine of tail.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const m = line.match(/^\[(\d+)\]\s*(.+)$/);
+    if (!m) continue;
+    let rest = m[2].trim();
+    let url = '';
+    const mdLink = rest.match(/\[([^\]]*)\]\((https?:\/\/[^)]+)\)/);
+    if (mdLink && mdLink.index !== undefined) {
+      url = mdLink[2];
+      rest = (rest.slice(0, mdLink.index) + ' ' + (mdLink[1] ?? '')).trim();
+    } else {
+      const urlM = rest.match(/(https?:\/\/\S+)/);
+      if (urlM && urlM.index !== undefined) {
+        url = urlM[1];
+        rest = rest.slice(0, urlM.index).trim();
+      }
+    }
+    const label = rest.replace(/[\s—–:-]+$/, '').trim();
+    sources.push({ n: m[1], label, url });
+  }
+  return { body, sources };
+}
+
+function MarkdownMessage({
+  text,
+  c,
+  isDark,
+  msgId,
+}: {
+  text: string;
+  c: ReturnType<typeof colors>;
+  isDark: boolean;
+  msgId: string;
+}) {
+  const link = isDark ? '#818CF8' : '#4F46E5';
+  const codeBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+  const borderCol = isDark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.12)';
+  const badgeBg = isDark ? 'rgba(129,140,248,0.22)' : 'rgba(79,70,229,0.12)';
+  const badgeColor = isDark ? '#a5b4fc' : '#4338ca';
+  const anchorBase = msgId.replace(/[^a-zA-Z0-9_-]/g, '');
+  const [flash, setFlash] = useState<string | null>(null);
+
+  const { body, sources } = splitSources(text);
+  const sourceByN = new Map(sources.map((s) => [s.n, s]));
+  // Turn inline [n] footnotes into clickable anchors (skip [n](...) that are already links).
+  const processed = body.replace(/\[(\d+)\](?!\()/g, (_m, n) => `[${n}](#__cite__${anchorBase}__${n})`);
+
+  function goToSource(n: string) {
+    const el = typeof document !== 'undefined' ? document.getElementById(`src-${anchorBase}-${n}`) : null;
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setFlash(n);
+    window.setTimeout(() => setFlash((cur) => (cur === n ? null : cur)), 1400);
+  }
+
+  return (
+    <div style={{ fontSize: 14, lineHeight: 1.6, color: c.text }}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p style={{ margin: '0 0 8px' }}>{children}</p>,
+          strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+          em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
+          ul: ({ children }) => <ul style={{ margin: '4px 0 10px', paddingLeft: 20, listStyle: 'disc' }}>{children}</ul>,
+          ol: ({ children }) => (
+            <ol style={{ margin: '4px 0 10px', paddingLeft: 20, listStyle: 'decimal' }}>{children}</ol>
+          ),
+          li: ({ children }) => <li style={{ margin: '2px 0' }}>{children}</li>,
+          h1: ({ children }) => <h1 style={{ fontSize: 18, fontWeight: 800, margin: '10px 0 6px' }}>{children}</h1>,
+          h2: ({ children }) => <h2 style={{ fontSize: 16, fontWeight: 800, margin: '10px 0 6px' }}>{children}</h2>,
+          h3: ({ children }) => <h3 style={{ fontSize: 14, fontWeight: 700, margin: '8px 0 4px' }}>{children}</h3>,
+          a: ({ children, href }) => {
+            const cite = href?.match(/^#__cite__.+__(\d+)$/);
+            if (cite) {
+              const n = cite[1];
+              const src = sourceByN.get(n);
+              return (
+                <sup style={{ lineHeight: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => goToSource(n)}
+                    title={src ? `[${n}] ${src.label}${src.url ? ` — ${src.url}` : ''}` : `Quelle ${n}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: 16,
+                      height: 16,
+                      padding: '0 4px',
+                      margin: '0 1px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: badgeBg,
+                      color: badgeColor,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      verticalAlign: 'super',
+                    }}
+                  >
+                    {n}
+                  </button>
+                </sup>
+              );
+            }
+            return (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: link, textDecoration: 'underline' }}
+              >
+                {children}
+              </a>
+            );
+          },
+          blockquote: ({ children }) => (
+            <blockquote
+              style={{ margin: '6px 0', paddingLeft: 12, borderLeft: `3px solid ${borderCol}`, color: c.textSub }}
+            >
+              {children}
+            </blockquote>
+          ),
+          code: ({ children }) => {
+            const isBlock = String(children).includes('\n');
+            return isBlock ? (
+              <code style={{ fontFamily: 'var(--font-geist-mono), monospace', fontSize: 12.5 }}>{children}</code>
+            ) : (
+              <code
+                style={{
+                  background: codeBg,
+                  padding: '1px 5px',
+                  borderRadius: 4,
+                  fontSize: 12.5,
+                  fontFamily: 'var(--font-geist-mono), monospace',
+                }}
+              >
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre
+              style={{ background: codeBg, padding: 12, borderRadius: 8, overflowX: 'auto', margin: '6px 0', fontSize: 12.5 }}
+            >
+              {children}
+            </pre>
+          ),
+          table: ({ children }) => (
+            <div style={{ overflowX: 'auto', margin: '8px 0' }}>
+              <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>{children}</table>
+            </div>
+          ),
+          th: ({ children }) => (
+            <th
+              style={{
+                border: `1px solid ${borderCol}`,
+                padding: '6px 9px',
+                textAlign: 'left',
+                fontWeight: 700,
+                background: codeBg,
+              }}
+            >
+              {children}
+            </th>
+          ),
+          td: ({ children }) => <td style={{ border: `1px solid ${borderCol}`, padding: '6px 9px' }}>{children}</td>,
+          hr: () => <hr style={{ border: 'none', borderTop: `1px solid ${borderCol}`, margin: '10px 0' }} />,
+        }}
+      >
+        {processed}
+      </ReactMarkdown>
+
+      {sources.length > 0 && (
+        <div
+          style={{
+            marginTop: 10,
+            paddingTop: 10,
+            borderTop: `1px solid ${borderCol}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 5,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: c.textMuted,
+              marginBottom: 2,
+            }}
+          >
+            Quellen
+          </div>
+          {sources.map((s) => (
+            <div
+              key={s.n}
+              id={`src-${anchorBase}-${s.n}`}
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 8,
+                padding: '3px 6px',
+                borderRadius: 6,
+                background: flash === s.n ? badgeBg : 'transparent',
+                transition: 'background 0.4s ease',
+              }}
+            >
+              <span
+                style={{
+                  flexShrink: 0,
+                  minWidth: 16,
+                  height: 16,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 8,
+                  background: badgeBg,
+                  color: badgeColor,
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}
+              >
+                {s.n}
+              </span>
+              <span style={{ fontSize: 12.5, lineHeight: 1.45, minWidth: 0 }}>
+                {s.label && <span style={{ fontWeight: 600, color: c.text }}>{s.label}</span>}
+                {s.label && s.url && <span style={{ color: c.textMuted }}> — </span>}
+                {s.url && (
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: link, textDecoration: 'underline', wordBreak: 'break-all' }}
+                  >
+                    {s.url}
+                  </a>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type ChatMsg = { id: string; role: 'user' | 'bot'; text: string; loading?: boolean; error?: boolean };
 
 function ChatTypingDots({ c }: { c: ReturnType<typeof colors> }) {
   return (
@@ -986,8 +1336,14 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [statusText, setStatusText] = useState<string | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -1004,20 +1360,146 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [msgs]);
+  }, [msgs, statusText]);
+
+  // Load prior conversation for this lead (persisted per lead + user).
+  // ChatTab is keyed by lead id, so this effect runs once per lead mount.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${RESEARCH_CHAT_ENDPOINT}?leadId=${encodeURIComponent(lead.id)}`);
+        if (!res.ok) return;
+        const data: { messages?: { role: string; content: string; created_at: string }[] } = await res.json();
+        if (cancelled || !data.messages?.length) return;
+        const loaded: ChatMsg[] = data.messages.map((m, i) => ({
+          id: `h${i}_${m.created_at}_${m.role}`,
+          role: m.role === 'user' ? 'user' : 'bot',
+          text: m.content,
+        }));
+        // Don't clobber an in-progress conversation (fast send before history resolves).
+        setMsgs((prev) => (prev.length ? prev : loaded));
+      } catch {
+        /* history is best-effort */
+      } finally {
+        if (!cancelled) setLoadingHistory(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [lead.id]);
+
+  // Stop polling + abort any in-flight request on unmount.
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    setStatusText(null);
+  }, []);
+
+  const startPolling = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${RESEARCH_CHAT_ENDPOINT}/status?leadId=${encodeURIComponent(lead.id)}`);
+        if (!res.ok) return;
+        const data: { status?: { status: string; details: string | null } | null } = await res.json();
+        if (data.status) setStatusText(statusLabel(data.status.status, data.status.details));
+      } catch {
+        /* ignore transient poll errors */
+      }
+    }, 1100);
+  }, [lead.id]);
+
+  const runRequest = useCallback(
+    async (msg: string, loadingId: string) => {
+      setBusy(true);
+      setStatusText(null);
+      startPolling();
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const timeout = setTimeout(() => controller.abort(), 290_000);
+
+      try {
+        const res = await fetch(RESEARCH_CHAT_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: lead.id, message: msg }),
+          signal: controller.signal,
+        });
+        const data: { reply?: string; error?: string } = await res.json().catch(() => ({}));
+        if (!res.ok || !data.reply) throw new Error(data.error || 'Die Anfrage ist fehlgeschlagen.');
+        setMsgs((p) => [
+          ...p.filter((m) => m.id !== loadingId && !m.loading),
+          { id: nextMsgId('r'), role: 'bot', text: data.reply as string },
+        ]);
+      } catch (err) {
+        const aborted = err instanceof DOMException && err.name === 'AbortError';
+        const text = aborted
+          ? 'Zeitüberschreitung — die Recherche hat zu lange gedauert. Bitte erneut versuchen.'
+          : err instanceof Error
+            ? err.message
+            : 'Unbekannter Fehler.';
+        setMsgs((p) => [
+          ...p.filter((m) => m.id !== loadingId && !m.loading),
+          { id: nextMsgId('e'), role: 'bot', text, error: true },
+        ]);
+      } finally {
+        clearTimeout(timeout);
+        abortRef.current = null;
+        stopPolling();
+        setBusy(false);
+      }
+    },
+    [lead.id, startPolling, stopPolling],
+  );
 
   async function send(text?: string) {
     const msg = (text ?? input).trim();
     if (!msg || busy) return;
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = '24px';
-    const userMsg: ChatMsg = { id: `${Date.now()}_u`, role: 'user', text: msg };
-    const loadMsg: ChatMsg = { id: `${Date.now()}_l`, role: 'bot', text: '', loading: true };
-    setMsgs((p) => [...p, userMsg, loadMsg]);
-    setBusy(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setMsgs((p) => [...p.filter((m) => !m.loading), { id: `${Date.now()}_r`, role: 'bot', text: getBotReply(msg) }]);
-    setBusy(false);
+    const loadingId = nextMsgId('l');
+    setMsgs((p) => [
+      ...p.filter((m) => !m.error),
+      { id: nextMsgId('u'), role: 'user', text: msg },
+      { id: loadingId, role: 'bot', text: '', loading: true },
+    ]);
+    await runRequest(msg, loadingId);
+  }
+
+  function retry() {
+    if (busy) return;
+    const lastUser = [...msgs].reverse().find((m) => m.role === 'user' && !m.error);
+    if (!lastUser) return;
+    const loadingId = nextMsgId('l');
+    setMsgs((p) => [...p.filter((m) => !m.error), { id: loadingId, role: 'bot', text: '', loading: true }]);
+    void runRequest(lastUser.text, loadingId);
+  }
+
+  async function clearHistory() {
+    if (clearing || busy) return;
+    setClearing(true);
+    try {
+      const res = await fetch(`${RESEARCH_CHAT_ENDPOINT}?leadId=${encodeURIComponent(lead.id)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Löschen fehlgeschlagen');
+      setMsgs([]);
+      setConfirmClear(false);
+    } catch {
+      /* keep the conversation on failure so nothing is silently lost */
+    } finally {
+      setClearing(false);
+    }
   }
 
   const hasMessages = msgs.length > 0;
@@ -1042,10 +1524,109 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Header: clear history */}
+      {hasMessages && !loadingHistory && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px 0',
+            flexShrink: 0,
+          }}
+        >
+          {confirmClear ? (
+            <>
+              <span style={{ fontSize: 12, color: c.textMuted }}>Verlauf wirklich löschen?</span>
+              <button
+                onClick={clearHistory}
+                disabled={clearing}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: clearing ? 'default' : 'pointer',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#ef4444',
+                  fontFamily: 'inherit',
+                  padding: '4px 6px',
+                }}
+              >
+                {clearing ? 'Lösche…' : 'Löschen'}
+              </button>
+              <button
+                onClick={() => setConfirmClear(false)}
+                disabled={clearing}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: c.textMuted,
+                  fontFamily: 'inherit',
+                  padding: '4px 6px',
+                }}
+              >
+                Abbrechen
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirmClear(true)}
+              disabled={busy}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                background: 'none',
+                border: 'none',
+                cursor: busy ? 'default' : 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                color: c.textMuted,
+                fontFamily: 'inherit',
+                padding: '4px 6px',
+                opacity: busy ? 0.5 : 1,
+              }}
+            >
+              <Trash2 size={13} />
+              Verlauf löschen
+            </button>
+          )}
+        </div>
+      )}
       {/* Message area */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '0 0 8px', minHeight: 0 }}>
+        {loadingHistory && !hasMessages && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              minHeight: 320,
+              color: c.textMuted,
+            }}
+          >
+            <motion.div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                border: `2px solid ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'}`,
+                borderTopColor: isDark ? '#818CF8' : '#4F46E5',
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+            />
+            <span style={{ fontSize: 12.5 }}>Lade bisherige Unterhaltung…</span>
+          </div>
+        )}
         <AnimatePresence>
-          {!hasMessages && (
+          {!hasMessages && !loadingHistory && (
             <motion.div
               key="empty"
               initial={{ opacity: 0, y: 12 }}
@@ -1132,39 +1713,102 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
                           : 'inset 2px 2px 3px rgba(255,255,255,0.55)',
                       }}
                     >
-                      <ChatTypingDots c={c} />
+                      {statusText ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 9,
+                            padding: '11px 16px',
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: c.textSub,
+                          }}
+                        >
+                          <motion.span
+                            style={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: '50%',
+                              background: isDark ? '#818CF8' : '#4F46E5',
+                              display: 'block',
+                              flexShrink: 0,
+                            }}
+                            animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.15, 0.8] }}
+                            transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+                          />
+                          <span>{statusText}</span>
+                        </div>
+                      ) : (
+                        <ChatTypingDots c={c} />
+                      )}
                     </div>
-                  ) : (
+                  ) : m.error ? (
+                    <div
+                      style={{
+                        maxWidth: '88%',
+                        padding: '11px 16px',
+                        borderRadius: '16px 16px 16px 4px',
+                        background: isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.08)',
+                        border: '1px solid rgba(239,68,68,0.35)',
+                        fontSize: 14,
+                        lineHeight: 1.55,
+                        color: isDark ? '#fca5a5' : '#b91c1c',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 9,
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <span>{m.text}</span>
+                      <GlassButton
+                        size="sm"
+                        isDark={isDark}
+                        onClick={retry}
+                        disabled={busy}
+                        style={{ fontSize: 12, fontWeight: 700, fontFamily: 'inherit', color: c.text }}
+                      >
+                        Erneut versuchen
+                      </GlassButton>
+                    </div>
+                  ) : m.role === 'user' ? (
                     <div
                       style={{
                         maxWidth: '80%',
                         padding: '11px 16px',
-                        borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                        borderRadius: '16px 16px 4px 16px',
                         backdropFilter: 'blur(16px)',
                         WebkitBackdropFilter: 'blur(16px)',
                         fontSize: 14,
                         lineHeight: 1.55,
-                        fontWeight: m.role === 'user' ? 600 : 400,
-                        ...(m.role === 'user'
-                          ? {
-                              background: isDark ? 'rgba(99,102,241,0.28)' : 'rgba(79,70,229,0.13)',
-                              border: isDark ? '1px solid rgba(124,58,237,0.45)' : '1px solid rgba(79,70,229,0.28)',
-                              boxShadow: isDark
-                                ? 'inset 1px 1px 2px rgba(124,58,237,0.18)'
-                                : 'inset 2px 2px 3px rgba(255,255,255,0.45)',
-                              color: isDark ? '#c4b5fd' : '#3730a3',
-                            }
-                          : {
-                              background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.52)',
-                              border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.65)',
-                              boxShadow: isDark
-                                ? 'inset 1px 1px 2px rgba(255,255,255,0.06)'
-                                : 'inset 2px 2px 3px rgba(255,255,255,0.55)',
-                              color: c.text,
-                            }),
+                        fontWeight: 600,
+                        whiteSpace: 'pre-wrap',
+                        background: isDark ? 'rgba(99,102,241,0.28)' : 'rgba(79,70,229,0.13)',
+                        border: isDark ? '1px solid rgba(124,58,237,0.45)' : '1px solid rgba(79,70,229,0.28)',
+                        boxShadow: isDark
+                          ? 'inset 1px 1px 2px rgba(124,58,237,0.18)'
+                          : 'inset 2px 2px 3px rgba(255,255,255,0.45)',
+                        color: isDark ? '#c4b5fd' : '#3730a3',
                       }}
                     >
                       {m.text}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        maxWidth: '92%',
+                        padding: '10px 16px 4px',
+                        borderRadius: '16px 16px 16px 4px',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.52)',
+                        border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(255,255,255,0.65)',
+                        boxShadow: isDark
+                          ? 'inset 1px 1px 2px rgba(255,255,255,0.06)'
+                          : 'inset 2px 2px 3px rgba(255,255,255,0.55)',
+                      }}
+                    >
+                      <MarkdownMessage text={m.text} c={c} isDark={isDark} msgId={m.id} />
                     </div>
                   )}
                 </motion.div>
@@ -6391,35 +7035,727 @@ function BewertungenDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnTyp
   );
 }
 
-function TechDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
+// Extracts all [https://...] URLs from a text block, deduplicated, preserving
+// first-seen order. Used to aggregate evidence URLs for the "Quellen" section.
+function extractCitationUrls(text: string | undefined): string[] {
+  if (!text) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const re = /\[(https?:\/\/[^\]\s]+)\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (!seen.has(m[1])) {
+      seen.add(m[1]);
+      out.push(m[1]);
+    }
+  }
+  return out;
+}
+
+// Maps a pain-signal `source` tag to whatever review/maps URL is available on
+// the lead so a "reviews" pain becomes clickable.
+function reviewUrlFor(source: string | undefined, lead: LeadDetail): string | null {
+  if (!source) return null;
+  const s = source.toLowerCase();
+  if (s === 'reviews' || s.includes('google')) {
+    return lead.google_reviews_url ?? lead.trustpilot_url ?? lead.kununu_url ?? lead.provenexpert_url ?? null;
+  }
+  if (s.includes('trustpilot')) return lead.trustpilot_url ?? null;
+  if (s.includes('kununu')) return lead.kununu_url ?? null;
+  if (s.includes('provenexpert')) return lead.provenexpert_url ?? null;
+  if (s.includes('linkedin')) return lead.linkedin_url ?? null;
+  return null;
+}
+
+// Parses inline [https://...] citations in agent-written text and renders
+// them as small clickable ↗ badges. Returns an array of React nodes.
+function renderWithCitations(text: string | undefined): React.ReactNode {
+  if (!text) return null;
+  const seen = new Map<string, number>();
+  const parts = text.split(/(\[https?:\/\/[^\]\s]+\])/g);
+  return parts.map((part, idx) => {
+    const m = part.match(/^\[(https?:\/\/[^\]\s]+)\]$/);
+    if (m) {
+      const url = m[1];
+      if (!seen.has(url)) seen.set(url, seen.size + 1);
+      const n = seen.get(url)!;
+      return (
+        <a
+          key={`c-${idx}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={url}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 2,
+            padding: '0 5px',
+            marginLeft: 3,
+            marginRight: 1,
+            fontSize: 10,
+            fontWeight: 700,
+            color: '#0EA5E9',
+            background: 'rgba(14,165,233,0.1)',
+            border: '1px solid rgba(14,165,233,0.22)',
+            borderRadius: 4,
+            textDecoration: 'none',
+            verticalAlign: 'baseline',
+            cursor: 'pointer',
+          }}
+        >
+          [{n}]
+        </a>
+      );
+    }
+    return <span key={`t-${idx}`}>{part}</span>;
+  });
+}
+
+function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
+  const cardBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.025)';
+  const cardBorder = isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)';
+
+  const score = lead.shipping_sps_fit_score;
+  const scoreColor =
+    typeof score === 'number'
+      ? score >= 70
+        ? '#10B981'
+        : score >= 40
+          ? '#F59E0B'
+          : '#EF4444'
+      : c.textMuted;
+
+  const carriers = lead.shipping_carriers_detected ?? [];
+  const countries = lead.shipping_countries ?? [];
+  const pains = lead.shipping_pain_signals ?? [];
+  const carrierComplaints = lead.shipping_carrier_complaints ?? [];
+  const recommendedServices = lead.shipping_recommended_services ?? [];
+
+  const hasAny =
+    typeof score === 'number' ||
+    carriers.length > 0 ||
+    countries.length > 0 ||
+    pains.length > 0 ||
+    carrierComplaints.length > 0 ||
+    recommendedServices.length > 0 ||
+    lead.shipping_analysis_summary ||
+    lead.shipping_approach_angle ||
+    lead.shipping_fulfillment_model ||
+    lead.shipping_estimated_volume ||
+    lead.shipping_logistics_complexity ||
+    lead.shipping_savings_potential ||
+    lead.shipping_delivery_promise ||
+    lead.shipping_return_policy ||
+    typeof lead.shipping_has_own_warehouse === 'boolean' ||
+    typeof lead.shipping_international_pct === 'number';
+
+  if (!hasAny) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <p style={{ fontSize: 14, color: c.textMuted }}>
+          Noch keine Shipping-Analyse vorhanden.
+        </p>
+      </div>
+    );
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 700,
+    color: c.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    marginBottom: 6,
+  };
+  const cardStyle: React.CSSProperties = {
+    background: cardBg,
+    border: cardBorder,
+    borderRadius: 12,
+    padding: '16px 18px',
+  };
+
   return (
-    <div style={{ padding: '20px 24px' }}>
-      <div>
-        {lead.tech_stack && lead.tech_stack.length > 0 ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
-            {lead.tech_stack.map((t, i) => (
-              <span
+    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Top row: SPS-Fit Score + summary */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(180px, 220px) 1fr',
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            ...cardStyle,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '20px 16px',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 700, color: c.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+            SPS-Fit Score
+          </div>
+          {typeof score === 'number' ? (
+            <>
+              <div style={{ fontSize: 56, fontWeight: 900, color: scoreColor, lineHeight: 1 }}>
+                {score}
+              </div>
+              <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>von 100</div>
+            </>
+          ) : (
+            <div style={{ fontSize: 13, color: c.textMuted, padding: '20px 0' }}>n/a</div>
+          )}
+        </div>
+        <div style={cardStyle}>
+          <div style={labelStyle}>Reasoning</div>
+          {lead.shipping_sps_fit_reasoning ? (
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: c.text, margin: 0, whiteSpace: 'pre-wrap' as const }}>
+              {renderWithCitations(lead.shipping_sps_fit_reasoning)}
+            </p>
+          ) : (
+            <p style={{ fontSize: 13, color: c.textMuted, margin: 0 }}>—</p>
+          )}
+        </div>
+      </div>
+
+      {/* Analysis summary */}
+      {lead.shipping_analysis_summary && (
+        <div style={cardStyle}>
+          <div style={labelStyle}>Analyse-Zusammenfassung</div>
+          <p style={{ fontSize: 13, lineHeight: 1.65, color: c.text, margin: 0, whiteSpace: 'pre-wrap' as const }}>
+            {renderWithCitations(lead.shipping_analysis_summary)}
+          </p>
+        </div>
+      )}
+
+      {/* Approach angle — high-signal sales hook */}
+      {lead.shipping_approach_angle && (
+        <div
+          style={{
+            background: 'rgba(14,165,233,0.08)',
+            border: '1px solid rgba(14,165,233,0.25)',
+            borderRadius: 12,
+            padding: '16px 18px',
+          }}
+        >
+          <div style={{ ...labelStyle, color: '#0EA5E9' }}>Outreach-Aufhänger</div>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: c.text, margin: 0, whiteSpace: 'pre-wrap' as const, fontWeight: 500 }}>
+            {renderWithCitations(lead.shipping_approach_angle)}
+          </p>
+        </div>
+      )}
+
+      {/* Carriers + Countries */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={cardStyle}>
+          <div style={labelStyle}>Carrier ({carriers.length})</div>
+          {carriers.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+              {carriers.map((carrier, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '5px 11px',
+                    borderRadius: 7,
+                    background: 'rgba(14,165,233,0.1)',
+                    border: '1px solid rgba(14,165,233,0.22)',
+                    color: '#0EA5E9',
+                  }}
+                >
+                  {carrier}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span style={{ fontSize: 13, color: c.textMuted }}>—</span>
+          )}
+        </div>
+        <div style={cardStyle}>
+          <div style={labelStyle}>Länder ({countries.length})</div>
+          {countries.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+              {countries.map((country, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '5px 11px',
+                    borderRadius: 7,
+                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.045)',
+                    border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+                    color: c.text,
+                  }}
+                >
+                  {country}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span style={{ fontSize: 13, color: c.textMuted }}>—</span>
+          )}
+        </div>
+      </div>
+
+      {/* Operations grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: 12,
+        }}
+      >
+        {[
+          { label: 'Fulfillment-Modell', value: lead.shipping_fulfillment_model },
+          {
+            label: 'Geschätztes Volumen',
+            value: lead.shipping_estimated_volume,
+            hint: lead.shipping_volume_method,
+          },
+          { label: 'Logistik-Komplexität', value: lead.shipping_logistics_complexity },
+          {
+            label: 'Eigenes Lager',
+            value:
+              typeof lead.shipping_has_own_warehouse === 'boolean'
+                ? lead.shipping_has_own_warehouse
+                  ? 'Ja'
+                  : 'Nein'
+                : undefined,
+            hint:
+              typeof lead.shipping_warehouse_m2 === 'number'
+                ? `${lead.shipping_warehouse_m2.toLocaleString('de-DE')} m²`
+                : undefined,
+          },
+          {
+            label: 'International',
+            value:
+              typeof lead.shipping_international_pct === 'number'
+                ? `${lead.shipping_international_pct}%`
+                : undefined,
+          },
+          { label: 'Einspar-Potenzial', value: lead.shipping_savings_potential },
+          { label: 'Tech-Integration', value: lead.shipping_tech_integration },
+          {
+            label: 'Gratis-Versand ab',
+            value:
+              typeof lead.shipping_free_threshold_eur === 'number'
+                ? `${lead.shipping_free_threshold_eur.toLocaleString('de-DE')} €`
+                : undefined,
+          },
+        ].map((kv, i) =>
+          kv.value ? (
+            <div key={i} style={cardStyle}>
+              <div style={labelStyle}>{kv.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{kv.value}</div>
+              {kv.hint && (
+                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>{kv.hint}</div>
+              )}
+            </div>
+          ) : null,
+        )}
+      </div>
+
+      {/* Pain signals */}
+      {pains.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ ...labelStyle, color: '#EF4444' }}>Pain Signals ({pains.length})</div>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+            {pains.map((p, i) => {
+              const sevColor =
+                p.severity?.toLowerCase() === 'high'
+                  ? '#EF4444'
+                  : p.severity?.toLowerCase() === 'medium'
+                    ? '#F59E0B'
+                    : p.severity?.toLowerCase() === 'low'
+                      ? '#0EA5E9'
+                      : '#EF4444';
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '11px 13px',
+                    background: 'rgba(239,68,68,0.05)',
+                    border: '1px solid rgba(239,68,68,0.18)',
+                    borderRadius: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: sevColor,
+                      marginTop: 6,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{p.signal}</div>
+                    {p.evidence && (
+                      <div style={{ fontSize: 12, color: c.textSub, marginTop: 3, lineHeight: 1.5 }}>
+                        {p.evidence}
+                      </div>
+                    )}
+                    {(() => {
+                      // Direct source_url wins; otherwise fall back to the
+                      // lead's review/maps URL that matches p.source.
+                      const linkUrl = p.source_url ?? reviewUrlFor(p.source, lead);
+                      const sourceTag = p.source && !p.source_url ? p.source : null;
+                      if (!linkUrl && !sourceTag) return null;
+                      return (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            marginTop: 6,
+                            flexWrap: 'wrap' as const,
+                          }}
+                        >
+                          {linkUrl && (
+                            <a
+                              href={linkUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={linkUrl}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: '#0EA5E9',
+                                background: 'rgba(14,165,233,0.1)',
+                                border: '1px solid rgba(14,165,233,0.22)',
+                                borderRadius: 6,
+                                padding: '3px 8px',
+                                textDecoration: 'none',
+                                maxWidth: 360,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap' as const,
+                              }}
+                            >
+                              <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M14 3h7v7" />
+                                <path d="M21 3l-9 9" />
+                                <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
+                              </svg>
+                              {(() => {
+                                try {
+                                  return new URL(linkUrl).hostname.replace(/^www\./, '');
+                                } catch {
+                                  return 'Quelle';
+                                }
+                              })()}
+                              {p.source && !p.source_url ? ` · ${p.source}` : ''}
+                            </a>
+                          )}
+                          {sourceTag && !linkUrl && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: c.textMuted,
+                                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                                borderRadius: 4,
+                                padding: '2px 6px',
+                                textTransform: 'uppercase' as const,
+                                letterSpacing: '0.05em',
+                              }}
+                            >
+                              {sourceTag}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  {p.severity && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '2px 7px',
+                        borderRadius: 99,
+                        background: sevColor + '22',
+                        color: sevColor,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {p.severity}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Carrier complaints */}
+      {carrierComplaints.length > 0 && (
+        <div style={cardStyle}>
+          <div style={labelStyle}>Carrier-Beschwerden ({carrierComplaints.length})</div>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+            {carrierComplaints.map((cc, i) => (
+              <div
                 key={i}
                 style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  padding: '7px 14px',
-                  borderRadius: 9,
-                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                  color: c.textSub,
-                  border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  padding: '9px 12px',
+                  background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                  borderRadius: 8,
+                  border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.04)',
                 }}
               >
-                {t}
-              </span>
+                {cc.carrier && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: 6,
+                      background: 'rgba(14,165,233,0.1)',
+                      color: '#0EA5E9',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {cc.carrier}
+                  </span>
+                )}
+                <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: c.text, lineHeight: 1.5 }}>
+                  {cc.complaint ?? '—'}
+                </div>
+                {cc.frequency && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: c.textMuted,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {cc.frequency}
+                  </span>
+                )}
+              </div>
             ))}
           </div>
-        ) : (
-          <p style={{ fontSize: 14, color: c.textMuted }}>Kein Tech-Stack erkannt</p>
-        )}
-        <div style={{ marginTop: 16 }}>
-          <SourceBadge label="Website-Scan" />
         </div>
+      )}
+
+      {/* Recommended SPS services */}
+      {recommendedServices.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ ...labelStyle, color: '#10B981' }}>
+            Empfohlene SPS-Services ({recommendedServices.length})
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 8,
+            }}
+          >
+            {recommendedServices.map((rs, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: '11px 13px',
+                  background: 'rgba(16,185,129,0.06)',
+                  border: '1px solid rgba(16,185,129,0.2)',
+                  borderRadius: 8,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: '#10B981',
+                    marginBottom: rs.reason ? 4 : 0,
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 8l3 3 7-7" />
+                  </svg>
+                  {rs.service}
+                </div>
+                {rs.reason && (
+                  <div style={{ fontSize: 12, color: c.textSub, lineHeight: 1.5 }}>{rs.reason}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Delivery & Returns */}
+      {(lead.shipping_delivery_promise || lead.shipping_return_policy) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          {lead.shipping_delivery_promise && (
+            <div style={cardStyle}>
+              <div style={labelStyle}>Lieferversprechen</div>
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: c.text, margin: 0 }}>
+                {renderWithCitations(lead.shipping_delivery_promise)}
+              </p>
+            </div>
+          )}
+          {lead.shipping_return_policy && (
+            <div style={cardStyle}>
+              <div style={labelStyle}>Retourenpolitik</div>
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: c.text, margin: 0 }}>
+                {renderWithCitations(lead.shipping_return_policy)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {(() => {
+        // Aggregate every link-evidence we have for this lead's shipping
+        // analysis: inline citations across all text fields, pain-signal
+        // source_urls, plus the lead's own review/maps profiles so the rep
+        // can verify any claim with one click.
+        const seen = new Set<string>();
+        const sources: { url: string; label: string }[] = [];
+        const add = (url: string | null | undefined, label?: string) => {
+          if (!url) return;
+          if (seen.has(url)) return;
+          seen.add(url);
+          let host = label;
+          if (!host) {
+            try {
+              host = new URL(url).hostname.replace(/^www\./, '');
+            } catch {
+              host = 'Quelle';
+            }
+          }
+          sources.push({ url, label: host });
+        };
+
+        for (const txt of [
+          lead.shipping_sps_fit_reasoning,
+          lead.shipping_analysis_summary,
+          lead.shipping_approach_angle,
+          lead.shipping_delivery_promise,
+          lead.shipping_return_policy,
+        ]) {
+          extractCitationUrls(txt).forEach((u) => add(u));
+        }
+        for (const p of pains) {
+          if (p.source_url) add(p.source_url);
+        }
+        // Lead-level review / map profiles — high-value verification points
+        // the agent often relies on but doesn't always cite explicitly.
+        add(lead.google_reviews_url, 'Google Maps');
+        add(lead.trustpilot_url, 'Trustpilot');
+        add(lead.kununu_url, 'Kununu');
+        add(lead.provenexpert_url, 'ProvenExpert');
+
+        if (sources.length === 0) return null;
+        return (
+          <div style={cardStyle}>
+            <div style={labelStyle}>Quellen &amp; Belege ({sources.length})</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+              {sources.map((s, i) => (
+                <a
+                  key={i}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={s.url}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '5px 10px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: '#0EA5E9',
+                    background: 'rgba(14,165,233,0.08)',
+                    border: '1px solid rgba(14,165,233,0.2)',
+                    borderRadius: 7,
+                    textDecoration: 'none',
+                    maxWidth: 280,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap' as const,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 4,
+                      background: 'rgba(14,165,233,0.18)',
+                      color: '#0EA5E9',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  {s.label}
+                  <svg
+                    width="9"
+                    height="9"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M14 3h7v7" />
+                    <path d="M21 3l-9 9" />
+                    <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
+                  </svg>
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+        <SourceBadge label="Shipping-Agent" />
+        {lead.shipping_analyzed_at && (
+          <span style={{ fontSize: 11, color: c.textMuted }}>
+            analysiert {new Date(lead.shipping_analyzed_at).toLocaleString('de-DE')}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -6436,7 +7772,7 @@ function InfoTab({
   lead: LeadDetail;
   c: ReturnType<typeof colors>;
   isDark: boolean;
-  onOpenDetail: (view: 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'tech') => void;
+  onOpenDetail: (view: 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping') => void;
 }) {
   const [eventsOpen, setEventsOpen] = useState(false);
 
@@ -7684,63 +9020,132 @@ function InfoTab({
           })()}
         </QuickCard>
 
-        {/* Technologie */}
-        <QuickCard title="Technologie" accent="#7C3AED" onExpand={() => onOpenDetail('tech')}>
-          {lead.tech_stack && lead.tech_stack.length > 0 ? (
-            <>
-              <div style={{ fontSize: 36, fontWeight: 900, color: '#7C3AED', lineHeight: 1, marginBottom: 4 }}>
-                {lead.tech_stack.length}
-              </div>
-              <div style={{ fontSize: 11, color: c.textMuted, marginBottom: 12 }}>Technologien erkannt</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
-                {lead.tech_stack.slice(0, 6).map((t, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: '4px 10px',
-                      borderRadius: 6,
-                      background: 'rgba(124,58,237,0.1)',
-                      border: '1px solid rgba(124,58,237,0.2)',
-                      color: '#7C3AED',
-                    }}
-                  >
-                    {t}
-                  </span>
-                ))}
-                {lead.tech_stack.length > 6 && (
-                  <span style={{ fontSize: 11, color: c.textMuted, alignSelf: 'center' }}>
-                    +{lead.tech_stack.length - 6} weitere
-                  </span>
+        {/* Shipping */}
+        <QuickCard title="Shipping" accent="#0EA5E9" onExpand={() => onOpenDetail('shipping')}>
+          {(() => {
+            const hasAnalysis =
+              typeof lead.shipping_sps_fit_score === 'number' ||
+              (lead.shipping_carriers_detected && lead.shipping_carriers_detected.length > 0) ||
+              lead.shipping_estimated_volume ||
+              lead.shipping_fulfillment_model;
+            if (!hasAnalysis) {
+              return <div style={{ fontSize: 13, color: c.textMuted }}>Noch nicht analysiert</div>;
+            }
+            const score = lead.shipping_sps_fit_score;
+            const carriers = lead.shipping_carriers_detected ?? [];
+            const painCount = lead.shipping_pain_signals?.length ?? 0;
+            const scoreColor =
+              typeof score === 'number'
+                ? score >= 70
+                  ? '#10B981'
+                  : score >= 40
+                    ? '#F59E0B'
+                    : '#EF4444'
+                : '#0EA5E9';
+            return (
+              <>
+                {typeof score === 'number' ? (
+                  <>
+                    <div
+                      style={{
+                        fontSize: 36,
+                        fontWeight: 900,
+                        color: scoreColor,
+                        lineHeight: 1,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {score}
+                    </div>
+                    <div style={{ fontSize: 11, color: c.textMuted, marginBottom: 12 }}>
+                      SPS-Fit Score
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ marginBottom: 12 }}>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: '#0EA5E9',
+                        background: 'rgba(14,165,233,0.1)',
+                        border: '1px solid rgba(14,165,233,0.2)',
+                        padding: '3px 9px',
+                        borderRadius: 99,
+                      }}
+                    >
+                      Analyse läuft
+                    </span>
+                  </div>
                 )}
-              </div>
-              {lead.tech_maturity_label && (
-                <div style={{ marginTop: 'auto', paddingTop: 8 }}>
-                  {(() => {
-                    const ml = deLabel(lead.tech_maturity_label);
-                    return ml ? (
+
+                {carriers.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5, marginBottom: 8 }}>
+                    {carriers.slice(0, 4).map((carrier, i) => (
                       <span
+                        key={i}
                         style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: '#7C3AED',
-                          background: 'rgba(124,58,237,0.1)',
-                          border: '1px solid rgba(124,58,237,0.2)',
-                          borderRadius: 99,
-                          padding: '2px 8px',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          background: 'rgba(14,165,233,0.1)',
+                          border: '1px solid rgba(14,165,233,0.2)',
+                          color: '#0EA5E9',
                         }}
                       >
-                        {ml}
+                        {carrier}
                       </span>
-                    ) : null;
-                  })()}
-                </div>
-              )}
-            </>
-          ) : (
-            <div style={{ fontSize: 13, color: c.textMuted }}>Kein Stack erkannt</div>
-          )}
+                    ))}
+                    {carriers.length > 4 && (
+                      <span style={{ fontSize: 11, color: c.textMuted, alignSelf: 'center' }}>
+                        +{carriers.length - 4}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {lead.shipping_estimated_volume && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: c.textSub,
+                      marginBottom: lead.shipping_fulfillment_model || painCount > 0 ? 4 : 0,
+                    }}
+                  >
+                    <strong style={{ color: c.text }}>{lead.shipping_estimated_volume}</strong>
+                  </div>
+                )}
+                {lead.shipping_fulfillment_model && (
+                  <div style={{ fontSize: 11, color: c.textMuted, marginBottom: painCount > 0 ? 4 : 0 }}>
+                    {lead.shipping_fulfillment_model}
+                  </div>
+                )}
+
+                {painCount > 0 && (
+                  <div style={{ marginTop: 'auto', paddingTop: 8 }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: '#EF4444',
+                        background: 'rgba(239,68,68,0.1)',
+                        border: '1px solid rgba(239,68,68,0.2)',
+                        borderRadius: 99,
+                        padding: '2px 8px',
+                      }}
+                    >
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#EF4444' }} />
+                      {painCount} {painCount === 1 ? 'Painpoint' : 'Painpoints'}
+                    </span>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </QuickCard>
       </div>
     </div>
@@ -8911,7 +10316,7 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
   const [detailView, setDetailView] = useState<
-    'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'tech' | null
+    'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping' | null
   >(null);
   const DETAIL_TITLES = {
     firma: 'Firmendaten',
@@ -8919,7 +10324,7 @@ export default function LeadDetailPage() {
     finanzen: 'Finanzdaten — Vollständige Übersicht',
     social: 'Social Media',
     bewertungen: 'Bewertungen',
-    tech: 'Tech-Stack',
+    shipping: 'Shipping & Logistik',
   };
   const [status, setStatus] = useState<LeadStatus>('warm');
   const [scoreHover, setScoreHover] = useState(false);
@@ -9371,7 +10776,7 @@ export default function LeadDetailPage() {
             {detailView === 'finanzen' && <FinanzenTab lead={lead!} c={c} isDark={isDark} />}
             {detailView === 'social' && <SocialDetail lead={lead!} c={c} isDark={isDark} />}
             {detailView === 'bewertungen' && <BewertungenDetail lead={lead!} c={c} isDark={isDark} />}
-            {detailView === 'tech' && <TechDetail lead={lead!} c={c} isDark={isDark} />}
+            {detailView === 'shipping' && <ShippingDetail lead={lead!} c={c} isDark={isDark} />}
           </>
         ) : (
           <>
@@ -9381,7 +10786,7 @@ export default function LeadDetailPage() {
             {activeTab === 'outbound' && (
               <OutboundTab lead={lead!} c={c} isDark={isDark} onLeadRefresh={() => loadLead({ showSpinner: false })} />
             )}
-            {activeTab === 'bot' && <ChatTab lead={lead!} c={c} isDark={isDark} />}
+            {activeTab === 'bot' && <ChatTab key={lead!.id} lead={lead!} c={c} isDark={isDark} />}
           </>
         )}
       </div>

@@ -1,0 +1,114 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - navigation [ref=e4]:
+        - link "onvero" [ref=e5] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e6]:
+          - link "Produkt" [ref=e7] [cursor=pointer]:
+            - /url: "#produkt"
+          - link "Lösungen" [ref=e8] [cursor=pointer]:
+            - /url: "#loesungen"
+          - link "Preise" [ref=e9] [cursor=pointer]:
+            - /url: "#preise"
+        - generic [ref=e10]:
+          - link "Kontakt" [ref=e11] [cursor=pointer]:
+            - /url: "#kontakt"
+          - link "Demo anfragen" [ref=e12] [cursor=pointer]:
+            - /url: "#demo"
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - paragraph [ref=e17]: KI-Infrastruktur für den Mittelstand
+          - heading "Turning Fragmented Business Operations into an AI-Powered Orchestra" [level=1] [ref=e18]
+          - paragraph [ref=e19]: We build AI-powered business systems tailored to your industry, your processes, and your customers — ready from day one.
+          - generic [ref=e20]:
+            - link "Demo anfragen" [ref=e21] [cursor=pointer]:
+              - /url: "#demo"
+              - generic [ref=e22]: Demo anfragen
+            - link "Mehr erfahren" [ref=e23] [cursor=pointer]:
+              - /url: "#mehr"
+              - generic [ref=e24]: Mehr erfahren
+        - img [ref=e26]
+        - generic [ref=e27]:
+          - paragraph [ref=e28]: "Trusted by teams at:"
+          - list [ref=e29]:
+            - listitem [ref=e30]: n8n
+            - listitem [ref=e31]: Figma
+            - listitem [ref=e32]: Anthropic
+            - listitem [ref=e33]: OpenAI
+            - listitem [ref=e34]: Cursor
+            - listitem [ref=e35]: Supabase
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - paragraph [ref=e39]: Unsere Leistungen
+        - heading "Alles, was Sie für Ihr Geschäft brauchen" [level=2] [ref=e40]
+        - paragraph [ref=e41]: Vom Lead bis zum Kunden — wir bauen das System, das zu Ihrem Unternehmen passt.
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - heading "Generieren Sie Leads automatisch mit KI" [level=3] [ref=e45]
+          - heading "Personalisieren Sie Kundenkommunikation auf neuem Level" [level=3] [ref=e48]
+        - generic [ref=e50]:
+          - heading "Verbinden Sie alle Ihre Tools nahtlos" [level=3] [ref=e52]
+          - heading "Verwalten Sie Daten zentral und DSGVO-konform" [level=3] [ref=e55]
+          - heading "Skalieren Sie ohne mehr Personal einzustellen" [level=3] [ref=e58]
+        - heading "Wir bauen, betreuen und entwickeln gemeinsam weiter" [level=3] [ref=e62]
+    - generic [ref=e65]:
+      - heading "AI-First Architektur für jedes Unternehmen. Spezialisierte AI-Agents, die parallel arbeiten, voneinander lernen und sich dynamisch an Ihre Aufgaben anpassen." [level=2] [ref=e67]
+      - generic [ref=e68]:
+        - img [ref=e69]
+        - generic [ref=e70]:
+          - img
+          - generic [ref=e72]:
+            - generic [ref=e74]:
+              - paragraph [ref=e75]: Lead Scout
+              - paragraph [ref=e76]: Prospecting Agent
+              - generic [ref=e77]:
+                - generic [ref=e78]: Live
+                - generic [ref=e79]: Database · Enrichment
+            - img [ref=e80]
+          - generic [ref=e84]:
+            - generic [ref=e86]:
+              - paragraph [ref=e87]: Score Engine
+              - paragraph [ref=e88]: Qualification Agent
+              - generic [ref=e89]:
+                - generic [ref=e90]: Auto
+                - generic [ref=e91]: Firecrawl · Vector DB
+            - img [ref=e92]
+          - generic [ref=e96]:
+            - generic [ref=e98]:
+              - paragraph [ref=e99]: Outreach Writer
+              - paragraph [ref=e100]: Email Agent
+              - generic [ref=e101]:
+                - generic [ref=e102]: AI
+                - generic [ref=e103]: Resend · Templates
+            - img [ref=e104]
+          - generic [ref=e108]:
+            - generic [ref=e110]:
+              - paragraph [ref=e111]: Business Agent
+              - paragraph [ref=e112]: Orchestrator
+              - generic [ref=e113]:
+                - generic [ref=e114]: Core
+                - generic [ref=e115]: Router · Memory
+            - img [ref=e116]
+          - link "Mehr erfahren" [ref=e119] [cursor=pointer]:
+            - /url: "#mehr"
+    - generic [ref=e121]:
+      - heading "Wir strukturieren deine Daten" [level=2] [ref=e122]:
+        - text: Wir strukturieren
+        - text: deine Daten
+      - generic [ref=e124]:
+        - generic [ref=e125]:
+          - paragraph [ref=e126]: 500+
+          - paragraph [ref=e127]: Stunden Recherche pro Monat eingespart
+        - generic [ref=e128]:
+          - paragraph [ref=e129]: 3×
+          - paragraph [ref=e130]: höhere Conversion-Rate vs. manuelles Outbound
+        - generic [ref=e131]:
+          - paragraph [ref=e132]: 99,9 %
+          - paragraph [ref=e133]: verfügbar — DSGVO-konform in Frankfurt gehostet
+        - generic [ref=e134]:
+          - paragraph [ref=e135]: 100+
+          - paragraph [ref=e136]: integrierte Tools, APIs und Datenquellen
+  - button "Open Next.js Dev Tools" [ref=e144] [cursor=pointer]:
+    - img [ref=e145]
+  - alert [ref=e148]

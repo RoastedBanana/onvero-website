@@ -1,0 +1,190 @@
+[  174402ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  174417ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  174537ms] [LOG] [Fast Refresh] done in 101ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  174648ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  174809ms] [LOG] [Fast Refresh] done in 262ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  174911ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  175038ms] [LOG] [Fast Refresh] done in 228ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  175104ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  175121ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  175164ms] Error: Switched to client rendering because the server rendering errored:
+
+Search is not defined
+    at module evaluation (/Users/janfahlbusch/Desktop/Onveo_website_new/apps/sales/.next/dev/server/chunks/ssr/_06t5dqz._.js:71:15)
+    at /Users/janfahlbusch/Desktop/Onveo_website_new/apps/sales/.next/dev/server/chunks/ssr/[turbopack]_runtime.js:1291:27
+    at runWithHooks (/Users/janfahlbusch/Desktop/Onveo_website_new/apps/sales/.next/dev/server/chunks/ssr/[turbopack]_runtime.js:1554:9)
+    at instantiateModuleShared (/Users/janfahlbusch/Desktop/Onveo_website_new/apps/sales/.next/dev/server/chunks/ssr/[turbopack]_runtime.js:1289:9)
+    at instantiateModule (/Users/janfahlbusch/Desktop/Onveo_website_new/apps/sales/.next/dev/server/chunks/ssr/[turbopack]_runtime.js:1557:23)
+    at getOrInstantiateModuleFromParent (/Users/janfahlbusch/Desktop/Onveo_website_new/apps/sales/.next/dev/server/chunks/ssr/[turbopack]_runtime.js:1593:23)
+    at Context.commonJsRequire [as r] (/Users/janfahlbusch/Desktop/Onveo_website_new/apps/sales/.next/dev/server/chunks/ssr/[turbopack]_runtime.js:302:12)
+    at Object.require (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:69:48242)
+    at globalThis.__next_require__ (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:69:49109)
+    at requireModule (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:340808)
+    at initializeModuleChunk (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:381296)
+    at readChunk (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:373365)
+    at getComponentNameFromType (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:78452)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201552)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderChildrenArray (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:207654)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:202417)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:181773)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderChildrenArray (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:207654)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:202417)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:182673)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at finishFunctionComponent (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:119349)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:134520)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:194974)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderChildrenArray (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:207654)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:202417)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:182673)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:193338)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at finishFunctionComponent (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:119349)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:134520)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+[  175164ms] ReferenceError: Search is not defined
+    at module evaluation (http://localhost:3001/_next/static/chunks/_0hjqp-9._.js:78:15)
+    at http://localhost:3001/_next/static/chunks/turbopack-apps_sales_0ucdpd0._.js:1307:27
+    at runModuleExecutionHooks (http://localhost:3001/_next/static/chunks/turbopack-apps_sales_0ucdpd0._.js:1636:13)
+    at instantiateModuleShared (http://localhost:3001/_next/static/chunks/turbopack-apps_sales_0ucdpd0._.js:1305:9)
+    at instantiateModule (http://localhost:3001/_next/static/chunks/turbopack-apps_sales_0ucdpd0._.js:1621:12)
+    at getOrInstantiateModuleFromParent (http://localhost:3001/_next/static/chunks/turbopack-apps_sales_0ucdpd0._.js:1604:12)
+    at DevContext.commonJsRequire [as r] (http://localhost:3001/_next/static/chunks/turbopack-apps_sales_0ucdpd0._.js:299:12)
+    at requireModule (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_0p3wegg._.js:95:84)
+    at initializeModuleChunk (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_0p3wegg._.js:1110:25)
+    at readChunk (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_0p3wegg._.js:846:17)
+    at Object.react_stack_bottom_frame (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:15101:20)
+    at resolveLazy (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3866:20)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6665:77)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9555:97)
+    at workLoopConcurrentByScheduler (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9551:58)
+    at renderRootConcurrent (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9534:71)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_0rpq4pf._.js:2647:64)
+[  175249ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  175251ms] [WARNING] Ignoring Event: localhost @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  175619ms] [LOG] [Fast Refresh] done in 472ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  187735ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  187736ms] [WARNING] [Fast Refresh] performing full reload
+
+Fast Refresh will perform a full reload when you edit a file that's imported by modules outside of the React rendering tree.
+You might have a file which exports a React component but also exports a value that is imported by a non-React component file.
+Consider migrating the non-React component export to a separate file and importing it into both files.
+
+It is also possible the parent component of the component you edited is a class component, which disables Fast Refresh.
+Fast Refresh requires at least one parent function component in your React tree. @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  187737ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  187788ms] [LOG] [Fast Refresh] done in 37ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  187895ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  187974ms] [LOG] [Fast Refresh] done in 180ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  188200ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  188256ms] [LOG] [Fast Refresh] done in 156ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  188291ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  188301ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  188410ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  188831ms] [LOG] [Fast Refresh] done in 520ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  189332ms] Error: Switched to client rendering because the server rendering errored:
+
+Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:195276)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:181773)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderChildrenArray (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:207654)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:202417)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:181773)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at finishFunctionComponent (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:119349)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:134520)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:181773)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderChildrenArray (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:207654)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:202417)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderChildrenArray (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:207654)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:202417)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:181773)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderChildrenArray (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:207654)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:202417)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:181773)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderChildrenArray (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:207654)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:202417)
+    at renderNodeDestructive (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201175)
+    at renderNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:213093)
+    at renderElement (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:181773)
+    at retryNode (/Users/janfahlbusch/Desktop/Onveo_website_new/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js:2:201940)
+[  189301ms] [WARNING] Ignoring Event: localhost @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  189333ms] Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+Check the render method of `AgentCard`.
+    at createFiberFromTypeAndProps (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3167:32)
+    at createFiberFromElement (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3178:16)
+    at reconcileChildFibersImpl (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:4206:421)
+    at http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:4261:39
+    at reconcileChildren (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:5898:51)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6758:1573)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9555:97)
+    at workLoopSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9449:40)
+    at renderRootSync (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9098:47)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_0rpq4pf._.js:2647:64)
+[  189398ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  189851ms] [LOG] [Fast Refresh] done in 553ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  199690ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  199693ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  199837ms] [LOG] [Fast Refresh] done in 82ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  200012ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  200024ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  200038ms] [WARNING] Ignoring Event: localhost @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431

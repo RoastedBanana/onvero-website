@@ -37,6 +37,13 @@ Nur wirklich Neues — kein Code, keine git-History, keine temporären Tasks.
 - `/apps/marketing` → onvero.de
 - `/packages/ui`, `/packages/lib`
 
+## Branch-Workflow (Vercel Production = `main`)
+- **`main`** = Kunden-Beta. Nur stabile Stände. Jeder Push deployed auf sales.onvero.de.
+- **`dev`** = Weiterentwicklung. Hier wird täglich gearbeitet. Vercel erstellt automatisch Preview-Deployments.
+- **Release an Kunde** = `dev` → `main` mergen, dann pushen.
+- **Niemals direkt auf `main` arbeiten/pushen** (außer Hotfix für Kunde).
+- Feature-Branches gehen von `dev` aus und werden nach `dev` zurückgemergt.
+
 ## Arbeitsweise
 - Production-ready — keine Placeholder, keine TODOs
 - Direct file edits — nicht nur Snippets zeigen

@@ -133,10 +133,29 @@ const ENRICH_SOURCES: string[] = [
 
 type DeepStep = 'setup' | 'scoring';
 
-type DeepResult = DiscoveryResult & { score?: number; url?: string };
+type DeepResult = DiscoveryResult & {
+  id?: string; // potential_leads.id once the lead is persisted
+  score?: number;
+  url?: string;
+  logoUrl?: string;
+  linkedinUrl?: string;
+  phone?: string;
+  revenueCents?: number;
+  foundedYear?: number;
+  gescored?: boolean;
+};
+
+function formatRevenue(cents: number): string {
+  const eur = cents / 100;
+  if (eur >= 1_000_000_000) return `${(eur / 1_000_000_000).toFixed(1)} Mrd. €`;
+  if (eur >= 1_000_000) return `${(eur / 1_000_000).toFixed(1)} Mio. €`;
+  if (eur >= 1_000) return `${Math.round(eur / 1_000)} Tsd. €`;
+  return `${Math.round(eur)} €`;
+}
 
 function deepLeadKey(r: DeepResult, i: number): string {
-  return r.url || `${r.name}__${r.city}__${i}`;
+  // Always include the index so duplicate URLs/names can't collide.
+  return `${r.url || r.name || 'lead'}__${i}`;
 }
 
 function normalizeUrl(u: string | undefined | null): string | null {
@@ -174,6 +193,9 @@ type ChatSession = {
   deepPreScoring?: boolean;
   deepLaunching?: boolean;
   deepLaunched?: boolean;
+  discoveryRunId?: string;
+  discoveryRunLoaded?: boolean;
+  discoveryRunLoading?: boolean;
 };
 
 const DEMO_RESPONSES: { keywords: string[]; reply: string; results: DiscoveryResult[] }[] = [
@@ -310,6 +332,61 @@ function deepFindUrl(obj: unknown, depth = 0): string | null {
   return null;
 }
 
+interface ApiPotentialLead {
+  id: string;
+  company_name: string;
+  city: string | null;
+  country: string | null;
+  website_url: string | null;
+  linkedin_url: string | null;
+  employee_count: number | null;
+  phone: string | null;
+  revenue_cents: number | null;
+  incorporated_at: string | null;
+  discovery_source: string | null;
+  gescored: boolean | null;
+  raw_data: Record<string, unknown> | null;
+  created_at: string;
+}
+
+function apiLeadToDeepResult(l: ApiPotentialLead): DeepResult {
+  const raw = (l.raw_data ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v));
+  const industry = str(raw.industry ?? raw.branche ?? raw.sector ?? '');
+  const source = str(l.discovery_source ?? raw.source ?? raw.quelle ?? 'Web');
+  const scoreRaw = raw.score ?? raw.fit_score ?? raw.lead_score;
+  const score =
+    typeof scoreRaw === 'number'
+      ? Math.round(scoreRaw)
+      : typeof scoreRaw === 'string' && scoreRaw.length > 0
+        ? Math.round(Number(scoreRaw))
+        : undefined;
+  const logoRaw = str(raw.logo_url ?? raw.logo ?? '');
+  const logoUrl = logoRaw ? normalizeUrl(logoRaw) ?? undefined : undefined;
+  const incISO = l.incorporated_at ?? str(raw.incorporated_at);
+  let foundedYear: number | undefined;
+  if (incISO) {
+    const d = new Date(incISO);
+    if (!Number.isNaN(d.getTime())) foundedYear = d.getFullYear();
+  }
+  return {
+    id: l.id,
+    name: l.company_name,
+    city: l.city ?? str(raw.city) ?? '',
+    industry,
+    employees: l.employee_count != null ? String(l.employee_count) : str(raw.employees),
+    source,
+    score,
+    url: l.website_url ?? undefined,
+    linkedinUrl: l.linkedin_url ?? undefined,
+    logoUrl,
+    phone: l.phone ?? undefined,
+    revenueCents: l.revenue_cents ?? undefined,
+    foundedYear,
+    gescored: !!l.gescored,
+  };
+}
+
 // ─── Webhook response → DeepResult[] (flexible parser) ──────────────────────
 function extractDeepLeads(payload: unknown): DeepResult[] {
   if (!payload) return [];
@@ -338,13 +415,17 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
     const city = str(r.city ?? r.location ?? r.standort ?? r.ort ?? '');
     const industry = str(r.industry ?? r.branche ?? r.sector ?? '');
     const employees = str(r.employees ?? r.employee_count ?? r.mitarbeiter ?? r.size ?? '');
-    const source = str(r.source ?? r.quelle ?? 'Web');
+    const source = str(
+      r.source ?? r.quelle ?? r.discovery_source ?? 'Web',
+    );
     const urlRaw = str(
       r.url ??
         r.website ??
+        r.website_url ??
         r.homepage ??
         r.link ??
         r.domain ??
+        r.apollo_domain ??
         r.web ??
         r.company_url ??
         r.firma_url ??
@@ -357,6 +438,24 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
     // Fallback: deep-scan the lead object for any URL-like string.
     const fallback = urlRaw ? null : deepFindUrl(r);
     const url = normalizeUrl(urlRaw || fallback) ?? undefined;
+    const linkedinRaw = str(r.linkedin_url ?? r.linkedin ?? '');
+    const linkedinUrl = linkedinRaw ? normalizeUrl(linkedinRaw) ?? undefined : undefined;
+    const logoRaw = str(r.logo_url ?? r.logo ?? '');
+    const logoUrl = logoRaw ? normalizeUrl(logoRaw) ?? undefined : undefined;
+    const phone = str(r.phone ?? r.telefon ?? '').trim() || undefined;
+    const revenueRaw = r.revenue_cents ?? r.revenue;
+    const revenueCents =
+      typeof revenueRaw === 'number' && Number.isFinite(revenueRaw)
+        ? Math.round(revenueRaw)
+        : typeof revenueRaw === 'string' && revenueRaw.length > 0
+          ? Math.round(Number(revenueRaw))
+          : undefined;
+    const incRaw = str(r.incorporated_at ?? r.founded ?? r.founded_at ?? '');
+    let foundedYear: number | undefined;
+    if (incRaw) {
+      const d = new Date(incRaw);
+      if (!Number.isNaN(d.getTime())) foundedYear = d.getFullYear();
+    }
     const scoreRaw = r.score ?? r.fit_score ?? r.lead_score;
     const score =
       typeof scoreRaw === 'number'
@@ -364,7 +463,20 @@ function extractDeepLeads(payload: unknown): DeepResult[] {
         : typeof scoreRaw === 'string' && scoreRaw.length > 0
           ? Math.round(Number(scoreRaw))
           : undefined;
-    return { name, city, industry, employees, source, score, url };
+    return {
+      name,
+      city,
+      industry,
+      employees,
+      source,
+      score,
+      url,
+      logoUrl,
+      linkedinUrl,
+      phone,
+      revenueCents,
+      foundedYear,
+    };
   });
 }
 
@@ -525,6 +637,72 @@ const GROUP_LABELS: Record<SessionGroup, string> = {
   'Diese Woche': 'DIESE WOCHE',
   Früher: 'FRÜHER',
 };
+
+function groupForDate(d: Date): SessionGroup {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday);
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfWeek.getDate() - 7);
+  if (d >= startOfToday) return 'Heute';
+  if (d >= startOfYesterday) return 'Gestern';
+  if (d >= startOfWeek) return 'Diese Woche';
+  return 'Früher';
+}
+
+function timeAgo(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'gerade eben';
+  if (m < 60) return `vor ${m} Min.`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `vor ${h} Std.`;
+  const days = Math.floor(h / 24);
+  return `vor ${days} Tag${days === 1 ? '' : 'en'}`;
+}
+
+interface DiscoveryRunApi {
+  id: string;
+  name: string;
+  status: string;
+  lead_count: number;
+  setup: {
+    angebots_profile_id?: string | null;
+    recherche_fokus?: string;
+    weitere_queries?: string[];
+    kriterien?: string[];
+    orte?: string[];
+  } | null;
+  angebots_profile_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function runToSession(run: DiscoveryRunApi): ChatSession {
+  const setup = run.setup ?? {};
+  return {
+    id: `run_${run.id}`,
+    title: run.name || 'Neue Suche',
+    preview: run.lead_count > 0 ? `${run.lead_count} Leads` : 'Keine Leads',
+    time: timeAgo(run.created_at),
+    group: groupForDate(new Date(run.created_at)),
+    messages: [],
+    sources: new Set(),
+    mode: 'deep',
+    discoveryRunId: run.id,
+    discoveryRunLoaded: false,
+    deepStep: 'setup',
+    deepSetup: {
+      angebotsProfileId: run.angebots_profile_id ?? setup.angebots_profile_id ?? null,
+      rechercheFokus: setup.recherche_fokus ?? '',
+      weitereQueries: setup.weitere_queries ?? [],
+      kriterien: setup.kriterien ?? [],
+      orte: setup.orte ?? [],
+    },
+  };
+}
 
 // ─── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -1652,6 +1830,118 @@ function BulkEmptyState({ c, isDark }: { c: ReturnType<typeof colors>; isDark: b
   );
 }
 
+function LeadListSkeleton({ isDark }: { isDark: boolean }) {
+  const base = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+  const highlight = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.09)';
+  const shimmer = `linear-gradient(90deg, ${base} 0px, ${highlight} 80px, ${base} 160px)`;
+  return (
+    <div style={{ padding: '4px 0' }}>
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const meta1 = ['38%', '52%', '44%', '60%', '36%', '48%'][i];
+        const meta2 = ['64%', '48%', '70%', '42%', '58%', '54%'][i];
+        return (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 14px',
+              background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.55)',
+              borderRadius: 11,
+              border: isDark
+                ? '1px solid rgba(255,255,255,0.07)'
+                : '1px solid rgba(255,255,255,0.6)',
+              marginBottom: 6,
+            }}
+          >
+            <div
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 4,
+                background: shimmer,
+                backgroundSize: '200px 100%',
+                animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.08}s`,
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 9,
+                background: shimmer,
+                backgroundSize: '200px 100%',
+                animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.08 + 0.05}s`,
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}
+            >
+              <div
+                style={{
+                  height: 12,
+                  width: meta1,
+                  borderRadius: 4,
+                  background: shimmer,
+                  backgroundSize: '200px 100%',
+                  animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                  animationDelay: `${i * 0.08 + 0.1}s`,
+                }}
+              />
+              <div
+                style={{
+                  height: 9,
+                  width: meta2,
+                  borderRadius: 4,
+                  background: shimmer,
+                  backgroundSize: '200px 100%',
+                  animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                  animationDelay: `${i * 0.08 + 0.15}s`,
+                }}
+              />
+            </div>
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: shimmer,
+                backgroundSize: '200px 100%',
+                animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.08 + 0.2}s`,
+                flexShrink: 0,
+              }}
+            />
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 8,
+                background: shimmer,
+                backgroundSize: '200px 100%',
+                animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.08 + 0.25}s`,
+                flexShrink: 0,
+              }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function BulkLoadingState({ c, isDark }: { c: ReturnType<typeof colors>; isDark: boolean }) {
   return (
     <div style={{ padding: '4px 0' }}>
@@ -1963,6 +2253,7 @@ function DeepListeCard({
   results,
   generating,
   preScoring,
+  loadingFromDb,
   selectedKeys,
   onToggleSelect,
   onToggleAll,
@@ -1972,6 +2263,7 @@ function DeepListeCard({
   results: DeepResult[] | undefined;
   generating: boolean;
   preScoring: boolean;
+  loadingFromDb: boolean;
   selectedKeys: string[];
   onToggleSelect: (key: string) => void;
   onToggleAll: () => void;
@@ -2024,7 +2316,9 @@ function DeepListeCard({
         </div>
       </div>
       <div style={{ flex: 1, position: 'relative', padding: '14px 14px', overflowY: 'auto', minHeight: 0 }}>
-        {generating ? (
+        {loadingFromDb ? (
+          <LeadListSkeleton isDark={isDark} />
+        ) : generating ? (
           <BulkLoadingState c={c} isDark={isDark} />
         ) : hasResults ? (
           <AnimatePresence initial={false}>
@@ -2060,6 +2354,67 @@ function DeepListeCard({
   );
 }
 
+function CompanyAvatar({
+  name,
+  logoUrl,
+  accent,
+  isDark,
+}: {
+  name: string;
+  logoUrl?: string;
+  accent: string;
+  isDark: boolean;
+}) {
+  const [errored, setErrored] = useState(false);
+  const initials = name.replace(/[^a-zA-Z0-9]/g, '').slice(0, 2).toUpperCase() || '·';
+  if (logoUrl && !errored) {
+    return (
+      <div
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 9,
+          flexShrink: 0,
+          background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logoUrl}
+          alt={name}
+          loading="lazy"
+          onError={() => setErrored(true)}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: 9,
+        background: accent + '14',
+        color: accent,
+        fontWeight: 800,
+        fontSize: 11,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
+
 function DeepResultCard({
   r,
   c,
@@ -2075,10 +2430,11 @@ function DeepResultCard({
   selected: boolean;
   onToggle: () => void;
 }) {
-  const sourceColor = r.source === 'LinkedIn' ? '#10B981' : r.source === 'Web' ? '#F97316' : '#EF4444';
   const url = r.url;
+  const isScored = !!r.gescored;
+  const interactionDisabled = preScoring || isScored;
   const handleRowClick = (e: React.MouseEvent) => {
-    if (preScoring) return;
+    if (interactionDisabled) return;
     // Don't toggle if the click came from the website button or the checkbox.
     const target = e.target as HTMLElement;
     if (target.closest('[data-no-toggle]')) return;
@@ -2092,58 +2448,55 @@ function DeepResultCard({
         alignItems: 'center',
         gap: 12,
         padding: '11px 14px',
-        background: selected
-          ? c.accent + (isDark ? '1c' : '12')
-          : isDark
-            ? 'rgba(255,255,255,0.05)'
-            : 'rgba(255,255,255,0.62)',
+        background: isScored
+          ? isDark
+            ? 'rgba(255,255,255,0.02)'
+            : 'rgba(0,0,0,0.025)'
+          : selected
+            ? c.accent + (isDark ? '1c' : '12')
+            : isDark
+              ? 'rgba(255,255,255,0.05)'
+              : 'rgba(255,255,255,0.62)',
         borderRadius: 11,
-        border: selected
-          ? `1px solid ${c.accent}55`
-          : isDark
-            ? '1px solid rgba(255,255,255,0.09)'
-            : '1px solid rgba(255,255,255,0.72)',
-        boxShadow: isDark ? 'none' : 'inset 1px 1px 2px rgba(255,255,255,0.55)',
+        border: isScored
+          ? isDark
+            ? '1px solid rgba(255,255,255,0.04)'
+            : '1px solid rgba(0,0,0,0.04)'
+          : selected
+            ? `1px solid ${c.accent}55`
+            : isDark
+              ? '1px solid rgba(255,255,255,0.09)'
+              : '1px solid rgba(255,255,255,0.72)',
+        boxShadow: isDark || isScored ? 'none' : 'inset 1px 1px 2px rgba(255,255,255,0.55)',
         marginBottom: 6,
-        opacity: preScoring ? 0.6 : 1,
-        filter: preScoring ? 'saturate(0.8)' : 'none',
+        opacity: isScored ? 0.5 : preScoring ? 0.6 : 1,
+        filter: preScoring ? 'saturate(0.8)' : isScored ? 'saturate(0.6)' : 'none',
         transition:
           'opacity 0.4s ease-out, filter 0.4s ease-out, background 0.15s ease, border-color 0.15s ease',
-        cursor: preScoring ? 'default' : 'pointer',
+        cursor: interactionDisabled ? 'default' : 'pointer',
       }}
     >
       <input
         data-no-toggle
         type="checkbox"
-        checked={selected}
+        checked={selected && !isScored}
         onChange={onToggle}
         onClick={(e) => e.stopPropagation()}
-        disabled={preScoring}
+        disabled={interactionDisabled}
         style={{
           width: 16,
           height: 16,
           accentColor: c.accent,
-          cursor: preScoring ? 'default' : 'pointer',
+          cursor: interactionDisabled ? 'default' : 'pointer',
           flexShrink: 0,
         }}
       />
-      <div
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 9,
-          background: c.accent + '14',
-          color: c.accent,
-          fontWeight: 800,
-          fontSize: 11,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        {r.name.slice(0, 2).toUpperCase()}
-      </div>
+      <CompanyAvatar
+        name={r.name}
+        logoUrl={r.logoUrl}
+        accent={c.accent}
+        isDark={isDark}
+      />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -2157,10 +2510,54 @@ function DeepResultCard({
         >
           {r.name}
         </div>
-        <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>
-          {[r.city, r.industry, r.employees ? `${r.employees} MA` : null].filter(Boolean).join(' · ')}
+        <div
+          style={{
+            fontSize: 11,
+            color: c.textMuted,
+            marginTop: 2,
+            display: 'flex',
+            flexWrap: 'wrap',
+            columnGap: 8,
+            rowGap: 2,
+          }}
+        >
+          {[
+            r.city,
+            r.industry,
+            r.employees ? `${r.employees} MA` : null,
+            r.revenueCents != null ? formatRevenue(r.revenueCents) : null,
+            r.foundedYear ? `gegr. ${r.foundedYear}` : null,
+            r.phone,
+          ]
+            .filter(Boolean)
+            .map((part, i) => (
+              <span key={i}>{part}</span>
+            ))}
         </div>
       </div>
+      {isScored && (
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            background: '#10B98114',
+            color: '#10B981',
+            fontSize: 10,
+            fontWeight: 800,
+            padding: '4px 8px',
+            borderRadius: 99,
+            flexShrink: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 8l3 3 7-7" />
+          </svg>
+          Gescored
+        </div>
+      )}
       {typeof r.score === 'number' && (
         <div
           style={{
@@ -2180,19 +2577,50 @@ function DeepResultCard({
           {r.score}
         </div>
       )}
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          padding: '3px 8px',
-          borderRadius: 99,
-          background: sourceColor + '18',
-          color: sourceColor,
-          flexShrink: 0,
-        }}
-      >
-        {r.source}
-      </span>
+      {r.linkedinUrl ? (
+        <a
+          data-no-toggle
+          href={r.linkedinUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="LinkedIn öffnen"
+          aria-label="LinkedIn öffnen"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 30,
+            height: 30,
+            borderRadius: 8,
+            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+            border: isDark
+              ? '1px solid rgba(255,255,255,0.10)'
+              : '1px solid rgba(0,0,0,0.08)',
+            color: c.text,
+            textDecoration: 'none',
+            flexShrink: 0,
+            cursor: 'pointer',
+            transition: 'background 120ms ease, color 120ms ease, transform 120ms ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#0A66C214';
+            e.currentTarget.style.color = '#0A66C2';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = isDark
+              ? 'rgba(255,255,255,0.06)'
+              : 'rgba(0,0,0,0.04)';
+            e.currentTarget.style.color = c.text;
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.13 1.45-2.13 2.94v5.66H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z" />
+          </svg>
+        </a>
+      ) : null}
       {url ? (
         <a
           data-no-toggle
@@ -2525,6 +2953,52 @@ function DeepPanel({
         )}
       </div>
 
+      {launched && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
+            padding: '14px 18px',
+            background: isDark ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.06)',
+            border: '1px solid rgba(16,185,129,0.22)',
+            borderRadius: 12,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: 'rgba(16,185,129,0.15)',
+              color: '#10B981',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <motion.span
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: 'linear' }}
+              style={{ display: 'inline-flex' }}
+            >
+              <SparklesIcon size={14} />
+            </motion.span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: c.text, marginBottom: 2 }}>
+              Anreicherung &amp; Scoring laufen im Hintergrund
+            </div>
+            <div style={{ fontSize: 12, color: c.textMuted, lineHeight: 1.5 }}>
+              Du kannst das Fenster schließen — sobald ein Lead fertig ist, bekommst
+              du eine Benachrichtigung. Fertige Leads werden hier ausgegraut.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Two-column body with animated swap */}
       <motion.div
         layout
@@ -2566,6 +3040,7 @@ function DeepPanel({
               results={results}
               generating={generating}
               preScoring={preScoring}
+              loadingFromDb={!!session.discoveryRunLoading}
               selectedKeys={selectedKeys}
               onToggleSelect={onToggleSelect}
               onToggleAll={onToggleAll}
@@ -2637,14 +3112,14 @@ function DeepPanel({
                   </button>
                 )}
                 <button
-                  onClick={hasResults ? () => onSetStep('scoring') : onGenerate}
-                  disabled={busy || (hasResults && selectedCount === 0)}
+                  onClick={hasResults ? onLaunch : onGenerate}
+                  disabled={busy || launching || (hasResults && selectedCount === 0)}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 8,
                     background:
-                      busy || (hasResults && selectedCount === 0)
+                      busy || launching || (hasResults && selectedCount === 0)
                         ? isDark
                           ? `${c.accent}55`
                           : '#A5B4FC'
@@ -2656,11 +3131,13 @@ function DeepPanel({
                     fontSize: 13,
                     fontWeight: 700,
                     cursor:
-                      busy || (hasResults && selectedCount === 0) ? 'not-allowed' : 'pointer',
+                      busy || launching || (hasResults && selectedCount === 0)
+                        ? 'not-allowed'
+                        : 'pointer',
                     fontFamily: 'inherit',
                     transition: 'background 150ms ease-out',
                     boxShadow:
-                      busy || (hasResults && selectedCount === 0)
+                      busy || launching || (hasResults && selectedCount === 0)
                         ? 'none'
                         : `0 6px 20px ${c.accent}38`,
                     minWidth: 110,
@@ -2694,6 +3171,19 @@ function DeepPanel({
                         <SparklesIcon size={13} />
                       </motion.span>
                       Scoring…
+                    </>
+                  ) : launching ? (
+                    <>
+                      <motion.span
+                        style={{ display: 'inline-block', width: 13, height: 13 }}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                        </svg>
+                      </motion.span>
+                      Startet…
                     </>
                   ) : hasResults ? (
                     <>
@@ -2785,20 +3275,63 @@ function ChatSidebar({
   sessions,
   activeId,
   collapsed,
+  runsLoading,
   onToggleCollapsed,
   onSelect,
   onNew,
+  onRename,
+  onDelete,
 }: {
   c: ReturnType<typeof colors>;
   isDark: boolean;
   sessions: ChatSession[];
   activeId: string;
   collapsed: boolean;
+  runsLoading: boolean;
   onToggleCollapsed: () => void;
   onSelect: (id: string) => void;
   onNew: () => void;
+  onRename: (sessionId: string, newName: string) => Promise<void> | void;
+  onDelete: (sessionId: string) => Promise<void> | void;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const close = () => setMenuOpenId(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [menuOpenId]);
+
+  function startRename(s: ChatSession) {
+    setMenuOpenId(null);
+    setRenamingId(s.id);
+    setRenameValue(s.title);
+  }
+
+  async function commitRename(s: ChatSession) {
+    const next = renameValue.trim();
+    if (next && next !== s.title) {
+      await onRename(s.id, next);
+    }
+    setRenamingId(null);
+    setRenameValue('');
+  }
+
+  // Inject shimmer keyframes once on mount — avoids rendering a <style>
+  // node inside the SSR tree which can trip hydration mismatches.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('onvero-skeleton-shimmer-style')) return;
+    const el = document.createElement('style');
+    el.id = 'onvero-skeleton-shimmer-style';
+    el.textContent =
+      '@keyframes onveroSkeletonShimmer{0%{background-position:-200px 0}100%{background-position:calc(200px + 100%) 0}}';
+    document.head.appendChild(el);
+  }, []);
 
   const hoverBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.055)';
   const activeBg = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
@@ -2937,47 +3470,253 @@ function ChatSidebar({
                 {items.map((session) => {
                   const isActive = session.id === activeId;
                   const isHovered = hoveredId === session.id;
+                  const isRenaming = renamingId === session.id;
+                  const canManage = !!session.discoveryRunId;
+                  const menuOpen = menuOpenId === session.id;
                   return (
-                    <button
+                    <div
                       key={session.id}
-                      onClick={() => onSelect(session.id)}
                       onMouseEnter={() => setHoveredId(session.id)}
                       onMouseLeave={() => setHoveredId(null)}
                       style={{
-                        width: '100%',
+                        position: 'relative',
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '0 10px',
+                        padding: '0 4px 0 10px',
                         height: 34,
                         borderRadius: 8,
-                        cursor: 'pointer',
+                        cursor: isRenaming ? 'text' : 'pointer',
                         background: isActive ? activeBg : isHovered ? hoverBg : 'transparent',
-                        border: 'none',
-                        textAlign: 'left',
-                        fontFamily: 'var(--font-inter), Inter, sans-serif',
                         transition: 'background 80ms ease-out',
-                        boxSizing: 'border-box',
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: isActive ? 600 : 400,
-                          color: isActive ? c.text : c.textSub,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          width: '100%',
-                        }}
-                      >
-                        {session.title}
-                      </span>
-                    </button>
+                      {isRenaming ? (
+                        <input
+                          autoFocus
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onBlur={() => void commitRename(session)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') void commitRename(session);
+                            if (e.key === 'Escape') {
+                              setRenamingId(null);
+                              setRenameValue('');
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: c.text,
+                            background: isDark
+                              ? 'rgba(255,255,255,0.08)'
+                              : 'rgba(0,0,0,0.04)',
+                            border: `1px solid ${
+                              isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'
+                            }`,
+                            borderRadius: 6,
+                            padding: '4px 6px',
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => onSelect(session.id)}
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              height: '100%',
+                              padding: 0,
+                              background: 'transparent',
+                              border: 'none',
+                              textAlign: 'left',
+                              fontFamily: 'inherit',
+                              cursor: 'pointer',
+                              color: 'inherit',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 13,
+                                fontWeight: isActive ? 600 : 400,
+                                color: isActive ? c.text : c.textSub,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                width: '100%',
+                              }}
+                            >
+                              {session.title}
+                            </span>
+                          </button>
+                          {canManage && (isHovered || isActive || menuOpen) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuOpenId(menuOpen ? null : session.id);
+                              }}
+                              title="Aktionen"
+                              aria-label="Aktionen"
+                              style={{
+                                width: 24,
+                                height: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 6,
+                                border: 'none',
+                                background: menuOpen ? hoverBg : 'transparent',
+                                color: c.textMuted,
+                                cursor: 'pointer',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 16 16"
+                                fill="currentColor"
+                                aria-hidden="true"
+                              >
+                                <circle cx="3" cy="8" r="1.4" />
+                                <circle cx="8" cy="8" r="1.4" />
+                                <circle cx="13" cy="8" r="1.4" />
+                              </svg>
+                            </button>
+                          )}
+                          {menuOpen && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'absolute',
+                                top: 32,
+                                right: 4,
+                                zIndex: 30,
+                                minWidth: 160,
+                                background: isDark
+                                  ? 'rgba(20,22,38,0.96)'
+                                  : 'rgba(255,255,255,0.98)',
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                                border: isDark
+                                  ? '1px solid rgba(255,255,255,0.10)'
+                                  : '1px solid rgba(0,0,0,0.08)',
+                                borderRadius: 8,
+                                padding: 4,
+                                boxShadow: isDark
+                                  ? '0 12px 32px rgba(0,0,0,0.45)'
+                                  : '0 12px 32px rgba(0,0,0,0.12)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                              }}
+                            >
+                              <button
+                                onClick={() => startRename(session)}
+                                style={{
+                                  textAlign: 'left',
+                                  padding: '7px 10px',
+                                  borderRadius: 6,
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: c.text,
+                                  fontSize: 13,
+                                  cursor: 'pointer',
+                                  fontFamily: 'inherit',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = hoverBg;
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                Umbenennen
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setMenuOpenId(null);
+                                  if (
+                                    confirm(
+                                      `Run „${session.title}" wirklich löschen? Alle Leads dieser Run gehen verloren.`,
+                                    )
+                                  ) {
+                                    void onDelete(session.id);
+                                  }
+                                }}
+                                style={{
+                                  textAlign: 'left',
+                                  padding: '7px 10px',
+                                  borderRadius: 6,
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: '#EF4444',
+                                  fontSize: 13,
+                                  cursor: 'pointer',
+                                  fontFamily: 'inherit',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = isDark
+                                    ? 'rgba(239,68,68,0.12)'
+                                    : 'rgba(239,68,68,0.08)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                Löschen
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             );
           })}
+          {runsLoading && (
+            <div style={{ paddingTop: 4 }}>
+              {[0, 1, 2, 3].map((i) => {
+                const widths = ['72%', '58%', '84%', '46%'];
+                return (
+                  <div
+                    key={`skeleton-${i}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 10px',
+                      height: 34,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: 12,
+                        width: widths[i],
+                        borderRadius: 4,
+                        background: `linear-gradient(90deg, ${
+                          isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                        } 0px, ${
+                          isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)'
+                        } 80px, ${
+                          isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+                        } 160px)`,
+                        backgroundSize: '200px 100%',
+                        animation: 'onveroSkeletonShimmer 1.4s ease-in-out infinite',
+                        animationDelay: `${i * 0.12}s`,
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </motion.aside>
@@ -3002,10 +3741,10 @@ export default function DiscoveryPage() {
       messages: [],
       sources: new Set<SourceId>(['google_maps', 'linkedin', 'web']),
     },
-    ...SEED_SESSIONS,
   ]);
   const [activeId, setActiveId] = useState<string>('__fresh_default__');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [runsLoading, setRunsLoading] = useState(true);
 
   useEffect(() => {
     try {
@@ -3014,6 +3753,32 @@ export default function DiscoveryPage() {
     } catch {
       // ignore
     }
+  }, []);
+
+  // Load persisted discovery runs as sessions.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/discovery-runs', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = (await res.json()) as { runs?: DiscoveryRunApi[] };
+        if (cancelled || !Array.isArray(json.runs)) return;
+        const runSessions = json.runs.map(runToSession);
+        setSessions((prev) => {
+          const fresh = prev.find((s) => s.id === '__fresh_default__');
+          const head: ChatSession[] = fresh ? [fresh] : [];
+          return [...head, ...runSessions];
+        });
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setRunsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function toggleSidebar() {
@@ -3083,6 +3848,107 @@ export default function DiscoveryPage() {
   const needsModePick = !hasMessages && !activeMode;
   const isBulkView = activeMode === 'bulk';
   const isDeepView = activeMode === 'deep';
+
+  // Lazy-load leads for a run session that the user selected from the sidebar.
+  // Depends on activeId so it only re-fires when the user actually switches.
+  useEffect(() => {
+    const session = sessions.find((s) => s.id === activeId);
+    if (!session) return;
+    if (!session.discoveryRunId) return;
+    if (session.discoveryRunLoaded) return;
+    if (session.discoveryRunLoading) return;
+    if (session.deepGenerating || session.deepPreScoring) return;
+    const runId = session.discoveryRunId;
+    const sessionId = session.id;
+    let cancelled = false;
+
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === sessionId ? { ...s, discoveryRunLoading: true } : s,
+      ),
+    );
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/discovery-runs/${runId}/leads`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = (await res.json()) as { leads?: ApiPotentialLead[] };
+        if (cancelled) return;
+        const results: DeepResult[] = Array.isArray(json.leads)
+          ? json.leads.map(apiLeadToDeepResult)
+          : [];
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId
+              ? {
+                  ...s,
+                  deepResults: results,
+                  deepRawResults: results,
+                  deepSelectedKeys: [],
+                  discoveryRunLoaded: true,
+                  discoveryRunLoading: false,
+                  deepStep: 'setup',
+                }
+              : s,
+          ),
+        );
+      } catch {
+        if (cancelled) return;
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId ? { ...s, discoveryRunLoading: false } : s,
+          ),
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
+
+  // When a scoring-complete notification arrives, refresh the matching run's
+  // leads silently so the row flips to "Gescored" + greyed out without a
+  // full page reload.
+  useEffect(() => {
+    function onNotif(e: Event) {
+      const detail = (e as CustomEvent).detail as
+        | { type?: string; payload?: { discovery_run_id?: string } }
+        | undefined;
+      if (!detail || detail.type !== 'lead_scoring_complete') return;
+      const runId = detail.payload?.discovery_run_id;
+      if (!runId) return;
+      const sessionId = `run_${runId}`;
+      (async () => {
+        try {
+          const res = await fetch(`/api/discovery-runs/${runId}/leads`, {
+            cache: 'no-store',
+          });
+          if (!res.ok) return;
+          const json = (await res.json()) as { leads?: ApiPotentialLead[] };
+          if (!Array.isArray(json.leads)) return;
+          const results: DeepResult[] = json.leads.map(apiLeadToDeepResult);
+          setSessions((prev) =>
+            prev.map((s) => {
+              if (s.id !== sessionId) return s;
+              // Preserve user's current selection set across refreshes.
+              return {
+                ...s,
+                deepResults: results,
+                deepRawResults: results,
+                discoveryRunLoaded: true,
+              };
+            }),
+          );
+        } catch {
+          // ignore
+        }
+      })();
+    }
+    window.addEventListener('onvero:notification-arrived', onNotif);
+    return () => window.removeEventListener('onvero:notification-arrived', onNotif);
+  }, []);
 
   function pickMode(mode: ResearchMode) {
     setSessions((prev) =>
@@ -3214,6 +4080,8 @@ export default function DiscoveryPage() {
 
     let parsed: DeepResult[] = [];
     let error: string | null = null;
+    let runId: string | null = null;
+    let runName: string | null = null;
 
     try {
       const res = await fetch('/api/generate/discovery-agent', {
@@ -3233,12 +4101,19 @@ export default function DiscoveryPage() {
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
 
-      // Debug: log the raw webhook response so we can inspect the schema
-      // when fields like URL aren't being picked up correctly.
       // eslint-disable-next-line no-console
-      console.log('[discovery-agent] raw webhook response:', json.data ?? json);
+      console.log('[discovery-agent] response:', json);
 
-      parsed = extractDeepLeads(json.data ?? json);
+      // Prefer the persisted rows (they carry the potential_lead ids we'll
+      // later need to launch enrichment). Fall back to webhook-only parsing
+      // if the server didn't return them for some reason.
+      if (Array.isArray(json.leads) && json.leads.length > 0) {
+        parsed = (json.leads as ApiPotentialLead[]).map(apiLeadToDeepResult);
+      } else {
+        parsed = extractDeepLeads(json.data ?? json);
+      }
+      runId = typeof json.discovery_run_id === 'string' ? json.discovery_run_id : null;
+      runName = typeof json.run_name === 'string' ? json.run_name : null;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Unbekannter Fehler';
     }
@@ -3278,14 +4153,20 @@ export default function DiscoveryPage() {
       ? [...parsed].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
       : parsed;
 
+    const newSessionId = runId ? `run_${runId}` : activeId;
+
     setSessions((prev) =>
       prev.map((s) =>
         s.id === activeId
           ? {
               ...s,
+              id: newSessionId,
+              title: runName ?? s.title,
               deepPreScoring: false,
               deepResults: finalResults,
               deepSelectedKeys: [],
+              discoveryRunId: runId ?? s.discoveryRunId,
+              discoveryRunLoaded: true,
               preview:
                 finalResults.length > 0
                   ? `${finalResults.length} Leads gefunden`
@@ -3294,6 +4175,10 @@ export default function DiscoveryPage() {
           : s,
       ),
     );
+
+    if (runId && newSessionId !== activeId) {
+      setActiveId(newSessionId);
+    }
   }
 
   function toggleDeepSelect(key: string) {
@@ -3333,12 +4218,70 @@ export default function DiscoveryPage() {
   async function launchDeep() {
     if (!activeSession) return;
     if (activeSession.deepLaunching || activeSession.deepLaunched) return;
-    const selectedCount = activeSession.deepSelectedKeys?.length ?? 0;
+    if (!activeSession.discoveryRunId) {
+      toast('Run noch nicht gespeichert.', 'error');
+      return;
+    }
+
+    // Map selected keys back to potential_lead.ids by walking the same
+    // (result, index) pair generateDeep / DeepResultCard use.
+    const results = activeSession.deepResults ?? [];
+    const selected = new Set(activeSession.deepSelectedKeys ?? []);
+    const potentialLeadIds: string[] = [];
+    results.forEach((r, i) => {
+      const key = deepLeadKey(r, i);
+      if (selected.has(key) && r.id) {
+        potentialLeadIds.push(r.id);
+      }
+    });
+
+    if (potentialLeadIds.length === 0) {
+      toast('Keine ausgewählten Leads mit gültiger ID.', 'error');
+      return;
+    }
+
     patchActiveSession({ deepLaunching: true });
-    toast('Anreicherung wird gestartet…', 'info');
-    await new Promise((r) => setTimeout(r, 1200));
-    patchActiveSession({ deepLaunching: false, deepLaunched: true });
-    toast(`Anreicherung gestartet — Daten werden für ${selectedCount} Leads geladen`, 'success');
+
+    try {
+      const res = await fetch(
+        `/api/discovery-runs/${activeSession.discoveryRunId}/launch`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ potential_lead_ids: potentialLeadIds }),
+        },
+      );
+      const json = await res.json().catch(() => ({}));
+      // eslint-disable-next-line no-console
+      console.log('[launch] response:', json);
+      if (!res.ok) {
+        const detail = Array.isArray(json.failed) && json.failed.length > 0
+          ? `: ${json.failed[0]?.error ?? 'Insert fehlgeschlagen'}`
+          : '';
+        throw new Error((json.error || `HTTP ${res.status}`) + detail);
+      }
+
+      const promotedCount = Array.isArray(json.promoted) ? json.promoted.length : 0;
+      const failedCount = Array.isArray(json.failed) ? json.failed.length : 0;
+      patchActiveSession({ deepLaunching: false, deepLaunched: true });
+      if (failedCount > 0) {
+        toast(
+          `${promotedCount} Leads gestartet, ${failedCount} fehlgeschlagen. Siehe Konsole.`,
+          'info',
+        );
+      } else {
+        toast(
+          `Anreicherung & Scoring laufen für ${promotedCount} Leads. Du wirst benachrichtigt, sobald sie fertig sind.`,
+          'success',
+        );
+      }
+    } catch (e) {
+      patchActiveSession({ deepLaunching: false });
+      toast(
+        `Anreicherung fehlgeschlagen: ${e instanceof Error ? e.message : 'Unbekannt'}`,
+        'error',
+      );
+    }
   }
 
   function closeDeepCampaign() {
@@ -3440,6 +4383,65 @@ export default function DiscoveryPage() {
     if (textareaRef.current) textareaRef.current.style.height = '24px';
   }
 
+  async function renameRunSession(sessionId: string, newName: string) {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session?.discoveryRunId) return;
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, title: newName } : s)),
+    );
+    try {
+      const res = await fetch(`/api/discovery-runs/${session.discoveryRunId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+    } catch (e) {
+      toast(
+        `Umbenennen fehlgeschlagen: ${e instanceof Error ? e.message : 'Unbekannt'}`,
+        'error',
+      );
+    }
+  }
+
+  async function deleteRunSession(sessionId: string) {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session?.discoveryRunId) return;
+    const wasActive = activeId === sessionId;
+    setSessions((prev) => {
+      const next = prev.filter((s) => s.id !== sessionId);
+      if (wasActive) {
+        const fallback = next[0];
+        if (fallback) {
+          setActiveId(fallback.id);
+        } else {
+          const fresh = createNewSession();
+          setActiveId(fresh.id);
+          return [fresh];
+        }
+      }
+      return next;
+    });
+    try {
+      const res = await fetch(`/api/discovery-runs/${session.discoveryRunId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+      toast('Run gelöscht', 'success');
+    } catch (e) {
+      toast(
+        `Löschen fehlgeschlagen: ${e instanceof Error ? e.message : 'Unbekannt'}`,
+        'error',
+      );
+    }
+  }
+
   async function send(text?: string) {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
@@ -3539,6 +4541,7 @@ export default function DiscoveryPage() {
         sessions={sessions}
         activeId={activeId}
         collapsed={sidebarCollapsed}
+        runsLoading={runsLoading}
         onToggleCollapsed={toggleSidebar}
         onSelect={(id) => {
           setActiveId(id);
@@ -3548,6 +4551,8 @@ export default function DiscoveryPage() {
             scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
         }}
         onNew={handleNewSession}
+        onRename={renameRunSession}
+        onDelete={deleteRunSession}
       />
 
       {/* Chat area */}

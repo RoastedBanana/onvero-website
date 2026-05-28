@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme, colors } from '../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
+import { ExportLeadsModal } from './_ExportLeadsModal';
 
 // ─── Types & Data ─────────────────────────────────────────────────────────────
 
@@ -74,6 +75,7 @@ function mapApiLead(row: any): Lead {
     employees: row.num_employees ? String(row.num_employees) : (row.estimated_employees_scraped ?? ''),
     revenue: formatRevenue(row.fin_revenue_eur, row.estimated_revenue_scraped),
     added: row.created_at ? new Date(row.created_at as string).toLocaleDateString('de-DE') : '',
+    addedTs: row.created_at ? new Date(row.created_at as string).getTime() : 0,
     signals: signals > 0 ? signals : undefined,
     enrichmentStatus: (row.enrichment_status as string) ?? 'raw',
     logo_url: (row.logo_url as string | undefined) ?? undefined,
@@ -99,6 +101,7 @@ interface Lead {
   employees: string;
   revenue: string;
   added: string;
+  addedTs: number;
   signals?: number;
   enrichmentStatus?: string;
   logo_url?: string;
@@ -853,6 +856,7 @@ export default function LeadsPage() {
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<Status | null>(null);
@@ -871,7 +875,7 @@ export default function LeadsPage() {
     .sort((a, b) => {
       if (sortBy === 'score') return b.score - a.score;
       if (sortBy === 'name') return a.name.localeCompare(b.name);
-      return b.added.localeCompare(a.added);
+      return b.addedTs - a.addedTs;
     });
 
   const hot = leads.filter((l) => l.status === 'hot').length;
@@ -961,20 +965,8 @@ export default function LeadsPage() {
     }).catch(() => {});
   }
 
-  function exportSelected() {
-    const toExport = selectedIds.size > 0 ? leads.filter((l) => selectedIds.has(l.id)) : filtered;
-    const header = 'Name,Stadt,Branche,System,Carrier,Score,Status,Hinzugefügt';
-    const rows = toExport.map((l) =>
-      [l.name, l.city, l.industry, l.system, l.carrier, l.score, l.status, l.added].join(',')
-    );
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leads-export-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  function openExportModal() {
+    setShowExportModal(true);
   }
 
   function handleDragStart(id: string) {
@@ -1393,11 +1385,11 @@ export default function LeadsPage() {
             >
               <option value="score">Score</option>
               <option value="name">Name</option>
-              <option value="added">Hinzugefügt</option>
+              <option value="added">Neueste zuerst</option>
             </select>
           )}
           <button
-            onClick={exportSelected}
+            onClick={openExportModal}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -2070,7 +2062,7 @@ export default function LeadsPage() {
 
           {/* Exportieren */}
           <button
-            onClick={exportSelected}
+            onClick={openExportModal}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -2220,6 +2212,17 @@ export default function LeadsPage() {
           onCancel={() => setShowDeleteModal(false)}
           isDark={isDark}
           c={c}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportLeadsModal
+          isDark={isDark}
+          c={c}
+          selectedIds={Array.from(selectedIds)}
+          filteredIds={filtered.map((l) => l.id)}
+          allIds={leads.map((l) => l.id)}
+          onClose={() => setShowExportModal(false)}
         />
       )}
     </div>
