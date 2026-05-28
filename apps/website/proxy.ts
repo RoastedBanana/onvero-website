@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import {
+  checkApiRateLimit,
+  rateLimitIdentity,
+  rateLimitHeaders,
+} from '@onvero/lib/api-rate-limit';
 
 // Cookie-only auth check — no Supabase network call per request.
 // Real validation happens inside API routes via supabase.auth.getUser().
@@ -29,6 +34,15 @@ export async function proxy(request: NextRequest) {
 
   // Protect non-public API routes
   if (pathname.startsWith('/api/')) {
+    // Rate limit every API route (per IP) before the auth check.
+    const rl = await checkApiRateLimit(pathname, rateLimitIdentity(request));
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Zu viele Anfragen. Bitte einen Moment warten.' },
+        { status: 429, headers: rateLimitHeaders(rl) }
+      );
+    }
+
     const PUBLIC_API = ['/api/auth/'];
     const isPublic = PUBLIC_API.some((r) => pathname.startsWith(r));
     if (!isPublic && !isLoggedIn) {

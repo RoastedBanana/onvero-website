@@ -12,6 +12,7 @@
     "./tenant-server": "./src/tenant-server.ts",
     "./csrf": "./src/csrf.ts",
     "./rate-limit": "./src/rate-limit.ts",
+    "./api-rate-limit": "./src/api-rate-limit.ts",
     "./leads-client": "./src/leads-client.ts",
     "./leads-api": "./src/leads-api.ts",
     "./mock-leads": "./src/mock-leads.ts",

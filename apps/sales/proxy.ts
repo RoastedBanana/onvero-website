@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { ensureCsrfCookie } from '@onvero/lib/csrf';
+import {
+  checkApiRateLimit,
+  rateLimitIdentity,
+  rateLimitHeaders,
+} from '@onvero/lib/api-rate-limit';
 
 // ─── FAST AUTH CHECK — cookie-only, no Supabase network calls ───────────────
 // The old approach called supabase.auth.getSession() on EVERY request which
@@ -26,10 +31,12 @@ export async function proxy(request: NextRequest) {
   // Validate cookie structure — broken/corrupted cookies are not treated as valid
   const raw = request.cookies.get('onvero_session')?.value;
   let hasOnveroSession = false;
+  let onveroUserId: string | null = null;
   if (raw) {
     try {
       const parsed = JSON.parse(decodeURIComponent(raw));
       hasOnveroSession = !!(parsed.userId && parsed.tenantId);
+      if (hasOnveroSession) onveroUserId = parsed.userId;
     } catch {
       hasOnveroSession = false;
     }
@@ -57,6 +64,16 @@ export async function proxy(request: NextRequest) {
 
   // Protect API routes (except public ones)
   if (pathname.startsWith('/api/')) {
+    // Rate limit every API route — runs before the auth check so login brute
+    // force is throttled too. Keyed per user when logged in, else per IP.
+    const rl = await checkApiRateLimit(pathname, rateLimitIdentity(request, onveroUserId));
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Zu viele Anfragen. Bitte einen Moment warten.' },
+        { status: 429, headers: rateLimitHeaders(rl) }
+      );
+    }
+
     const PUBLIC_API = [
       '/api/auth/',
       '/api/contact',
