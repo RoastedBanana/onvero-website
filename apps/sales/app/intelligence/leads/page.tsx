@@ -958,7 +958,6 @@ export default function LeadsPage() {
                         'Unternehmen',
                         'Stadt',
                         'Branche',
-                        'Shop-System',
                         'Carrier',
                         'Layer',
                         'Signale',
@@ -1058,9 +1057,6 @@ export default function LeadsPage() {
                             >
                               {lead.industry}
                             </span>
-                          </td>
-                          <td style={{ padding: '10px 14px' }}>
-                            <SystemPill name={lead.system} />
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             <CarrierPill name={lead.carrier} isDark={isDark} />
