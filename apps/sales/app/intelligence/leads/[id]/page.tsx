@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useLayoutEffect, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpIcon, Users, Calendar, Globe, Phone, Info, ChevronDown } from 'lucide-react';
+import { ArrowUpIcon, Users, Calendar, Globe, Phone, Info, ChevronDown, Trash2 } from 'lucide-react';
 import { useTheme, colors } from '../../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -1166,6 +1166,8 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
   const [focused, setFocused] = useState(false);
   const [statusText, setStatusText] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1313,6 +1315,21 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
     void runRequest(lastUser.text, loadingId);
   }
 
+  async function clearHistory() {
+    if (clearing || busy) return;
+    setClearing(true);
+    try {
+      const res = await fetch(`${RESEARCH_CHAT_ENDPOINT}?leadId=${encodeURIComponent(lead.id)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Löschen fehlgeschlagen');
+      setMsgs([]);
+      setConfirmClear(false);
+    } catch {
+      /* keep the conversation on failure so nothing is silently lost */
+    } finally {
+      setClearing(false);
+    }
+  }
+
   const hasMessages = msgs.length > 0;
 
   const inputCard: React.CSSProperties = {
@@ -1335,6 +1352,79 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {/* Header: clear history */}
+      {hasMessages && !loadingHistory && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            gap: 8,
+            padding: '8px 16px 0',
+            flexShrink: 0,
+          }}
+        >
+          {confirmClear ? (
+            <>
+              <span style={{ fontSize: 12, color: c.textMuted }}>Verlauf wirklich löschen?</span>
+              <button
+                onClick={clearHistory}
+                disabled={clearing}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: clearing ? 'default' : 'pointer',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: '#ef4444',
+                  fontFamily: 'inherit',
+                  padding: '4px 6px',
+                }}
+              >
+                {clearing ? 'Lösche…' : 'Löschen'}
+              </button>
+              <button
+                onClick={() => setConfirmClear(false)}
+                disabled={clearing}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: c.textMuted,
+                  fontFamily: 'inherit',
+                  padding: '4px 6px',
+                }}
+              >
+                Abbrechen
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirmClear(true)}
+              disabled={busy}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                background: 'none',
+                border: 'none',
+                cursor: busy ? 'default' : 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                color: c.textMuted,
+                fontFamily: 'inherit',
+                padding: '4px 6px',
+                opacity: busy ? 0.5 : 1,
+              }}
+            >
+              <Trash2 size={13} />
+              Verlauf löschen
+            </button>
+          )}
+        </div>
+      )}
       {/* Message area */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '0 0 8px', minHeight: 0 }}>
         {loadingHistory && !hasMessages && (

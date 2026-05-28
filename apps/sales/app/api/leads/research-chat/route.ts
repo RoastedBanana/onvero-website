@@ -48,6 +48,29 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ messages: data ?? [] });
 }
 
+// ─── Clear the whole conversation (UI transcript + agent memory + status) ─────
+export async function DELETE(req: NextRequest) {
+  const ctx = await getSessionContext();
+  if (!ctx) return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+
+  const leadId = new URL(req.url).searchParams.get('leadId')?.trim();
+  if (!leadId) return NextResponse.json({ error: 'leadId erforderlich' }, { status: 400 });
+
+  const sessionId = sessionIdFor(leadId, ctx.userId);
+  const admin = getAdminClient();
+
+  const [transcript, memory, status] = await Promise.all([
+    admin.from('chat_histories').delete().eq('session_id', sessionId).eq('user_id', ctx.userId),
+    admin.from('n8n_chat_histories').delete().eq('session_id', sessionId),
+    admin.from('lead_chat_status').delete().eq('session_id', sessionId),
+  ]);
+
+  const failure = transcript.error || memory.error || status.error;
+  if (failure) return NextResponse.json({ error: failure.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}
+
 // ─── Send a message to the research agent ────────────────────────────────────
 export async function POST(req: NextRequest) {
   const ctx = await getSessionContext();
