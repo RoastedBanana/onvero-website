@@ -352,18 +352,29 @@ interface LeadDetail {
   businessModel?: string;
   // Web analysis
   web_analysis_summary?: string;
+  web_company_pitch?: string;
   web_value_proposition?: string;
+  web_target_market?: string;
+  web_industry_position?: string;
+  web_core_services?: string[];
+  web_tech_stack?: string[];
+  web_languages?: string[];
+  web_certifications?: string[];
+  web_memberships?: string[];
+  web_partnerships?: string[];
   web_has_careers_page?: boolean;
   web_has_shop?: boolean;
   web_open_positions_count?: number;
-  web_memberships?: string[];
-  web_certifications?: string[];
-  web_partnerships?: string[];
-  web_target_market?: string;
-  web_industry_position?: string;
+  web_page_count?: number;
+  web_data_confidence?: number;
+  web_analyzed_at?: string;
+  web_communication_style?: { tone?: string; language?: string; formality?: string; key_phrases?: string[] };
   web_buying_signals?: { signal: string; evidence?: string; priority?: string; source_url?: string }[];
   web_outreach_hooks?: { hook: string; source_page?: string; suggested_opener?: string }[];
   web_recent_news?: { headline: string; source_url?: string; date_approx?: string; significance?: string }[];
+  web_opportunity_flags?: { flag: string; evidence?: string; source?: string; url?: string }[];
+  web_risk_flags?: { flag: string; evidence?: string; source?: string; url?: string; severity?: string }[];
+  web_sources_used?: { url?: string; source?: string; subtype?: string; raw_source_id?: string }[];
 }
 
 // ─── DB mapper ───────────────────────────────────────────────────────────────
@@ -824,15 +835,26 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
     registeredSeat: d.registered_seat as string | undefined,
     businessModel: d.business_model as string | undefined,
     web_analysis_summary: d.web_analysis_summary as string | undefined,
+    web_company_pitch: d.web_company_pitch as string | undefined,
     web_value_proposition: d.web_value_proposition as string | undefined,
+    web_target_market: d.web_target_market as string | undefined,
+    web_industry_position: d.web_industry_position as string | undefined,
+    web_core_services: Array.isArray(d.web_core_services) ? (d.web_core_services as string[]) : undefined,
+    web_tech_stack: Array.isArray(d.web_tech_stack) ? (d.web_tech_stack as string[]) : undefined,
+    web_languages: Array.isArray(d.web_languages) ? (d.web_languages as string[]) : undefined,
+    web_certifications: Array.isArray(d.web_certifications) ? (d.web_certifications as string[]) : undefined,
+    web_memberships: Array.isArray(d.web_memberships) ? (d.web_memberships as string[]) : undefined,
+    web_partnerships: Array.isArray(d.web_partnerships) ? (d.web_partnerships as string[]) : undefined,
     web_has_careers_page: d.web_has_careers_page as boolean | undefined,
     web_has_shop: d.web_has_shop as boolean | undefined,
     web_open_positions_count: d.web_open_positions_count as number | undefined,
-    web_memberships: Array.isArray(d.web_memberships) ? (d.web_memberships as string[]) : undefined,
-    web_certifications: Array.isArray(d.web_certifications) ? (d.web_certifications as string[]) : undefined,
-    web_partnerships: Array.isArray(d.web_partnerships) ? (d.web_partnerships as string[]) : undefined,
-    web_target_market: d.web_target_market as string | undefined,
-    web_industry_position: d.web_industry_position as string | undefined,
+    web_page_count: d.web_page_count as number | undefined,
+    web_data_confidence: d.web_data_confidence as number | undefined,
+    web_analyzed_at: d.web_analyzed_at as string | undefined,
+    web_communication_style:
+      d.web_communication_style && typeof d.web_communication_style === 'object'
+        ? (d.web_communication_style as { tone?: string; language?: string; formality?: string; key_phrases?: string[] })
+        : undefined,
     web_buying_signals: Array.isArray(d.web_buying_signals)
       ? (d.web_buying_signals as { signal: string; evidence?: string; priority?: string; source_url?: string }[])
       : undefined,
@@ -841,6 +863,15 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
       : undefined,
     web_recent_news: Array.isArray(d.web_recent_news)
       ? (d.web_recent_news as { headline: string; source_url?: string; date_approx?: string; significance?: string }[])
+      : undefined,
+    web_opportunity_flags: Array.isArray(d.web_opportunity_flags)
+      ? (d.web_opportunity_flags as { flag: string; evidence?: string; source?: string; url?: string }[])
+      : undefined,
+    web_risk_flags: Array.isArray(d.web_risk_flags)
+      ? (d.web_risk_flags as { flag: string; evidence?: string; source?: string; url?: string; severity?: string }[])
+      : undefined,
+    web_sources_used: Array.isArray(d.web_sources_used)
+      ? (d.web_sources_used as { url?: string; source?: string; subtype?: string; raw_source_id?: string }[])
       : undefined,
   };
 }
@@ -3502,6 +3533,385 @@ function FirmaDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<type
         )}
         <SourceBadge label="Handelsregister" href="https://www.handelsregister.de" />
       </div>
+    </div>
+  );
+}
+
+function WebsiteDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
+  const ACCENT = '#14B8A6';
+  const softBg = isDark ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.022)';
+  const softBorder = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+
+  const hasAny = !!(
+    lead.web_analyzed_at ||
+    lead.web_analysis_summary ||
+    lead.web_company_pitch ||
+    lead.web_value_proposition ||
+    lead.web_target_market ||
+    lead.web_industry_position ||
+    lead.web_core_services?.length ||
+    lead.web_tech_stack?.length ||
+    lead.web_languages?.length ||
+    lead.web_certifications?.length ||
+    lead.web_memberships?.length ||
+    lead.web_partnerships?.length ||
+    lead.web_communication_style ||
+    lead.web_buying_signals?.length ||
+    lead.web_outreach_hooks?.length ||
+    lead.web_recent_news?.length ||
+    lead.web_opportunity_flags?.length ||
+    lead.web_risk_flags?.length ||
+    lead.web_sources_used?.length
+  );
+
+  if (!hasAny) {
+    return (
+      <div style={{ padding: '48px 24px', textAlign: 'center' as const }}>
+        <div style={{ fontSize: 14, color: c.textMuted }}>Noch keine Website-Analyse vorhanden.</div>
+        {lead.website && (
+          <a
+            href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 12, color: ACCENT, textDecoration: 'none', marginTop: 8, display: 'inline-block' }}
+          >
+            {lead.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  const analyzedDate = lead.web_analyzed_at
+    ? new Date(lead.web_analyzed_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null;
+  const confidencePct =
+    lead.web_data_confidence != null
+      ? Math.round(lead.web_data_confidence <= 1 ? lead.web_data_confidence * 100 : lead.web_data_confidence)
+      : null;
+
+  const SECTION: React.CSSProperties = {
+    fontSize: 10,
+    fontWeight: 800,
+    color: c.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    marginBottom: 10,
+  };
+  const block: React.CSSProperties = { marginBottom: 24 };
+  const sub: React.CSSProperties = { fontSize: 11, color: c.textMuted, marginBottom: 4 };
+  const para: React.CSSProperties = { fontSize: 14, color: c.text, lineHeight: 1.6 };
+
+  const chip = (text: string, color = ACCENT, key?: React.Key) => (
+    <span
+      key={key}
+      style={{
+        fontSize: 11,
+        fontWeight: 600,
+        color,
+        background: `${color}1a`,
+        border: `1px solid ${color}40`,
+        borderRadius: 99,
+        padding: '3px 10px',
+      }}
+    >
+      {text}
+    </span>
+  );
+
+  const chipSection = (title: string, items: string[] | undefined, color = ACCENT) =>
+    items?.length ? (
+      <div style={block}>
+        <div style={SECTION}>{title}</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>{items.map((t, i) => chip(t, color, i))}</div>
+      </div>
+    ) : null;
+
+  const priorityColor = (p?: string) => (p === 'high' ? '#EF4444' : p === 'medium' ? '#F97316' : '#10B981');
+  const severityColor = (s?: string) => (s === 'high' ? '#EF4444' : s === 'medium' ? '#F97316' : '#FBBF24');
+
+  const flagItem = (key: React.Key, title: string, evidence: string | undefined, color: string, href?: string) => (
+    <div key={key} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+      <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: 5, background: color }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, color: c.text, fontWeight: 600 }}>{title}</div>
+        {evidence && <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2, lineHeight: 1.5 }}>{evidence}</div>}
+        {href && href.startsWith('http') && (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 10, color: ACCENT, textDecoration: 'none', marginTop: 3, display: 'inline-block' }}
+          >
+            Quelle ↗
+          </a>
+        )}
+      </div>
+    </div>
+  );
+
+  const stat = (label: string, value: React.ReactNode, color = c.text) => (
+    <div
+      style={{
+        borderRadius: 12,
+        padding: '12px 14px',
+        background: softBg,
+        border: `1px solid ${softBorder}`,
+        minWidth: 110,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 9,
+          fontWeight: 700,
+          color: c.textMuted,
+          textTransform: 'uppercase' as const,
+          letterSpacing: '0.07em',
+          marginBottom: 5,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 800, color }}>{value}</div>
+    </div>
+  );
+
+  const cs = lead.web_communication_style;
+  const showSummarySection =
+    !!lead.web_analysis_summary && !!lead.web_company_pitch && lead.web_analysis_summary !== lead.web_company_pitch;
+
+  return (
+    <div style={{ padding: '20px 24px' }}>
+      {/* Hero: pitch / summary */}
+      {(lead.web_company_pitch || lead.web_analysis_summary) && (
+        <div style={{ ...para, marginBottom: 16 }}>{lead.web_company_pitch || lead.web_analysis_summary}</div>
+      )}
+
+      {/* Meta chips */}
+      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginBottom: 24 }}>
+        {lead.website &&
+          (() => {
+            const href = lead.website!.startsWith('http') ? lead.website! : `https://${lead.website}`;
+            return (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: ACCENT,
+                  background: `${ACCENT}1a`,
+                  border: `1px solid ${ACCENT}40`,
+                  borderRadius: 99,
+                  padding: '3px 10px',
+                  textDecoration: 'none',
+                }}
+              >
+                {lead.website!.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗
+              </a>
+            );
+          })()}
+        {analyzedDate && chip(`Analysiert ${analyzedDate}`, '#94A3B8')}
+        {lead.web_page_count != null && chip(`${lead.web_page_count} Seiten`, '#94A3B8')}
+        {confidencePct != null && chip(`Konfidenz ${confidencePct}%`, '#94A3B8')}
+      </div>
+
+      {/* Fact tiles */}
+      {(lead.web_has_shop != null || lead.web_has_careers_page != null || lead.web_open_positions_count != null) && (
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8, marginBottom: 24 }}>
+          {lead.web_has_shop != null &&
+            stat('Online-Shop', lead.web_has_shop ? 'Ja' : 'Nein', lead.web_has_shop ? '#10B981' : c.textMuted)}
+          {lead.web_has_careers_page != null &&
+            stat(
+              'Karriere-Seite',
+              lead.web_has_careers_page ? 'Ja' : 'Nein',
+              lead.web_has_careers_page ? '#10B981' : c.textMuted,
+            )}
+          {lead.web_open_positions_count != null &&
+            stat(
+              'Offene Stellen',
+              lead.web_open_positions_count,
+              lead.web_open_positions_count > 0 ? ACCENT : c.textMuted,
+            )}
+        </div>
+      )}
+
+      {/* Positionierung */}
+      {(lead.web_value_proposition || lead.web_target_market || lead.web_industry_position) && (
+        <div style={block}>
+          <div style={SECTION}>Positionierung</div>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+            {lead.web_value_proposition && (
+              <div>
+                <div style={sub}>Value Proposition</div>
+                <div style={para}>{lead.web_value_proposition}</div>
+              </div>
+            )}
+            {lead.web_target_market && (
+              <div>
+                <div style={sub}>Zielmarkt</div>
+                <div style={para}>{lead.web_target_market}</div>
+              </div>
+            )}
+            {lead.web_industry_position && (
+              <div>
+                <div style={sub}>Marktposition</div>
+                <div style={para}>{lead.web_industry_position}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {chipSection('Leistungen', lead.web_core_services)}
+      {chipSection('Tech-Stack', lead.web_tech_stack, '#6366F1')}
+      {chipSection('Sprachen', lead.web_languages, '#94A3B8')}
+
+      {/* Kommunikationsstil */}
+      {cs && (cs.tone || cs.formality || cs.language || cs.key_phrases?.length) && (
+        <div style={block}>
+          <div style={SECTION}>Kommunikationsstil</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginBottom: cs.key_phrases?.length ? 10 : 0 }}>
+            {cs.tone && chip(`Ton: ${cs.tone}`, '#0EA5E9')}
+            {cs.formality && chip(`Ansprache: ${cs.formality}`, '#0EA5E9')}
+            {cs.language && chip(cs.language, '#0EA5E9')}
+          </div>
+          {!!cs.key_phrases?.length && (
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+              {cs.key_phrases.map((p, i) => chip(`„${p}“`, '#94A3B8', i))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Kaufsignale */}
+      {!!lead.web_buying_signals?.length && (
+        <div style={block}>
+          <div style={SECTION}>Kaufsignale</div>
+          {lead.web_buying_signals.map((s, i) =>
+            flagItem(i, s.signal, s.evidence, priorityColor(s.priority), s.source_url),
+          )}
+        </div>
+      )}
+
+      {/* Chancen */}
+      {!!lead.web_opportunity_flags?.length && (
+        <div style={block}>
+          <div style={SECTION}>Chancen</div>
+          {lead.web_opportunity_flags.map((f, i) => flagItem(i, f.flag, f.evidence, '#10B981', f.url ?? f.source))}
+        </div>
+      )}
+
+      {/* Risiken */}
+      {!!lead.web_risk_flags?.length && (
+        <div style={block}>
+          <div style={SECTION}>Risiken</div>
+          {lead.web_risk_flags.map((f, i) => flagItem(i, f.flag, f.evidence, severityColor(f.severity), f.url ?? f.source))}
+        </div>
+      )}
+
+      {/* Outreach-Hooks */}
+      {!!lead.web_outreach_hooks?.length && (
+        <div style={block}>
+          <div style={SECTION}>Outreach-Hooks</div>
+          {lead.web_outreach_hooks.map((h, i) => (
+            <div key={i} style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: c.text, marginBottom: 3 }}>{h.hook}</div>
+              {h.suggested_opener && (
+                <div style={{ fontSize: 12, color: c.textMuted, fontStyle: 'italic' as const, lineHeight: 1.5 }}>
+                  „{h.suggested_opener}“
+                </div>
+              )}
+              {h.source_page && h.source_page.startsWith('http') && (
+                <a
+                  href={h.source_page}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 10, color: ACCENT, textDecoration: 'none', marginTop: 3, display: 'inline-block' }}
+                >
+                  Quelle ↗
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Aktuelle News */}
+      {!!lead.web_recent_news?.length && (
+        <div style={block}>
+          <div style={SECTION}>Aktuelle News</div>
+          {lead.web_recent_news.map((n, i) => (
+            <div key={i} style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                {n.source_url && n.source_url.startsWith('http') ? (
+                  <a
+                    href={n.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 13, fontWeight: 600, color: c.text, textDecoration: 'none', flex: 1, lineHeight: 1.4 }}
+                  >
+                    {n.headline} ↗
+                  </a>
+                ) : (
+                  <div style={{ fontSize: 13, fontWeight: 600, color: c.text, flex: 1, lineHeight: 1.4 }}>{n.headline}</div>
+                )}
+                {n.date_approx && <div style={{ fontSize: 10, color: c.textMuted, flexShrink: 0 }}>{n.date_approx}</div>}
+              </div>
+              {n.significance && (
+                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2, lineHeight: 1.5 }}>{n.significance}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {chipSection('Zertifizierungen', lead.web_certifications, '#10B981')}
+      {chipSection('Mitgliedschaften', lead.web_memberships, '#6366F1')}
+      {chipSection('Partnerschaften', lead.web_partnerships, '#F59E0B')}
+
+      {/* Zusammenfassung (falls separat zum Pitch) */}
+      {showSummarySection && (
+        <div style={block}>
+          <div style={SECTION}>Sales-Einschätzung</div>
+          <div style={para}>{lead.web_analysis_summary}</div>
+        </div>
+      )}
+
+      {/* Quellen */}
+      {!!lead.web_sources_used?.length && (
+        <div style={block}>
+          <div style={SECTION}>Quellen ({lead.web_sources_used.length})</div>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+            {lead.web_sources_used
+              .filter((s) => s.url)
+              .map((s, i) => (
+                <a
+                  key={i}
+                  href={s.url!.startsWith('http') ? s.url! : `https://${s.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: 11,
+                    color: c.textMuted,
+                    textDecoration: 'none',
+                    display: 'flex',
+                    gap: 8,
+                    alignItems: 'center',
+                  }}
+                >
+                  {s.subtype && chip(s.subtype, '#94A3B8')}
+                  <span style={{ color: ACCENT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                    {s.url!.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗
+                  </span>
+                </a>
+              ))}
+          </div>
+        </div>
+      )}
+
+      <SourceBadge label="Website-Analyse-Agent" />
     </div>
   );
 }
@@ -7772,7 +8182,9 @@ function InfoTab({
   lead: LeadDetail;
   c: ReturnType<typeof colors>;
   isDark: boolean;
-  onOpenDetail: (view: 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping') => void;
+  onOpenDetail: (
+    view: 'website' | 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping',
+  ) => void;
 }) {
   const [eventsOpen, setEventsOpen] = useState(false);
 
@@ -8144,109 +8556,74 @@ function InfoTab({
 
       {/* ── 2. Compact quick-view cards ───────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-        {/* Firma */}
-        <QuickCard title="Firma" accent="#818CF8" onExpand={() => onOpenDetail('firma')}>
-          {lead.legal_form || lead.founded || lead.representative || lead.hrb_number || lead.city ? (
-            <>
-              {lead.legal_form && (
-                <div style={{ fontSize: 30, fontWeight: 900, color: '#818CF8', lineHeight: 1, marginBottom: 6 }}>
-                  {lead.legal_form}
-                </div>
-              )}
-              {lead.founded && (
-                <div
-                  style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' as const, gap: 4, marginBottom: 8 }}
-                >
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: '#818CF8',
-                      border: '1px solid #818CF8',
-                      borderRadius: 99,
-                      padding: '2px 9px',
-                      letterSpacing: '0.02em',
-                    }}
-                  >
-                    seit {lead.founded}
-                  </span>
-                  {lead.businessModel && (
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: '#818CF8',
-                        background: 'rgba(129,140,248,0.12)',
-                        border: '1px solid rgba(129,140,248,0.25)',
-                        borderRadius: 99,
-                        padding: '2px 8px',
-                        marginLeft: 6,
-                      }}
-                    >
-                      {lead.businessModel.toUpperCase()}
-                    </span>
-                  )}
-                </div>
-              )}
-              {lead.representative && (
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: c.textMuted,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap' as const,
-                    marginBottom: 10,
-                  }}
-                >
-                  {lead.representative}
-                </div>
-              )}
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4, marginBottom: 10 }}>
-                {lead.hrb_number && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      padding: '2px 7px',
-                      borderRadius: 5,
-                      background: 'rgba(129,140,248,0.12)',
-                      border: '1px solid rgba(129,140,248,0.25)',
-                      color: '#818CF8',
-                    }}
-                  >
-                    {lead.hrb_number}
-                  </span>
-                )}
-                {lead.city && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      padding: '2px 7px',
-                      borderRadius: 5,
-                      background: 'rgba(129,140,248,0.12)',
-                      border: '1px solid rgba(129,140,248,0.25)',
-                      color: '#818CF8',
-                    }}
-                  >
-                    {lead.city}
-                  </span>
-                )}
-              </div>
+        {/* Website-Analyse */}
+        <QuickCard title="Website-Analyse" accent="#14B8A6" onExpand={() => onOpenDetail('website')}>
+          {(() => {
+            const ACCENT = '#14B8A6';
+            const hasWeb = !!(
+              lead.web_analyzed_at ||
+              lead.web_analysis_summary ||
+              lead.web_company_pitch ||
+              lead.web_value_proposition ||
+              lead.web_core_services?.length ||
+              lead.web_tech_stack?.length ||
+              lead.web_buying_signals?.length ||
+              lead.web_opportunity_flags?.length ||
+              lead.web_risk_flags?.length
+            );
+            if (!hasWeb) return <div style={{ fontSize: 13, color: c.textMuted }}>Keine Website-Analyse</div>;
 
-              {/* Separator */}
-              <div
+            const confidencePct =
+              lead.web_data_confidence != null
+                ? Math.round(lead.web_data_confidence <= 1 ? lead.web_data_confidence * 100 : lead.web_data_confidence)
+                : null;
+            const headline = lead.web_value_proposition || lead.web_company_pitch || lead.web_analysis_summary;
+            const badge = (text: string) => (
+              <span
+                key={text}
                 style={{
-                  height: 1,
-                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                  marginBottom: 10,
+                  fontSize: 10,
+                  padding: '2px 7px',
+                  borderRadius: 5,
+                  background: 'rgba(20,184,166,0.12)',
+                  border: '1px solid rgba(20,184,166,0.28)',
+                  color: ACCENT,
                 }}
-              />
+              >
+                {text}
+              </span>
+            );
+            const sigCount = lead.web_buying_signals?.length ?? 0;
+            const oppCount = lead.web_opportunity_flags?.length ?? 0;
+            const riskCount = lead.web_risk_flags?.length ?? 0;
 
-              {/* Industry + contact rows */}
-              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 7, marginTop: 'auto' }}>
-                {lead.industry && (
+            return (
+              <>
+                {headline && (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: c.text,
+                      fontWeight: 600,
+                      lineHeight: 1.45,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical' as const,
+                      overflow: 'hidden',
+                      marginBottom: 10,
+                    }}
+                  >
+                    {headline}
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4, marginBottom: 10 }}>
+                  {lead.web_has_shop && badge('Shop')}
+                  {!!lead.web_tech_stack?.length && badge(lead.web_tech_stack[0])}
+                  {lead.web_page_count != null && badge(`${lead.web_page_count} Seiten`)}
+                  {confidencePct != null && badge(`Konfidenz ${confidencePct}%`)}
+                </div>
+
+                {!!lead.web_core_services?.length && (
                   <div
                     style={{
                       fontSize: 11,
@@ -8254,39 +8631,35 @@ function InfoTab({
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap' as const,
+                      marginBottom: 10,
                     }}
                   >
-                    {lead.industry}
+                    {lead.web_core_services.slice(0, 3).join(' · ')}
                   </div>
                 )}
-                {lead.phone && (
-                  <div style={{ fontSize: 11, color: c.textMuted }}>
-                    {lead.phone.replace(/(\+\d{2})(\d{3,4})(\d{3,4})(\d+)/, '$1 $2 $3 $4')}
+
+                {(sigCount > 0 || oppCount > 0 || riskCount > 0) && (
+                  <div style={{ display: 'flex', gap: 12, marginTop: 'auto', fontSize: 11 }}>
+                    {sigCount > 0 && (
+                      <span style={{ color: c.textMuted }}>
+                        <span style={{ color: ACCENT, fontWeight: 800 }}>{sigCount}</span> Signale
+                      </span>
+                    )}
+                    {oppCount > 0 && (
+                      <span style={{ color: c.textMuted }}>
+                        <span style={{ color: '#10B981', fontWeight: 800 }}>{oppCount}</span> Chancen
+                      </span>
+                    )}
+                    {riskCount > 0 && (
+                      <span style={{ color: c.textMuted }}>
+                        <span style={{ color: '#EF4444', fontWeight: 800 }}>{riskCount}</span> Risiken
+                      </span>
+                    )}
                   </div>
                 )}
-                {lead.website && (
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: '#818CF8',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap' as const,
-                    }}
-                  >
-                    {lead.website.replace(/^https?:\/\/(www\.)?/, '')}
-                  </div>
-                )}
-                {lead.street && (
-                  <div style={{ fontSize: 11, color: c.textMuted }}>
-                    {lead.street}, {lead.zip} {lead.city}
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div style={{ fontSize: 13, color: c.textMuted }}>Keine Firmendaten</div>
-          )}
+              </>
+            );
+          })()}
         </QuickCard>
 
         {/* Führung */}
@@ -10316,9 +10689,10 @@ export default function LeadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
   const [detailView, setDetailView] = useState<
-    'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping' | null
+    'website' | 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping' | null
   >(null);
   const DETAIL_TITLES = {
+    website: 'Website-Analyse',
     firma: 'Firmendaten',
     mitarbeiter: 'Mitarbeiter-Entwicklung',
     finanzen: 'Finanzdaten — Vollständige Übersicht',
@@ -10771,6 +11145,7 @@ export default function LeadDetailPage() {
               </button>
               <span style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{DETAIL_TITLES[detailView]}</span>
             </div>
+            {detailView === 'website' && <WebsiteDetail lead={lead!} c={c} isDark={isDark} />}
             {detailView === 'firma' && <FirmaDetail lead={lead!} c={c} isDark={isDark} />}
             {detailView === 'mitarbeiter' && <MitarbeiterDetail lead={lead!} c={c} isDark={isDark} />}
             {detailView === 'finanzen' && <FinanzenTab lead={lead!} c={c} isDark={isDark} />}
