@@ -567,14 +567,11 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
         </div>
       </div>
 
-      {/* Chart panel — dark inset, works in both themes */}
+      {/* Chart area */}
       <div
         style={{
           flex: 1,
-          margin: '12px 14px 0',
-          borderRadius: '12px 12px 0 0',
-          background: '#0D1117',
-          padding: '16px 16px 12px',
+          padding: '16px 20px 12px',
           display: 'flex',
           flexDirection: 'column',
           minHeight: 140,
@@ -615,15 +612,13 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
                       width: '100%',
                       borderRadius: '5px 5px 3px 3px',
                       background: b.color,
-                      boxShadow: `0 0 16px 3px ${b.glow}, 0 0 5px 1px ${b.glow}`,
+                      boxShadow: isDark ? `0 0 16px 3px ${b.glow}, 0 0 5px 1px ${b.glow}` : `0 2px 12px 0 ${b.glow}`,
                       minHeight: b.count > 0 ? 4 : 0,
                     }}
                   />
                 </div>
                 {/* Range label */}
-                <div
-                  style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
-                >
+                <div style={{ fontSize: 9, color: c.textMuted, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
                   {b.label}
                 </div>
               </div>
@@ -633,15 +628,7 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
       </div>
 
       {/* Stats strip */}
-      <div
-        style={{
-          margin: '0 14px 12px',
-          borderRadius: '0 0 10px 10px',
-          overflow: 'hidden',
-          border: `1px solid ${c.border}`,
-          borderTop: 'none',
-        }}
-      >
+      <div style={{ borderTop: `1px solid ${c.border}` }}>
         {stats.map((s, i) => (
           <div
             key={s.label}
@@ -649,9 +636,9 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '9px 14px',
+              padding: '9px 20px',
               borderTop: i > 0 ? `1px solid ${c.border}` : 'none',
-              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+              background: 'transparent',
             }}
           >
             <span style={{ fontSize: 11, color: c.textMuted, fontWeight: 500 }}>{s.label}</span>
