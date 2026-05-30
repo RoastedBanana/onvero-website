@@ -772,13 +772,13 @@ function ActionBtn({
 function LetzteAktivitaet({ leads, c, isDark }: { leads: Lead[]; c: ReturnType<typeof colors>; isDark: boolean }) {
   const recent = [...leads]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 5);
+    .slice(0, 3);
 
   const bgs = ['#EEF0FF', '#ECFDF5', '#FDF2F8', '#FFF7ED', '#F0F9FF', '#F5F3FF'];
   const fgs = ['#4F46E5', '#059669', '#9D174D', '#C2410C', '#0369A1', '#7C3AED'];
 
   return (
-    <GlassCard isDark={isDark} style={{ flex: 1, overflow: 'hidden' }}>
+    <GlassCard isDark={isDark} style={{ overflow: 'hidden' }}>
       <div style={{ padding: '14px 18px 12px', borderBottom: `1px solid ${c.border}` }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>Letzte Aktivität</div>
         <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>Zuletzt hinzugefügte Leads</div>
