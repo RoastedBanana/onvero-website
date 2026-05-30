@@ -182,14 +182,23 @@ interface LeadDetail {
   shipping_countries?: string[];
   shipping_pain_signals?: {
     signal: string;
+    summary?: string;
     severity?: string;
     evidence?: string;
     source?: string;
     source_url?: string;
   }[];
   shipping_carrier_complaints?: { carrier?: string; complaint?: string; frequency?: string }[];
-  shipping_recommended_services?: { service: string; reason?: string }[];
+  shipping_recommended_services?: { service: string; summary?: string; reason?: string }[];
   shipping_analysis_summary?: string;
+  shipping_analysis_headline?: string;
+  shipping_analysis_detail?: string;
+  shipping_approach_headline?: string;
+  shipping_savings_potential_summary?: string;
+  shipping_savings_potential_reasoning?: string;
+  shipping_key_facts?: { label: string; value: string }[];
+  shipping_data_confidence?: number;
+  shipping_data_confidence_reasoning?: string;
   shipping_approach_angle?: string;
   shipping_delivery_promise?: string;
   shipping_return_policy?: string;
@@ -656,6 +665,7 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
     shipping_pain_signals: Array.isArray(d.shipping_pain_signals)
       ? (d.shipping_pain_signals as {
           signal: string;
+          summary?: string;
           severity?: string;
           evidence?: string;
           source?: string;
@@ -670,9 +680,22 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
         }[])
       : [],
     shipping_recommended_services: Array.isArray(d.shipping_recommended_services)
-      ? (d.shipping_recommended_services as { service: string; reason?: string }[])
+      ? (d.shipping_recommended_services as { service: string; summary?: string; reason?: string }[])
       : [],
     shipping_analysis_summary: d.shipping_analysis_summary as string | undefined,
+    shipping_analysis_headline: d.shipping_analysis_headline as string | undefined,
+    shipping_analysis_detail: d.shipping_analysis_detail as string | undefined,
+    shipping_approach_headline: d.shipping_approach_headline as string | undefined,
+    shipping_savings_potential_summary: d.shipping_savings_potential_summary as string | undefined,
+    shipping_savings_potential_reasoning: d.shipping_savings_potential_reasoning as string | undefined,
+    shipping_key_facts: Array.isArray(d.shipping_key_facts)
+      ? (d.shipping_key_facts as { label: string; value: string }[])
+      : [],
+    shipping_data_confidence:
+      typeof d.shipping_data_confidence === 'number'
+        ? (d.shipping_data_confidence as number)
+        : undefined,
+    shipping_data_confidence_reasoning: d.shipping_data_confidence_reasoning as string | undefined,
     shipping_approach_angle: d.shipping_approach_angle as string | undefined,
     shipping_delivery_promise: d.shipping_delivery_promise as string | undefined,
     shipping_return_policy: d.shipping_return_policy as string | undefined,
@@ -7522,6 +7545,267 @@ function renderWithCitations(text: string | undefined): React.ReactNode {
   });
 }
 
+// Inline-highlights numbers, EUR amounts, percentages and metric units inside
+// agent-written text, while still rendering [https://...] citations as badges.
+// Citations are split out first so URLs never get caught by the metric regexes.
+const SHIP_HL_PATTERNS: { regex: RegExp; kind: 'money' | 'percent' | 'metric' }[] = [
+  { regex: /[~≈]?\d[\d.,]*[-–]?\d*[\d.,]*\s*EUR(?:\/\w+)?/g, kind: 'money' },
+  { regex: /\d[\d.,]*[-–]?\d*[\d.,]*\s*%/g, kind: 'percent' },
+  {
+    regex:
+      /\d[\d.,]*[-–]?\d*[\d.,]*\s*(?:Sendungen|Stück|Pakete?|Fahrzeug\w*|Standort\w*|Mitarbeiter\w*|m²|FTE|Tausend\w*)/g,
+    kind: 'metric',
+  },
+];
+
+function shipHighlightStyle(kind: 'money' | 'percent' | 'metric', isDark: boolean): React.CSSProperties {
+  const map = {
+    money: { bg: isDark ? 'rgba(186,117,23,0.15)' : 'rgba(250,238,218,0.8)', fg: isDark ? '#FAC775' : '#633806' },
+    percent: { bg: isDark ? 'rgba(99,153,34,0.15)' : 'rgba(234,243,222,0.8)', fg: isDark ? '#C0DD97' : '#173404' },
+    metric: { bg: isDark ? 'rgba(55,138,221,0.15)' : 'rgba(230,241,251,0.8)', fg: isDark ? '#B5D4F4' : '#042C53' },
+  }[kind];
+  return {
+    background: map.bg,
+    color: map.fg,
+    padding: '1px 4px',
+    borderRadius: 3,
+    fontWeight: 500,
+  };
+}
+
+function HighlightedText({ text, isDark }: { text: string | null | undefined; isDark: boolean }) {
+  if (!text) return null;
+  // 1. Split off citation markers so they stay clickable and untouched.
+  const citationParts = text.split(/(\[https?:\/\/[^\]\s]+\])/g);
+  const seen = new Map<string, number>();
+  return (
+    <>
+      {citationParts.map((part, ci) => {
+        const cm = part.match(/^\[(https?:\/\/[^\]\s]+)\]$/);
+        if (cm) {
+          const url = cm[1];
+          if (!seen.has(url)) seen.set(url, seen.size + 1);
+          const n = seen.get(url)!;
+          return (
+            <a
+              key={`hc-${ci}`}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={url}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 2,
+                padding: '0 5px',
+                marginLeft: 3,
+                marginRight: 1,
+                fontSize: 10,
+                fontWeight: 700,
+                color: '#0EA5E9',
+                background: 'rgba(14,165,233,0.1)',
+                border: '1px solid rgba(14,165,233,0.22)',
+                borderRadius: 4,
+                textDecoration: 'none',
+                verticalAlign: 'baseline',
+              }}
+            >
+              [{n}]
+            </a>
+          );
+        }
+        // 2. Highlight metrics inside the plain-text segment.
+        let segments: { text: string; kind?: 'money' | 'percent' | 'metric' }[] = [{ text: part }];
+        for (const { regex, kind } of SHIP_HL_PATTERNS) {
+          const next: typeof segments = [];
+          for (const seg of segments) {
+            if (seg.kind) {
+              next.push(seg);
+              continue;
+            }
+            let last = 0;
+            const matches = [...seg.text.matchAll(new RegExp(regex.source, 'g'))];
+            for (const mm of matches) {
+              const idx = mm.index ?? 0;
+              if (idx > last) next.push({ text: seg.text.slice(last, idx) });
+              next.push({ text: mm[0], kind });
+              last = idx + mm[0].length;
+            }
+            if (last < seg.text.length) next.push({ text: seg.text.slice(last) });
+          }
+          segments = next;
+        }
+        return (
+          <span key={`ht-${ci}`}>
+            {segments.map((seg, si) =>
+              seg.kind ? (
+                <mark key={si} style={shipHighlightStyle(seg.kind, isDark)}>
+                  {seg.text}
+                </mark>
+              ) : (
+                <span key={si}>{seg.text}</span>
+              ),
+            )}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+// Progressive-disclosure block: headline + optional always-on summary +
+// optional detail behind a toggle. Used for Analyse, Einspar-Potenzial, Outreach.
+function ShipProgressiveSection({
+  c,
+  isDark,
+  accent,
+  eyebrow,
+  headline,
+  headlineNode,
+  summary,
+  detail,
+  moreLabel,
+  lessLabel,
+}: {
+  c: ReturnType<typeof colors>;
+  isDark: boolean;
+  accent: string;
+  eyebrow?: string;
+  headline?: string | null;
+  headlineNode?: React.ReactNode;
+  summary?: string | null;
+  detail?: string | null;
+  moreLabel: string;
+  lessLabel: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div
+      style={{
+        borderLeft: `3px solid ${accent}`,
+        paddingLeft: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+      }}
+    >
+      {eyebrow && (
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            color: accent,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            marginBottom: 2,
+          }}
+        >
+          {eyebrow}
+        </div>
+      )}
+      {headlineNode
+        ? headlineNode
+        : headline && (
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: c.text, margin: 0, lineHeight: 1.4 }}>
+              {headline}
+            </h3>
+          )}
+      {summary && (
+        <p style={{ fontSize: 13, lineHeight: 1.6, color: c.textSub, margin: 0 }}>
+          <HighlightedText text={summary} isDark={isDark} />
+        </p>
+      )}
+      {detail && (
+        <>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            style={{
+              alignSelf: 'flex-start',
+              marginTop: 4,
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#0EA5E9',
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+            }}
+          >
+            {expanded ? `${lessLabel} ▲` : `${moreLabel} ▼`}
+          </button>
+          {expanded && (
+            <div
+              style={{
+                marginTop: 8,
+                paddingTop: 10,
+                borderTop: `1px dashed ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'}`,
+                fontSize: 13,
+                lineHeight: 1.65,
+                color: c.textSub,
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              <HighlightedText text={detail} isDark={isDark} />
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// Generic single-open accordion. Parent precomputes header/body nodes per item.
+function ShipAccordion({
+  items,
+  c,
+  isDark,
+}: {
+  items: { header: React.ReactNode; body: React.ReactNode }[];
+  c: ReturnType<typeof colors>;
+  isDark: boolean;
+}) {
+  const [open, setOpen] = useState<number | null>(null);
+  const divider = isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.06)';
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {items.map((it, i) => (
+        <div key={i} style={{ borderTop: i === 0 ? 'none' : divider }}>
+          <button
+            onClick={() => setOpen(open === i ? null : i)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              padding: '11px 2px',
+              background: 'transparent',
+              border: 'none',
+              textAlign: 'left',
+              cursor: 'pointer',
+              color: c.text,
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
+              {it.header}
+            </span>
+            <ChevronDown
+              size={16}
+              style={{
+                flexShrink: 0,
+                color: c.textMuted,
+                transform: open === i ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.18s ease',
+              }}
+            />
+          </button>
+          {open === i && <div style={{ padding: '0 2px 12px' }}>{it.body}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof colors>; isDark: boolean }) {
   const cardBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.025)';
   const cardBorder = isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)';
@@ -7549,14 +7833,20 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
     pains.length > 0 ||
     carrierComplaints.length > 0 ||
     recommendedServices.length > 0 ||
+    (lead.shipping_key_facts?.length ?? 0) > 0 ||
     lead.shipping_analysis_summary ||
+    lead.shipping_analysis_headline ||
+    lead.shipping_analysis_detail ||
     lead.shipping_approach_angle ||
+    lead.shipping_approach_headline ||
     lead.shipping_fulfillment_model ||
     lead.shipping_estimated_volume ||
     lead.shipping_logistics_complexity ||
     lead.shipping_savings_potential ||
+    lead.shipping_savings_potential_summary ||
     lead.shipping_delivery_promise ||
     lead.shipping_return_policy ||
+    typeof lead.shipping_data_confidence === 'number' ||
     typeof lead.shipping_has_own_warehouse === 'boolean' ||
     typeof lead.shipping_international_pct === 'number';
 
@@ -7585,8 +7875,74 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
     padding: '16px 18px',
   };
 
+  // Progressive-disclosure derivations with fallbacks for leads analysed before
+  // the headline/summary/detail split — older rows only carry the long fields.
+  const keyFacts = lead.shipping_key_facts ?? [];
+
+  const analysisHeadline =
+    lead.shipping_analysis_headline ?? lead.shipping_analysis_summary?.split('. ')[0]?.trim() ?? null;
+  const analysisSummary = lead.shipping_analysis_headline ? lead.shipping_analysis_summary ?? null : null;
+  const analysisDetail =
+    lead.shipping_analysis_detail ?? (lead.shipping_analysis_headline ? null : lead.shipping_analysis_summary ?? null);
+
+  const savingsHeadline = lead.shipping_savings_potential ?? null;
+  const savingsSummary = lead.shipping_savings_potential_summary ?? null;
+  const savingsDetail = lead.shipping_savings_potential_reasoning ?? null;
+  const hasSavings = !!(savingsHeadline || savingsSummary || savingsDetail);
+
+  const approachHeadline =
+    lead.shipping_approach_headline ?? lead.shipping_approach_angle?.split('. ')[0]?.trim() ?? null;
+  const approachDetail = lead.shipping_approach_angle ?? null;
+
+  const confidence = lead.shipping_data_confidence;
+  const confidenceColor =
+    typeof confidence === 'number'
+      ? confidence >= 70
+        ? '#10B981'
+        : confidence >= 40
+          ? '#F59E0B'
+          : '#EF4444'
+      : c.textMuted;
+
   return (
     <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Key-Fact pills — always-visible at-a-glance facts */}
+      {keyFacts.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {keyFacts.map((fact, i) => (
+            <span
+              key={i}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 11px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                background: isDark ? 'rgba(186,117,23,0.15)' : 'rgba(250,238,218,0.8)',
+                color: isDark ? '#FAC775' : '#633806',
+              }}
+            >
+              {fact.label && (
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    opacity: 0.75,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {fact.label}
+                </span>
+              )}
+              {fact.value}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Top row: SPS-Fit Score + summary */}
       <div
         style={{
@@ -7631,33 +7987,6 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
           )}
         </div>
       </div>
-
-      {/* Analysis summary */}
-      {lead.shipping_analysis_summary && (
-        <div style={cardStyle}>
-          <div style={labelStyle}>Analyse-Zusammenfassung</div>
-          <p style={{ fontSize: 13, lineHeight: 1.65, color: c.text, margin: 0, whiteSpace: 'pre-wrap' as const }}>
-            {renderWithCitations(lead.shipping_analysis_summary)}
-          </p>
-        </div>
-      )}
-
-      {/* Approach angle — high-signal sales hook */}
-      {lead.shipping_approach_angle && (
-        <div
-          style={{
-            background: 'rgba(14,165,233,0.08)',
-            border: '1px solid rgba(14,165,233,0.25)',
-            borderRadius: 12,
-            padding: '16px 18px',
-          }}
-        >
-          <div style={{ ...labelStyle, color: '#0EA5E9' }}>Outreach-Aufhänger</div>
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: c.text, margin: 0, whiteSpace: 'pre-wrap' as const, fontWeight: 500 }}>
-            {renderWithCitations(lead.shipping_approach_angle)}
-          </p>
-        </div>
-      )}
 
       {/* Carriers + Countries */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -7749,7 +8078,6 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
                 ? `${lead.shipping_international_pct}%`
                 : undefined,
           },
-          { label: 'Einspar-Potenzial', value: lead.shipping_savings_potential },
           { label: 'Tech-Integration', value: lead.shipping_tech_integration },
           {
             label: 'Gratis-Versand ab',
@@ -7771,156 +8099,184 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
         )}
       </div>
 
-      {/* Pain signals */}
+      {/* Analyse — progressive disclosure */}
+      {(analysisHeadline || analysisSummary || analysisDetail) && (
+        <ShipProgressiveSection
+          c={c}
+          isDark={isDark}
+          accent={isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.16)'}
+          eyebrow="Analyse"
+          headline={analysisHeadline}
+          summary={analysisSummary}
+          detail={analysisDetail}
+          moreLabel="Vollständige Analyse"
+          lessLabel="Weniger"
+        />
+      )}
+
+      {/* Einspar-Potenzial — progressive disclosure */}
+      {hasSavings && (
+        <ShipProgressiveSection
+          c={c}
+          isDark={isDark}
+          accent="#10B981"
+          eyebrow="Einspar-Potenzial"
+          headlineNode={
+            savingsHeadline ? (
+              <div style={{ fontSize: 19, fontWeight: 800, color: '#10B981', lineHeight: 1.25 }}>
+                <HighlightedText text={savingsHeadline} isDark={isDark} />
+              </div>
+            ) : undefined
+          }
+          summary={savingsSummary}
+          detail={savingsDetail}
+          moreLabel="Berechnung anzeigen"
+          lessLabel="Weniger"
+        />
+      )}
+
+      {/* Recommended SPS services — accordion */}
+      {recommendedServices.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ ...labelStyle, color: '#10B981' }}>
+            Empfohlene SPS-Services ({recommendedServices.length})
+          </div>
+          <ShipAccordion
+            c={c}
+            isDark={isDark}
+            items={recommendedServices.map((rs) => {
+              const summary =
+                rs.summary ?? (rs.reason ? rs.reason.split(' ').slice(0, 6).join(' ') + '…' : '');
+              return {
+                header: (
+                  <>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#10B981' }}>{rs.service}</span>
+                    {summary && (
+                      <span style={{ fontSize: 12, color: c.textMuted }}>· {summary}</span>
+                    )}
+                  </>
+                ),
+                body: rs.reason ? (
+                  <div style={{ fontSize: 13, lineHeight: 1.6, color: c.textSub }}>
+                    <HighlightedText text={rs.reason} isDark={isDark} />
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: c.textMuted }}>—</div>
+                ),
+              };
+            })}
+          />
+        </div>
+      )}
+
+      {/* Schmerzpunkte — accordion with severity badge */}
       {pains.length > 0 && (
         <div style={cardStyle}>
-          <div style={{ ...labelStyle, color: '#EF4444' }}>Pain Signals ({pains.length})</div>
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-            {pains.map((p, i) => {
+          <div style={{ ...labelStyle, color: '#EF4444' }}>Schmerzpunkte ({pains.length})</div>
+          <ShipAccordion
+            c={c}
+            isDark={isDark}
+            items={pains.map((p) => {
+              const sevKey = p.severity?.toLowerCase();
               const sevColor =
-                p.severity?.toLowerCase() === 'high'
+                sevKey === 'high'
                   ? '#EF4444'
-                  : p.severity?.toLowerCase() === 'medium'
+                  : sevKey === 'medium'
                     ? '#F59E0B'
-                    : p.severity?.toLowerCase() === 'low'
+                    : sevKey === 'low'
                       ? '#0EA5E9'
                       : '#EF4444';
-              return (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 10,
-                    padding: '11px 13px',
-                    background: 'rgba(239,68,68,0.05)',
-                    border: '1px solid rgba(239,68,68,0.18)',
-                    borderRadius: 8,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: sevColor,
-                      marginTop: 6,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{p.signal}</div>
+              const summary =
+                p.summary ?? (p.evidence ? p.evidence.split(' ').slice(0, 6).join(' ') + '…' : '');
+              const linkUrl = p.source_url ?? reviewUrlFor(p.source, lead);
+              return {
+                header: (
+                  <>
+                    {p.severity && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: 5,
+                          background: sevColor + '22',
+                          color: sevColor,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {p.severity}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{p.signal}</span>
+                    {summary && (
+                      <span style={{ fontSize: 12, color: c.textMuted }}>· {summary}</span>
+                    )}
+                  </>
+                ),
+                body: (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {p.evidence && (
-                      <div style={{ fontSize: 12, color: c.textSub, marginTop: 3, lineHeight: 1.5 }}>
-                        {p.evidence}
+                      <div style={{ fontSize: 13, lineHeight: 1.6, color: c.textSub }}>
+                        <HighlightedText text={p.evidence} isDark={isDark} />
                       </div>
                     )}
-                    {(() => {
-                      // Direct source_url wins; otherwise fall back to the
-                      // lead's review/maps URL that matches p.source.
-                      const linkUrl = p.source_url ?? reviewUrlFor(p.source, lead);
-                      const sourceTag = p.source && !p.source_url ? p.source : null;
-                      if (!linkUrl && !sourceTag) return null;
-                      return (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            marginTop: 6,
-                            flexWrap: 'wrap' as const,
-                          }}
+                    {linkUrl && (
+                      <a
+                        href={linkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={linkUrl}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          alignSelf: 'flex-start',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: '#0EA5E9',
+                          background: 'rgba(14,165,233,0.1)',
+                          border: '1px solid rgba(14,165,233,0.22)',
+                          borderRadius: 6,
+                          padding: '3px 8px',
+                          textDecoration: 'none',
+                          maxWidth: 360,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
                         >
-                          {linkUrl && (
-                            <a
-                              href={linkUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={linkUrl}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                fontSize: 11,
-                                fontWeight: 600,
-                                color: '#0EA5E9',
-                                background: 'rgba(14,165,233,0.1)',
-                                border: '1px solid rgba(14,165,233,0.22)',
-                                borderRadius: 6,
-                                padding: '3px 8px',
-                                textDecoration: 'none',
-                                maxWidth: 360,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap' as const,
-                              }}
-                            >
-                              <svg
-                                width="10"
-                                height="10"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <path d="M14 3h7v7" />
-                                <path d="M21 3l-9 9" />
-                                <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
-                              </svg>
-                              {(() => {
-                                try {
-                                  return new URL(linkUrl).hostname.replace(/^www\./, '');
-                                } catch {
-                                  return 'Quelle';
-                                }
-                              })()}
-                              {p.source && !p.source_url ? ` · ${p.source}` : ''}
-                            </a>
-                          )}
-                          {sourceTag && !linkUrl && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                color: c.textMuted,
-                                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                                borderRadius: 4,
-                                padding: '2px 6px',
-                                textTransform: 'uppercase' as const,
-                                letterSpacing: '0.05em',
-                              }}
-                            >
-                              {sourceTag}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })()}
+                          <path d="M14 3h7v7" />
+                          <path d="M21 3l-9 9" />
+                          <path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6" />
+                        </svg>
+                        {(() => {
+                          try {
+                            return new URL(linkUrl).hostname.replace(/^www\./, '');
+                          } catch {
+                            return 'Quelle';
+                          }
+                        })()}
+                        {p.source && !p.source_url ? ` · ${p.source}` : ''}
+                      </a>
+                    )}
                   </div>
-                  {p.severity && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '2px 7px',
-                        borderRadius: 99,
-                        background: sevColor + '22',
-                        color: sevColor,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {p.severity}
-                    </span>
-                  )}
-                </div>
-              );
+                ),
+              };
             })}
-          </div>
+          />
         </div>
       )}
 
@@ -7978,52 +8334,18 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
         </div>
       )}
 
-      {/* Recommended SPS services */}
-      {recommendedServices.length > 0 && (
-        <div style={cardStyle}>
-          <div style={{ ...labelStyle, color: '#10B981' }}>
-            Empfohlene SPS-Services ({recommendedServices.length})
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: 8,
-            }}
-          >
-            {recommendedServices.map((rs, i) => (
-              <div
-                key={i}
-                style={{
-                  padding: '11px 13px',
-                  background: 'rgba(16,185,129,0.06)',
-                  border: '1px solid rgba(16,185,129,0.2)',
-                  borderRadius: 8,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: '#10B981',
-                    marginBottom: rs.reason ? 4 : 0,
-                  }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M3 8l3 3 7-7" />
-                  </svg>
-                  {rs.service}
-                </div>
-                {rs.reason && (
-                  <div style={{ fontSize: 12, color: c.textSub, lineHeight: 1.5 }}>{rs.reason}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Outreach-Aufhänger — progressive disclosure */}
+      {(approachHeadline || approachDetail) && (
+        <ShipProgressiveSection
+          c={c}
+          isDark={isDark}
+          accent="#0EA5E9"
+          eyebrow="Outreach-Aufhänger"
+          headline={approachHeadline}
+          detail={approachDetail}
+          moreLabel="Pitch-Details"
+          lessLabel="Weniger"
+        />
       )}
 
       {/* Delivery & Returns */}
@@ -8044,6 +8366,32 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
                 {renderWithCitations(lead.shipping_return_policy)}
               </p>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Daten-Confidence */}
+      {typeof confidence === 'number' && (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={labelStyle}>Daten-Confidence</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: confidenceColor }}>{confidence} / 100</span>
+          </div>
+          <div
+            style={{
+              height: 6,
+              borderRadius: 99,
+              overflow: 'hidden',
+              background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)',
+              marginBottom: lead.shipping_data_confidence_reasoning ? 8 : 0,
+            }}
+          >
+            <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, confidence))}%`, background: confidenceColor, borderRadius: 99 }} />
+          </div>
+          {lead.shipping_data_confidence_reasoning && (
+            <p style={{ fontSize: 12, color: c.textSub, lineHeight: 1.55, margin: 0 }}>
+              <HighlightedText text={lead.shipping_data_confidence_reasoning} isDark={isDark} />
+            </p>
           )}
         </div>
       )}
@@ -8073,7 +8421,10 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
         for (const txt of [
           lead.shipping_sps_fit_reasoning,
           lead.shipping_analysis_summary,
+          lead.shipping_analysis_detail,
           lead.shipping_approach_angle,
+          lead.shipping_savings_potential_reasoning,
+          lead.shipping_data_confidence_reasoning,
           lead.shipping_delivery_promise,
           lead.shipping_return_policy,
         ]) {
