@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -767,103 +767,121 @@ function ActionBtn({
   );
 }
 
-// ─── Lead-Verteilung ──────────────────────────────────────────────────────────
+// ─── Letzte Aktivität ─────────────────────────────────────────────────────────
 
-function StatusBar({ leads, c, isDark }: { leads: Lead[]; c: ReturnType<typeof colors>; isDark: boolean }) {
-  const hot = leads.filter((l) => l.tier?.toLowerCase().startsWith('hot')).length;
-  const warm = leads.filter((l) => l.tier?.toLowerCase() === 'warm').length;
-  const cold = leads.length - hot - warm;
-  const total = leads.length || 1;
+function LetzteAktivitaet({ leads, c, isDark }: { leads: Lead[]; c: ReturnType<typeof colors>; isDark: boolean }) {
+  const recent = [...leads]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5);
 
-  const tiles = [
-    { label: 'Hot', count: hot, pct: Math.round((hot / total) * 100), color: '#EF4444', glow: 'rgba(239,68,68,0.18)' },
-    {
-      label: 'Warm',
-      count: warm,
-      pct: Math.round((warm / total) * 100),
-      color: '#F97316',
-      glow: 'rgba(249,115,22,0.15)',
-    },
-    {
-      label: 'Kalt',
-      count: cold,
-      pct: Math.round((cold / total) * 100),
-      color: '#94A3B8',
-      glow: 'rgba(148,163,184,0.12)',
-    },
-  ];
+  const bgs = ['#EEF0FF', '#ECFDF5', '#FDF2F8', '#FFF7ED', '#F0F9FF', '#F5F3FF'];
+  const fgs = ['#4F46E5', '#059669', '#9D174D', '#C2410C', '#0369A1', '#7C3AED'];
 
   return (
-    <GlassCard isDark={isDark} style={{ padding: '16px 18px', flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: c.text, marginBottom: 14 }}>Lead-Verteilung</div>
-
-      {/* Tiles */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {tiles.map((t, i) => (
-          <motion.div
-            key={t.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.07, duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-            style={{
-              flex: 1,
-              padding: '14px 10px 12px',
-              borderRadius: 12,
-              background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)',
-              border: `1px solid ${t.color}30`,
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              boxShadow: `0 0 20px ${t.glow}, inset 0 1px 0 rgba(255,255,255,0.12)`,
-              textAlign: 'center',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Top accent line */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: '20%',
-                right: '20%',
-                height: 2,
-                borderRadius: 99,
-                background: t.color,
-                opacity: 0.8,
-              }}
-            />
-            <div style={{ fontSize: 26, fontWeight: 900, color: t.color, letterSpacing: '-0.04em', lineHeight: 1 }}>
-              {t.count}
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: c.textMuted,
-                marginTop: 5,
-                textTransform: 'uppercase',
-                letterSpacing: '0.07em',
-              }}
-            >
-              {t.label}
-            </div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: t.color, marginTop: 3, opacity: 0.85 }}>{t.pct}%</div>
-          </motion.div>
-        ))}
+    <GlassCard isDark={isDark} style={{ flex: 1, overflow: 'hidden' }}>
+      <div style={{ padding: '14px 18px 12px', borderBottom: `1px solid ${c.border}` }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: c.text }}>Letzte Aktivität</div>
+        <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>Zuletzt hinzugefügte Leads</div>
       </div>
 
-      {/* Segmented bar */}
-      <div style={{ display: 'flex', height: 4, borderRadius: 99, overflow: 'hidden', gap: 2 }}>
-        {tiles.map((t) =>
-          t.pct > 0 ? (
-            <motion.div
-              key={t.label}
-              initial={{ flex: 0 }}
-              animate={{ flex: t.pct }}
-              transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
-              style={{ background: t.color, borderRadius: 99, opacity: 0.8 }}
-            />
-          ) : null
+      <div>
+        {recent.length === 0 ? (
+          <div style={{ padding: '20px 18px', fontSize: 12, color: c.textMuted }}>Noch keine Leads vorhanden.</div>
+        ) : (
+          recent.map((lead, i) => {
+            const idx = (lead.company_name.charCodeAt(0) + (lead.company_name.charCodeAt(1) || 0)) % bgs.length;
+            const [logoErr, setLogoErr] = React.useState(false);
+            const initials = lead.company_name
+              .split(' ')
+              .slice(0, 2)
+              .map((w) => w[0])
+              .join('')
+              .toUpperCase();
+            const tm = tierMeta(lead.tier);
+
+            return (
+              <Link
+                key={lead.id}
+                href={`/intelligence/leads/${lead.id}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '9px 18px',
+                  borderBottom: i < recent.length - 1 ? `1px solid ${c.border}` : 'none',
+                  textDecoration: 'none',
+                  transition: 'background 100ms',
+                }}
+                onMouseEnter={(e) =>
+                  ((e.currentTarget as HTMLElement).style.background = isDark
+                    ? 'rgba(255,255,255,0.03)'
+                    : 'rgba(79,70,229,0.03)')
+                }
+                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+              >
+                {/* Avatar */}
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
+                    background: lead.logo_url && !logoErr ? (isDark ? 'rgba(255,255,255,0.06)' : '#F4F5F8') : bgs[idx],
+                    color: fgs[idx],
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    flexShrink: 0,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {lead.logo_url && !logoErr ? (
+                    <img
+                      src={lead.logo_url}
+                      alt={lead.company_name}
+                      onError={() => setLogoErr(true)}
+                      style={{ width: 22, height: 22, objectFit: 'contain' }}
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: c.text,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {lead.company_name}
+                  </div>
+                  <div style={{ fontSize: 10, color: c.textMuted, marginTop: 1 }}>{relativeTime(lead.created_at)}</div>
+                </div>
+
+                {lead.tier && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 7px',
+                      borderRadius: 99,
+                      background: tm.bg,
+                      color: tm.text,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {lead.tier}
+                  </span>
+                )}
+              </Link>
+            );
+          })
         )}
       </div>
     </GlassCard>
@@ -1091,7 +1109,7 @@ export default function UebersichtPage() {
         {/* Right sidebar — fills same height as left */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <QuickActions isDark={isDark} c={c} />
-          {!loading && leads.length > 0 && <StatusBar leads={leads} c={c} isDark={isDark} />}
+          {!loading && leads.length > 0 && <LetzteAktivitaet leads={leads} c={c} isDark={isDark} />}
         </div>
       </div>
     </div>
