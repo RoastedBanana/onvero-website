@@ -546,24 +546,41 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
   return (
     <GlassCard isDark={isDark} style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div style={{ padding: '18px 22px 14px' }}>
-        <div style={{ fontSize: 22, fontWeight: 800, color: c.text, letterSpacing: '-0.02em' }}>Score-Verteilung</div>
-        <div style={{ fontSize: 12, color: c.textMuted, marginTop: 3 }}>Qualität deiner Lead-Pipeline</div>
-      </div>
-
-      {/* Dark chart area */}
       <div
         style={{
-          margin: '0 14px',
-          borderRadius: 14,
-          background: isDark ? 'rgba(0,0,0,0.35)' : 'rgba(10,12,24,0.88)',
-          padding: '20px 16px 14px',
           display: 'flex',
-          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px 12px',
+          borderBottom: `1px solid ${c.border}`,
         }}
       >
-        {/* Bars */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 110 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: c.text }}>Score-Verteilung</div>
+          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>Qualität deiner Lead-Pipeline</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: c.text, letterSpacing: '-0.03em', lineHeight: 1 }}>
+            {total}
+          </div>
+          <div style={{ fontSize: 10, color: c.textMuted, marginTop: 2 }}>bewertet</div>
+        </div>
+      </div>
+
+      {/* Chart panel — dark inset, works in both themes */}
+      <div
+        style={{
+          flex: 1,
+          margin: '12px 14px 0',
+          borderRadius: '12px 12px 0 0',
+          background: '#0D1117',
+          padding: '16px 16px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 140,
+        }}
+      >
+        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
           {buckets.map((b, i) => {
             const pct = maxCount > 0 ? (b.count / maxCount) * 100 : 0;
             return (
@@ -574,40 +591,40 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 5,
                   height: '100%',
                   justifyContent: 'flex-end',
                 }}
               >
-                {/* Glow bar */}
-                <div
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    justifyContent: 'center',
-                  }}
+                {/* Count */}
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.08 + 0.4, duration: 0.3 }}
+                  style={{ fontSize: 12, fontWeight: 800, color: b.color }}
                 >
+                  {b.count}
+                </motion.span>
+                {/* Glow bar */}
+                <div style={{ width: '100%', height: 120, display: 'flex', alignItems: 'flex-end' }}>
                   <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: `${Math.max(pct, b.count > 0 ? 8 : 0)}%`, opacity: 1 }}
-                    transition={{ delay: i * 0.08, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${Math.max(pct, b.count > 0 ? 6 : 0)}%` }}
+                    transition={{ delay: i * 0.08, duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
                     style={{
                       width: '100%',
-                      borderRadius: '6px 6px 4px 4px',
+                      borderRadius: '5px 5px 3px 3px',
                       background: b.color,
-                      boxShadow: `0 0 18px 4px ${b.glow}, 0 0 6px 1px ${b.glow}`,
-                      minHeight: b.count > 0 ? 6 : 0,
+                      boxShadow: `0 0 16px 3px ${b.glow}, 0 0 5px 1px ${b.glow}`,
+                      minHeight: b.count > 0 ? 4 : 0,
                     }}
                   />
                 </div>
-                {/* Label */}
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{b.count}</div>
-                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', marginTop: 1, letterSpacing: '0.03em' }}>
-                    {b.label}
-                  </div>
+                {/* Range label */}
+                <div
+                  style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
+                >
+                  {b.label}
                 </div>
               </div>
             );
@@ -615,8 +632,16 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
         </div>
       </div>
 
-      {/* Stats rows */}
-      <div style={{ margin: '0 14px 14px', borderRadius: '0 0 12px 12px', overflow: 'hidden' }}>
+      {/* Stats strip */}
+      <div
+        style={{
+          margin: '0 14px 12px',
+          borderRadius: '0 0 10px 10px',
+          overflow: 'hidden',
+          border: `1px solid ${c.border}`,
+          borderTop: 'none',
+        }}
+      >
         {stats.map((s, i) => (
           <div
             key={s.label}
@@ -624,26 +649,26 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '11px 16px',
-              borderTop: i > 0 ? `1px solid ${c.border}` : `1px solid ${c.border}`,
-              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+              padding: '9px 14px',
+              borderTop: i > 0 ? `1px solid ${c.border}` : 'none',
+              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
             }}
           >
-            <span style={{ fontSize: 12, color: c.textMuted, fontWeight: 500 }}>{s.label}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: c.text }}>{s.value}</span>
+            <span style={{ fontSize: 11, color: c.textMuted, fontWeight: 500 }}>{s.label}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: c.text }}>{s.value}</span>
               <div
                 style={{
-                  width: 22,
-                  height: 22,
+                  width: 20,
+                  height: 20,
                   borderRadius: '50%',
-                  background: s.up ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)',
+                  background: s.up ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
                   <path
                     d={s.up ? 'M2 7L5 3L8 7' : 'M2 3L5 7L8 3'}
                     stroke={s.up ? '#10B981' : '#EF4444'}
