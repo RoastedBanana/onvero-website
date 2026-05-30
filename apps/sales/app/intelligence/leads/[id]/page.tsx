@@ -654,13 +654,9 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
     shipping_logistics_complexity: d.shipping_logistics_complexity as string | undefined,
     shipping_savings_potential: d.shipping_savings_potential as string | undefined,
     shipping_has_own_warehouse:
-      typeof d.shipping_has_own_warehouse === 'boolean'
-        ? (d.shipping_has_own_warehouse as boolean)
-        : undefined,
+      typeof d.shipping_has_own_warehouse === 'boolean' ? (d.shipping_has_own_warehouse as boolean) : undefined,
     shipping_international_pct:
-      typeof d.shipping_international_pct === 'number'
-        ? (d.shipping_international_pct as number)
-        : undefined,
+      typeof d.shipping_international_pct === 'number' ? (d.shipping_international_pct as number) : undefined,
     shipping_countries: Array.isArray(d.shipping_countries) ? (d.shipping_countries as string[]) : [],
     shipping_pain_signals: Array.isArray(d.shipping_pain_signals)
       ? (d.shipping_pain_signals as {
@@ -692,21 +688,15 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
       ? (d.shipping_key_facts as { label: string; value: string }[])
       : [],
     shipping_data_confidence:
-      typeof d.shipping_data_confidence === 'number'
-        ? (d.shipping_data_confidence as number)
-        : undefined,
+      typeof d.shipping_data_confidence === 'number' ? (d.shipping_data_confidence as number) : undefined,
     shipping_data_confidence_reasoning: d.shipping_data_confidence_reasoning as string | undefined,
     shipping_approach_angle: d.shipping_approach_angle as string | undefined,
     shipping_delivery_promise: d.shipping_delivery_promise as string | undefined,
     shipping_return_policy: d.shipping_return_policy as string | undefined,
     shipping_free_threshold_eur:
-      typeof d.shipping_free_threshold_eur === 'number'
-        ? (d.shipping_free_threshold_eur as number)
-        : undefined,
+      typeof d.shipping_free_threshold_eur === 'number' ? (d.shipping_free_threshold_eur as number) : undefined,
     shipping_warehouse_m2:
-      typeof d.shipping_warehouse_m2 === 'number'
-        ? (d.shipping_warehouse_m2 as number)
-        : undefined,
+      typeof d.shipping_warehouse_m2 === 'number' ? (d.shipping_warehouse_m2 as number) : undefined,
     shipping_tech_integration: d.shipping_tech_integration as string | undefined,
     shipping_volume_method: d.shipping_volume_method as string | undefined,
     shipping_carriers_evidence: Array.isArray(d.shipping_carriers_evidence)
@@ -876,7 +866,12 @@ function mapDbLead(d: Record<string, unknown>): LeadDetail {
     web_analyzed_at: d.web_analyzed_at as string | undefined,
     web_communication_style:
       d.web_communication_style && typeof d.web_communication_style === 'object'
-        ? (d.web_communication_style as { tone?: string; language?: string; formality?: string; key_phrases?: string[] })
+        ? (d.web_communication_style as {
+            tone?: string;
+            language?: string;
+            formality?: string;
+            key_phrases?: string[];
+          })
         : undefined,
     web_buying_signals: Array.isArray(d.web_buying_signals)
       ? (d.web_buying_signals as { signal: string; evidence?: string; priority?: string; source_url?: string }[])
@@ -1180,7 +1175,9 @@ function MarkdownMessage({
           p: ({ children }) => <p style={{ margin: '0 0 8px' }}>{children}</p>,
           strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
           em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
-          ul: ({ children }) => <ul style={{ margin: '4px 0 10px', paddingLeft: 20, listStyle: 'disc' }}>{children}</ul>,
+          ul: ({ children }) => (
+            <ul style={{ margin: '4px 0 10px', paddingLeft: 20, listStyle: 'disc' }}>{children}</ul>
+          ),
           ol: ({ children }) => (
             <ol style={{ margin: '4px 0 10px', paddingLeft: 20, listStyle: 'decimal' }}>{children}</ol>
           ),
@@ -1262,7 +1259,14 @@ function MarkdownMessage({
           },
           pre: ({ children }) => (
             <pre
-              style={{ background: codeBg, padding: 12, borderRadius: 8, overflowX: 'auto', margin: '6px 0', fontSize: 12.5 }}
+              style={{
+                background: codeBg,
+                padding: 12,
+                borderRadius: 8,
+                overflowX: 'auto',
+                margin: '6px 0',
+                fontSize: 12.5,
+              }}
             >
               {children}
             </pre>
@@ -1515,7 +1519,7 @@ function ChatTab({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<typeof c
         setBusy(false);
       }
     },
-    [lead.id, startPolling, stopPolling],
+    [lead.id, startPolling, stopPolling]
   );
 
   async function send(text?: string) {
@@ -3646,7 +3650,9 @@ function WebsiteDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<ty
     items?.length ? (
       <div style={block}>
         <div style={SECTION}>{title}</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>{items.map((t, i) => chip(t, color, i))}</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+          {items.map((t, i) => chip(t, color, i))}
+        </div>
       </div>
     ) : null;
 
@@ -3749,13 +3755,13 @@ function WebsiteDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<ty
             stat(
               'Karriere-Seite',
               lead.web_has_careers_page ? 'Ja' : 'Nein',
-              lead.web_has_careers_page ? '#10B981' : c.textMuted,
+              lead.web_has_careers_page ? '#10B981' : c.textMuted
             )}
           {lead.web_open_positions_count != null &&
             stat(
               'Offene Stellen',
               lead.web_open_positions_count,
-              lead.web_open_positions_count > 0 ? ACCENT : c.textMuted,
+              lead.web_open_positions_count > 0 ? ACCENT : c.textMuted
             )}
         </div>
       )}
@@ -3795,7 +3801,14 @@ function WebsiteDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<ty
       {cs && (cs.tone || cs.formality || cs.language || cs.key_phrases?.length) && (
         <div style={block}>
           <div style={SECTION}>Kommunikationsstil</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginBottom: cs.key_phrases?.length ? 10 : 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap' as const,
+              gap: 6,
+              marginBottom: cs.key_phrases?.length ? 10 : 0,
+            }}
+          >
             {cs.tone && chip(`Ton: ${cs.tone}`, '#0EA5E9')}
             {cs.formality && chip(`Ansprache: ${cs.formality}`, '#0EA5E9')}
             {cs.language && chip(cs.language, '#0EA5E9')}
@@ -3813,7 +3826,7 @@ function WebsiteDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<ty
         <div style={block}>
           <div style={SECTION}>Kaufsignale</div>
           {lead.web_buying_signals.map((s, i) =>
-            flagItem(i, s.signal, s.evidence, priorityColor(s.priority), s.source_url),
+            flagItem(i, s.signal, s.evidence, priorityColor(s.priority), s.source_url)
           )}
         </div>
       )}
@@ -3830,7 +3843,9 @@ function WebsiteDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<ty
       {!!lead.web_risk_flags?.length && (
         <div style={block}>
           <div style={SECTION}>Risiken</div>
-          {lead.web_risk_flags.map((f, i) => flagItem(i, f.flag, f.evidence, severityColor(f.severity), f.url ?? f.source))}
+          {lead.web_risk_flags.map((f, i) =>
+            flagItem(i, f.flag, f.evidence, severityColor(f.severity), f.url ?? f.source)
+          )}
         </div>
       )}
 
@@ -3873,14 +3888,25 @@ function WebsiteDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<ty
                     href={n.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ fontSize: 13, fontWeight: 600, color: c.text, textDecoration: 'none', flex: 1, lineHeight: 1.4 }}
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: c.text,
+                      textDecoration: 'none',
+                      flex: 1,
+                      lineHeight: 1.4,
+                    }}
                   >
                     {n.headline} ↗
                   </a>
                 ) : (
-                  <div style={{ fontSize: 13, fontWeight: 600, color: c.text, flex: 1, lineHeight: 1.4 }}>{n.headline}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: c.text, flex: 1, lineHeight: 1.4 }}>
+                    {n.headline}
+                  </div>
                 )}
-                {n.date_approx && <div style={{ fontSize: 10, color: c.textMuted, flexShrink: 0 }}>{n.date_approx}</div>}
+                {n.date_approx && (
+                  <div style={{ fontSize: 10, color: c.textMuted, flexShrink: 0 }}>{n.date_approx}</div>
+                )}
               </div>
               {n.significance && (
                 <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2, lineHeight: 1.5 }}>{n.significance}</div>
@@ -3925,7 +3951,14 @@ function WebsiteDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<ty
                   }}
                 >
                   {s.subtype && chip(s.subtype, '#94A3B8')}
-                  <span style={{ color: ACCENT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                  <span
+                    style={{
+                      color: ACCENT,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap' as const,
+                    }}
+                  >
                     {s.url!.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗
                   </span>
                 </a>
@@ -7644,7 +7677,7 @@ function HighlightedText({ text, isDark }: { text: string | null | undefined; is
                 </mark>
               ) : (
                 <span key={si}>{seg.text}</span>
-              ),
+              )
             )}
           </span>
         );
@@ -7706,9 +7739,7 @@ function ShipProgressiveSection({
       {headlineNode
         ? headlineNode
         : headline && (
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: c.text, margin: 0, lineHeight: 1.4 }}>
-              {headline}
-            </h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: c.text, margin: 0, lineHeight: 1.4 }}>{headline}</h3>
           )}
       {summary && (
         <p style={{ fontSize: 13, lineHeight: 1.6, color: c.textSub, margin: 0 }}>
@@ -7812,13 +7843,7 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
 
   const score = lead.shipping_sps_fit_score;
   const scoreColor =
-    typeof score === 'number'
-      ? score >= 70
-        ? '#10B981'
-        : score >= 40
-          ? '#F59E0B'
-          : '#EF4444'
-      : c.textMuted;
+    typeof score === 'number' ? (score >= 70 ? '#10B981' : score >= 40 ? '#F59E0B' : '#EF4444') : c.textMuted;
 
   const carriers = lead.shipping_carriers_detected ?? [];
   const countries = lead.shipping_countries ?? [];
@@ -7853,9 +7878,7 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
   if (!hasAny) {
     return (
       <div style={{ padding: '24px' }}>
-        <p style={{ fontSize: 14, color: c.textMuted }}>
-          Noch keine Shipping-Analyse vorhanden.
-        </p>
+        <p style={{ fontSize: 14, color: c.textMuted }}>Noch keine Shipping-Analyse vorhanden.</p>
       </div>
     );
   }
@@ -7881,9 +7904,10 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
 
   const analysisHeadline =
     lead.shipping_analysis_headline ?? lead.shipping_analysis_summary?.split('. ')[0]?.trim() ?? null;
-  const analysisSummary = lead.shipping_analysis_headline ? lead.shipping_analysis_summary ?? null : null;
+  const analysisSummary = lead.shipping_analysis_headline ? (lead.shipping_analysis_summary ?? null) : null;
   const analysisDetail =
-    lead.shipping_analysis_detail ?? (lead.shipping_analysis_headline ? null : lead.shipping_analysis_summary ?? null);
+    lead.shipping_analysis_detail ??
+    (lead.shipping_analysis_headline ? null : (lead.shipping_analysis_summary ?? null));
 
   const savingsHeadline = lead.shipping_savings_potential ?? null;
   const savingsSummary = lead.shipping_savings_potential_summary ?? null;
@@ -7962,14 +7986,21 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
             padding: '20px 16px',
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 700, color: c.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: c.textMuted,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}
+          >
             SPS-Fit Score
           </div>
           {typeof score === 'number' ? (
             <>
-              <div style={{ fontSize: 56, fontWeight: 900, color: scoreColor, lineHeight: 1 }}>
-                {score}
-              </div>
+              <div style={{ fontSize: 56, fontWeight: 900, color: scoreColor, lineHeight: 1 }}>{score}</div>
               <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>von 100</div>
             </>
           ) : (
@@ -8074,9 +8105,7 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
           {
             label: 'International',
             value:
-              typeof lead.shipping_international_pct === 'number'
-                ? `${lead.shipping_international_pct}%`
-                : undefined,
+              typeof lead.shipping_international_pct === 'number' ? `${lead.shipping_international_pct}%` : undefined,
           },
           { label: 'Tech-Integration', value: lead.shipping_tech_integration },
           {
@@ -8091,11 +8120,9 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
             <div key={i} style={cardStyle}>
               <div style={labelStyle}>{kv.label}</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{kv.value}</div>
-              {kv.hint && (
-                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>{kv.hint}</div>
-              )}
+              {kv.hint && <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>{kv.hint}</div>}
             </div>
-          ) : null,
+          ) : null
         )}
       </div>
 
@@ -8138,22 +8165,17 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
       {/* Recommended SPS services — accordion */}
       {recommendedServices.length > 0 && (
         <div style={cardStyle}>
-          <div style={{ ...labelStyle, color: '#10B981' }}>
-            Empfohlene SPS-Services ({recommendedServices.length})
-          </div>
+          <div style={{ ...labelStyle, color: '#10B981' }}>Empfohlene SPS-Services ({recommendedServices.length})</div>
           <ShipAccordion
             c={c}
             isDark={isDark}
             items={recommendedServices.map((rs) => {
-              const summary =
-                rs.summary ?? (rs.reason ? rs.reason.split(' ').slice(0, 6).join(' ') + '…' : '');
+              const summary = rs.summary ?? (rs.reason ? rs.reason.split(' ').slice(0, 6).join(' ') + '…' : '');
               return {
                 header: (
                   <>
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#10B981' }}>{rs.service}</span>
-                    {summary && (
-                      <span style={{ fontSize: 12, color: c.textMuted }}>· {summary}</span>
-                    )}
+                    {summary && <span style={{ fontSize: 12, color: c.textMuted }}>· {summary}</span>}
                   </>
                 ),
                 body: rs.reason ? (
@@ -8186,8 +8208,7 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
                     : sevKey === 'low'
                       ? '#0EA5E9'
                       : '#EF4444';
-              const summary =
-                p.summary ?? (p.evidence ? p.evidence.split(' ').slice(0, 6).join(' ') + '…' : '');
+              const summary = p.summary ?? (p.evidence ? p.evidence.split(' ').slice(0, 6).join(' ') + '…' : '');
               const linkUrl = p.source_url ?? reviewUrlFor(p.source, lead);
               return {
                 header: (
@@ -8210,9 +8231,7 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
                       </span>
                     )}
                     <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{p.signal}</span>
-                    {summary && (
-                      <span style={{ fontSize: 12, color: c.textMuted }}>· {summary}</span>
-                    )}
+                    {summary && <span style={{ fontSize: 12, color: c.textMuted }}>· {summary}</span>}
                   </>
                 ),
                 body: (
@@ -8386,7 +8405,14 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
               marginBottom: lead.shipping_data_confidence_reasoning ? 8 : 0,
             }}
           >
-            <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, confidence))}%`, background: confidenceColor, borderRadius: 99 }} />
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.max(0, Math.min(100, confidence))}%`,
+                background: confidenceColor,
+                borderRadius: 99,
+              }}
+            />
           </div>
           {lead.shipping_data_confidence_reasoning && (
             <p style={{ fontSize: 12, color: c.textSub, lineHeight: 1.55, margin: 0 }}>
@@ -8534,7 +8560,7 @@ function InfoTab({
   c: ReturnType<typeof colors>;
   isDark: boolean;
   onOpenDetail: (
-    view: 'website' | 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping',
+    view: 'website' | 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping'
   ) => void;
 }) {
   const [eventsOpen, setEventsOpen] = useState(false);
@@ -9759,13 +9785,7 @@ function InfoTab({
             const carriers = lead.shipping_carriers_detected ?? [];
             const painCount = lead.shipping_pain_signals?.length ?? 0;
             const scoreColor =
-              typeof score === 'number'
-                ? score >= 70
-                  ? '#10B981'
-                  : score >= 40
-                    ? '#F59E0B'
-                    : '#EF4444'
-                : '#0EA5E9';
+              typeof score === 'number' ? (score >= 70 ? '#10B981' : score >= 40 ? '#F59E0B' : '#EF4444') : '#0EA5E9';
             return (
               <>
                 {typeof score === 'number' ? (
@@ -9781,9 +9801,7 @@ function InfoTab({
                     >
                       {score}
                     </div>
-                    <div style={{ fontSize: 11, color: c.textMuted, marginBottom: 12 }}>
-                      SPS-Fit Score
-                    </div>
+                    <div style={{ fontSize: 11, color: c.textMuted, marginBottom: 12 }}>SPS-Fit Score</div>
                   </>
                 ) : (
                   <div style={{ marginBottom: 12 }}>
@@ -10105,18 +10123,17 @@ function OutboundTab({
   const [expandedDraftIdx, setExpandedDraftIdx] = useState<number | null>(null);
 
   // Apollo IDs already enriched for this lead — those rows are shown disabled.
-  const usedApolloIds = new Set(
-    lead.contacts.map((c) => c.apolloPersonId).filter((v): v is string => Boolean(v)),
-  );
+  const usedApolloIds = new Set(lead.contacts.map((c) => c.apolloPersonId).filter((v): v is string => Boolean(v)));
 
   // Search filter
   const [apolloSearch, setApolloSearch] = useState('');
-  const filteredApolloPersons = apolloPersons?.filter((p) => {
-    const q = apolloSearch.trim().toLowerCase();
-    if (!q) return true;
-    const haystack = [p.first_name, p.last_name_obfuscated, p.title].filter(Boolean).join(' ').toLowerCase();
-    return haystack.includes(q);
-  }) ?? null;
+  const filteredApolloPersons =
+    apolloPersons?.filter((p) => {
+      const q = apolloSearch.trim().toLowerCase();
+      if (!q) return true;
+      const haystack = [p.first_name, p.last_name_obfuscated, p.title].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(q);
+    }) ?? null;
 
   async function loadApolloPersons() {
     setApolloOpen(true);
@@ -10162,18 +10179,25 @@ function OutboundTab({
   useEffect(() => {
     if (!apolloOpen) return;
     if (absenderProfiles.length || angebotsProfiles.length) return;
-    type AbsenderRow = { id: string; profile_name?: string | null; sender_first_name?: string | null; sender_last_name?: string | null };
+    type AbsenderRow = {
+      id: string;
+      profile_name?: string | null;
+      sender_first_name?: string | null;
+      sender_last_name?: string | null;
+    };
     type AngebotsRow = { id: string; name?: string | null };
     void Promise.all([
-      fetch('/api/absender-profile').then((r) => (r.ok ? r.json() : { profiles: [] })).catch(() => ({ profiles: [] })),
-      fetch('/api/angebots-profile').then((r) => (r.ok ? r.json() : { profiles: [] })).catch(() => ({ profiles: [] })),
+      fetch('/api/absender-profile')
+        .then((r) => (r.ok ? r.json() : { profiles: [] }))
+        .catch(() => ({ profiles: [] })),
+      fetch('/api/angebots-profile')
+        .then((r) => (r.ok ? r.json() : { profiles: [] }))
+        .catch(() => ({ profiles: [] })),
     ]).then(([a, b]: [{ profiles?: AbsenderRow[] }, { profiles?: AngebotsRow[] }]) => {
       const ab: ProfileOption[] = (a.profiles ?? []).map((p) => ({
         id: p.id,
         label:
-          p.profile_name ||
-          [p.sender_first_name, p.sender_last_name].filter(Boolean).join(' ') ||
-          'Absender-Profil',
+          p.profile_name || [p.sender_first_name, p.sender_last_name].filter(Boolean).join(' ') || 'Absender-Profil',
       }));
       const an: ProfileOption[] = (b.profiles ?? []).map((p) => ({
         id: p.id,
@@ -10511,352 +10535,384 @@ function OutboundTab({
               >
                 Mehr Ansprechpartner laden
               </button>
-              {apolloOpen && typeof document !== 'undefined' && createPortal(
-                <div
-                  role="dialog"
-                  aria-modal="true"
-                  onClick={() => setApolloOpen(false)}
-                  style={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: 1000,
-                    background: 'rgba(0,0,0,0.55)',
-                    backdropFilter: 'blur(6px)',
-                    WebkitBackdropFilter: 'blur(6px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 24,
-                    fontFamily: 'var(--font-inter), sans-serif',
-                  }}
-                >
+              {apolloOpen &&
+                typeof document !== 'undefined' &&
+                createPortal(
                   <div
-                    onClick={(e) => e.stopPropagation()}
+                    role="dialog"
+                    aria-modal="true"
+                    onClick={() => setApolloOpen(false)}
                     style={{
-                      width: 'min(560px, 100%)',
-                      maxHeight: '85vh',
-                      overflowY: 'auto',
-                      borderRadius: 18,
-                      padding: '20px 22px',
+                      position: 'fixed',
+                      inset: 0,
+                      zIndex: 1000,
+                      background: 'rgba(0,0,0,0.55)',
+                      backdropFilter: 'blur(6px)',
+                      WebkitBackdropFilter: 'blur(6px)',
                       display: 'flex',
-                      flexDirection: 'column',
-                      gap: 14,
-                      background: isDark ? 'rgba(20,20,24,0.96)' : 'rgba(255,255,255,0.98)',
-                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
-                      boxShadow: isDark
-                        ? '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
-                        : '0 30px 80px rgba(15,23,42,0.25)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 24,
+                      fontFamily: 'var(--font-inter), sans-serif',
                     }}
                   >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>
-                      Apollo Ansprechpartner
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setApolloOpen(false)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: c.textMuted,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                        fontFamily: 'var(--font-inter), sans-serif',
-                      }}
-                    >
-                      Schließen
-                    </button>
-                  </div>
-
-                  {apolloLoading && <ApolloLoader isDark={isDark} c={c} />}
-                  {apolloError && (
-                    <div style={{ fontSize: 12, color: '#EF4444' }}>
-                      Fehler: {apolloError}
-                    </div>
-                  )}
-                  {!apolloLoading && !apolloError && apolloPersons && apolloPersons.length === 0 && (
-                    <div style={{ fontSize: 12, color: c.textMuted }}>
-                      Keine Ansprechpartner gefunden.
-                    </div>
-                  )}
-                  {!apolloLoading && apolloPersons && apolloPersons.length > 0 && (
-                    <input
-                      type="text"
-                      value={apolloSearch}
-                      onChange={(e) => setApolloSearch(e.target.value)}
-                      placeholder="Suche nach Name oder Rolle…"
-                      style={{
-                        padding: '9px 12px',
-                        borderRadius: 10,
-                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
-                        background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
-                        color: c.text,
-                        fontSize: 13,
-                        fontFamily: 'var(--font-inter), sans-serif',
-                        outline: 'none',
-                      }}
-                    />
-                  )}
-                  {!apolloLoading && filteredApolloPersons && apolloPersons && apolloPersons.length > 0 && filteredApolloPersons.length === 0 && (
-                    <div style={{ fontSize: 12, color: c.textMuted }}>
-                      Kein Treffer für „{apolloSearch}".
-                    </div>
-                  )}
-                  {!apolloLoading && filteredApolloPersons && filteredApolloPersons.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 360, overflowY: 'auto' }}>
-                      {filteredApolloPersons.map((p) => {
-                        const isUsed = usedApolloIds.has(p.id);
-                        const checked = apolloSelectedId === p.id;
-                        const fullName = [p.first_name, p.last_name_obfuscated].filter(Boolean).join(' ') || 'Unbenannt';
-                        const phoneYes = p.has_direct_phone === 'Yes';
-                        return (
-                          <label
-                            key={p.id}
-                            title={isUsed ? 'Bereits zu diesem Lead hinzugefügt' : undefined}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 12,
-                              padding: '10px 12px',
-                              borderRadius: 10,
-                              border: `1px solid ${checked ? c.accent : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
-                              background: checked ? c.accent + '14' : 'transparent',
-                              cursor: isUsed ? 'not-allowed' : 'pointer',
-                              opacity: isUsed ? 0.45 : 1,
-                              transition: 'background 0.12s, border-color 0.12s, opacity 0.12s',
-                            }}
-                          >
-                            <input
-                              type="radio"
-                              name={`apollo-person-${lead.id}`}
-                              checked={checked}
-                              disabled={isUsed}
-                              onChange={() => {
-                                if (!isUsed) setApolloSelectedId(p.id);
-                              }}
-                              style={{ accentColor: c.accent, cursor: isUsed ? 'not-allowed' : 'pointer' }}
-                            />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div
-                                style={{
-                                  fontSize: 13,
-                                  fontWeight: 700,
-                                  color: c.text,
-                                  textDecoration: isUsed ? 'line-through' : 'none',
-                                }}
-                              >
-                                {fullName}
-                              </div>
-                              {p.title && (
-                                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{p.title}</div>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              {isUsed ? (
-                                <span
-                                  style={{
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    color: c.textMuted,
-                                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                                    padding: '3px 8px',
-                                    borderRadius: 999,
-                                  }}
-                                >
-                                  Hinzugefügt
-                                </span>
-                              ) : (
-                                <>
-                                  {p.has_email && (
-                                    <span
-                                      style={{
-                                        fontSize: 10,
-                                        fontWeight: 700,
-                                        color: '#10B981',
-                                        background: 'rgba(16,185,129,0.12)',
-                                        padding: '3px 8px',
-                                        borderRadius: 999,
-                                      }}
-                                    >
-                                      E-Mail
-                                    </span>
-                                  )}
-                                  {phoneYes && (
-                                    <span
-                                      style={{
-                                        fontSize: 10,
-                                        fontWeight: 700,
-                                        color: '#818CF8',
-                                        background: 'rgba(129,140,248,0.12)',
-                                        padding: '3px 8px',
-                                        borderRadius: 999,
-                                      }}
-                                    >
-                                      Telefon
-                                    </span>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Outbound-Generierung */}
-                  {!apolloLoading && apolloPersons && apolloPersons.length > 0 && (
                     <div
+                      onClick={(e) => e.stopPropagation()}
                       style={{
-                        marginTop: 4,
-                        padding: '14px 14px 16px',
-                        borderRadius: 12,
-                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
-                        background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                        width: 'min(560px, 100%)',
+                        maxHeight: '85vh',
+                        overflowY: 'auto',
+                        borderRadius: 18,
+                        padding: '20px 22px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 12,
+                        gap: 14,
+                        background: isDark ? 'rgba(20,20,24,0.96)' : 'rgba(255,255,255,0.98)',
+                        border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                        boxShadow: isDark
+                          ? '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)'
+                          : '0 30px 80px rgba(15,23,42,0.25)',
                       }}
                     >
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 800,
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          color: c.textMuted,
-                        }}
-                      >
-                        Outbound generieren
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: c.text }}>Apollo Ansprechpartner</div>
+                        <button
+                          type="button"
+                          onClick={() => setApolloOpen(false)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: c.textMuted,
+                            fontSize: 12,
+                            cursor: 'pointer',
+                            fontFamily: 'var(--font-inter), sans-serif',
+                          }}
+                        >
+                          Schließen
+                        </button>
                       </div>
 
-                      {genDone ? (
-                        <GenerateDone c={c} />
-                      ) : genLoading ? (
-                        <GenerateLoader isDark={isDark} c={c} />
-                      ) : (
-                      <>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>Absender-Profil</span>
-                          <select
-                            value={absenderProfilId}
-                            onChange={(e) => setAbsenderProfilId(e.target.value)}
+                      {apolloLoading && <ApolloLoader isDark={isDark} c={c} />}
+                      {apolloError && <div style={{ fontSize: 12, color: '#EF4444' }}>Fehler: {apolloError}</div>}
+                      {!apolloLoading && !apolloError && apolloPersons && apolloPersons.length === 0 && (
+                        <div style={{ fontSize: 12, color: c.textMuted }}>Keine Ansprechpartner gefunden.</div>
+                      )}
+                      {!apolloLoading && apolloPersons && apolloPersons.length > 0 && (
+                        <input
+                          type="text"
+                          value={apolloSearch}
+                          onChange={(e) => setApolloSearch(e.target.value)}
+                          placeholder="Suche nach Name oder Rolle…"
+                          style={{
+                            padding: '9px 12px',
+                            borderRadius: 10,
+                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+                            background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
+                            color: c.text,
+                            fontSize: 13,
+                            fontFamily: 'var(--font-inter), sans-serif',
+                            outline: 'none',
+                          }}
+                        />
+                      )}
+                      {!apolloLoading &&
+                        filteredApolloPersons &&
+                        apolloPersons &&
+                        apolloPersons.length > 0 &&
+                        filteredApolloPersons.length === 0 && (
+                          <div style={{ fontSize: 12, color: c.textMuted }}>Kein Treffer für „{apolloSearch}".</div>
+                        )}
+                      {!apolloLoading && filteredApolloPersons && filteredApolloPersons.length > 0 && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 6,
+                            maxHeight: 360,
+                            overflowY: 'auto',
+                          }}
+                        >
+                          {filteredApolloPersons.map((p) => {
+                            const isUsed = usedApolloIds.has(p.id);
+                            const checked = apolloSelectedId === p.id;
+                            const fullName =
+                              [p.first_name, p.last_name_obfuscated].filter(Boolean).join(' ') || 'Unbenannt';
+                            const phoneYes = p.has_direct_phone === 'Yes';
+                            return (
+                              <label
+                                key={p.id}
+                                title={isUsed ? 'Bereits zu diesem Lead hinzugefügt' : undefined}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 12,
+                                  padding: '10px 12px',
+                                  borderRadius: 10,
+                                  border: `1px solid ${checked ? c.accent : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                                  background: checked ? c.accent + '14' : 'transparent',
+                                  cursor: isUsed ? 'not-allowed' : 'pointer',
+                                  opacity: isUsed ? 0.45 : 1,
+                                  transition: 'background 0.12s, border-color 0.12s, opacity 0.12s',
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`apollo-person-${lead.id}`}
+                                  checked={checked}
+                                  disabled={isUsed}
+                                  onChange={() => {
+                                    if (!isUsed) setApolloSelectedId(p.id);
+                                  }}
+                                  style={{ accentColor: c.accent, cursor: isUsed ? 'not-allowed' : 'pointer' }}
+                                />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div
+                                    style={{
+                                      fontSize: 13,
+                                      fontWeight: 700,
+                                      color: c.text,
+                                      textDecoration: isUsed ? 'line-through' : 'none',
+                                    }}
+                                  >
+                                    {fullName}
+                                  </div>
+                                  {p.title && (
+                                    <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{p.title}</div>
+                                  )}
+                                </div>
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  {isUsed ? (
+                                    <span
+                                      style={{
+                                        fontSize: 10,
+                                        fontWeight: 700,
+                                        color: c.textMuted,
+                                        background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                                        padding: '3px 8px',
+                                        borderRadius: 999,
+                                      }}
+                                    >
+                                      Hinzugefügt
+                                    </span>
+                                  ) : (
+                                    <>
+                                      {p.has_email && (
+                                        <span
+                                          style={{
+                                            fontSize: 10,
+                                            fontWeight: 700,
+                                            color: '#10B981',
+                                            background: 'rgba(16,185,129,0.12)',
+                                            padding: '3px 8px',
+                                            borderRadius: 999,
+                                          }}
+                                        >
+                                          E-Mail
+                                        </span>
+                                      )}
+                                      {phoneYes && (
+                                        <span
+                                          style={{
+                                            fontSize: 10,
+                                            fontWeight: 700,
+                                            color: '#818CF8',
+                                            background: 'rgba(129,140,248,0.12)',
+                                            padding: '3px 8px',
+                                            borderRadius: 999,
+                                          }}
+                                        >
+                                          Telefon
+                                        </span>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Outbound-Generierung */}
+                      {!apolloLoading && apolloPersons && apolloPersons.length > 0 && (
+                        <div
+                          style={{
+                            marginTop: 4,
+                            padding: '14px 14px 16px',
+                            borderRadius: 12,
+                            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 12,
+                          }}
+                        >
+                          <div
                             style={{
-                              padding: '8px 10px',
-                              borderRadius: 8,
-                              border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
-                              background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
-                              color: c.text,
-                              fontSize: 12,
-                              fontFamily: 'var(--font-inter), sans-serif',
-                              cursor: 'pointer',
+                              fontSize: 11,
+                              fontWeight: 800,
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase',
+                              color: c.textMuted,
                             }}
                           >
-                            {absenderProfiles.length === 0 && <option value="">— keine Profile —</option>}
-                            {absenderProfiles.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>Angebots-Profil</span>
-                          <select
-                            value={angebotsProfilId}
-                            onChange={(e) => setAngebotsProfilId(e.target.value)}
-                            style={{
-                              padding: '8px 10px',
-                              borderRadius: 8,
-                              border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
-                              background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
-                              color: c.text,
-                              fontSize: 12,
-                              fontFamily: 'var(--font-inter), sans-serif',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {angebotsProfiles.length === 0 && <option value="">— keine Profile —</option>}
-                            {angebotsProfiles.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
+                            Outbound generieren
+                          </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: c.text, cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={getEmail}
-                            onChange={(e) => setGetEmail(e.target.checked)}
-                            style={{ accentColor: c.accent, cursor: 'pointer' }}
-                          />
-                          E-Mail-Adresse abrufen
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: c.text, cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={getTelephone}
-                            onChange={(e) => setGetTelephone(e.target.checked)}
-                            style={{ accentColor: c.accent, cursor: 'pointer' }}
-                          />
-                          Telefonnummer abrufen
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: c.text, cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={generateEmail}
-                            onChange={(e) => setGenerateEmail(e.target.checked)}
-                            style={{ accentColor: c.accent, cursor: 'pointer' }}
-                          />
-                          E-Mail generieren
-                        </label>
-                      </div>
+                          {genDone ? (
+                            <GenerateDone c={c} />
+                          ) : genLoading ? (
+                            <GenerateLoader isDark={isDark} c={c} />
+                          ) : (
+                            <>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>
+                                    Absender-Profil
+                                  </span>
+                                  <select
+                                    value={absenderProfilId}
+                                    onChange={(e) => setAbsenderProfilId(e.target.value)}
+                                    style={{
+                                      padding: '8px 10px',
+                                      borderRadius: 8,
+                                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+                                      background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
+                                      color: c.text,
+                                      fontSize: 12,
+                                      fontFamily: 'var(--font-inter), sans-serif',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {absenderProfiles.length === 0 && <option value="">— keine Profile —</option>}
+                                    {absenderProfiles.map((p) => (
+                                      <option key={p.id} value={p.id}>
+                                        {p.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>
+                                    Angebots-Profil
+                                  </span>
+                                  <select
+                                    value={angebotsProfilId}
+                                    onChange={(e) => setAngebotsProfilId(e.target.value)}
+                                    style={{
+                                      padding: '8px 10px',
+                                      borderRadius: 8,
+                                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
+                                      background: isDark ? 'rgba(0,0,0,0.3)' : '#fff',
+                                      color: c.text,
+                                      fontSize: 12,
+                                      fontFamily: 'var(--font-inter), sans-serif',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {angebotsProfiles.length === 0 && <option value="">— keine Profile —</option>}
+                                    {angebotsProfiles.map((p) => (
+                                      <option key={p.id} value={p.id}>
+                                        {p.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
 
-                      {genError && (
-                        <div style={{ fontSize: 12, color: '#EF4444' }}>Fehler: {genError}</div>
-                      )}
-                      {genSuccess && (
-                        <div style={{ fontSize: 12, color: '#10B981' }}>{genSuccess}</div>
-                      )}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <label
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    fontSize: 12,
+                                    color: c.text,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={getEmail}
+                                    onChange={(e) => setGetEmail(e.target.checked)}
+                                    style={{ accentColor: c.accent, cursor: 'pointer' }}
+                                  />
+                                  E-Mail-Adresse abrufen
+                                </label>
+                                <label
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    fontSize: 12,
+                                    color: c.text,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={getTelephone}
+                                    onChange={(e) => setGetTelephone(e.target.checked)}
+                                    style={{ accentColor: c.accent, cursor: 'pointer' }}
+                                  />
+                                  Telefonnummer abrufen
+                                </label>
+                                <label
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    fontSize: 12,
+                                    color: c.text,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={generateEmail}
+                                    onChange={(e) => setGenerateEmail(e.target.checked)}
+                                    style={{ accentColor: c.accent, cursor: 'pointer' }}
+                                  />
+                                  E-Mail generieren
+                                </label>
+                              </div>
 
-                      <button
-                        type="button"
-                        disabled={!apolloSelectedId || genLoading}
-                        onClick={() => void generateOutbound()}
-                        style={{
-                          alignSelf: 'flex-end',
-                          padding: '9px 16px',
-                          borderRadius: 10,
-                          border: 'none',
-                          background:
-                            !apolloSelectedId || genLoading
-                              ? isDark
-                                ? 'rgba(255,255,255,0.08)'
-                                : 'rgba(0,0,0,0.08)'
-                              : c.accent,
-                          color: !apolloSelectedId || genLoading ? c.textMuted : '#fff',
-                          fontSize: 13,
-                          fontWeight: 800,
-                          cursor: !apolloSelectedId || genLoading ? 'not-allowed' : 'pointer',
-                          fontFamily: 'var(--font-inter), sans-serif',
-                          transition: 'background 0.12s',
-                        }}
-                      >
-                        Outbound generieren
-                      </button>
-                      </>
+                              {genError && <div style={{ fontSize: 12, color: '#EF4444' }}>Fehler: {genError}</div>}
+                              {genSuccess && <div style={{ fontSize: 12, color: '#10B981' }}>{genSuccess}</div>}
+
+                              <button
+                                type="button"
+                                disabled={!apolloSelectedId || genLoading}
+                                onClick={() => void generateOutbound()}
+                                style={{
+                                  alignSelf: 'flex-end',
+                                  padding: '9px 16px',
+                                  borderRadius: 10,
+                                  border: 'none',
+                                  background:
+                                    !apolloSelectedId || genLoading
+                                      ? isDark
+                                        ? 'rgba(255,255,255,0.08)'
+                                        : 'rgba(0,0,0,0.08)'
+                                      : c.accent,
+                                  color: !apolloSelectedId || genLoading ? c.textMuted : '#fff',
+                                  fontSize: 13,
+                                  fontWeight: 800,
+                                  cursor: !apolloSelectedId || genLoading ? 'not-allowed' : 'pointer',
+                                  fontFamily: 'var(--font-inter), sans-serif',
+                                  transition: 'background 0.12s',
+                                }}
+                              >
+                                Outbound generieren
+                              </button>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                  </div>
-                </div>,
-                document.body,
-              )}
+                  </div>,
+                  document.body
+                )}
             </div>
           </div>
 
@@ -11036,8 +11092,32 @@ export default function LeadDetailPage() {
   const c = colors(theme);
   const isDark = theme === 'dark';
 
-  const [lead, setLead] = useState<LeadDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const LEAD_CACHE_PREFIX = 'lead_detail_';
+  const LEAD_CACHE_TTL = 5 * 60_000; // 5 min
+
+  const [lead, setLead] = useState<LeadDetail | null>(() => {
+    if (typeof window === 'undefined' || !id) return null;
+    try {
+      const raw = localStorage.getItem(LEAD_CACHE_PREFIX + id);
+      if (raw) {
+        const { ts, data } = JSON.parse(raw) as { ts: number; data: Record<string, unknown> };
+        if (Date.now() - ts < LEAD_CACHE_TTL) return mapDbLead(data);
+      }
+    } catch {}
+    return null;
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !id) return true;
+    try {
+      const raw = localStorage.getItem(LEAD_CACHE_PREFIX + id);
+      if (raw) {
+        const { ts } = JSON.parse(raw) as { ts: number };
+        return Date.now() - ts >= LEAD_CACHE_TTL;
+      }
+    } catch {}
+    return true;
+  });
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
   const [detailView, setDetailView] = useState<
     'website' | 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping' | null
@@ -11066,13 +11146,16 @@ export default function LeadDetailPage() {
         mapped.contacts = (data.contacts ?? []).map(mapApiContact);
         setLead(mapped);
         setStatus(mapped.status);
+        try {
+          localStorage.setItem(LEAD_CACHE_PREFIX + id, JSON.stringify({ ts: Date.now(), data: data.lead }));
+        } catch {}
       } catch {
         /* leave loading state, handle gracefully */
       } finally {
         if (opts?.showSpinner !== false) setLoading(false);
       }
     },
-    [id],
+    [id]
   );
 
   useEffect(() => {

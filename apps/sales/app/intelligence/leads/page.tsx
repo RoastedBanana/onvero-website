@@ -52,30 +52,20 @@ function mapApiLead(row: any): Lead {
       : typeof row.fit_score === 'number' && row.fit_score > 0
         ? row.fit_score
         : 0;
-  const signals: number = Array.isArray(row.growth_signals) ? row.growth_signals.length : 0;
-  const shopSystem = detectShopSystem(row.web_tech_stack);
 
   return {
     id: row.id as string,
     name: (row.company_name as string) ?? '',
     city: (row.city as string) ?? '',
     industry: (row.industry as string) ?? '',
-    system: shopSystem,
-    carrier: '',
     score,
-    fit: score > 0 ? Math.round(score * 0.95) : 0,
-    volume: score > 0 ? Math.round(score * 0.9) : 0,
-    timing: score > 0 ? Math.round(score * 0.95) : 0,
-    l1: true,
-    l2: !!(row.industry && row.city),
-    l3: !!(Array.isArray(row.web_tech_stack) && row.web_tech_stack.length > 0),
-    l4: signals > 0,
+    tier: (row.tier as string | undefined) ?? undefined,
     status: tierToStatus(row.tier),
     employees: row.num_employees ? String(row.num_employees) : (row.estimated_employees_scraped ?? ''),
     revenue: formatRevenue(row.fin_revenue_eur, row.estimated_revenue_scraped),
+    founded: row.founded_year ? String(row.founded_year) : undefined,
     added: row.created_at ? new Date(row.created_at as string).toLocaleDateString('de-DE') : '',
     addedTs: row.created_at ? new Date(row.created_at as string).getTime() : 0,
-    signals: signals > 0 ? signals : undefined,
     enrichmentStatus: (row.enrichment_status as string) ?? 'raw',
     logo_url: (row.logo_url as string | undefined) ?? undefined,
   };
@@ -86,22 +76,14 @@ interface Lead {
   name: string;
   city: string;
   industry: string;
-  system: string;
-  carrier: string;
   score: number;
-  fit: number;
-  volume: number;
-  timing: number;
-  l1: boolean;
-  l2: boolean;
-  l3: boolean;
-  l4: boolean;
+  tier?: string;
   status: Status;
   employees: string;
   revenue: string;
+  founded?: string;
   added: string;
   addedTs: number;
-  signals?: number;
   enrichmentStatus?: string;
   logo_url?: string;
 }
@@ -292,6 +274,41 @@ function SignalBadge({ count }: { count: number }) {
 
 // ─── Custom checkbox ──────────────────────────────────────────────────────────
 
+function ScoreRing({ score }: { score: number }) {
+  const size = 36;
+  const r = 14;
+  const circ = 2 * Math.PI * r;
+  const color = score >= 75 ? '#10B981' : score >= 50 ? '#F97316' : '#EF4444';
+  return (
+    <svg width={size} height={size} style={{ flexShrink: 0 }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E5E7EB" strokeWidth={2.5} />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={2.5}
+        strokeDasharray={`${(score / 100) * circ} ${circ}`}
+        strokeDashoffset={circ * 0.25}
+        strokeLinecap="round"
+      />
+      <text
+        x={size / 2}
+        y={size / 2}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={9}
+        fontWeight={800}
+        fill={color}
+        fontFamily="var(--font-inter), sans-serif"
+      >
+        {score}
+      </text>
+    </svg>
+  );
+}
+
 function Checkbox({
   checked,
   indeterminate = false,
@@ -471,12 +488,29 @@ export default function LeadsPage() {
   const c = colors(theme);
   const isDark = theme === 'dark';
 
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [archivedLeads, setArchivedLeads] = useState<Lead[]>([]);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const CACHE_KEY = 'leads_list_cache';
+  const CACHE_TTL = 2 * 60_000; // 2 min
+
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) return (JSON.parse(raw) as { data: Lead[] }).data ?? [];
+    } catch {}
+    return [];
+  });
+
+  const [initialLoading, setInitialLoading] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      return !sessionStorage.getItem(CACHE_KEY);
+    } catch {
+      return true;
+    }
+  });
+
   const [newLeadIds, setNewLeadIds] = useState<Set<string>>(new Set());
   const knownIdsRef = useRef<Set<string>>(new Set());
-  const [showArchive, setShowArchive] = useState(false);
 
   // Auto-open export modal via ?export=1
   useEffect(() => {
@@ -487,51 +521,57 @@ export default function LeadsPage() {
   }, [searchParams, router]);
 
   useEffect(() => {
+    // Skip fetch if cache is still fresh
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const { ts, data } = JSON.parse(raw) as { ts: number; data: Lead[] };
+        if (Date.now() - ts < CACHE_TTL) {
+          knownIdsRef.current = new Set(data.map((l) => l.id));
+          return;
+        }
+      }
+    } catch {}
+
     async function fetchLeads() {
       try {
         const res = await fetch('/api/leads');
-        const data = await res.json();
-        if (Array.isArray(data.leads)) {
-          const mapped = data.leads.map(mapApiLead);
+        const d = await res.json();
+        if (Array.isArray(d.leads)) {
+          const mapped = d.leads.map(mapApiLead);
           setLeads(mapped);
           knownIdsRef.current = new Set(mapped.map((l: Lead) => l.id));
+          try {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: mapped }));
+          } catch {}
         }
       } catch {}
       setInitialLoading(false);
     }
-
     fetchLeads();
 
     const poll = setInterval(async () => {
       try {
         const res = await fetch('/api/leads');
-        const data = await res.json();
-        if (!Array.isArray(data.leads)) return;
-        const mapped = data.leads.map(mapApiLead);
+        const d = await res.json();
+        if (!Array.isArray(d.leads)) return;
+        const mapped = d.leads.map(mapApiLead);
         const fresh = mapped.filter((l: Lead) => !knownIdsRef.current.has(l.id));
         if (fresh.length > 0) {
-          const freshIds = new Set<string>(fresh.map((l: Lead) => l.id));
-          setNewLeadIds(freshIds);
+          setNewLeadIds(new Set<string>(fresh.map((l: Lead) => l.id)));
           setTimeout(() => setNewLeadIds(new Set()), 4000);
           knownIdsRef.current = new Set(mapped.map((l: Lead) => l.id));
         }
         setLeads(mapped);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: mapped }));
+        } catch {}
       } catch {}
-    }, 15000);
+    }, 30_000);
 
     return () => clearInterval(poll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (showArchive) {
-      fetch('/api/leads?archived=true')
-        .then((r) => r.json())
-        .then((data) => {
-          if (Array.isArray(data.leads)) setArchivedLeads(data.leads.map(mapApiLead));
-        })
-        .catch(() => {});
-    }
-  }, [showArchive]);
 
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'added'>(() => {
@@ -619,19 +659,6 @@ export default function LeadsPage() {
       }).catch(() => {})
     );
     setSelectedIds(new Set());
-  }
-
-  function restoreLead(id: string) {
-    const lead = archivedLeads.find((l) => l.id === id);
-    if (!lead) return;
-    setArchivedLeads((prev) => prev.filter((l) => l.id !== id));
-    setLeads((prev) => [lead, ...prev]);
-    knownIdsRef.current.add(id);
-    fetch(`/api/leads/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ archived: false }),
-    }).catch(() => {});
   }
 
   function openExportModal() {
@@ -763,62 +790,6 @@ export default function LeadsPage() {
 
         {/* Filter bar */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {/* Archiv-Toggle */}
-          <button
-            onClick={() => setShowArchive((v) => !v)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '7px 13px',
-              border: `1.5px solid ${showArchive ? '#10B981' : isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)'}`,
-              borderRadius: 9,
-              background: showArchive
-                ? 'rgba(16,185,129,0.12)'
-                : isDark
-                  ? 'rgba(255,255,255,0.06)'
-                  : 'rgba(255,255,255,0.50)',
-              color: showArchive ? '#10B981' : c.textMuted,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              flexShrink: 0,
-              position: 'relative',
-            }}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="1" y="4" width="14" height="10" rx="1.5" />
-              <path d="M1 4l2-3h10l2 3" />
-              <line x1="6" y1="8" x2="10" y2="8" />
-            </svg>
-            Archiv
-            {archivedLeads.length > 0 && (
-              <span
-                style={{
-                  background: c.accent,
-                  color: '#fff',
-                  borderRadius: 99,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  padding: '1px 6px',
-                  marginLeft: 2,
-                }}
-              >
-                {archivedLeads.length}
-              </span>
-            )}
-          </button>
-
           <div style={{ flex: 1, position: 'relative' }}>
             <svg
               style={{
@@ -963,7 +934,7 @@ export default function LeadsPage() {
                         c={c}
                       />
                     </th>
-                    {['Unternehmen', 'Stadt', 'Branche', 'Carrier', 'Layer', 'Signale', 'Aktion'].map((h) => (
+                    {['Unternehmen', 'Branche', 'Stadt', 'Mitarbeiter', 'Score', 'Status', ''].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -1017,60 +988,117 @@ export default function LeadsPage() {
                           <Checkbox checked={isSelected} onChange={() => toggleSelect(lead.id)} isDark={isDark} c={c} />
                         </td>
 
-                        {/* Company name with avatar */}
-                        <td style={{ padding: '10px 14px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {/* Unternehmen */}
+                        <td style={{ padding: '10px 14px', maxWidth: 260 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                             <LogoAvatar
                               name={lead.name}
                               logoUrl={lead.logo_url}
-                              size={34}
-                              radius={9}
-                              fontSize={11}
+                              size={36}
+                              radius={10}
+                              fontSize={12}
                               isDark={isDark}
                               av={av}
                             />
-                            <div>
-                              <div style={{ fontWeight: 700, color: c.text, fontSize: 13 }}>{lead.name}</div>
-                              <div style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>
-                                {lead.employees} MA · {lead.revenue}
+                            <div style={{ minWidth: 0 }}>
+                              <div
+                                style={{
+                                  fontWeight: 700,
+                                  color: c.text,
+                                  fontSize: 13,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}
+                              >
+                                {lead.name}
+                              </div>
+                              <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>
+                                {[lead.founded ? `Gegr. ${lead.founded}` : null, lead.revenue || null]
+                                  .filter(Boolean)
+                                  .join(' · ') || <span style={{ opacity: 0.5 }}>—</span>}
                               </div>
                             </div>
                           </div>
                         </td>
 
-                        <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13 }}>{lead.city}</td>
+                        {/* Branche */}
                         <td style={{ padding: '10px 14px' }}>
                           <span
                             style={{
                               fontSize: 12,
                               color: c.textSub,
-                              background: c.bgPage,
+                              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
                               border: `1px solid ${c.border}`,
-                              borderRadius: 5,
-                              padding: '2px 7px',
-                              fontWeight: 600,
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              fontWeight: 500,
+                              whiteSpace: 'nowrap',
                             }}
                           >
-                            {lead.industry}
+                            {lead.industry || '—'}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 14px' }}>
-                          <CarrierPill name={lead.carrier} isDark={isDark} />
-                        </td>
-                        <td style={{ padding: '10px 14px' }}>
-                          <LayerBar l1={lead.l1} l2={lead.l2} l3={lead.l3} l4={lead.l4} />
+
+                        {/* Stadt */}
+                        <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13, whiteSpace: 'nowrap' }}>
+                          {lead.city || '—'}
                         </td>
 
-                        {/* Signals */}
+                        {/* Mitarbeiter */}
+                        <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13, whiteSpace: 'nowrap' }}>
+                          {lead.employees ? `${lead.employees} MA` : '—'}
+                        </td>
+
+                        {/* Score */}
                         <td style={{ padding: '10px 14px' }}>
-                          {lead.signals ? (
-                            <SignalBadge count={lead.signals} />
+                          {lead.score > 0 ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <ScoreRing score={lead.score} />
+                            </div>
                           ) : (
-                            <span style={{ fontSize: 11, color: c.textMuted }}>—</span>
+                            <span style={{ fontSize: 12, color: c.textMuted }}>—</span>
                           )}
                         </td>
 
-                        <td style={{ padding: '10px 14px', width: 90 }}>
+                        {/* Status / Tier */}
+                        <td style={{ padding: '10px 14px' }}>
+                          {lead.tier ? (
+                            (() => {
+                              const t = lead.tier.toLowerCase();
+                              const color = t.startsWith('hot') ? '#EF4444' : t === 'warm' ? '#F97316' : '#94A3B8';
+                              const bg = t.startsWith('hot')
+                                ? 'rgba(239,68,68,0.10)'
+                                : t === 'warm'
+                                  ? 'rgba(249,115,22,0.10)'
+                                  : 'rgba(148,163,184,0.10)';
+                              return (
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    padding: '3px 10px',
+                                    borderRadius: 99,
+                                    background: bg,
+                                    color,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: color }} />
+                                  {lead.tier}
+                                </span>
+                              );
+                            })()
+                          ) : (
+                            <span style={{ fontSize: 12, color: c.textMuted }}>—</span>
+                          )}
+                        </td>
+
+                        {/* Öffnen */}
+                        <td style={{ padding: '10px 14px', width: 80, textAlign: 'right' }}>
                           {isHovered ? (
                             <button
                               onClick={(e) => {
@@ -1078,12 +1106,12 @@ export default function LeadsPage() {
                                 router.push(`/intelligence/leads/${lead.id}`);
                               }}
                               style={{
-                                padding: '4px 12px',
-                                background: c.accent,
+                                padding: '5px 13px',
+                                background: '#4F46E5',
                                 color: '#fff',
                                 border: 'none',
-                                borderRadius: 7,
-                                fontSize: 11,
+                                borderRadius: 8,
+                                fontSize: 12,
                                 fontWeight: 700,
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
@@ -1093,7 +1121,7 @@ export default function LeadsPage() {
                               Öffnen →
                             </button>
                           ) : (
-                            <span style={{ color: c.textMuted, fontSize: 11, fontWeight: 600 }}>
+                            <span style={{ color: c.textMuted, fontSize: 11, fontWeight: 500 }}>
                               {lead.added.replace('.2026', '')}
                             </span>
                           )}
@@ -1123,110 +1151,6 @@ export default function LeadsPage() {
             </>
           )}
         </div>
-
-        {/* ── ARCHIV VIEW ────────────────────────────────────────────────── */}
-        {showArchive && (
-          <div style={{ ...glassCard(isDark), borderRadius: 14, overflow: 'hidden' }}>
-            <div
-              style={{
-                padding: '14px 20px',
-                borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
-                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-              }}
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke={c.textMuted}
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="1" y="4" width="14" height="10" rx="1.5" />
-                <path d="M1 4l2-3h10l2 3" />
-                <line x1="6" y1="8" x2="10" y2="8" />
-              </svg>
-              <span style={{ fontSize: 13, fontWeight: 700, color: c.text }}>Archiv</span>
-              <span style={{ fontSize: 12, color: c.textMuted }}>
-                {archivedLeads.length} {archivedLeads.length === 1 ? 'Lead' : 'Leads'}
-              </span>
-            </div>
-            {archivedLeads.length === 0 ? (
-              <div style={{ padding: '48px 24px', textAlign: 'center', color: c.textMuted, fontSize: 13 }}>
-                Keine archivierten Leads
-              </div>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr
-                    style={{
-                      background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                      borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
-                    }}
-                  >
-                    {['Unternehmen', 'Branche', 'System', ''].map((h, i) => (
-                      <th
-                        key={i}
-                        style={{
-                          padding: '9px 16px',
-                          textAlign: 'left',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: c.textMuted,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {archivedLeads.map((l) => (
-                    <tr
-                      key={l.id}
-                      style={{
-                        borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
-                      }}
-                    >
-                      <td style={{ padding: '11px 16px' }}>
-                        <div style={{ fontWeight: 600, color: c.text }}>{l.name}</div>
-                        <div style={{ fontSize: 11, color: c.textMuted }}>{l.city}</div>
-                      </td>
-                      <td style={{ padding: '11px 16px', fontSize: 12, color: c.textSub }}>{l.industry}</td>
-                      <td style={{ padding: '11px 16px' }}>
-                        <SystemPill name={l.system} />
-                      </td>
-                      <td style={{ padding: '11px 16px', textAlign: 'right' }}>
-                        <button
-                          onClick={() => restoreLead(l.id)}
-                          style={{
-                            padding: '5px 12px',
-                            border: isDark ? '1.5px solid rgba(255,255,255,0.12)' : '1.5px solid rgba(0,0,0,0.1)',
-                            borderRadius: 7,
-                            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                            color: c.text,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            fontFamily: 'inherit',
-                          }}
-                        >
-                          Wiederherstellen
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── SELECTION BAR ─────────────────────────────────────────────────── */}
