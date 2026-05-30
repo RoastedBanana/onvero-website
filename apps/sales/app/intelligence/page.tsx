@@ -737,96 +737,95 @@ function StatusBar({ leads, c, isDark }: { leads: Lead[]; c: ReturnType<typeof c
   const total = leads.length || 1;
 
   const tiles = [
-    {
-      label: 'Hot',
-      emoji: '🔥',
-      count: hot,
-      pct: Math.round((hot / total) * 100),
-      color: '#EF4444',
-      grad: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-      shadow: 'rgba(239,68,68,0.28)',
-    },
+    { label: 'Hot', count: hot, pct: Math.round((hot / total) * 100), color: '#EF4444', glow: 'rgba(239,68,68,0.18)' },
     {
       label: 'Warm',
-      emoji: '☀️',
       count: warm,
       pct: Math.round((warm / total) * 100),
       color: '#F97316',
-      grad: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-      shadow: 'rgba(249,115,22,0.24)',
+      glow: 'rgba(249,115,22,0.15)',
     },
     {
       label: 'Kalt',
-      emoji: '❄️',
       count: cold,
       pct: Math.round((cold / total) * 100),
       color: '#94A3B8',
-      grad: 'linear-gradient(135deg, #64748B 0%, #475569 100%)',
-      shadow: 'rgba(100,116,139,0.20)',
+      glow: 'rgba(148,163,184,0.12)',
     },
   ];
 
   return (
     <GlassCard isDark={isDark} style={{ padding: '16px 18px', flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: c.text, marginBottom: 12 }}>Lead-Verteilung</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: c.text, marginBottom: 14 }}>Lead-Verteilung</div>
 
-      {/* 3 stat tiles */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      {/* Tiles */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {tiles.map((t, i) => (
           <motion.div
             key={t.label}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.07, duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ delay: i * 0.07, duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
             style={{
               flex: 1,
-              padding: '12px 10px',
+              padding: '14px 10px 12px',
               borderRadius: 12,
-              background: t.grad,
-              boxShadow: `0 4px 14px ${t.shadow}`,
+              background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)',
+              border: `1px solid ${t.color}30`,
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: `0 0 20px ${t.glow}, inset 0 1px 0 rgba(255,255,255,0.12)`,
               textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
-            <div style={{ fontSize: 18, lineHeight: 1, marginBottom: 4 }}>{t.emoji}</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            {/* Top accent line */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: '20%',
+                right: '20%',
+                height: 2,
+                borderRadius: 99,
+                background: t.color,
+                opacity: 0.8,
+              }}
+            />
+            <div style={{ fontSize: 26, fontWeight: 900, color: t.color, letterSpacing: '-0.04em', lineHeight: 1 }}>
               {t.count}
             </div>
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.75)',
-                marginTop: 3,
+                color: c.textMuted,
+                marginTop: 5,
                 textTransform: 'uppercase',
-                letterSpacing: '0.06em',
+                letterSpacing: '0.07em',
               }}
             >
               {t.label}
             </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: t.color, marginTop: 3, opacity: 0.85 }}>{t.pct}%</div>
           </motion.div>
         ))}
       </div>
 
       {/* Segmented bar */}
-      <div style={{ display: 'flex', height: 5, borderRadius: 99, overflow: 'hidden', gap: 2 }}>
+      <div style={{ display: 'flex', height: 4, borderRadius: 99, overflow: 'hidden', gap: 2 }}>
         {tiles.map((t) =>
           t.pct > 0 ? (
             <motion.div
               key={t.label}
               initial={{ flex: 0 }}
               animate={{ flex: t.pct }}
-              transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
-              style={{ background: t.color, borderRadius: 99 }}
+              transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+              style={{ background: t.color, borderRadius: 99, opacity: 0.8 }}
             />
           ) : null
         )}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-        {tiles.map((t) => (
-          <span key={t.label} style={{ fontSize: 10, color: c.textMuted, fontWeight: 600 }}>
-            {t.pct}%
-          </span>
-        ))}
       </div>
     </GlassCard>
   );
@@ -840,37 +839,47 @@ export default function UebersichtPage() {
   const isDark = theme === 'dark';
   const user = useUser();
 
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const CACHE_KEY = 'dashboard_leads_cache';
+  const CACHE_TTL = 3 * 60_000; // 3 min
 
+  // Lazy init — reads cache synchronously before first render, zero flicker
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) return (JSON.parse(raw) as { data: Lead[] }).data ?? [];
+    } catch {}
+    return [];
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      return !sessionStorage.getItem(CACHE_KEY);
+    } catch {}
+    return true;
+  });
+
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    // Show cached data immediately, then refresh in background
-    const CACHE_KEY = 'dashboard_leads_cache';
-    const CACHE_TTL = 60_000; // 1 min
+    // Check if cache is still fresh — if yes, skip fetch entirely
     try {
       const raw = sessionStorage.getItem(CACHE_KEY);
       if (raw) {
-        const { ts, data } = JSON.parse(raw);
-        if (Date.now() - ts < CACHE_TTL) {
-          setLeads(data);
-          setLoading(false);
-          return; // still fresh, skip fetch
-        }
-        // stale — show immediately, refetch in background
-        setLeads(data);
-        setLoading(false);
+        const { ts } = JSON.parse(raw) as { ts: number; data: Lead[] };
+        if (Date.now() - ts < CACHE_TTL) return; // data is fresh
       }
     } catch {}
 
+    // Fetch fresh data in background (user already sees cached data)
     fetch('/api/leads')
       .then((r) => r.json())
       .then((d) => {
-        const data = d.leads ?? [];
+        const data: Lead[] = d.leads ?? [];
         setLeads(data);
         setLoading(false);
         try {
@@ -878,6 +887,7 @@ export default function UebersichtPage() {
         } catch {}
       })
       .catch(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const total = leads.length;
