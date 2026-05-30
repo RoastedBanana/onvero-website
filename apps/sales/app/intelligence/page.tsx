@@ -519,10 +519,10 @@ function LeadsTrendChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean;
 
 function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; c: ReturnType<typeof colors> }) {
   const buckets = [
-    { label: 'Sehr gut', range: '76–100', min: 76, max: 100, color: '#10B981', bg: '#10B98112' },
-    { label: 'Gut', range: '51–75', min: 51, max: 75, color: '#F59E0B', bg: '#F59E0B12' },
-    { label: 'Okay', range: '26–50', min: 26, max: 50, color: '#F97316', bg: '#F9731612' },
-    { label: 'Niedrig', range: '0–25', min: 0, max: 25, color: '#EF4444', bg: '#EF444412' },
+    { label: '76–100', sublabel: 'Sehr gut', min: 76, max: 100, color: '#10B981', glow: 'rgba(16,185,129,0.55)' },
+    { label: '51–75', sublabel: 'Gut', min: 51, max: 75, color: '#4F46E5', glow: 'rgba(79,70,229,0.55)' },
+    { label: '26–50', sublabel: 'Okay', min: 26, max: 50, color: '#F97316', glow: 'rgba(249,115,22,0.50)' },
+    { label: '0–25', sublabel: 'Niedrig', min: 0, max: 25, color: '#EF4444', glow: 'rgba(239,68,68,0.50)' },
   ].map((b) => ({
     ...b,
     count: leads.filter((l) => {
@@ -533,88 +533,129 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
 
   const maxCount = Math.max(...buckets.map((b) => b.count), 1);
   const total = buckets.reduce((s, b) => s + b.count, 0);
+  const best = buckets.reduce((a, b) => (b.count > a.count ? b : a), buckets[0]);
+  const avgScore =
+    leads.length > 0 ? Math.round(leads.reduce((s, l) => s + (l.lead_score ?? l.fit_score ?? 0), 0) / leads.length) : 0;
+
+  const stats = [
+    { label: 'Leads bewertet', value: String(total), up: total > 0 },
+    { label: 'Ø Score', value: String(avgScore), up: avgScore >= 50 },
+    { label: 'Stärkste Gruppe', value: best.sublabel, up: true },
+  ];
 
   return (
     <GlassCard isDark={isDark} style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 20px 12px',
-          borderBottom: `1px solid ${c.border}`,
-        }}
-      >
-        <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: c.text }}>Score-Verteilung</div>
-          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>Qualität deiner Lead-Pipeline</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: c.text, letterSpacing: '-0.03em', lineHeight: 1 }}>
-            {total}
-          </div>
-          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>bewertet</div>
-        </div>
+      <div style={{ padding: '18px 22px 14px' }}>
+        <div style={{ fontSize: 22, fontWeight: 800, color: c.text, letterSpacing: '-0.02em' }}>Score-Verteilung</div>
+        <div style={{ fontSize: 12, color: c.textMuted, marginTop: 3 }}>Qualität deiner Lead-Pipeline</div>
       </div>
 
-      {/* Rows */}
-      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
-        {buckets.map((b, i) => {
-          const pct = maxCount > 0 ? (b.count / maxCount) * 100 : 0;
-          const sharePct = total > 0 ? Math.round((b.count / total) * 100) : 0;
-          return (
-            <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {/* Label + range */}
-              <div style={{ width: 68, flexShrink: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: c.text, lineHeight: 1.2 }}>{b.label}</div>
-                <div style={{ fontSize: 10, color: c.textMuted, marginTop: 1 }}>{b.range}</div>
-              </div>
-              {/* Progress track */}
+      {/* Dark chart area */}
+      <div
+        style={{
+          margin: '0 14px',
+          borderRadius: 14,
+          background: isDark ? 'rgba(0,0,0,0.35)' : 'rgba(10,12,24,0.88)',
+          padding: '20px 16px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Bars */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 110 }}>
+          {buckets.map((b, i) => {
+            const pct = maxCount > 0 ? (b.count / maxCount) * 100 : 0;
+            return (
               <div
+                key={b.label}
                 style={{
                   flex: 1,
-                  height: 7,
-                  borderRadius: 99,
-                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                  overflow: 'hidden',
-                }}
-              >
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${pct}%` }}
-                  transition={{ delay: i * 0.06, duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
-                  style={{ height: '100%', borderRadius: 99, background: b.color }}
-                />
-              </div>
-              {/* Count + % */}
-              <div
-                style={{
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   gap: 6,
-                  flexShrink: 0,
-                  width: 56,
+                  height: '100%',
                   justifyContent: 'flex-end',
                 }}
               >
-                <span style={{ fontSize: 13, fontWeight: 800, color: c.text }}>{b.count}</span>
-                <span
+                {/* Glow bar */}
+                <div
                   style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: b.color,
-                    background: b.bg,
-                    padding: '1px 5px',
-                    borderRadius: 99,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
                   }}
                 >
-                  {sharePct}%
-                </span>
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: `${Math.max(pct, b.count > 0 ? 8 : 0)}%`, opacity: 1 }}
+                    transition={{ delay: i * 0.08, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                    style={{
+                      width: '100%',
+                      borderRadius: '6px 6px 4px 4px',
+                      background: b.color,
+                      boxShadow: `0 0 18px 4px ${b.glow}, 0 0 6px 1px ${b.glow}`,
+                      minHeight: b.count > 0 ? 6 : 0,
+                    }}
+                  />
+                </div>
+                {/* Label */}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{b.count}</div>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', marginTop: 1, letterSpacing: '0.03em' }}>
+                    {b.label}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Stats rows */}
+      <div style={{ margin: '0 14px 14px', borderRadius: '0 0 12px 12px', overflow: 'hidden' }}>
+        {stats.map((s, i) => (
+          <div
+            key={s.label}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '11px 16px',
+              borderTop: i > 0 ? `1px solid ${c.border}` : `1px solid ${c.border}`,
+              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+            }}
+          >
+            <span style={{ fontSize: 12, color: c.textMuted, fontWeight: 500 }}>{s.label}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: c.text }}>{s.value}</span>
+              <div
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  background: s.up ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path
+                    d={s.up ? 'M2 7L5 3L8 7' : 'M2 3L5 7L8 3'}
+                    stroke={s.up ? '#10B981' : '#EF4444'}
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </GlassCard>
   );
