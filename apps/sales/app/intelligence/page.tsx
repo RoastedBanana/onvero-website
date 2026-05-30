@@ -519,10 +519,10 @@ function LeadsTrendChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean;
 
 function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; c: ReturnType<typeof colors> }) {
   const buckets = [
-    { label: '0–25', min: 0, max: 25, color: '#EF4444', bg: '#EF444415' },
-    { label: '26–50', min: 26, max: 50, color: '#F97316', bg: '#F9731615' },
-    { label: '51–75', min: 51, max: 75, color: '#F59E0B', bg: '#F59E0B15' },
-    { label: '76+', min: 76, max: 100, color: '#10B981', bg: '#10B98115' },
+    { label: 'Sehr gut', range: '76–100', min: 76, max: 100, color: '#10B981', bg: '#10B98112' },
+    { label: 'Gut', range: '51–75', min: 51, max: 75, color: '#F59E0B', bg: '#F59E0B12' },
+    { label: 'Okay', range: '26–50', min: 26, max: 50, color: '#F97316', bg: '#F9731612' },
+    { label: 'Niedrig', range: '0–25', min: 0, max: 25, color: '#EF4444', bg: '#EF444412' },
   ].map((b) => ({
     ...b,
     count: leads.filter((l) => {
@@ -534,10 +534,9 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
   const maxCount = Math.max(...buckets.map((b) => b.count), 1);
   const total = buckets.reduce((s, b) => s + b.count, 0);
 
-  const bestBucket = buckets.reduce((best, b) => (b.count > best.count ? b : best), buckets[0]);
-
   return (
     <GlassCard isDark={isDark} style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
       <div
         style={{
           display: 'flex',
@@ -549,121 +548,73 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
       >
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: c.text }}>Score-Verteilung</div>
-          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>Leads nach Score-Bereich</div>
+          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>Qualität deiner Lead-Pipeline</div>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '4px 10px',
-            borderRadius: 99,
-            background: bestBucket.bg,
-            border: `1px solid ${bestBucket.color}30`,
-          }}
-        >
-          <Sparkles size={11} color={bestBucket.color} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: bestBucket.color }}>{bestBucket.label} führend</span>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: c.text, letterSpacing: '-0.03em', lineHeight: 1 }}>
+            {total}
+          </div>
+          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>bewertet</div>
         </div>
       </div>
 
-      {/* Big number strip */}
-      <div
-        style={{
-          padding: '10px 20px',
-          borderBottom: `1px solid ${c.border}`,
-          display: 'flex',
-          alignItems: 'baseline',
-          gap: 8,
-        }}
-      >
-        <span style={{ fontSize: 34, fontWeight: 800, color: c.text, letterSpacing: '-0.03em', lineHeight: 1 }}>
-          {total}
-        </span>
-        <span style={{ fontSize: 13, color: c.textMuted }}>Leads bewertet</span>
-      </div>
-
-      {/* Animated bars — 21First style */}
-      <div
-        style={{
-          flex: 1,
-          padding: '20px 20px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, height: 110 }}>
-          {buckets.map((b, i) => {
-            const pct = maxCount > 0 ? (b.count / maxCount) * 100 : 0;
-            return (
+      {/* Rows */}
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+        {buckets.map((b, i) => {
+          const pct = maxCount > 0 ? (b.count / maxCount) * 100 : 0;
+          const sharePct = total > 0 ? Math.round((b.count / total) * 100) : 0;
+          return (
+            <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {/* Label + range */}
+              <div style={{ width: 68, flexShrink: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: c.text, lineHeight: 1.2 }}>{b.label}</div>
+                <div style={{ fontSize: 10, color: c.textMuted, marginTop: 1 }}>{b.range}</div>
+              </div>
+              {/* Progress track */}
               <div
-                key={b.label}
                 style={{
                   flex: 1,
+                  height: 7,
+                  borderRadius: 99,
+                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+                  overflow: 'hidden',
+                }}
+              >
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ delay: i * 0.06, duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+                  style={{ height: '100%', borderRadius: 99, background: b.color }}
+                />
+              </div>
+              {/* Count + % */}
+              <div
+                style={{
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
                   gap: 6,
-                  height: '100%',
+                  flexShrink: 0,
+                  width: 56,
                   justifyContent: 'flex-end',
                 }}
               >
-                {/* Count above bar */}
-                <motion.span
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 + 0.3, duration: 0.3 }}
-                  style={{ fontSize: 13, fontWeight: 800, color: b.color }}
-                >
-                  {b.count}
-                </motion.span>
-                {/* Bar */}
-                <div
+                <span style={{ fontSize: 13, fontWeight: 800, color: c.text }}>{b.count}</span>
+                <span
                   style={{
-                    width: '100%',
-                    maxWidth: 52,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'flex-end',
-                    height: '100%',
-                    position: 'relative',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: b.color,
+                    background: b.bg,
+                    padding: '1px 5px',
+                    borderRadius: 99,
                   }}
                 >
-                  {/* Background track */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      borderRadius: 8,
-                      background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                    }}
-                  />
-                  {/* Animated fill */}
-                  <motion.div
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: 1 }}
-                    transition={{ delay: i * 0.08, duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                    style={{
-                      transformOrigin: 'bottom',
-                      width: '100%',
-                      height: `${pct}%`,
-                      minHeight: b.count > 0 ? 6 : 0,
-                      borderRadius: 8,
-                      background: `linear-gradient(180deg, ${b.color}cc 0%, ${b.color} 100%)`,
-                      position: 'relative',
-                      zIndex: 1,
-                    }}
-                  />
-                </div>
-                {/* Label */}
-                <span style={{ fontSize: 11, fontWeight: 600, color: c.textMuted, whiteSpace: 'nowrap' }}>
-                  {b.label}
+                  {sharePct}%
                 </span>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </GlassCard>
   );
@@ -777,7 +728,7 @@ function ActionBtn({
   );
 }
 
-// ─── Lead-Verteilung (animated) ───────────────────────────────────────────────
+// ─── Lead-Verteilung ──────────────────────────────────────────────────────────
 
 function StatusBar({ leads, c, isDark }: { leads: Lead[]; c: ReturnType<typeof colors>; isDark: boolean }) {
   const hot = leads.filter((l) => l.tier?.toLowerCase().startsWith('hot')).length;
@@ -785,60 +736,96 @@ function StatusBar({ leads, c, isDark }: { leads: Lead[]; c: ReturnType<typeof c
   const cold = leads.length - hot - warm;
   const total = leads.length || 1;
 
-  const bars = [
-    { label: 'Hot', count: hot, pct: (hot / total) * 100, color: '#EF4444', bg: '#EF444415' },
-    { label: 'Warm', count: warm, pct: (warm / total) * 100, color: '#F97316', bg: '#F9731615' },
-    { label: 'Kalt', count: cold, pct: (cold / total) * 100, color: '#94A3B8', bg: 'rgba(148,163,184,0.10)' },
+  const tiles = [
+    {
+      label: 'Hot',
+      emoji: '🔥',
+      count: hot,
+      pct: Math.round((hot / total) * 100),
+      color: '#EF4444',
+      grad: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+      shadow: 'rgba(239,68,68,0.28)',
+    },
+    {
+      label: 'Warm',
+      emoji: '☀️',
+      count: warm,
+      pct: Math.round((warm / total) * 100),
+      color: '#F97316',
+      grad: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+      shadow: 'rgba(249,115,22,0.24)',
+    },
+    {
+      label: 'Kalt',
+      emoji: '❄️',
+      count: cold,
+      pct: Math.round((cold / total) * 100),
+      color: '#94A3B8',
+      grad: 'linear-gradient(135deg, #64748B 0%, #475569 100%)',
+      shadow: 'rgba(100,116,139,0.20)',
+    },
   ];
 
   return (
     <GlassCard isDark={isDark} style={{ padding: '16px 18px', flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: c.text, marginBottom: 14 }}>Lead-Verteilung</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: c.text, marginBottom: 12 }}>Lead-Verteilung</div>
 
-      {/* Segmented progress bar */}
-      <div style={{ display: 'flex', height: 7, borderRadius: 99, overflow: 'hidden', gap: 2, marginBottom: 16 }}>
-        {bars.map((b) =>
-          b.pct > 0 ? (
+      {/* 3 stat tiles */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        {tiles.map((t, i) => (
+          <motion.div
+            key={t.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.07, duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            style={{
+              flex: 1,
+              padding: '12px 10px',
+              borderRadius: 12,
+              background: t.grad,
+              boxShadow: `0 4px 14px ${t.shadow}`,
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 18, lineHeight: 1, marginBottom: 4 }}>{t.emoji}</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              {t.count}
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'rgba(255,255,255,0.75)',
+                marginTop: 3,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              {t.label}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Segmented bar */}
+      <div style={{ display: 'flex', height: 5, borderRadius: 99, overflow: 'hidden', gap: 2 }}>
+        {tiles.map((t) =>
+          t.pct > 0 ? (
             <motion.div
-              key={b.label}
+              key={t.label}
               initial={{ flex: 0 }}
-              animate={{ flex: b.pct }}
-              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-              style={{ background: b.color, borderRadius: 99 }}
+              animate={{ flex: t.pct }}
+              transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+              style={{ background: t.color, borderRadius: 99 }}
             />
           ) : null
         )}
       </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-        {bars.map((b, i) => (
-          <motion.div
-            key={b.label}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.07, duration: 0.3 }}
-            style={{ display: 'flex', alignItems: 'center', gap: 9 }}
-          >
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                background: b.bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: b.color }} />
-            </div>
-            <span style={{ fontSize: 13, color: c.textSub, flex: 1, fontWeight: 500 }}>{b.label}</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: c.text }}>{b.count}</span>
-            <span style={{ fontSize: 11, color: b.color, fontWeight: 700, width: 36, textAlign: 'right' }}>
-              {Math.round(b.pct)}%
-            </span>
-          </motion.div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+        {tiles.map((t) => (
+          <span key={t.label} style={{ fontSize: 10, color: c.textMuted, fontWeight: 600 }}>
+            {t.pct}%
+          </span>
         ))}
       </div>
     </GlassCard>
@@ -860,12 +847,35 @@ export default function UebersichtPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
   useEffect(() => {
+    // Show cached data immediately, then refresh in background
+    const CACHE_KEY = 'dashboard_leads_cache';
+    const CACHE_TTL = 60_000; // 1 min
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const { ts, data } = JSON.parse(raw);
+        if (Date.now() - ts < CACHE_TTL) {
+          setLeads(data);
+          setLoading(false);
+          return; // still fresh, skip fetch
+        }
+        // stale — show immediately, refetch in background
+        setLeads(data);
+        setLoading(false);
+      }
+    } catch {}
+
     fetch('/api/leads')
       .then((r) => r.json())
       .then((d) => {
-        setLeads(d.leads ?? []);
+        const data = d.leads ?? [];
+        setLeads(data);
         setLoading(false);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+        } catch {}
       })
       .catch(() => setLoading(false));
   }, []);

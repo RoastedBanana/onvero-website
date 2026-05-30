@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme, colors } from '../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
 import { ExportLeadsModal } from './_ExportLeadsModal';
@@ -466,6 +466,7 @@ function DeleteModal({
 
 export default function LeadsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { theme } = useTheme();
   const c = colors(theme);
   const isDark = theme === 'dark';
@@ -476,6 +477,14 @@ export default function LeadsPage() {
   const [newLeadIds, setNewLeadIds] = useState<Set<string>>(new Set());
   const knownIdsRef = useRef<Set<string>>(new Set());
   const [showArchive, setShowArchive] = useState(false);
+
+  // Auto-open export modal via ?export=1
+  useEffect(() => {
+    if (searchParams.get('export') === '1') {
+      setShowExportModal(true);
+      router.replace('/intelligence/leads');
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     async function fetchLeads() {
@@ -538,7 +547,9 @@ export default function LeadsPage() {
   const filtered = leads
     .filter((l) => {
       const q = search.toLowerCase();
-      return l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.industry.toLowerCase().includes(q);
+      return (
+        l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.industry.toLowerCase().includes(q)
+      );
     })
     .sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name);
@@ -746,9 +757,7 @@ export default function LeadsPage() {
               Gesamt
             </div>
             <div style={{ fontSize: 30, fontWeight: 800, color: '#10B981', lineHeight: 1 }}>{total}</div>
-            <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>
-              {total === 1 ? 'Lead' : 'Leads'}
-            </div>
+            <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>{total === 1 ? 'Lead' : 'Leads'}</div>
           </div>
         </div>
 
@@ -911,222 +920,209 @@ export default function LeadsPage() {
 
         {/* ── TABLE VIEW ─────────────────────────────────────────────────── */}
         <div style={{ ...glassCard(isDark), borderRadius: 14, overflow: 'hidden' }}>
-            {initialLoading ? (
-              <div style={{ padding: '24px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
+          {initialLoading ? (
+            <div style={{ padding: '24px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: 52,
+                    borderRadius: 8,
+                    background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                    animation: 'pulse 1.4s ease-in-out infinite',
+                    animationDelay: `${i * 0.1}s`,
+                  }}
+                />
+              ))}
+              <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+            </div>
+          ) : (
+            <>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr
                     style={{
-                      height: 52,
-                      borderRadius: 8,
-                      background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
-                      animation: 'pulse 1.4s ease-in-out infinite',
-                      animationDelay: `${i * 0.1}s`,
+                      background:
+                        selectedIds.size > 0
+                          ? isDark
+                            ? 'rgba(16,185,129,0.10)'
+                            : 'rgba(16,185,129,0.06)'
+                          : isDark
+                            ? 'rgba(255,255,255,0.03)'
+                            : 'rgba(0,0,0,0.02)',
+                      borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.07)',
+                      transition: 'background 0.15s',
                     }}
-                  />
-                ))}
-                <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
-              </div>
-            ) : (
-              <>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr
-                      style={{
-                        background:
-                          selectedIds.size > 0
-                            ? isDark
-                              ? 'rgba(16,185,129,0.10)'
-                              : 'rgba(16,185,129,0.06)'
-                            : isDark
-                              ? 'rgba(255,255,255,0.03)'
-                              : 'rgba(0,0,0,0.02)',
-                        borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.07)',
-                        transition: 'background 0.15s',
-                      }}
-                    >
-                      <th style={{ padding: '11px 14px', width: 36 }}>
-                        <Checkbox
-                          checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                          indeterminate={selectedIds.size > 0 && selectedIds.size < filtered.length}
-                          onChange={toggleSelectAll}
-                          isDark={isDark}
-                          c={c}
-                        />
+                  >
+                    <th style={{ padding: '11px 14px', width: 36 }}>
+                      <Checkbox
+                        checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                        indeterminate={selectedIds.size > 0 && selectedIds.size < filtered.length}
+                        onChange={toggleSelectAll}
+                        isDark={isDark}
+                        c={c}
+                      />
+                    </th>
+                    {['Unternehmen', 'Stadt', 'Branche', 'Carrier', 'Layer', 'Signale', 'Aktion'].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          textAlign: 'left',
+                          padding: '11px 14px',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.07em',
+                          color: c.textMuted,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {h}
                       </th>
-                      {[
-                        'Unternehmen',
-                        'Stadt',
-                        'Branche',
-                        'Carrier',
-                        'Layer',
-                        'Signale',
-                        'Aktion',
-                      ].map((h) => (
-                        <th
-                          key={h}
-                          style={{
-                            textAlign: 'left',
-                            padding: '11px 14px',
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.07em',
-                            color: c.textMuted,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((lead) => {
-                      const isSelected = selectedIds.has(lead.id);
-                      const isHovered = hoveredRow === lead.id;
-                      const isNew = newLeadIds.has(lead.id);
-                      const av = avatarFor(lead.name);
-                      return (
-                        <tr
-                          key={lead.id}
-                          onClick={(e) => handleRowClick(e, lead)}
-                          onMouseEnter={() => setHoveredRow(lead.id)}
-                          onMouseLeave={() => setHoveredRow(null)}
-                          style={{
-                            borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
-                            background: isNew
-                              ? 'rgba(16,185,129,0.10)'
-                              : isSelected
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((lead) => {
+                    const isSelected = selectedIds.has(lead.id);
+                    const isHovered = hoveredRow === lead.id;
+                    const isNew = newLeadIds.has(lead.id);
+                    const av = avatarFor(lead.name);
+                    return (
+                      <tr
+                        key={lead.id}
+                        onClick={(e) => handleRowClick(e, lead)}
+                        onMouseEnter={() => setHoveredRow(lead.id)}
+                        onMouseLeave={() => setHoveredRow(null)}
+                        style={{
+                          borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
+                          background: isNew
+                            ? 'rgba(16,185,129,0.10)'
+                            : isSelected
+                              ? isDark
+                                ? 'rgba(16,185,129,0.12)'
+                                : 'rgba(16,185,129,0.07)'
+                              : isHovered
                                 ? isDark
-                                  ? 'rgba(16,185,129,0.12)'
-                                  : 'rgba(16,185,129,0.07)'
-                                : isHovered
-                                  ? isDark
-                                    ? 'rgba(255,255,255,0.04)'
-                                    : 'rgba(0,0,0,0.03)'
-                                  : 'transparent',
-                            cursor: 'pointer',
-                            transition: 'background 0.4s',
-                            boxShadow: isNew ? 'inset 3px 0 0 #10B981' : isSelected ? 'inset 3px 0 0 #10B981' : 'none',
-                            userSelect: 'none',
-                          }}
-                        >
-                          <td style={{ padding: '10px 14px' }}>
-                            <Checkbox
-                              checked={isSelected}
-                              onChange={() => toggleSelect(lead.id)}
-                              isDark={isDark}
-                              c={c}
-                            />
-                          </td>
+                                  ? 'rgba(255,255,255,0.04)'
+                                  : 'rgba(0,0,0,0.03)'
+                                : 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background 0.4s',
+                          boxShadow: isNew ? 'inset 3px 0 0 #10B981' : isSelected ? 'inset 3px 0 0 #10B981' : 'none',
+                          userSelect: 'none',
+                        }}
+                      >
+                        <td style={{ padding: '10px 14px' }}>
+                          <Checkbox checked={isSelected} onChange={() => toggleSelect(lead.id)} isDark={isDark} c={c} />
+                        </td>
 
-                          {/* Company name with avatar */}
-                          <td style={{ padding: '10px 14px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <LogoAvatar
-                                name={lead.name}
-                                logoUrl={lead.logo_url}
-                                size={34}
-                                radius={9}
-                                fontSize={11}
-                                isDark={isDark}
-                                av={av}
-                              />
-                              <div>
-                                <div style={{ fontWeight: 700, color: c.text, fontSize: 13 }}>{lead.name}</div>
-                                <div style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>
-                                  {lead.employees} MA · {lead.revenue}
-                                </div>
+                        {/* Company name with avatar */}
+                        <td style={{ padding: '10px 14px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <LogoAvatar
+                              name={lead.name}
+                              logoUrl={lead.logo_url}
+                              size={34}
+                              radius={9}
+                              fontSize={11}
+                              isDark={isDark}
+                              av={av}
+                            />
+                            <div>
+                              <div style={{ fontWeight: 700, color: c.text, fontSize: 13 }}>{lead.name}</div>
+                              <div style={{ fontSize: 11, color: c.textMuted, marginTop: 1 }}>
+                                {lead.employees} MA · {lead.revenue}
                               </div>
                             </div>
-                          </td>
+                          </div>
+                        </td>
 
-                          <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13 }}>{lead.city}</td>
-                          <td style={{ padding: '10px 14px' }}>
-                            <span
+                        <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13 }}>{lead.city}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: c.textSub,
+                              background: c.bgPage,
+                              border: `1px solid ${c.border}`,
+                              borderRadius: 5,
+                              padding: '2px 7px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {lead.industry}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <CarrierPill name={lead.carrier} isDark={isDark} />
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <LayerBar l1={lead.l1} l2={lead.l2} l3={lead.l3} l4={lead.l4} />
+                        </td>
+
+                        {/* Signals */}
+                        <td style={{ padding: '10px 14px' }}>
+                          {lead.signals ? (
+                            <SignalBadge count={lead.signals} />
+                          ) : (
+                            <span style={{ fontSize: 11, color: c.textMuted }}>—</span>
+                          )}
+                        </td>
+
+                        <td style={{ padding: '10px 14px', width: 90 }}>
+                          {isHovered ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/intelligence/leads/${lead.id}`);
+                              }}
                               style={{
-                                fontSize: 12,
-                                color: c.textSub,
-                                background: c.bgPage,
-                                border: `1px solid ${c.border}`,
-                                borderRadius: 5,
-                                padding: '2px 7px',
-                                fontWeight: 600,
+                                padding: '4px 12px',
+                                background: c.accent,
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: 7,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                fontFamily: 'var(--font-inter), sans-serif',
                               }}
                             >
-                              {lead.industry}
+                              Öffnen →
+                            </button>
+                          ) : (
+                            <span style={{ color: c.textMuted, fontSize: 11, fontWeight: 600 }}>
+                              {lead.added.replace('.2026', '')}
                             </span>
-                          </td>
-                          <td style={{ padding: '10px 14px' }}>
-                            <CarrierPill name={lead.carrier} isDark={isDark} />
-                          </td>
-                          <td style={{ padding: '10px 14px' }}>
-                            <LayerBar l1={lead.l1} l2={lead.l2} l3={lead.l3} l4={lead.l4} />
-                          </td>
-
-                          {/* Signals */}
-                          <td style={{ padding: '10px 14px' }}>
-                            {lead.signals ? (
-                              <SignalBadge count={lead.signals} />
-                            ) : (
-                              <span style={{ fontSize: 11, color: c.textMuted }}>—</span>
-                            )}
-                          </td>
-
-                          <td style={{ padding: '10px 14px', width: 90 }}>
-                            {isHovered ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(`/intelligence/leads/${lead.id}`);
-                                }}
-                                style={{
-                                  padding: '4px 12px',
-                                  background: c.accent,
-                                  color: '#fff',
-                                  border: 'none',
-                                  borderRadius: 7,
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                  whiteSpace: 'nowrap',
-                                  fontFamily: 'var(--font-inter), sans-serif',
-                                }}
-                              >
-                                Öffnen →
-                              </button>
-                            ) : (
-                              <span style={{ color: c.textMuted, fontSize: 11, fontWeight: 600 }}>
-                                {lead.added.replace('.2026', '')}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                <div
-                  style={{
-                    padding: '11px 18px',
-                    borderTop: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
-                    fontSize: 11,
-                    color: c.textMuted,
-                    fontWeight: 600,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span>
-                    {filtered.length} von {leads.length} Leads
-                  </span>
-                  {selectedIds.size > 0 && <span style={{ color: '#10B981' }}>{selectedIds.size} ausgewählt</span>}
-                </div>
-              </>
-            )}
-          </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div
+                style={{
+                  padding: '11px 18px',
+                  borderTop: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)',
+                  fontSize: 11,
+                  color: c.textMuted,
+                  fontWeight: 600,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>
+                  {filtered.length} von {leads.length} Leads
+                </span>
+                {selectedIds.size > 0 && <span style={{ color: '#10B981' }}>{selectedIds.size} ausgewählt</span>}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* ── ARCHIV VIEW ────────────────────────────────────────────────── */}
         {showArchive && (
