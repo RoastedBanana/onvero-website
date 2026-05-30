@@ -545,129 +545,115 @@ function ScoreDistChart({ leads, isDark, c }: { leads: Lead[]; isDark: boolean; 
 
   return (
     <GlassCard isDark={isDark} style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 20px 12px',
-          borderBottom: `1px solid ${c.border}`,
-        }}
-      >
-        <div>
+      {/* Top: title + 3 stats side by side */}
+      <div style={{ padding: '16px 20px 14px', borderBottom: `1px solid ${c.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: c.text }}>Score-Verteilung</div>
-          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>Qualität deiner Lead-Pipeline</div>
+          <div style={{ fontSize: 11, color: c.textMuted }}>Qualität deiner Pipeline</div>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: c.text, letterSpacing: '-0.03em', lineHeight: 1 }}>
-            {total}
-          </div>
-          <div style={{ fontSize: 10, color: c.textMuted, marginTop: 2 }}>bewertet</div>
-        </div>
-      </div>
-
-      {/* Chart area */}
-      <div
-        style={{
-          flex: 1,
-          padding: '16px 20px 12px',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 140,
-        }}
-      >
-        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-          {buckets.map((b, i) => {
-            const pct = maxCount > 0 ? (b.count / maxCount) * 100 : 0;
-            return (
+        {/* 3 stats in one row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {stats.map((s, i) => (
+            <div
+              key={s.label}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 10,
+                background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                border: `1px solid ${c.border}`,
+              }}
+            >
               <div
-                key={b.label}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 5,
-                  height: '100%',
-                  justifyContent: 'flex-end',
-                }}
+                style={{ fontSize: 10, color: c.textMuted, fontWeight: 600, marginBottom: 5, letterSpacing: '0.03em' }}
               >
-                {/* Count */}
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.08 + 0.4, duration: 0.3 }}
-                  style={{ fontSize: 12, fontWeight: 800, color: b.color }}
-                >
-                  {b.count}
-                </motion.span>
-                {/* Glow bar */}
-                <div style={{ width: '100%', height: 120, display: 'flex', alignItems: 'flex-end' }}>
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${Math.max(pct, b.count > 0 ? 6 : 0)}%` }}
-                    transition={{ delay: i * 0.08, duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
-                    style={{
-                      width: '100%',
-                      borderRadius: '5px 5px 3px 3px',
-                      background: b.color,
-                      boxShadow: isDark ? `0 0 16px 3px ${b.glow}, 0 0 5px 1px ${b.glow}` : `0 2px 12px 0 ${b.glow}`,
-                      minHeight: b.count > 0 ? 4 : 0,
-                    }}
-                  />
-                </div>
-                {/* Range label */}
-                <div style={{ fontSize: 9, color: c.textMuted, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
-                  {b.label}
-                </div>
+                {s.label}
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Stats strip */}
-      <div style={{ borderTop: `1px solid ${c.border}` }}>
-        {stats.map((s, i) => (
-          <div
-            key={s.label}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '9px 20px',
-              borderTop: i > 0 ? `1px solid ${c.border}` : 'none',
-              background: 'transparent',
-            }}
-          >
-            <span style={{ fontSize: 11, color: c.textMuted, fontWeight: 500 }}>{s.label}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: c.text }}>{s.value}</span>
-              <div
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: s.up ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                  <path
-                    d={s.up ? 'M2 7L5 3L8 7' : 'M2 3L5 7L8 3'}
-                    stroke={s.up ? '#10B981' : '#EF4444'}
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 15, fontWeight: 800, color: c.text }}>{s.value}</span>
+                <div
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    background: s.up ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d={s.up ? 'M2 7L5 3L8 7' : 'M2 3L5 7L8 3'}
+                      stroke={s.up ? '#10B981' : '#EF4444'}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      </div>
+
+      {/* Bars — fills remaining space */}
+      <div style={{ flex: 1, padding: '16px 20px 14px', display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+        {buckets.map((b, i) => {
+          const pct = maxCount > 0 ? (b.count / maxCount) * 100 : 0;
+          return (
+            <div
+              key={b.label}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 5,
+                height: '100%',
+                justifyContent: 'flex-end',
+              }}
+            >
+              {/* Count above bar */}
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: i * 0.08 + 0.4, duration: 0.3 }}
+                style={{ fontSize: 13, fontWeight: 800, color: b.color }}
+              >
+                {b.count}
+              </motion.span>
+              {/* Bar */}
+              <div style={{ width: '100%', flex: 1, display: 'flex', alignItems: 'flex-end' }}>
+                <motion.div
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.max(pct, b.count > 0 ? 5 : 0)}%` }}
+                  transition={{ delay: i * 0.08, duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
+                  style={{
+                    width: '100%',
+                    borderRadius: '6px 6px 3px 3px',
+                    background: b.color,
+                    boxShadow: isDark ? `0 0 16px 3px ${b.glow}, 0 0 5px 1px ${b.glow}` : `0 2px 14px 0 ${b.glow}`,
+                    minHeight: b.count > 0 ? 4 : 0,
+                  }}
+                />
+              </div>
+              {/* Label */}
+              <div
+                style={{
+                  fontSize: 10,
+                  color: c.textMuted,
+                  letterSpacing: '0.02em',
+                  whiteSpace: 'nowrap',
+                  fontWeight: 500,
+                }}
+              >
+                {b.sublabel}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </GlassCard>
   );
