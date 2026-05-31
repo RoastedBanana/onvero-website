@@ -10805,29 +10805,11 @@ export default function LeadDetailPage() {
   const LEAD_CACHE_PREFIX = 'lead_detail_';
   const LEAD_CACHE_TTL = 5 * 60_000; // 5 min
 
-  const [lead, setLead] = useState<LeadDetail | null>(() => {
-    if (typeof window === 'undefined' || !id) return null;
-    try {
-      const raw = localStorage.getItem(LEAD_CACHE_PREFIX + id);
-      if (raw) {
-        const { ts, data } = JSON.parse(raw) as { ts: number; data: Record<string, unknown> };
-        if (Date.now() - ts < LEAD_CACHE_TTL) return mapDbLead(data);
-      }
-    } catch {}
-    return null;
-  });
-
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window === 'undefined' || !id) return true;
-    try {
-      const raw = localStorage.getItem(LEAD_CACHE_PREFIX + id);
-      if (raw) {
-        const { ts } = JSON.parse(raw) as { ts: number };
-        return Date.now() - ts >= LEAD_CACHE_TTL;
-      }
-    } catch {}
-    return true;
-  });
+  // Deterministic initial state for SSR — reading localStorage during the
+  // initial render would desync server (no cache) and client (cache) and throw
+  // a hydration mismatch. The cache is hydrated after mount in the effect below.
+  const [lead, setLead] = useState<LeadDetail | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
   const [status, setStatus] = useState<LeadStatus>('warm');
   const [scoreHover, setScoreHover] = useState(false);
@@ -10862,8 +10844,23 @@ export default function LeadDetailPage() {
   );
 
   useEffect(() => {
-    void loadLead();
-  }, [loadLead]);
+    if (!id) return;
+    // Hydrate from a fresh cache after mount (client-only) to skip the spinner,
+    // then always refresh from the network in the background.
+    let cacheHit = false;
+    try {
+      const raw = localStorage.getItem(LEAD_CACHE_PREFIX + id);
+      if (raw) {
+        const { ts, data } = JSON.parse(raw) as { ts: number; data: Record<string, unknown> };
+        if (Date.now() - ts < LEAD_CACHE_TTL) {
+          setLead(mapDbLead(data));
+          setLoading(false);
+          cacheHit = true;
+        }
+      }
+    } catch {}
+    void loadLead({ showSpinner: !cacheHit });
+  }, [id, loadLead]);
 
   const sCfg = STATUS_CFG[status];
   const col = scoreColor(lead?.score ?? 0);
