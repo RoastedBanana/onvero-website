@@ -17,7 +17,15 @@ import remarkGfm from 'remark-gfm';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type LeadStatus = 'hot' | 'warm' | 'cold';
-type ActiveTab = 'info' | 'bot';
+type ActiveTab =
+  | 'info'
+  | 'website'
+  | 'mitarbeiter'
+  | 'finanzen'
+  | 'social'
+  | 'bewertungen'
+  | 'shipping'
+  | 'bot';
 
 interface Contact {
   name: string;
@@ -9370,14 +9378,10 @@ function InfoTab({
   lead,
   c,
   isDark,
-  onOpenDetail,
 }: {
   lead: LeadDetail;
   c: ReturnType<typeof colors>;
   isDark: boolean;
-  onOpenDetail: (
-    view: 'website' | 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping'
-  ) => void;
 }) {
   const [eventsOpen, setEventsOpen] = useState(false);
 
@@ -9400,107 +9404,6 @@ function InfoTab({
     color: c.textMuted,
     marginBottom: 16,
   };
-
-  // Unified QuickCard — score 0-100, consistent design across all 6 cards
-  function QuickCard({
-    title,
-    score,
-    scoreLabel,
-    onExpand,
-    children,
-  }: {
-    title: string;
-    score?: number | null;
-    scoreLabel?: string;
-    onExpand?: () => void;
-    children: React.ReactNode;
-  }) {
-    const scoreColor = score == null ? '#94A3B8' : score >= 75 ? '#10B981' : score >= 40 ? '#F97316' : '#EF4444';
-
-    const [hovered, setHovered] = React.useState(false);
-
-    return (
-      <div
-        onClick={onExpand}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          ...glassCard(isDark),
-          borderRadius: 14,
-          padding: '18px 20px 16px',
-          minHeight: 210,
-          borderTop: `3px solid ${scoreColor}`,
-          display: 'flex',
-          flexDirection: 'column' as const,
-          gap: 0,
-          cursor: onExpand ? 'pointer' : 'default',
-          transition: 'box-shadow 150ms, transform 100ms',
-          boxShadow: hovered && onExpand ? `0 0 0 1px ${scoreColor}40, 0 8px 24px rgba(0,0,0,0.12)` : undefined,
-          transform: hovered && onExpand ? 'translateY(-1px)' : undefined,
-        }}
-      >
-        {/* Header: title + score */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase' as const,
-              color: c.textMuted,
-            }}
-          >
-            {title}
-          </span>
-          {score != null ? (
-            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: 2 }}>
-              <span
-                style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1, color: scoreColor }}
-              >
-                {score}
-              </span>
-              {scoreLabel && (
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: scoreColor,
-                    opacity: 0.75,
-                    textTransform: 'uppercase' as const,
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  {scoreLabel}
-                </span>
-              )}
-            </div>
-          ) : (
-            <span style={{ fontSize: 11, color: c.textMuted, opacity: 0.45 }}>—</span>
-          )}
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const }}>{children}</div>
-
-        {/* Footer: Details button */}
-        {onExpand && (
-          <div
-            style={{
-              marginTop: 14,
-              paddingTop: 10,
-              borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'}`,
-              display: 'flex',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor, letterSpacing: '0.02em' }}>
-              Details ansehen →
-            </span>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div style={{ padding: '20px 24px' }}>
@@ -9825,450 +9728,6 @@ function InfoTab({
         </div>
       ) : null}
 
-      {/* ── 2. Compact quick-view cards ───────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-        {/* Website-Analyse */}
-        <QuickCard
-          title="Website-Analyse"
-          score={
-            lead.web_data_confidence != null
-              ? Math.round(lead.web_data_confidence <= 1 ? lead.web_data_confidence * 100 : lead.web_data_confidence)
-              : null
-          }
-          scoreLabel="Konfidenz"
-          onExpand={() => onOpenDetail('website')}
-        >
-          {(() => {
-            const ACCENT = '#14B8A6';
-            const hasWeb = !!(
-              lead.web_analyzed_at ||
-              lead.web_analysis_summary ||
-              lead.web_company_pitch ||
-              lead.web_value_proposition ||
-              lead.web_core_services?.length ||
-              lead.web_tech_stack?.length ||
-              lead.web_buying_signals?.length ||
-              lead.web_opportunity_flags?.length ||
-              lead.web_risk_flags?.length
-            );
-            if (!hasWeb) return <div style={{ fontSize: 13, color: c.textMuted }}>Keine Website-Analyse</div>;
-
-            const confidencePct =
-              lead.web_data_confidence != null
-                ? Math.round(lead.web_data_confidence <= 1 ? lead.web_data_confidence * 100 : lead.web_data_confidence)
-                : null;
-            const headline = lead.web_value_proposition || lead.web_company_pitch || lead.web_analysis_summary;
-            const badge = (text: string) => (
-              <span
-                key={text}
-                style={{
-                  fontSize: 10,
-                  padding: '2px 7px',
-                  borderRadius: 5,
-                  background: 'rgba(20,184,166,0.12)',
-                  border: '1px solid rgba(20,184,166,0.28)',
-                  color: ACCENT,
-                }}
-              >
-                {text}
-              </span>
-            );
-            const sigCount = lead.web_buying_signals?.length ?? 0;
-            const oppCount = lead.web_opportunity_flags?.length ?? 0;
-            const riskCount = lead.web_risk_flags?.length ?? 0;
-
-            return (
-              <>
-                {headline && (
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: c.text,
-                      fontWeight: 600,
-                      lineHeight: 1.45,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical' as const,
-                      overflow: 'hidden',
-                      marginBottom: 10,
-                    }}
-                  >
-                    {headline}
-                  </div>
-                )}
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 4, marginBottom: 10 }}>
-                  {lead.web_has_shop && badge('Shop')}
-                  {!!lead.web_tech_stack?.length && badge(lead.web_tech_stack[0])}
-                  {lead.web_page_count != null && badge(`${lead.web_page_count} Seiten`)}
-                  {confidencePct != null && badge(`Konfidenz ${confidencePct}%`)}
-                </div>
-
-                {!!lead.web_core_services?.length && (
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: c.textSub,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap' as const,
-                      marginBottom: 10,
-                    }}
-                  >
-                    {lead.web_core_services.slice(0, 3).join(' · ')}
-                  </div>
-                )}
-
-                {(sigCount > 0 || oppCount > 0 || riskCount > 0) && (
-                  <div style={{ display: 'flex', gap: 12, marginTop: 'auto', fontSize: 11 }}>
-                    {sigCount > 0 && (
-                      <span style={{ color: c.textMuted }}>
-                        <span style={{ color: ACCENT, fontWeight: 800 }}>{sigCount}</span> Signale
-                      </span>
-                    )}
-                    {oppCount > 0 && (
-                      <span style={{ color: c.textMuted }}>
-                        <span style={{ color: '#10B981', fontWeight: 800 }}>{oppCount}</span> Chancen
-                      </span>
-                    )}
-                    {riskCount > 0 && (
-                      <span style={{ color: c.textMuted }}>
-                        <span style={{ color: '#EF4444', fontWeight: 800 }}>{riskCount}</span> Risiken
-                      </span>
-                    )}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </QuickCard>
-
-        {/* Führung */}
-        <QuickCard
-          title="Führung"
-          score={lead.mgmt_stability_score ?? null}
-          scoreLabel={lead.mgmt_stability_label ?? undefined}
-          onExpand={() => onOpenDetail('mitarbeiter')}
-        >
-          {(() => {
-            const stbScore = lead.mgmt_stability_score;
-            const stbColor =
-              stbScore != null ? (stbScore >= 65 ? '#10B981' : stbScore >= 40 ? '#F97316' : '#EF4444') : '#0EA5E9';
-            const stbLabel = deLabel(lead.mgmt_stability_label);
-            const tenureYears =
-              lead.mgmt_avg_tenure_months != null
-                ? lead.mgmt_avg_tenure_months >= 12
-                  ? `Ø ${Math.round(lead.mgmt_avg_tenure_months / 12)} J. Amtszeit`
-                  : `Ø ${lead.mgmt_avg_tenure_months} Mo. Amtszeit`
-                : null;
-            const changeLabel: Record<string, string> = {
-              replacement: 'Neubesetzung',
-              expansion: 'Erweiterung',
-              resignation: 'Rücktritt',
-              retirement: 'Ruhestand',
-            };
-            return (
-              <>
-                {/* Score */}
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 2 }}>
-                  <span style={{ fontSize: 44, fontWeight: 900, color: stbColor, lineHeight: 1 }}>
-                    {stbScore ?? lead.employees ?? '—'}
-                  </span>
-                  {stbScore != null && <span style={{ fontSize: 13, color: c.textMuted, marginBottom: 7 }}>/100</span>}
-                </div>
-                <div style={{ fontSize: 11, color: c.textMuted, marginBottom: 8 }}>
-                  {stbScore != null ? 'Führungsstabilität' : 'Mitarbeiter'}
-                </div>
-
-                {/* Stability badge */}
-                {stbLabel && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: stbColor,
-                      background: `${stbColor}18`,
-                      borderRadius: 99,
-                      padding: '3px 10px',
-                      marginBottom: 12,
-                      display: 'inline-block',
-                    }}
-                  >
-                    {stbLabel}
-                  </span>
-                )}
-
-                {/* Separator */}
-                <div
-                  style={{
-                    height: 1,
-                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                    margin: '6px 0 10px',
-                  }}
-                />
-
-                {/* Detail rows */}
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 7, flex: 1 }}>
-                  {lead.mgmt_current_director_count != null && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: c.text }}>
-                        {lead.mgmt_current_director_count}{' '}
-                        {lead.mgmt_current_director_count === 1 ? 'Geschäftsführer' : 'Geschäftsführer'}
-                      </span>
-                      {lead.mgmt_has_prokura != null && (
-                        <span style={{ fontSize: 10, color: lead.mgmt_has_prokura ? '#10B981' : c.textMuted }}>
-                          {lead.mgmt_has_prokura ? 'Mit Prokura' : 'Ohne Prokura'}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {tenureYears && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: c.text }}>{tenureYears}</span>
-                      {lead.mgmt_is_founder_led && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            color: '#818CF8',
-                            background: '#818CF818',
-                            borderRadius: 99,
-                            padding: '2px 8px',
-                          }}
-                        >
-                          Gründergeführt
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {lead.mgmt_total_changes != null && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: c.text }}>{lead.mgmt_total_changes} Führungswechsel</span>
-                      {lead.mgmt_last_change_type && (
-                        <span style={{ fontSize: 10, color: c.textMuted }}>
-                          {changeLabel[lead.mgmt_last_change_type] ?? lead.mgmt_last_change_type}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {rawHistory.length > 1 && (
-                    <div style={{ marginTop: 4 }}>
-                      <EmployeeAreaChart history={rawHistory} isDark={isDark} />
-                    </div>
-                  )}
-                  {lead.web_open_positions_count != null && lead.web_open_positions_count > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: c.text }}>
-                        {lead.web_open_positions_count} offene Stellen
-                      </span>
-                      {lead.web_has_careers_page && (
-                        <span style={{ fontSize: 10, color: '#10B981' }}>Karriereseite</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom: employee badge */}
-                {lead.employees && stbScore != null && (
-                  <div style={{ marginTop: 'auto', paddingTop: 10 }}>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: '#0EA5E9',
-                        background: '#0EA5E918',
-                        borderRadius: 99,
-                        padding: '3px 10px',
-                      }}
-                    >
-                      {lead.employees} Mitarbeiter
-                    </span>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </QuickCard>
-
-        {/* Finanzen */}
-        <QuickCard
-          title="Finanzen"
-          score={lead.fin_health_score ?? null}
-          scoreLabel={
-            lead.fin_health_label && lead.fin_health_label !== 'insufficient_data' ? lead.fin_health_label : undefined
-          }
-          onExpand={() => onOpenDetail('finanzen')}
-        >
-          {(() => {
-            const score = lead.fin_health_score;
-            const hasScore = score != null;
-            const healthLabel =
-              deLabel(lead.fin_health_label) ??
-              (!hasScore
-                ? null
-                : score >= 80
-                  ? 'Stark'
-                  : score >= 65
-                    ? 'Gut'
-                    : score >= 50
-                      ? 'Solide'
-                      : score >= 35
-                        ? 'Mittel'
-                        : score >= 20
-                          ? 'Schwach'
-                          : 'Kritisch');
-            const labelColor = !hasScore
-              ? c.textMuted
-              : score! >= 65
-                ? '#10B981'
-                : score! >= 40
-                  ? '#F97316'
-                  : '#EF4444';
-            const SEGS = [
-              '#EF4444',
-              '#F97316',
-              '#FB923C',
-              '#FBBF24',
-              '#FDE047',
-              '#A3E635',
-              '#4ADE80',
-              '#22C55E',
-              '#16A34A',
-            ];
-            const trendIcon = (t?: string) =>
-              t === 'growing' || t === 'stable' ? '↑' : t === 'declining' || t === 'critical' ? '↓' : null;
-            const trendColor = (t?: string) =>
-              t === 'growing' || t === 'stable'
-                ? '#10B981'
-                : t === 'declining' || t === 'critical'
-                  ? '#EF4444'
-                  : '#94A3B8';
-            return (
-              <>
-                <div style={{ fontSize: 30, fontWeight: 900, color: labelColor, lineHeight: 1, marginBottom: 4 }}>
-                  {healthLabel ?? '—'}
-                </div>
-                {hasScore && <div style={{ fontSize: 12, color: c.textMuted, marginBottom: 12 }}>{score}/100</div>}
-                {/* Spectrum */}
-                <div style={{ position: 'relative', marginBottom: 5 }}>
-                  <div style={{ display: 'flex', gap: 3 }}>
-                    {SEGS.map((segColor, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          flex: 1,
-                          height: 10,
-                          borderRadius: 99,
-                          background: segColor,
-                          opacity: hasScore ? 1 : 0.2,
-                        }}
-                      />
-                    ))}
-                  </div>
-                  {hasScore && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: -3,
-                        left: `calc(${Math.min(97, Math.max(3, score!))}% - 1px)`,
-                        width: 2,
-                        height: 16,
-                        background: isDark ? '#fff' : '#111',
-                        borderRadius: 1,
-                      }}
-                    />
-                  )}
-                </div>
-                {/* Scale labels */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 9,
-                    color: c.textMuted,
-                    marginBottom: 10,
-                    letterSpacing: '0.02em',
-                  }}
-                >
-                  <span>Kritisch</span>
-                  <span>Mittel</span>
-                  <span>Stark</span>
-                </div>
-                {/* Trend badges */}
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' as const, marginBottom: 12 }}>
-                  {[
-                    { trend: lead.fin_balance_sheet_trend, label: 'Bilanz' },
-                    { trend: lead.fin_equity_trend, label: 'Kapital' },
-                    { trend: lead.fin_revenue_trend, label: 'Umsatz' },
-                  ]
-                    .filter((t) => t.trend && t.trend !== 'unknown' && trendIcon(t.trend))
-                    .map(({ trend, label: lbl }) => (
-                      <span
-                        key={lbl}
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: trendColor(trend),
-                          background: `${trendColor(trend)}18`,
-                          borderRadius: 99,
-                          padding: '2px 7px',
-                        }}
-                      >
-                        {trendIcon(trend)} {lbl}
-                      </span>
-                    ))}
-                </div>
-
-                {/* Separator */}
-                <div
-                  style={{
-                    height: 1,
-                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                    marginBottom: 10,
-                  }}
-                />
-
-                {/* Estimated revenue */}
-                {lead.fin_estimated_revenue_eur != null && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'baseline',
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span style={{ fontSize: 11, color: c.textMuted }}>Umsatzschätzung</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#F97316' }}>
-                      {lead.fin_estimated_revenue_eur >= 1_000_000
-                        ? `~${(lead.fin_estimated_revenue_eur / 1_000_000).toFixed(1)}M €`
-                        : `~${Math.round(lead.fin_estimated_revenue_eur / 1000)}k €`}
-                    </span>
-                  </div>
-                )}
-
-                {/* AI summary excerpt */}
-                {lead.fin_analysis_summary && (
-                  <p
-                    style={{
-                      fontSize: 11,
-                      color: c.textSub,
-                      lineHeight: 1.55,
-                      margin: 0,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical' as const,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {lead.fin_analysis_summary}
-                  </p>
-                )}
-              </>
-            );
-          })()}
-        </QuickCard>
-      </div>
-
       {/* ── 3. Signale ────────────────────────────────────────────────────── */}
       {(lead.greenflags.length > 0 || lead.redflags.length > 0) && (
         <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 24px', marginBottom: 16 }}>
@@ -10440,386 +9899,6 @@ function InfoTab({
           )}
         </div>
       )}
-
-      {/* ── 5. Online-Präsenz — compact expand cards ──────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-        {/* Social Media */}
-        <QuickCard
-          title="Social Media"
-          score={lead.social_health_score ?? null}
-          scoreLabel={lead.social_health_label ?? undefined}
-          onExpand={() => onOpenDetail('social')}
-        >
-          {(() => {
-            const socialScore = lead.social_health_score ?? null;
-            const hasSocial =
-              socialScore != null ||
-              lead.instagramFollowers != null ||
-              lead.facebookFollowers != null ||
-              lead.social_total_followers != null ||
-              lead.li_followers != null;
-            if (!hasSocial) return <div style={{ fontSize: 13, color: c.textMuted }}>Keine Social-Daten</div>;
-            const socialLabel =
-              deLabel(lead.social_health_label) ??
-              (socialScore == null
-                ? null
-                : socialScore >= 80
-                  ? 'Sehr Aktiv'
-                  : socialScore >= 65
-                    ? 'Aktiv'
-                    : socialScore >= 50
-                      ? 'Solide'
-                      : socialScore >= 35
-                        ? 'Mittel'
-                        : socialScore >= 20
-                          ? 'Schwach'
-                          : 'Inaktiv');
-            const socialColor =
-              socialScore == null
-                ? c.textMuted
-                : socialScore >= 65
-                  ? '#10B981'
-                  : socialScore >= 40
-                    ? '#F97316'
-                    : '#EF4444';
-            const SOCIAL_SEGS = ['#EF4444', '#F97316', '#FB923C', '#FBBF24', '#A3E635', '#10B981'];
-            const totalFollowers =
-              lead.social_total_followers ?? lead.instagramFollowers ?? lead.facebookFollowers ?? null;
-            return (
-              <>
-                <div style={{ fontSize: 28, fontWeight: 900, color: socialColor, lineHeight: 1, marginBottom: 4 }}>
-                  {socialLabel ?? '—'}
-                </div>
-                {totalFollowers != null && (
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 10 }}>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: c.text }}>
-                      {totalFollowers >= 1000
-                        ? `${(totalFollowers / 1000).toFixed(totalFollowers >= 10000 ? 0 : 1)}k`
-                        : totalFollowers.toLocaleString('de-DE')}
-                    </span>
-                    <span style={{ fontSize: 10, color: c.textMuted }}>Follower</span>
-                  </div>
-                )}
-                <div style={{ position: 'relative', marginBottom: 4 }}>
-                  <div style={{ display: 'flex', gap: 2 }}>
-                    {SOCIAL_SEGS.map((col, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          flex: 1,
-                          height: 8,
-                          borderRadius: 99,
-                          background: col,
-                          opacity: socialScore != null ? 1 : 0.2,
-                        }}
-                      />
-                    ))}
-                  </div>
-                  {socialScore != null && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: -3,
-                        left: `calc(${Math.min(97, Math.max(3, socialScore))}% - 1px)`,
-                        width: 2,
-                        height: 14,
-                        background: isDark ? '#fff' : '#111',
-                        borderRadius: 1,
-                      }}
-                    />
-                  )}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 9,
-                    color: c.textMuted,
-                    marginBottom: 10,
-                  }}
-                >
-                  <span>Inaktiv</span>
-                  <span>Sehr Aktiv</span>
-                </div>
-                {/* Platform badges */}
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5, marginTop: 'auto' }}>
-                  {lead.instagramFollowers != null && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 99,
-                        background: 'rgba(225,48,108,0.12)',
-                        border: '1px solid rgba(225,48,108,0.25)',
-                        color: '#E1306C',
-                      }}
-                    >
-                      Instagram
-                    </span>
-                  )}
-                  {lead.facebookFollowers != null && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 99,
-                        background: 'rgba(24,119,242,0.12)',
-                        border: '1px solid rgba(24,119,242,0.25)',
-                        color: '#1877F2',
-                      }}
-                    >
-                      Facebook
-                    </span>
-                  )}
-                  {lead.li_followers != null && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 99,
-                        background: 'rgba(0,119,181,0.12)',
-                        border: '1px solid rgba(0,119,181,0.25)',
-                        color: '#0077B5',
-                      }}
-                    >
-                      LinkedIn
-                    </span>
-                  )}
-                </div>
-              </>
-            );
-          })()}
-        </QuickCard>
-
-        {/* Bewertungen */}
-        <QuickCard
-          title="Bewertungen"
-          score={lead.reviews_health_score ?? null}
-          scoreLabel={lead.reviews_health_label ?? undefined}
-          onExpand={() => onOpenDetail('bewertungen')}
-        >
-          {(() => {
-            const overallScore = lead.reviews_overall_score ?? lead.google ?? lead.trustpilot ?? null;
-            if (overallScore == null) return <div style={{ fontSize: 13, color: c.textMuted }}>Keine Bewertungen</div>;
-            const scoreColor = overallScore >= 4 ? '#10B981' : overallScore >= 3 ? '#F97316' : '#EF4444';
-            const fullStars = Math.floor(overallScore);
-            return (
-              <>
-                <div style={{ fontSize: 40, fontWeight: 900, color: scoreColor, lineHeight: 1, marginBottom: 4 }}>
-                  {overallScore.toFixed(1)}
-                </div>
-                {/* Stars */}
-                <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <span key={s} style={{ fontSize: 14, color: s <= fullStars ? '#F59E0B' : c.textMuted }}>
-                      &#9733;
-                    </span>
-                  ))}
-                </div>
-                {/* Platform rows */}
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5, marginTop: 'auto' }}>
-                  {lead.google != null && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: 12,
-                        color: c.textSub,
-                      }}
-                    >
-                      <span>Google</span>
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color: lead.google >= 4 ? '#10B981' : lead.google >= 3 ? '#F97316' : '#EF4444',
-                        }}
-                      >
-                        {lead.google.toFixed(1)} &#9733;
-                      </span>
-                    </div>
-                  )}
-                  {lead.trustpilot != null && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: 12,
-                        color: c.textSub,
-                      }}
-                    >
-                      <span>Trustpilot</span>
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color: lead.trustpilot >= 4 ? '#10B981' : lead.trustpilot >= 3 ? '#F97316' : '#EF4444',
-                        }}
-                      >
-                        {lead.trustpilot.toFixed(1)} &#9733;
-                      </span>
-                    </div>
-                  )}
-                  {lead.reviews_kununu_rating != null && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: 12,
-                        color: c.textSub,
-                      }}
-                    >
-                      <span>Kununu</span>
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color:
-                            lead.reviews_kununu_rating >= 4
-                              ? '#10B981'
-                              : lead.reviews_kununu_rating >= 3
-                                ? '#F97316'
-                                : '#EF4444',
-                        }}
-                      >
-                        {lead.reviews_kununu_rating.toFixed(1)} &#9733;
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </>
-            );
-          })()}
-        </QuickCard>
-
-        {/* Shipping */}
-        <QuickCard
-          title="Shipping"
-          score={lead.shipping_sps_fit_score ?? null}
-          scoreLabel="SP Fit"
-          onExpand={() => onOpenDetail('shipping')}
-        >
-          {(() => {
-            const hasAnalysis =
-              typeof lead.shipping_sps_fit_score === 'number' ||
-              (lead.shipping_carriers_detected && lead.shipping_carriers_detected.length > 0) ||
-              lead.shipping_estimated_volume ||
-              lead.shipping_fulfillment_model;
-            if (!hasAnalysis) {
-              return <div style={{ fontSize: 13, color: c.textMuted }}>Noch nicht analysiert</div>;
-            }
-            const score = lead.shipping_sps_fit_score;
-            const carriers = lead.shipping_carriers_detected ?? [];
-            const painCount = lead.shipping_pain_signals?.length ?? 0;
-            const scoreColor =
-              typeof score === 'number' ? (score >= 70 ? '#10B981' : score >= 40 ? '#F59E0B' : '#EF4444') : '#0EA5E9';
-            return (
-              <>
-                {typeof score === 'number' ? (
-                  <>
-                    <div
-                      style={{
-                        fontSize: 36,
-                        fontWeight: 900,
-                        color: scoreColor,
-                        lineHeight: 1,
-                        marginBottom: 4,
-                      }}
-                    >
-                      {score}
-                    </div>
-                    <div style={{ fontSize: 11, color: c.textMuted, marginBottom: 12 }}>SPS-Fit Score</div>
-                  </>
-                ) : (
-                  <div style={{ marginBottom: 12 }}>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: '#0EA5E9',
-                        background: 'rgba(14,165,233,0.1)',
-                        border: '1px solid rgba(14,165,233,0.2)',
-                        padding: '3px 9px',
-                        borderRadius: 99,
-                      }}
-                    >
-                      Analyse läuft
-                    </span>
-                  </div>
-                )}
-
-                {carriers.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5, marginBottom: 8 }}>
-                    {carriers.slice(0, 4).map((carrier, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          background: 'rgba(14,165,233,0.1)',
-                          border: '1px solid rgba(14,165,233,0.2)',
-                          color: '#0EA5E9',
-                        }}
-                      >
-                        {carrier}
-                      </span>
-                    ))}
-                    {carriers.length > 4 && (
-                      <span style={{ fontSize: 11, color: c.textMuted, alignSelf: 'center' }}>
-                        +{carriers.length - 4}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {lead.shipping_estimated_volume && (
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: c.textSub,
-                      marginBottom: lead.shipping_fulfillment_model || painCount > 0 ? 4 : 0,
-                    }}
-                  >
-                    <strong style={{ color: c.text }}>{lead.shipping_estimated_volume}</strong>
-                  </div>
-                )}
-                {lead.shipping_fulfillment_model && (
-                  <div style={{ fontSize: 11, color: c.textMuted, marginBottom: painCount > 0 ? 4 : 0 }}>
-                    {lead.shipping_fulfillment_model}
-                  </div>
-                )}
-
-                {painCount > 0 && (
-                  <div style={{ marginTop: 'auto', paddingTop: 8 }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: '#EF4444',
-                        background: 'rgba(239,68,68,0.1)',
-                        border: '1px solid rgba(239,68,68,0.2)',
-                        borderRadius: 99,
-                        padding: '2px 8px',
-                      }}
-                    >
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#EF4444' }} />
-                      {painCount} {painCount === 1 ? 'Painpoint' : 'Painpoints'}
-                    </span>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </QuickCard>
-      </div>
 
       {/* ── Web-Signale (nach den Cards) ──────────────────────────────────── */}
       {lead.web_buying_signals?.length || lead.web_outreach_hooks?.length || lead.web_recent_news?.length ? (
@@ -11750,18 +10829,6 @@ export default function LeadDetailPage() {
     return true;
   });
   const [activeTab, setActiveTab] = useState<ActiveTab>('info');
-  const [detailView, setDetailView] = useState<
-    'website' | 'firma' | 'mitarbeiter' | 'finanzen' | 'social' | 'bewertungen' | 'shipping' | null
-  >(null);
-  const DETAIL_TITLES = {
-    website: 'Website-Analyse',
-    firma: 'Firmendaten',
-    mitarbeiter: 'Mitarbeiter-Entwicklung',
-    finanzen: 'Finanzdaten — Vollständige Übersicht',
-    social: 'Social Media',
-    bewertungen: 'Bewertungen',
-    shipping: 'Shipping & Logistik',
-  };
   const [status, setStatus] = useState<LeadStatus>('warm');
   const [scoreHover, setScoreHover] = useState(false);
 
@@ -11806,7 +10873,26 @@ export default function LeadDetailPage() {
     if (main) main.scrollTop = 0;
   }, []);
 
-  const TAB_LABELS: Record<ActiveTab, string> = { info: 'Info', bot: 'KI-Assistent' };
+  const TAB_LABELS: Record<ActiveTab, string> = {
+    info: 'Info',
+    website: 'Website',
+    mitarbeiter: 'Führung',
+    finanzen: 'Finanzen',
+    social: 'Social Media',
+    bewertungen: 'Bewertungen',
+    shipping: 'Shipping',
+    bot: 'KI-Assistent',
+  };
+  const TAB_ORDER: ActiveTab[] = [
+    'info',
+    'website',
+    'mitarbeiter',
+    'finanzen',
+    'social',
+    'bewertungen',
+    'shipping',
+    'bot',
+  ];
 
   if (loading || !lead) {
     return (
@@ -12094,9 +11180,10 @@ export default function LeadDetailPage() {
           display: 'flex',
           padding: '0 8px',
           gap: 2,
+          overflowX: 'auto',
         }}
       >
-        {(['info', 'bot'] as ActiveTab[]).map((tab) => {
+        {TAB_ORDER.map((tab) => {
           const active = activeTab === tab;
           return (
             <button
@@ -12114,6 +11201,8 @@ export default function LeadDetailPage() {
                 fontFamily: 'inherit',
                 transition: 'color 0.15s',
                 marginBottom: -1,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               {TAB_LABELS[tab]}
@@ -12134,60 +11223,19 @@ export default function LeadDetailPage() {
           borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255,255,255,0.7)',
           borderLeft: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255,255,255,0.7)',
           borderRadius: '0 0 16px 16px',
-          ...(detailView === null && activeTab === 'bot'
+          ...(activeTab === 'bot'
             ? { display: 'flex', flexDirection: 'column' as const, flex: 1, minHeight: 0, overflow: 'hidden' }
             : {}),
         }}
       >
-        {detailView !== null ? (
-          <>
-            {/* Back bar */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '14px 24px',
-                borderBottom: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.06)',
-                flexShrink: 0,
-              }}
-            >
-              <button
-                onClick={() => setDetailView(null)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: c.textMuted,
-                  fontFamily: 'inherit',
-                  padding: 0,
-                }}
-              >
-                ← Zurück
-              </button>
-              <span style={{ fontSize: 13, fontWeight: 700, color: c.text }}>{DETAIL_TITLES[detailView]}</span>
-            </div>
-            {detailView === 'website' && <WebsiteDetail lead={lead!} c={c} isDark={isDark} />}
-            {detailView === 'firma' && <FirmaDetail lead={lead!} c={c} isDark={isDark} />}
-            {detailView === 'mitarbeiter' && <MitarbeiterDetail lead={lead!} c={c} isDark={isDark} />}
-            {detailView === 'finanzen' && <FinanzenTab lead={lead!} c={c} isDark={isDark} />}
-            {detailView === 'social' && <SocialDetail lead={lead!} c={c} isDark={isDark} />}
-            {detailView === 'bewertungen' && <BewertungenDetail lead={lead!} c={c} isDark={isDark} />}
-            {detailView === 'shipping' && <ShippingDetail lead={lead!} c={c} isDark={isDark} />}
-          </>
-        ) : (
-          <>
-            {activeTab === 'info' && (
-              <InfoTab lead={lead!} c={c} isDark={isDark} onOpenDetail={(v) => setDetailView(v)} />
-            )}
-            {activeTab === 'bot' && <ChatTab key={lead!.id} lead={lead!} c={c} isDark={isDark} />}
-          </>
-        )}
+        {activeTab === 'info' && <InfoTab lead={lead!} c={c} isDark={isDark} />}
+        {activeTab === 'website' && <WebsiteDetail lead={lead!} c={c} isDark={isDark} />}
+        {activeTab === 'mitarbeiter' && <MitarbeiterDetail lead={lead!} c={c} isDark={isDark} />}
+        {activeTab === 'finanzen' && <FinanzenTab lead={lead!} c={c} isDark={isDark} />}
+        {activeTab === 'social' && <SocialDetail lead={lead!} c={c} isDark={isDark} />}
+        {activeTab === 'bewertungen' && <BewertungenDetail lead={lead!} c={c} isDark={isDark} />}
+        {activeTab === 'shipping' && <ShippingDetail lead={lead!} c={c} isDark={isDark} />}
+        {activeTab === 'bot' && <ChatTab key={lead!.id} lead={lead!} c={c} isDark={isDark} />}
       </div>
 
       {/* Globaler Sticky-Button „Ansprechperson finden“ — immer unten mittig */}
