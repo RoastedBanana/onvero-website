@@ -8617,62 +8617,103 @@ function InfoTab({
     marginBottom: 16,
   };
 
-  // Compact quick-view card with an expand button
+  // Unified QuickCard — score 0-100, consistent design across all 6 cards
   function QuickCard({
     title,
-    accent,
+    score,
+    scoreLabel,
     onExpand,
     children,
   }: {
     title: string;
-    accent?: string;
+    score?: number | null;
+    scoreLabel?: string;
     onExpand?: () => void;
     children: React.ReactNode;
   }) {
+    const scoreColor = score == null ? '#94A3B8' : score >= 75 ? '#10B981' : score >= 40 ? '#F97316' : '#EF4444';
+
+    const [hovered, setHovered] = React.useState(false);
+
     return (
       <div
         onClick={onExpand}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           ...glassCard(isDark),
-          borderRadius: 16,
-          padding: '22px 22px',
-          minHeight: 200,
-          ...(accent ? { borderTop: `3px solid ${accent}` } : {}),
+          borderRadius: 14,
+          padding: '18px 20px 16px',
+          minHeight: 210,
+          borderTop: `3px solid ${scoreColor}`,
           display: 'flex',
           flexDirection: 'column' as const,
-          gap: 10,
+          gap: 0,
           cursor: onExpand ? 'pointer' : 'default',
+          transition: 'box-shadow 150ms, transform 100ms',
+          boxShadow: hovered && onExpand ? `0 0 0 1px ${scoreColor}40, 0 8px 24px rgba(0,0,0,0.12)` : undefined,
+          transform: hovered && onExpand ? 'translateY(-1px)' : undefined,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        {/* Header: title + score */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
           <span
             style={{
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 800,
               letterSpacing: '0.08em',
               textTransform: 'uppercase' as const,
-              color: accent ?? c.textMuted,
+              color: c.textMuted,
             }}
           >
             {title}
           </span>
-          {onExpand && (
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: accent ?? c.textMuted,
-                background: accent ? `${accent}26` : 'transparent',
-                padding: '3px 9px',
-                borderRadius: 99,
-                letterSpacing: '0.02em',
-              }}
-            >
-              Details →
-            </span>
+          {score != null ? (
+            <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-end', gap: 2 }}>
+              <span
+                style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', lineHeight: 1, color: scoreColor }}
+              >
+                {score}
+              </span>
+              {scoreLabel && (
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: scoreColor,
+                    opacity: 0.75,
+                    textTransform: 'uppercase' as const,
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {scoreLabel}
+                </span>
+              )}
+            </div>
+          ) : (
+            <span style={{ fontSize: 11, color: c.textMuted, opacity: 0.45 }}>—</span>
           )}
         </div>
+
+        {/* Content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' as const }}>{children}</div>
+
+        {/* Footer: Details button */}
+        {onExpand && (
+          <div
+            style={{
+              marginTop: 14,
+              paddingTop: 10,
+              borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'}`,
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor, letterSpacing: '0.02em' }}>
+              Details ansehen →
+            </span>
+          </div>
+        )}
       </div>
     );
   }
@@ -8997,152 +9038,19 @@ function InfoTab({
         </div>
       ) : null}
 
-      {/* ── 1b. Web-Signale ───────────────────────────────────────────────── */}
-      {lead.web_buying_signals?.length || lead.web_outreach_hooks?.length || lead.web_recent_news?.length ? (
-        <div
-          style={{
-            ...glassCard(isDark),
-            borderRadius: 16,
-            padding: '20px 24px',
-            marginBottom: 16,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase' as const,
-              color: '#0EA5E9',
-              marginBottom: 14,
-            }}
-          >
-            Web-Signale
-          </div>
-
-          {/* Buying signals */}
-          {!!lead.web_buying_signals?.length && (
-            <div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: c.textMuted,
-                  marginBottom: 6,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: '0.06em',
-                }}
-              >
-                Kaufsignale
-              </div>
-              {lead.web_buying_signals.map((s, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      flexShrink: 0,
-                      marginTop: 4,
-                      background: s.priority === 'high' ? '#EF4444' : s.priority === 'medium' ? '#F97316' : '#10B981',
-                    }}
-                  />
-                  <div>
-                    <div style={{ fontSize: 13, color: c.text, fontWeight: 600 }}>{s.signal}</div>
-                    {s.evidence && <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{s.evidence}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Outreach hooks */}
-          {!!lead.web_outreach_hooks?.length && (
-            <div>
-              {!!lead.web_buying_signals?.length && (
-                <div
-                  style={{
-                    height: 1,
-                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                    margin: '12px 0',
-                  }}
-                />
-              )}
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: c.textMuted,
-                  marginBottom: 6,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: '0.06em',
-                }}
-              >
-                Outreach-Hooks
-              </div>
-              {lead.web_outreach_hooks.map((h, i) => (
-                <div key={i} style={{ marginBottom: 10 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: c.text, marginBottom: 3 }}>{h.hook}</div>
-                  {h.suggested_opener && (
-                    <div style={{ fontSize: 11, color: c.textMuted, fontStyle: 'italic' as const, lineHeight: 1.5 }}>
-                      &bdquo;{h.suggested_opener}&ldquo;
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Recent news */}
-          {!!lead.web_recent_news?.length && (
-            <div>
-              {(!!lead.web_buying_signals?.length || !!lead.web_outreach_hooks?.length) && (
-                <div
-                  style={{
-                    height: 1,
-                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-                    margin: '12px 0',
-                  }}
-                />
-              )}
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: c.textMuted,
-                  marginBottom: 6,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: '0.06em',
-                }}
-              >
-                Aktuelle News
-              </div>
-              {lead.web_recent_news.map((n, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    gap: 8,
-                    marginBottom: 6,
-                  }}
-                >
-                  <div style={{ fontSize: 12, color: c.text, flex: 1, lineHeight: 1.4 }}>{n.headline}</div>
-                  {n.date_approx && (
-                    <div style={{ fontSize: 10, color: c.textMuted, flexShrink: 0 }}>{n.date_approx}</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : null}
-
       {/* ── 2. Compact quick-view cards ───────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
         {/* Website-Analyse */}
-        <QuickCard title="Website-Analyse" accent="#14B8A6" onExpand={() => onOpenDetail('website')}>
+        <QuickCard
+          title="Website-Analyse"
+          score={
+            lead.web_data_confidence != null
+              ? Math.round(lead.web_data_confidence <= 1 ? lead.web_data_confidence * 100 : lead.web_data_confidence)
+              : null
+          }
+          scoreLabel="Konfidenz"
+          onExpand={() => onOpenDetail('website')}
+        >
           {(() => {
             const ACCENT = '#14B8A6';
             const hasWeb = !!(
@@ -9248,7 +9156,12 @@ function InfoTab({
         </QuickCard>
 
         {/* Führung */}
-        <QuickCard title="Führung" accent="#0EA5E9" onExpand={() => onOpenDetail('mitarbeiter')}>
+        <QuickCard
+          title="Führung"
+          score={lead.mgmt_stability_score ?? null}
+          scoreLabel={lead.mgmt_stability_label ?? undefined}
+          onExpand={() => onOpenDetail('mitarbeiter')}
+        >
           {(() => {
             const stbScore = lead.mgmt_stability_score;
             const stbColor =
@@ -9390,7 +9303,14 @@ function InfoTab({
         </QuickCard>
 
         {/* Finanzen */}
-        <QuickCard title="Finanzen" accent="#F97316" onExpand={() => onOpenDetail('finanzen')}>
+        <QuickCard
+          title="Finanzen"
+          score={lead.fin_health_score ?? null}
+          scoreLabel={
+            lead.fin_health_label && lead.fin_health_label !== 'insufficient_data' ? lead.fin_health_label : undefined
+          }
+          onExpand={() => onOpenDetail('finanzen')}
+        >
           {(() => {
             const score = lead.fin_health_score;
             const hasScore = score != null;
@@ -9737,7 +9657,12 @@ function InfoTab({
       {/* ── 5. Online-Präsenz — compact expand cards ──────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
         {/* Social Media */}
-        <QuickCard title="Social Media" accent="#E1306C" onExpand={() => onOpenDetail('social')}>
+        <QuickCard
+          title="Social Media"
+          score={lead.social_health_score ?? null}
+          scoreLabel={lead.social_health_label ?? undefined}
+          onExpand={() => onOpenDetail('social')}
+        >
           {(() => {
             const socialScore = lead.social_health_score ?? null;
             const hasSocial =
@@ -9883,7 +9808,12 @@ function InfoTab({
         </QuickCard>
 
         {/* Bewertungen */}
-        <QuickCard title="Bewertungen" accent="#F59E0B" onExpand={() => onOpenDetail('bewertungen')}>
+        <QuickCard
+          title="Bewertungen"
+          score={lead.reviews_health_score ?? null}
+          scoreLabel={lead.reviews_health_label ?? undefined}
+          onExpand={() => onOpenDetail('bewertungen')}
+        >
           {(() => {
             const overallScore = lead.reviews_overall_score ?? lead.google ?? lead.trustpilot ?? null;
             if (overallScore == null) return <div style={{ fontSize: 13, color: c.textMuted }}>Keine Bewertungen</div>;
@@ -9979,7 +9909,12 @@ function InfoTab({
         </QuickCard>
 
         {/* Shipping */}
-        <QuickCard title="Shipping" accent="#0EA5E9" onExpand={() => onOpenDetail('shipping')}>
+        <QuickCard
+          title="Shipping"
+          score={lead.shipping_sps_fit_score ?? null}
+          scoreLabel="SP Fit"
+          onExpand={() => onOpenDetail('shipping')}
+        >
           {(() => {
             const hasAnalysis =
               typeof lead.shipping_sps_fit_score === 'number' ||
@@ -10098,6 +10033,117 @@ function InfoTab({
           })()}
         </QuickCard>
       </div>
+
+      {/* ── Web-Signale (nach den Cards) ──────────────────────────────────── */}
+      {lead.web_buying_signals?.length || lead.web_outreach_hooks?.length || lead.web_recent_news?.length ? (
+        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 24px', marginTop: 4 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase' as const,
+              color: '#0EA5E9',
+              marginBottom: 14,
+            }}
+          >
+            Web-Signale
+          </div>
+          {!!lead.web_buying_signals?.length && (
+            <div style={{ marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  marginBottom: 6,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Kaufsignale
+              </div>
+              {lead.web_buying_signals.map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      marginTop: 4,
+                      background: s.priority === 'high' ? '#EF4444' : s.priority === 'medium' ? '#F97316' : '#10B981',
+                    }}
+                  />
+                  <div>
+                    <div style={{ fontSize: 13, color: c.text, fontWeight: 600 }}>{s.signal}</div>
+                    {s.evidence && <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{s.evidence}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {!!lead.web_outreach_hooks?.length && (
+            <div style={{ marginBottom: 12 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  marginBottom: 6,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Outreach-Hooks
+              </div>
+              {lead.web_outreach_hooks.map((h, i) => (
+                <div key={i} style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: c.text, marginBottom: 3 }}>{h.hook}</div>
+                  {h.suggested_opener && (
+                    <div style={{ fontSize: 11, color: c.textMuted, fontStyle: 'italic' as const, lineHeight: 1.5 }}>
+                      &bdquo;{h.suggested_opener}&ldquo;
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {!!lead.web_recent_news?.length && (
+            <div>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  marginBottom: 6,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Aktuelle News
+              </div>
+              {lead.web_recent_news.map((n, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    marginBottom: 6,
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: c.text, flex: 1, lineHeight: 1.4 }}>{n.headline}</div>
+                  {n.date_approx && (
+                    <div style={{ fontSize: 10, color: c.textMuted, flexShrink: 0 }}>{n.date_approx}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
