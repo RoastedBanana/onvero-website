@@ -84,6 +84,9 @@ function mapApiLead(row: any): Lead {
     finHealthScore: typeof row.fin_health_score === 'number' ? row.fin_health_score : undefined,
     spFitScore: spFit,
     hasShop: row.web_has_shop === true,
+    shippingVolume: (row.shipping_estimated_volume as string | undefined) ?? undefined,
+    shippingModel: (row.shipping_fulfillment_model as string | undefined) ?? undefined,
+    shippingComplexity: (row.shipping_logistics_complexity as string | undefined) ?? undefined,
     primaryHook: (row.analysis_primary_hook as string | undefined) ?? undefined,
     dealTier: (row.analysis_deal_tier as string | undefined) ?? undefined,
     founded: row.founded_year ? String(row.founded_year) : undefined,
@@ -109,6 +112,9 @@ interface Lead {
   finHealthScore?: number;
   spFitScore?: number;
   hasShop: boolean;
+  shippingVolume?: string;
+  shippingModel?: string;
+  shippingComplexity?: string;
   primaryHook?: string;
   dealTier?: string;
   founded?: string;
@@ -609,10 +615,11 @@ export default function LeadsPage() {
   }, []);
 
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'added'>(() => {
-    if (typeof window === 'undefined') return 'added';
-    return (localStorage.getItem('leads-sort') as 'name' | 'added') ?? 'added';
+  const [sortBy, setSortBy] = useState<'name' | 'added' | 'score'>(() => {
+    if (typeof window === 'undefined') return 'score';
+    return (localStorage.getItem('leads-sort') as 'name' | 'added' | 'score') ?? 'score';
   });
+  const [statusFilter, setStatusFilter] = useState<'all' | 'hot' | 'warm' | 'kalt'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -622,12 +629,21 @@ export default function LeadsPage() {
   const filtered = leads
     .filter((l) => {
       const q = search.toLowerCase();
-      return (
-        l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.industry.toLowerCase().includes(q)
-      );
+      const matchSearch =
+        l.name.toLowerCase().includes(q) ||
+        l.city.toLowerCase().includes(q) ||
+        (l.industry ?? '').toLowerCase().includes(q);
+      if (!matchSearch) return false;
+      if (statusFilter === 'all') return true;
+      const t = (l.tier ?? '').toLowerCase();
+      if (statusFilter === 'hot') return t.startsWith('hot');
+      if (statusFilter === 'warm') return t === 'warm';
+      if (statusFilter === 'kalt') return t === 'kalt' || t === 'cold' || (!t && l.spFitScore == null);
+      return true;
     })
     .sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'score') return (b.spFitScore ?? 0) - (a.spFitScore ?? 0);
       return b.addedTs - a.addedTs;
     });
 
@@ -817,13 +833,72 @@ export default function LeadsPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Filter bar */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {/* Search — fixed width, not flex:1 */}
-          <div style={{ position: 'relative', width: 280 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Status filter pills */}
+          {(['all', 'hot', 'warm', 'kalt'] as const).map((f) => {
+            const active = statusFilter === f;
+            const meta = {
+              all: { label: 'Alle', color: '#4F46E5' },
+              hot: { label: 'Hot', color: '#EF4444' },
+              warm: { label: 'Warm', color: '#F97316' },
+              kalt: { label: 'Kalt', color: '#94A3B8' },
+            }[f];
+            const count =
+              f === 'all'
+                ? leads.length
+                : leads.filter((l) => {
+                    const t = (l.tier ?? '').toLowerCase();
+                    if (f === 'hot') return t.startsWith('hot');
+                    if (f === 'warm') return t === 'warm';
+                    return t === 'kalt' || t === 'cold' || (!t && l.spFitScore == null);
+                  }).length;
+            return (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '7px 13px',
+                  borderRadius: 99,
+                  border: active
+                    ? `1.5px solid ${meta.color}`
+                    : `1.5px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.10)'}`,
+                  background: active ? meta.color + '15' : isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.60)',
+                  color: active ? meta.color : c.textMuted,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 150ms',
+                }}
+              >
+                {f !== 'all' && <div style={{ width: 6, height: 6, borderRadius: '50%', background: meta.color }} />}
+                {meta.label}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    background: active ? meta.color + '25' : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                    borderRadius: 99,
+                    padding: '1px 6px',
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+
+          <div style={{ width: 1, height: 20, background: c.border, margin: '0 2px' }} />
+
+          {/* Search */}
+          <div style={{ position: 'relative', width: 220 }}>
             <svg
               style={{
                 position: 'absolute',
-                left: 11,
+                left: 10,
                 top: '50%',
                 transform: 'translateY(-50%)',
                 pointerEvents: 'none',
@@ -840,24 +915,25 @@ export default function LeadsPage() {
               <line x1="11" y1="11" x2="14" y2="14" />
             </svg>
             <input
-              placeholder="Name, Stadt, Branche…"
+              placeholder="Suchen…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
                 width: '100%',
-                padding: '9px 12px 9px 32px',
+                padding: '8px 12px 8px 30px',
                 border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.10)',
-                borderRadius: 9,
-                fontSize: 13,
+                borderRadius: 99,
+                fontSize: 12,
                 fontFamily: 'inherit',
                 outline: 'none',
                 background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)',
-                backdropFilter: 'blur(12px)',
                 color: c.text,
                 boxSizing: 'border-box',
               }}
             />
           </div>
+
+          {/* Sort */}
           <select
             value={sortBy}
             onChange={(e) => {
@@ -866,19 +942,19 @@ export default function LeadsPage() {
               localStorage.setItem('leads-sort', v);
             }}
             style={{
-              padding: '9px 12px',
+              padding: '8px 11px',
               border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.10)',
-              borderRadius: 9,
+              borderRadius: 99,
               fontSize: 12,
               fontFamily: 'inherit',
               background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)',
-              backdropFilter: 'blur(12px)',
               color: c.text,
               cursor: 'pointer',
               outline: 'none',
               fontWeight: 600,
             }}
           >
+            <option value="score">SP Fit ↓</option>
             <option value="added">Neueste zuerst</option>
             <option value="name">Name A–Z</option>
           </select>
@@ -947,15 +1023,7 @@ export default function LeadsPage() {
                         c={c}
                       />
                     </th>
-                    {[
-                      'Unternehmen',
-                      'Branche · Stadt',
-                      'Gesprächseinstieg',
-                      'Fin. Gesundheit',
-                      'SP Fit',
-                      'Status',
-                      '',
-                    ].map((h) => (
+                    {['Unternehmen', 'Branche · Stadt', 'Versandvolumen', 'Modell', 'SP Fit', 'Status', ''].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -1061,66 +1129,60 @@ export default function LeadsPage() {
                           <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{lead.city || ''}</div>
                         </td>
 
-                        {/* Gesprächseinstieg */}
-                        <td style={{ padding: '10px 14px', maxWidth: 240 }}>
-                          {lead.primaryHook ? (
-                            <div
-                              style={{
-                                fontSize: 12,
-                                color: c.textSub,
-                                lineHeight: 1.4,
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {lead.primaryHook}
+                        {/* Versandvolumen */}
+                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                          {lead.shippingVolume ? (
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{lead.shippingVolume}</div>
+                              {lead.shippingComplexity && (
+                                <div style={{ fontSize: 10, color: c.textMuted, marginTop: 2 }}>
+                                  {(
+                                    {
+                                      low: 'Einfach',
+                                      medium: 'Mittel',
+                                      high: 'Komplex',
+                                      very_high: 'Sehr komplex',
+                                    } as Record<string, string>
+                                  )[lead.shippingComplexity] ?? lead.shippingComplexity}
+                                </div>
+                              )}
                             </div>
-                          ) : lead.revenue ? (
-                            <span style={{ fontSize: 12, color: c.textMuted }}>{lead.revenue}</span>
                           ) : (
                             <span style={{ fontSize: 12, color: c.textMuted, opacity: 0.4 }}>—</span>
                           )}
                         </td>
 
-                        {/* Fin. Gesundheit */}
+                        {/* Modell */}
                         <td style={{ padding: '10px 14px' }}>
-                          {lead.finHealthLabel ? (
+                          {lead.shippingModel ? (
                             (() => {
-                              const lbl = lead.finHealthLabel.toLowerCase();
-                              const color =
-                                lbl === 'healthy' || lbl === 'gut' || lbl === 'stable'
-                                  ? '#10B981'
-                                  : lbl === 'warning' || lbl === 'schwach'
-                                    ? '#F97316'
-                                    : '#94A3B8';
-                              const labelMap: Record<string, string> = {
-                                healthy: 'Gesund',
-                                stable: 'Stabil',
-                                growing: 'Wachsend',
-                                warning: 'Warnung',
-                                declining: 'Rückgang',
-                                unknown: 'Unbekannt',
-                              };
+                              const m = lead.shippingModel;
+                              const meta =
+                                m === 'Eigenversand'
+                                  ? { label: 'Eigen', color: '#4F46E5', bg: '#4F46E515' }
+                                  : m === '3PL'
+                                    ? { label: '3PL', color: '#F97316', bg: '#F9731615' }
+                                    : m === 'hybrid'
+                                      ? { label: 'Hybrid', color: '#10B981', bg: '#10B98115' }
+                                      : { label: m, color: '#94A3B8', bg: 'rgba(148,163,184,0.10)' };
                               return (
                                 <span
                                   style={{
                                     fontSize: 11,
                                     fontWeight: 700,
-                                    padding: '3px 8px',
+                                    padding: '3px 9px',
                                     borderRadius: 99,
-                                    background: color + '18',
-                                    color,
+                                    background: meta.bg,
+                                    color: meta.color,
                                     whiteSpace: 'nowrap',
                                   }}
                                 >
-                                  {labelMap[lbl] ?? lead.finHealthLabel}
+                                  {meta.label}
                                 </span>
                               );
                             })()
                           ) : (
-                            <span style={{ fontSize: 12, color: c.textMuted, opacity: 0.5 }}>—</span>
+                            <span style={{ fontSize: 12, color: c.textMuted, opacity: 0.4 }}>—</span>
                           )}
                         </td>
 
