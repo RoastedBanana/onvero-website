@@ -11178,6 +11178,7 @@ export default function LeadDetailPage() {
           padding: '0 8px',
           gap: 2,
           overflowX: 'auto',
+          flexShrink: 0,
         }}
       >
         {TAB_ORDER.map((tab) => {
