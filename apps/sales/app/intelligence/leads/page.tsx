@@ -46,17 +46,28 @@ function formatRevenue(eur: number | null | undefined, scraped: string | null | 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapApiLead(row: any): Lead {
-  const score: number =
-    typeof row.lead_score === 'number' && row.lead_score > 0
-      ? row.lead_score
-      : typeof row.fit_score === 'number' && row.fit_score > 0
-        ? row.fit_score
-        : 0;
-
+  // Primary score: SP fit score is the most meaningful, fall back to analysis confidence
   const spFit: number | undefined =
     typeof row.shipping_sps_fit_score === 'number' && row.shipping_sps_fit_score > 0
       ? row.shipping_sps_fit_score
       : undefined;
+
+  const score: number = spFit ?? 0;
+
+  // Tier: from generated DB column, or derive from SP fit
+  const tier: string | undefined =
+    (row.tier as string | undefined) ??
+    (spFit != null ? (spFit >= 80 ? 'Hot+' : spFit >= 65 ? 'Hot' : spFit >= 40 ? 'Warm' : 'Kalt') : undefined);
+
+  // Revenue: prefer actual, then estimated
+  const revenue = formatRevenue(
+    row.fin_revenue_eur ?? null,
+    row.fin_estimated_revenue_eur ? `${(row.fin_estimated_revenue_eur / 1_000_000).toFixed(1)} Mio. €*` : null
+  );
+
+  // Financial health: "insufficient_data" → undefined (show as —)
+  const rawHealth = row.fin_health_label as string | undefined;
+  const finHealthLabel = rawHealth && rawHealth !== 'insufficient_data' ? rawHealth : undefined;
 
   return {
     id: row.id as string,
@@ -65,14 +76,16 @@ function mapApiLead(row: any): Lead {
     industry: (row.industry as string) ?? '',
     website: (row.website as string | undefined) ?? undefined,
     score,
-    tier: (row.tier as string | undefined) ?? undefined,
-    status: tierToStatus(row.tier),
-    employees: row.num_employees ? String(row.num_employees) : (row.estimated_employees_scraped ?? ''),
-    revenue: formatRevenue(row.fin_revenue_eur ?? row.fin_estimated_revenue_eur, row.estimated_revenue_scraped),
-    finHealthLabel: (row.fin_health_label as string | undefined) ?? undefined,
+    tier,
+    status: tierToStatus(tier),
+    employees: row.num_employees ? String(row.num_employees) : '',
+    revenue,
+    finHealthLabel,
     finHealthScore: typeof row.fin_health_score === 'number' ? row.fin_health_score : undefined,
     spFitScore: spFit,
     hasShop: row.web_has_shop === true,
+    primaryHook: (row.analysis_primary_hook as string | undefined) ?? undefined,
+    dealTier: (row.analysis_deal_tier as string | undefined) ?? undefined,
     founded: row.founded_year ? String(row.founded_year) : undefined,
     added: row.created_at ? new Date(row.created_at as string).toLocaleDateString('de-DE') : '',
     addedTs: row.created_at ? new Date(row.created_at as string).getTime() : 0,
@@ -96,6 +109,8 @@ interface Lead {
   finHealthScore?: number;
   spFitScore?: number;
   hasShop: boolean;
+  primaryHook?: string;
+  dealTier?: string;
   founded?: string;
   added: string;
   addedTs: number;
@@ -758,7 +773,12 @@ export default function LeadsPage() {
               color: '#EF4444',
               bg: '#EF444415',
             },
-            { label: 'Mit Score', value: leads.filter((l) => l.score > 0).length, color: '#10B981', bg: '#10B98115' },
+            {
+              label: 'Mit SP Fit',
+              value: leads.filter((l) => l.spFitScore != null).length,
+              color: '#10B981',
+              bg: '#10B98115',
+            },
             {
               label: 'Neu diese Woche',
               value: leads.filter((l) => l.addedTs > Date.now() - 7 * 86400_000).length,
@@ -927,25 +947,31 @@ export default function LeadsPage() {
                         c={c}
                       />
                     </th>
-                    {['Unternehmen', 'Branche · Stadt', 'Umsatz', 'Fin. Gesundheit', 'SP Fit', 'Status', ''].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          style={{
-                            textAlign: 'left',
-                            padding: '11px 14px',
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.07em',
-                            color: c.textMuted,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
+                    {[
+                      'Unternehmen',
+                      'Branche · Stadt',
+                      'Gesprächseinstieg',
+                      'Fin. Gesundheit',
+                      'SP Fit',
+                      'Status',
+                      '',
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          textAlign: 'left',
+                          padding: '11px 14px',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.07em',
+                          color: c.textMuted,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -1035,9 +1061,27 @@ export default function LeadsPage() {
                           <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{lead.city || ''}</div>
                         </td>
 
-                        {/* Umsatz */}
-                        <td style={{ padding: '10px 14px', fontSize: 13, color: c.textSub, whiteSpace: 'nowrap' }}>
-                          {lead.revenue || <span style={{ color: c.textMuted, opacity: 0.5 }}>—</span>}
+                        {/* Gesprächseinstieg */}
+                        <td style={{ padding: '10px 14px', maxWidth: 240 }}>
+                          {lead.primaryHook ? (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: c.textSub,
+                                lineHeight: 1.4,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {lead.primaryHook}
+                            </div>
+                          ) : lead.revenue ? (
+                            <span style={{ fontSize: 12, color: c.textMuted }}>{lead.revenue}</span>
+                          ) : (
+                            <span style={{ fontSize: 12, color: c.textMuted, opacity: 0.4 }}>—</span>
+                          )}
                         </td>
 
                         {/* Fin. Gesundheit */}
