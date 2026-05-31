@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useLayoutEffect, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpIcon, Users, Calendar, Globe, Phone, Info, ChevronDown, Trash2 } from 'lucide-react';
+import { ArrowUpIcon, Users, Calendar, Globe, Phone, Info, ChevronDown, Trash2, UserPlus } from 'lucide-react';
 import { useTheme, colors } from '../../layout';
 import { GlassPageFilters } from '@/components/ui/liquid-glass-card';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -17,7 +17,7 @@ import remarkGfm from 'remark-gfm';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type LeadStatus = 'hot' | 'warm' | 'cold';
-type ActiveTab = 'info' | 'outbound' | 'bot';
+type ActiveTab = 'info' | 'bot';
 
 interface Contact {
   name: string;
@@ -11127,7 +11127,7 @@ function GenerateLoader({ isDark, c }: { isDark: boolean; c: ReturnType<typeof c
 
 type ProfileOption = { id: string; label: string };
 
-function OutboundTab({
+function FindContactButton({
   lead,
   c,
   isDark,
@@ -11160,8 +11160,6 @@ function OutboundTab({
   const [genSuccess, setGenSuccess] = useState<string | null>(null);
   const [genDone, setGenDone] = useState(false);
 
-  // Inline email-draft expander (one open at a time)
-  const [expandedDraftIdx, setExpandedDraftIdx] = useState<number | null>(null);
 
   // Apollo IDs already enriched for this lead — those rows are shown disabled.
   const usedApolloIds = new Set(lead.contacts.map((c) => c.apolloPersonId).filter((v): v is string => Boolean(v)));
@@ -11296,286 +11294,36 @@ function OutboundTab({
     }
   }
 
-  const card: React.CSSProperties = {
-    ...glassCard(isDark),
-    borderRadius: 16,
-    padding: '20px 24px',
-    marginBottom: 16,
-  };
-  const sectionTitle: React.CSSProperties = {
-    fontSize: 11,
-    fontWeight: 800,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase' as const,
-    color: c.textMuted,
-    marginBottom: 16,
-  };
-  const SOURCE_BADGE_MAP: Record<Contact['source'], { label: string; color: string }> = {
-    linkedin: { label: 'LinkedIn', color: '#0077B5' },
-    openregister: { label: 'Handelsregister', color: '#10B981' },
-    salesnavigator: { label: 'SalesNav', color: '#F97316' },
-    manual: { label: 'Manuell', color: '#94A3B8' },
-    website: { label: 'Website', color: '#818CF8' },
-    apollo: { label: 'Apollo', color: '#A855F7' },
-  };
-
   return (
-    <div style={{ padding: '20px 24px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {/* LEFT */}
-        <div>
-          {/* Contacts */}
-          <div>
-            <div style={{ ...sectionTitle, marginBottom: 14 }}>Ansprechpartner</div>
-            {lead.contacts.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
-                {lead.contacts.map((ct, i) => {
-                  const src = SOURCE_BADGE_MAP[ct.source];
-                  const avatarColors = [
-                    { bg: 'rgba(129,140,248,0.18)', color: '#818CF8' },
-                    { bg: 'rgba(16,185,129,0.18)', color: '#10B981' },
-                    { bg: 'rgba(249,115,22,0.18)', color: '#F97316' },
-                    { bg: 'rgba(239,68,68,0.18)', color: '#EF4444' },
-                  ];
-                  const av = avatarColors[i % avatarColors.length];
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        ...glassCard(isDark),
-                        borderRadius: 14,
-                        padding: '18px 20px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                        {/* Avatar */}
-                        {ct.photoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={ct.photoUrl}
-                            alt={ct.name}
-                            style={{
-                              width: 56,
-                              height: 56,
-                              borderRadius: 16,
-                              objectFit: 'cover',
-                              flexShrink: 0,
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              width: 56,
-                              height: 56,
-                              borderRadius: 16,
-                              background: av.bg,
-                              color: av.color,
-                              fontWeight: 800,
-                              fontSize: 18,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                              letterSpacing: '-0.02em',
-                            }}
-                          >
-                            {ct.name
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')
-                              .slice(0, 2)
-                              .toUpperCase()}
-                          </div>
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{
-                              fontSize: 16,
-                              fontWeight: 800,
-                              color: c.text,
-                              marginBottom: 2,
-                              letterSpacing: '-0.01em',
-                            }}
-                          >
-                            {ct.name}
-                          </div>
-                          <div style={{ fontSize: 13, color: c.textMuted, marginBottom: 10 }}>{ct.role}</div>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const, alignItems: 'center' }}>
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                color: src.color,
-                                background: src.color + '18',
-                                padding: '3px 8px',
-                                borderRadius: 999,
-                                border: `1px solid ${src.color}30`,
-                              }}
-                            >
-                              {src.label}
-                            </span>
-                            {ct.linkedin && (
-                              <a
-                                href={/^https?:\/\//i.test(ct.linkedin) ? ct.linkedin : `https://${ct.linkedin}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  fontSize: 11,
-                                  color: '#0077B5',
-                                  fontWeight: 700,
-                                  textDecoration: 'none',
-                                  padding: '3px 10px',
-                                  background: 'rgba(0,119,181,0.1)',
-                                  borderRadius: 999,
-                                  border: '1px solid rgba(0,119,181,0.2)',
-                                }}
-                              >
-                                LinkedIn ↗
-                              </a>
-                            )}
-                            {ct.email && (
-                              <a
-                                href={`mailto:${ct.email}`}
-                                style={{
-                                  fontSize: 11,
-                                  color: '#818CF8',
-                                  fontWeight: 700,
-                                  textDecoration: 'none',
-                                  padding: '3px 10px',
-                                  background: 'rgba(129,140,248,0.1)',
-                                  borderRadius: 999,
-                                  border: '1px solid rgba(129,140,248,0.2)',
-                                }}
-                              >
-                                {ct.email}
-                              </a>
-                            )}
-                            {ct.phone && (
-                              <a
-                                href={`tel:${ct.phone}`}
-                                style={{
-                                  fontSize: 11,
-                                  color: '#10B981',
-                                  fontWeight: 700,
-                                  textDecoration: 'none',
-                                  padding: '3px 10px',
-                                  background: 'rgba(16,185,129,0.1)',
-                                  borderRadius: 999,
-                                  border: '1px solid rgba(16,185,129,0.2)',
-                                }}
-                              >
-                                {ct.phone}
-                              </a>
-                            )}
-                          </div>
-
-                          {ct.emailDraftBody && (
-                            <div style={{ marginTop: 12 }}>
-                              <button
-                                type="button"
-                                onClick={() => setExpandedDraftIdx(expandedDraftIdx === i ? null : i)}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 6,
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  color: c.accent,
-                                  background: c.accent + '14',
-                                  border: `1px solid ${c.accent}33`,
-                                  borderRadius: 999,
-                                  padding: '4px 10px',
-                                  cursor: 'pointer',
-                                  fontFamily: 'inherit',
-                                }}
-                              >
-                                ✉ E-Mail-Entwurf {expandedDraftIdx === i ? 'verbergen' : 'anzeigen'}
-                              </button>
-
-                              {expandedDraftIdx === i && (
-                                <div
-                                  style={{
-                                    marginTop: 10,
-                                    padding: '12px 14px',
-                                    borderRadius: 10,
-                                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
-                                    background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                                  }}
-                                >
-                                  {ct.emailDraftSubject && (
-                                    <div
-                                      style={{
-                                        fontSize: 13,
-                                        fontWeight: 800,
-                                        color: c.text,
-                                        marginBottom: 8,
-                                      }}
-                                    >
-                                      {ct.emailDraftSubject}
-                                    </div>
-                                  )}
-                                  <div
-                                    style={{
-                                      fontSize: 13,
-                                      color: c.text,
-                                      lineHeight: 1.6,
-                                    }}
-                                    dangerouslySetInnerHTML={{ __html: ct.emailDraftBody }}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const tmp = document.createElement('div');
-                                      tmp.innerHTML = ct.emailDraftBody ?? '';
-                                      void navigator.clipboard?.writeText(tmp.textContent || '');
-                                    }}
-                                    style={{
-                                      marginTop: 10,
-                                      fontSize: 11,
-                                      fontWeight: 700,
-                                      color: c.textMuted,
-                                      background: 'transparent',
-                                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)'}`,
-                                      borderRadius: 8,
-                                      padding: '5px 10px',
-                                      cursor: 'pointer',
-                                      fontFamily: 'inherit',
-                                    }}
-                                  >
-                                    Kopieren
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Mehr Ansprechpartner via Apollo */}
-            <div style={{ marginTop: lead.contacts.length > 0 ? 12 : 0 }}>
-              <button
-                type="button"
-                onClick={() => void loadApolloPersons()}
-                style={{
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: 12,
-                  border: `1px dashed ${isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.18)'}`,
-                  background: 'transparent',
-                  color: c.textMuted,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-inter), sans-serif',
-                }}
-              >
-                Mehr Ansprechpartner laden
-              </button>
+    <>
+      {/* Sticky „Ansprechperson finden“ — immer unten mittig sichtbar */}
+      <button
+        type="button"
+        onClick={() => void loadApolloPersons()}
+        style={{
+          position: 'fixed',
+          bottom: 28,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 900,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 9,
+          padding: '13px 26px',
+          borderRadius: 999,
+          border: 'none',
+          background: '#000',
+          color: '#fff',
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: 'pointer',
+          fontFamily: 'var(--font-inter), sans-serif',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+        }}
+      >
+        <UserPlus size={18} strokeWidth={2.2} />
+        Ansprechperson finden
+      </button>
               {apolloOpen &&
                 typeof document !== 'undefined' &&
                 createPortal(
@@ -11954,165 +11702,7 @@ function OutboundTab({
                   </div>,
                   document.body
                 )}
-            </div>
-          </div>
-
-          {/* Tone of Voice */}
-          {lead.toneOfVoice && (
-            <div style={card}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 12,
-                }}
-              >
-                <div style={sectionTitle}>Tone of Voice</div>
-                <SourceBadge label="KI-Analyse" />
-              </div>
-              <p style={{ fontSize: 14, color: c.text, lineHeight: 1.7, margin: 0 }}>{lead.toneOfVoice}</p>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT */}
-        <div>
-          {/* 1-Min Pitch */}
-          <div
-            style={{
-              ...glassCard(isDark),
-              borderRadius: 16,
-              padding: '20px 24px',
-              marginBottom: 16,
-              borderLeft: '3px solid #10B981',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 14,
-              }}
-            >
-              <div style={sectionTitle}>1-Minuten Pitch</div>
-              <SourceBadge label="KI-Analyse" />
-            </div>
-            <p style={{ fontSize: 15, color: c.text, lineHeight: 1.75, margin: '0 0 14px' }}>{lead.pitch}</p>
-            <button
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: '#10B981',
-                background: 'rgba(16,185,129,0.1)',
-                border: '1px solid rgba(16,185,129,0.2)',
-                borderRadius: 8,
-                padding: '7px 14px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-              onClick={() => navigator.clipboard?.writeText(lead.pitch)}
-            >
-              Kopieren
-            </button>
-          </div>
-
-          {/* Suggested Offer */}
-          {lead.proposedOffer && (
-            <div
-              style={{
-                ...glassCard(isDark),
-                borderRadius: 16,
-                padding: '20px 24px',
-                marginBottom: 16,
-                borderLeft: '3px solid #F97316',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 14,
-                }}
-              >
-                <div style={sectionTitle}>Vorgeschlagenes Angebot</div>
-                <SourceBadge label="KI-Analyse" />
-              </div>
-              <p style={{ fontSize: 15, color: c.text, lineHeight: 1.75, margin: '0 0 14px' }}>{lead.proposedOffer}</p>
-              <button
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: '#F97316',
-                  background: 'rgba(249,115,22,0.1)',
-                  border: '1px solid rgba(249,115,22,0.2)',
-                  borderRadius: 8,
-                  padding: '7px 14px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-                onClick={() => navigator.clipboard?.writeText(lead.proposedOffer!)}
-              >
-                Kopieren
-              </button>
-            </div>
-          )}
-
-          {/* Personalisierungs-Hooks */}
-          {lead.personalizationHooks && lead.personalizationHooks.length > 0 && (
-            <div
-              style={{
-                ...glassCard(isDark),
-                borderRadius: 16,
-                padding: '20px 24px',
-                marginBottom: 16,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 16,
-                }}
-              >
-                <div style={sectionTitle}>Personalisierungs-Hooks</div>
-                <SourceBadge label="KI-Analyse" />
-              </div>
-              {lead.personalizationHooks.map((hook, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    gap: 12,
-                    padding: '12px 0',
-                    borderBottom:
-                      i < lead.personalizationHooks!.length - 1
-                        ? `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}`
-                        : 'none',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 18,
-                      color: '#F97316',
-                      fontWeight: 800,
-                      flexShrink: 0,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                  <span style={{ fontSize: 14, color: c.text, lineHeight: 1.6 }}>{hook}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -12216,7 +11806,7 @@ export default function LeadDetailPage() {
     if (main) main.scrollTop = 0;
   }, []);
 
-  const TAB_LABELS: Record<ActiveTab, string> = { info: 'Info', outbound: 'Outbound', bot: 'KI-Assistent' };
+  const TAB_LABELS: Record<ActiveTab, string> = { info: 'Info', bot: 'KI-Assistent' };
 
   if (loading || !lead) {
     return (
@@ -12506,7 +12096,7 @@ export default function LeadDetailPage() {
           gap: 2,
         }}
       >
-        {(['info', 'outbound', 'bot'] as ActiveTab[]).map((tab) => {
+        {(['info', 'bot'] as ActiveTab[]).map((tab) => {
           const active = activeTab === tab;
           return (
             <button
@@ -12595,13 +12185,13 @@ export default function LeadDetailPage() {
             {activeTab === 'info' && (
               <InfoTab lead={lead!} c={c} isDark={isDark} onOpenDetail={(v) => setDetailView(v)} />
             )}
-            {activeTab === 'outbound' && (
-              <OutboundTab lead={lead!} c={c} isDark={isDark} onLeadRefresh={() => loadLead({ showSpinner: false })} />
-            )}
             {activeTab === 'bot' && <ChatTab key={lead!.id} lead={lead!} c={c} isDark={isDark} />}
           </>
         )}
       </div>
+
+      {/* Globaler Sticky-Button „Ansprechperson finden“ — immer unten mittig */}
+      <FindContactButton lead={lead!} c={c} isDark={isDark} onLeadRefresh={() => loadLead({ showSpinner: false })} />
     </div>
   );
 }
