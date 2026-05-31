@@ -8740,79 +8740,157 @@ function InfoTab({
           </div>
         )}
 
-        {/* Contact links */}
-        {(lead.linkedin_url || lead.phone || lead.website) && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-            {lead.linkedin_url && (
-              <a
-                href={lead.linkedin_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: 99,
-                  background: '#0A66C210',
-                  color: '#0A66C2',
-                  border: '1px solid #0A66C225',
-                  textDecoration: 'none',
-                }}
-              >
-                LinkedIn ↗
-              </a>
-            )}
-            {lead.phone && (
-              <a
-                href={`tel:${lead.phone}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: 99,
-                  background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
-                  color: c.textSub,
-                  border: `1px solid ${c.border}`,
-                  textDecoration: 'none',
-                }}
-              >
-                <Phone size={11} /> {lead.phone}
-              </a>
-            )}
-            {lead.website && (
-              <a
-                href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: 99,
-                  background: '#4F46E510',
-                  color: '#4F46E5',
-                  border: '1px solid #4F46E525',
-                  textDecoration: 'none',
-                }}
-              >
-                <Globe size={11} /> {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
-              </a>
-            )}
-          </div>
-        )}
+        {/* Links — website, phone, all social media */}
+        {(() => {
+          const socials = [
+            lead.website && {
+              href: lead.website.startsWith('http') ? lead.website : `https://${lead.website}`,
+              label: lead.website.replace(/^https?:\/\//, '').replace(/\/$/, ''),
+              bg: '#4F46E510',
+              color: '#4F46E5',
+              border: '#4F46E525',
+              icon: <Globe size={11} />,
+            },
+            lead.phone && {
+              href: `tel:${lead.phone}`,
+              label: lead.phone,
+              bg: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+              color: c.textSub,
+              border: c.border,
+              icon: <Phone size={11} />,
+            },
+            lead.linkedin_url && {
+              href: lead.linkedin_url,
+              label: 'LinkedIn',
+              bg: '#0A66C210',
+              color: '#0A66C2',
+              border: '#0A66C225',
+              icon: null,
+            },
+            lead.instagram_url && {
+              href: lead.instagram_url,
+              label: 'Instagram',
+              bg: '#E110541A',
+              color: '#E11054',
+              border: '#E1105425',
+              icon: null,
+            },
+            (lead as any).facebook_url && {
+              href: (lead as any).facebook_url,
+              label: 'Facebook',
+              bg: '#1877F210',
+              color: '#1877F2',
+              border: '#1877F225',
+              icon: null,
+            },
+            lead.twitter_url && {
+              href: lead.twitter_url,
+              label: 'X / Twitter',
+              bg: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+              color: c.text,
+              border: c.border,
+              icon: null,
+            },
+            lead.xing_url && {
+              href: lead.xing_url,
+              label: 'Xing',
+              bg: '#00697710',
+              color: '#006977',
+              border: '#00697725',
+              icon: null,
+            },
+            lead.youtube_url && {
+              href: lead.youtube_url,
+              label: 'YouTube',
+              bg: '#FF000010',
+              color: '#FF0000',
+              border: '#FF000025',
+              icon: null,
+            },
+            lead.tiktok_url && {
+              href: lead.tiktok_url,
+              label: 'TikTok',
+              bg: '#FF005010',
+              color: '#FF0050',
+              border: '#FF005025',
+              icon: null,
+            },
+          ].filter(Boolean) as {
+            href: string;
+            label: string;
+            bg: string;
+            color: string;
+            border: string;
+            icon: React.ReactNode;
+          }[];
 
-        {/* Key facts grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
-          {[
+          if (!socials.length) return null;
+          return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+              {socials.map((s, i) => (
+                <a
+                  key={i}
+                  href={s.href}
+                  target={s.href.startsWith('tel:') ? undefined : '_blank'}
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                    borderRadius: 99,
+                    background: s.bg,
+                    color: s.color,
+                    border: `1px solid ${s.border}`,
+                    textDecoration: 'none',
+                  }}
+                >
+                  {s.icon}
+                  {s.label}
+                  {!s.href.startsWith('tel:') ? ' ↗' : ''}
+                </a>
+              ))}
+              {/* Tech stack chips */}
+              {lead.web_tech_stack?.map((t, i) => (
+                <span
+                  key={`tech-${i}`}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '4px 9px',
+                    borderRadius: 99,
+                    background: '#6366F110',
+                    color: '#6366F1',
+                    border: '1px solid #6366F125',
+                  }}
+                >
+                  {t}
+                </span>
+              ))}
+              {lead.web_has_shop && (
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '4px 9px',
+                    borderRadius: 99,
+                    background: '#10B98110',
+                    color: '#10B981',
+                    border: '1px solid #10B98125',
+                  }}
+                >
+                  Online-Shop
+                </span>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Key facts grid — always even columns */}
+        {(() => {
+          const rawRows = [
             lead.representative && { label: 'Geschäftsführung', value: lead.representative },
             (lead.street || lead.zip || lead.city || lead.registeredSeat) && {
               label: 'Firmensitz',
@@ -8826,37 +8904,59 @@ function InfoTab({
             lead.hrb_number && { label: 'HRB', value: `${lead.hrb_number}${lead.court ? ` (${lead.court})` : ''}` },
             lead.revenue && { label: 'Umsatz (Schätzung)', value: lead.revenue },
             lead.industry && { label: 'Branche', value: lead.industry },
-          ]
-            .filter(Boolean)
-            .map((row, i, arr) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column' as const,
-                  padding: '9px 0',
-                  borderBottom: i < arr.length - 2 ? `1px solid ${c.border}` : 'none',
-                  paddingRight: i % 2 === 0 ? 24 : 0,
-                }}
-              >
-                <span
+            (lead as any).shipping_fulfillment_model && {
+              label: 'Versandmodell',
+              value: (lead as any).shipping_fulfillment_model,
+            },
+            (lead as any).shipping_logistics_complexity && {
+              label: 'Komplexität',
+              value:
+                (
+                  { low: 'Einfach', medium: 'Mittel', high: 'Komplex', very_high: 'Sehr komplex' } as Record<
+                    string,
+                    string
+                  >
+                )[(lead as any).shipping_logistics_complexity] ?? (lead as any).shipping_logistics_complexity,
+            },
+          ].filter(Boolean) as { label: string; value: string }[];
+
+          // Pad to even number
+          const rows = rawRows.length % 2 === 1 ? [...rawRows, { label: '', value: '' }] : rawRows;
+
+          if (!rows.length) return null;
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+              {rows.map((row, i) => (
+                <div
+                  key={i}
                   style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: c.textMuted,
-                    textTransform: 'uppercase' as const,
-                    letterSpacing: '0.06em',
-                    marginBottom: 3,
+                    display: 'flex',
+                    flexDirection: 'column' as const,
+                    padding: '9px 0',
+                    borderBottom: i < rows.length - 2 ? `1px solid ${c.border}` : 'none',
+                    paddingRight: i % 2 === 0 ? 24 : 0,
                   }}
                 >
-                  {(row as { label: string; value: string }).label}
-                </span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>
-                  {(row as { label: string; value: string }).value}
-                </span>
-              </div>
-            ))}
-        </div>
+                  {row.label && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: c.textMuted,
+                        textTransform: 'uppercase' as const,
+                        letterSpacing: '0.06em',
+                        marginBottom: 3,
+                      }}
+                    >
+                      {row.label}
+                    </span>
+                  )}
+                  {row.value && <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>{row.value}</span>}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── 1. KI-Zusammenfassung ─────────────────────────────────────────── */}
