@@ -53,16 +53,26 @@ function mapApiLead(row: any): Lead {
         ? row.fit_score
         : 0;
 
+  const spFit: number | undefined =
+    typeof row.shipping_sps_fit_score === 'number' && row.shipping_sps_fit_score > 0
+      ? row.shipping_sps_fit_score
+      : undefined;
+
   return {
     id: row.id as string,
     name: (row.company_name as string) ?? '',
     city: (row.city as string) ?? '',
     industry: (row.industry as string) ?? '',
+    website: (row.website as string | undefined) ?? undefined,
     score,
     tier: (row.tier as string | undefined) ?? undefined,
     status: tierToStatus(row.tier),
     employees: row.num_employees ? String(row.num_employees) : (row.estimated_employees_scraped ?? ''),
-    revenue: formatRevenue(row.fin_revenue_eur, row.estimated_revenue_scraped),
+    revenue: formatRevenue(row.fin_revenue_eur ?? row.fin_estimated_revenue_eur, row.estimated_revenue_scraped),
+    finHealthLabel: (row.fin_health_label as string | undefined) ?? undefined,
+    finHealthScore: typeof row.fin_health_score === 'number' ? row.fin_health_score : undefined,
+    spFitScore: spFit,
+    hasShop: row.web_has_shop === true,
     founded: row.founded_year ? String(row.founded_year) : undefined,
     added: row.created_at ? new Date(row.created_at as string).toLocaleDateString('de-DE') : '',
     addedTs: row.created_at ? new Date(row.created_at as string).getTime() : 0,
@@ -76,11 +86,16 @@ interface Lead {
   name: string;
   city: string;
   industry: string;
+  website?: string;
   score: number;
   tier?: string;
   status: Status;
   employees: string;
   revenue: string;
+  finHealthLabel?: string;
+  finHealthScore?: number;
+  spFitScore?: number;
+  hasShop: boolean;
   founded?: string;
   added: string;
   addedTs: number;
@@ -573,6 +588,11 @@ export default function LeadsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'added'>(() => {
     if (typeof window === 'undefined') return 'added';
@@ -680,127 +700,116 @@ export default function LeadsPage() {
     >
       <GlassPageFilters />
 
-      {/* Page header — floating on aurora */}
-      <div style={{ marginBottom: 4 }}>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: '#10B981',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            marginBottom: 8,
-          }}
-        >
-          Qualifizierung
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <div>
           <h1
-            style={{ fontSize: 36, fontWeight: 800, color: c.text, margin: 0, letterSpacing: '-0.03em', lineHeight: 1 }}
+            style={{ fontSize: 34, fontWeight: 800, color: c.text, margin: 0, letterSpacing: '-0.03em', lineHeight: 1 }}
           >
             Leads
           </h1>
-          <span
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              background: 'rgba(16,185,129,0.15)',
-              color: '#10B981',
-              borderRadius: 99,
-              padding: '3px 10px',
-            }}
-          >
-            {total}
-          </span>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              marginLeft: 4,
-              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-              borderRadius: 99,
-              padding: '4px 10px',
-            }}
-          >
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: initialLoading ? '#F97316' : '#10B981',
-              }}
-            />
-            <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted }}>
-              {initialLoading ? 'Lädt…' : 'Live · alle 15s'}
-            </span>
-          </div>
+          <p style={{ fontSize: 13, color: c.textMuted, margin: '6px 0 0' }}>
+            {mounted ? total : '—'} {mounted && total === 1 ? 'Lead' : 'Leads'} in deiner Pipeline
+          </p>
         </div>
-        <p style={{ fontSize: 13, color: c.textMuted, margin: '8px 0 0' }}>
-          {total} {total === 1 ? 'Lead' : 'Leads'}
-        </p>
+        <button
+          onClick={openExportModal}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            padding: '9px 16px',
+            background: '#4F46E5',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            boxShadow: '0 4px 14px rgba(79,70,229,0.30)',
+          }}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M8 2v9M4 7l4 4 4-4" />
+            <line x1="2" y1="14" x2="14" y2="14" />
+          </svg>
+          CSV Export
+        </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {/* Stats */}
-        <div style={{ display: 'flex', gap: 14 }}>
-          <div
-            style={{
-              ...glassCard(isDark),
-              borderRadius: 12,
-              padding: '16px 20px',
-              borderTop: '3px solid #10B981',
-              position: 'relative',
-              overflow: 'hidden',
-              minWidth: 200,
-            }}
-          >
+      {/* KPI strip */}
+      {mounted && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {[
+            { label: 'Leads gesamt', value: total, color: '#4F46E5', bg: '#4F46E515' },
+            {
+              label: 'Hot Leads',
+              value: leads.filter((l) => l.tier?.toLowerCase().startsWith('hot')).length,
+              color: '#EF4444',
+              bg: '#EF444415',
+            },
+            { label: 'Mit Score', value: leads.filter((l) => l.score > 0).length, color: '#10B981', bg: '#10B98115' },
+            {
+              label: 'Neu diese Woche',
+              value: leads.filter((l) => l.addedTs > Date.now() - 7 * 86400_000).length,
+              color: '#F97316',
+              bg: '#F9731615',
+            },
+          ].map((s) => (
             <div
+              key={s.label}
               style={{
-                position: 'absolute',
-                top: 14,
-                right: 18,
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                background: 'rgba(16,185,129,0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                ...glassCard(isDark),
+                borderRadius: 12,
+                padding: '14px 18px',
+                borderTop: `3px solid ${s.color}`,
               }}
             >
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10B981' }} />
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: 8,
+                }}
+              >
+                {s.label}
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: s.color, letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {s.value}
+              </div>
             </div>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: c.textMuted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                marginBottom: 6,
-              }}
-            >
-              Gesamt
-            </div>
-            <div style={{ fontSize: 30, fontWeight: 800, color: '#10B981', lineHeight: 1 }}>{total}</div>
-            <div style={{ fontSize: 11, color: c.textMuted, marginTop: 4 }}>{total === 1 ? 'Lead' : 'Leads'}</div>
-          </div>
+          ))}
         </div>
+      )}
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {/* Filter bar */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ flex: 1, position: 'relative' }}>
+          {/* Search — fixed width, not flex:1 */}
+          <div style={{ position: 'relative', width: 280 }}>
             <svg
               style={{
                 position: 'absolute',
-                left: 12,
+                left: 11,
                 top: '50%',
                 transform: 'translateY(-50%)',
                 pointerEvents: 'none',
               }}
-              width="14"
-              height="14"
+              width="13"
+              height="13"
               viewBox="0 0 16 16"
               fill="none"
               stroke={c.textMuted}
@@ -811,12 +820,12 @@ export default function LeadsPage() {
               <line x1="11" y1="11" x2="14" y2="14" />
             </svg>
             <input
-              placeholder="Suchen nach Name, Stadt, Branche..."
+              placeholder="Name, Stadt, Branche…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
                 width: '100%',
-                padding: '10px 14px 10px 36px',
+                padding: '9px 12px 9px 32px',
                 border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.10)',
                 borderRadius: 9,
                 fontSize: 13,
@@ -837,7 +846,7 @@ export default function LeadsPage() {
               localStorage.setItem('leads-sort', v);
             }}
             style={{
-              padding: '8px 12px',
+              padding: '9px 12px',
               border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.10)',
               borderRadius: 9,
               fontSize: 12,
@@ -851,42 +860,26 @@ export default function LeadsPage() {
             }}
           >
             <option value="added">Neueste zuerst</option>
-            <option value="name">Name</option>
+            <option value="name">Name A–Z</option>
           </select>
-          <button
-            onClick={openExportModal}
+          <div
             style={{
+              marginLeft: 'auto',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              padding: '8px 14px',
-              border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.10)',
-              borderRadius: 9,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)',
-              backdropFilter: 'blur(12px)',
-              color: c.textSub,
-              fontFamily: 'inherit',
-              flexShrink: 0,
+              background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+              borderRadius: 99,
+              padding: '5px 12px',
             }}
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M8 2v9M4 7l4 4 4-4" />
-              <line x1="2" y1="14" x2="14" y2="14" />
-            </svg>
-            CSV
-          </button>
+            <div
+              style={{ width: 6, height: 6, borderRadius: '50%', background: initialLoading ? '#F97316' : '#10B981' }}
+            />
+            <span style={{ fontSize: 11, fontWeight: 600, color: c.textMuted }}>
+              {initialLoading ? 'Lädt…' : `${filtered.length} Treffer`}
+            </span>
+          </div>
         </div>
 
         {/* ── TABLE VIEW ─────────────────────────────────────────────────── */}
@@ -934,23 +927,25 @@ export default function LeadsPage() {
                         c={c}
                       />
                     </th>
-                    {['Unternehmen', 'Branche', 'Stadt', 'Mitarbeiter', 'Score', 'Status', ''].map((h) => (
-                      <th
-                        key={h}
-                        style={{
-                          textAlign: 'left',
-                          padding: '11px 14px',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.07em',
-                          color: c.textMuted,
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {h}
-                      </th>
-                    ))}
+                    {['Unternehmen', 'Branche · Stadt', 'Umsatz', 'Fin. Gesundheit', 'SP Fit', 'Status', ''].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          style={{
+                            textAlign: 'left',
+                            padding: '11px 14px',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.07em',
+                            color: c.textMuted,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {h}
+                        </th>
+                      )
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -989,7 +984,7 @@ export default function LeadsPage() {
                         </td>
 
                         {/* Unternehmen */}
-                        <td style={{ padding: '10px 14px', maxWidth: 260 }}>
+                        <td style={{ padding: '10px 14px', maxWidth: 280 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                             <LogoAvatar
                               name={lead.name}
@@ -1013,51 +1008,114 @@ export default function LeadsPage() {
                               >
                                 {lead.name}
                               </div>
-                              <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>
-                                {[lead.founded ? `Gegr. ${lead.founded}` : null, lead.revenue || null]
-                                  .filter(Boolean)
-                                  .join(' · ') || <span style={{ opacity: 0.5 }}>—</span>}
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  color: c.textMuted,
+                                  marginTop: 2,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                }}
+                              >
+                                {lead.employees && <span>{lead.employees} MA</span>}
+                                {lead.employees && lead.founded && <span style={{ opacity: 0.4 }}>·</span>}
+                                {lead.founded && <span>Gegr. {lead.founded}</span>}
+                                {!lead.employees && !lead.founded && <span style={{ opacity: 0.4 }}>—</span>}
                               </div>
                             </div>
                           </div>
                         </td>
 
-                        {/* Branche */}
+                        {/* Branche · Stadt */}
                         <td style={{ padding: '10px 14px' }}>
-                          <span
-                            style={{
-                              fontSize: 12,
-                              color: c.textSub,
-                              background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                              border: `1px solid ${c.border}`,
-                              borderRadius: 6,
-                              padding: '3px 8px',
-                              fontWeight: 500,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
+                          <div style={{ fontSize: 13, fontWeight: 500, color: c.text, whiteSpace: 'nowrap' }}>
                             {lead.industry || '—'}
-                          </span>
+                          </div>
+                          <div style={{ fontSize: 11, color: c.textMuted, marginTop: 2 }}>{lead.city || ''}</div>
                         </td>
 
-                        {/* Stadt */}
-                        <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13, whiteSpace: 'nowrap' }}>
-                          {lead.city || '—'}
+                        {/* Umsatz */}
+                        <td style={{ padding: '10px 14px', fontSize: 13, color: c.textSub, whiteSpace: 'nowrap' }}>
+                          {lead.revenue || <span style={{ color: c.textMuted, opacity: 0.5 }}>—</span>}
                         </td>
 
-                        {/* Mitarbeiter */}
-                        <td style={{ padding: '10px 14px', color: c.textSub, fontSize: 13, whiteSpace: 'nowrap' }}>
-                          {lead.employees ? `${lead.employees} MA` : '—'}
-                        </td>
-
-                        {/* Score */}
+                        {/* Fin. Gesundheit */}
                         <td style={{ padding: '10px 14px' }}>
-                          {lead.score > 0 ? (
+                          {lead.finHealthLabel ? (
+                            (() => {
+                              const lbl = lead.finHealthLabel.toLowerCase();
+                              const color =
+                                lbl === 'healthy' || lbl === 'gut' || lbl === 'stable'
+                                  ? '#10B981'
+                                  : lbl === 'warning' || lbl === 'schwach'
+                                    ? '#F97316'
+                                    : '#94A3B8';
+                              const labelMap: Record<string, string> = {
+                                healthy: 'Gesund',
+                                stable: 'Stabil',
+                                growing: 'Wachsend',
+                                warning: 'Warnung',
+                                declining: 'Rückgang',
+                                unknown: 'Unbekannt',
+                              };
+                              return (
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    padding: '3px 8px',
+                                    borderRadius: 99,
+                                    background: color + '18',
+                                    color,
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {labelMap[lbl] ?? lead.finHealthLabel}
+                                </span>
+                              );
+                            })()
+                          ) : (
+                            <span style={{ fontSize: 12, color: c.textMuted, opacity: 0.5 }}>—</span>
+                          )}
+                        </td>
+
+                        {/* SP Fit Score */}
+                        <td style={{ padding: '10px 14px' }}>
+                          {lead.spFitScore != null ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <ScoreRing score={lead.score} />
+                              <div
+                                style={{
+                                  width: 50,
+                                  height: 5,
+                                  borderRadius: 99,
+                                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    width: `${lead.spFitScore}%`,
+                                    height: '100%',
+                                    borderRadius: 99,
+                                    background:
+                                      lead.spFitScore >= 70 ? '#10B981' : lead.spFitScore >= 40 ? '#F97316' : '#EF4444',
+                                  }}
+                                />
+                              </div>
+                              <span
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color:
+                                    lead.spFitScore >= 70 ? '#10B981' : lead.spFitScore >= 40 ? '#F97316' : '#EF4444',
+                                }}
+                              >
+                                {lead.spFitScore}
+                              </span>
                             </div>
                           ) : (
-                            <span style={{ fontSize: 12, color: c.textMuted }}>—</span>
+                            <span style={{ fontSize: 12, color: c.textMuted, opacity: 0.5 }}>—</span>
                           )}
                         </td>
 
