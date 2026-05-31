@@ -8679,107 +8679,74 @@ function InfoTab({
 
   return (
     <div style={{ padding: '20px 24px' }}>
-      {/* ── 0. Identity header ────────────────────────────────────────────── */}
-      <div
-        style={{
-          ...glassCard(isDark),
-          borderRadius: 16,
-          padding: '18px 22px',
-          marginBottom: 16,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 18,
-        }}
-      >
-        {/* Avatar */}
+      {/* ── 0. Firmenübersicht ───────────────────────────────────────────────── */}
+      <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '20px 22px', marginBottom: 16 }}>
         <div
           style={{
-            width: 72,
-            height: 72,
-            borderRadius: 20,
-            flexShrink: 0,
-            overflow: 'hidden',
-            background: lead.color,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 22,
+            fontSize: 11,
             fontWeight: 800,
-            color: '#fff',
-            letterSpacing: '-0.02em',
-            position: 'relative',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase' as const,
+            color: c.textMuted,
+            marginBottom: 14,
           }}
         >
-          {lead.initials}
-          {(lead.logo_url || lead.profile_image_url) && (
-            <img
-              src={lead.logo_url ?? lead.profile_image_url}
-              alt={lead.name}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          )}
+          Firmenübersicht
         </div>
 
-        {/* Company info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: c.text, marginBottom: 3, letterSpacing: '-0.01em' }}>
-            {lead.name}
-          </div>
-          <div style={{ fontSize: 12, color: c.textMuted, marginBottom: 6 }}>
-            {[lead.city, lead.industry].filter(Boolean).join(' · ')}
-          </div>
-          {lead.lead_summary && (
-            <div style={{ fontSize: 13, color: c.textSub, lineHeight: 1.4 }}>
-              {lead.lead_summary.slice(0, 80)}
-              {lead.lead_summary.length > 80 ? '…' : ''}
-            </div>
-          )}
-        </div>
-
-        {/* Fit score */}
-        {lead.fit > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', flexShrink: 0 }}>
-            <span style={{ fontSize: 32, fontWeight: 900, color: '#10B981', lineHeight: 1, letterSpacing: '-0.03em' }}>
-              {lead.fit}
-            </span>
-            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', color: '#10B981', marginTop: 2 }}>
-              FIT
-            </span>
-          </div>
+        {/* Description */}
+        {(lead.or_purpose || lead.web_company_pitch || lead.web_value_proposition || lead.web_analysis_summary) && (
+          <p style={{ fontSize: 14, color: c.text, lineHeight: 1.65, margin: '0 0 16px', fontWeight: 400 }}>
+            {lead.or_purpose || lead.web_company_pitch || lead.web_value_proposition || lead.web_analysis_summary}
+          </p>
         )}
 
-        {/* Status pill */}
-        <div style={{ flexShrink: 0 }}>
-          {(() => {
-            const statusColor = lead.status === 'hot' ? '#EF4444' : lead.status === 'warm' ? '#F97316' : '#94A3B8';
-            const statusLabel = lead.status === 'hot' ? 'Hot' : lead.status === 'warm' ? 'Warm' : 'Kalt';
-            return (
+        {/* Key facts grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+          {[
+            lead.representative && { label: 'Geschäftsführung', value: lead.representative },
+            (lead.street || lead.zip || lead.city || lead.registeredSeat) && {
+              label: 'Firmensitz',
+              value: [lead.street, [lead.zip, lead.city || lead.registeredSeat].filter(Boolean).join(' ')]
+                .filter(Boolean)
+                .join(', '),
+            },
+            lead.founded && { label: 'Gegründet', value: lead.founded },
+            lead.employees && { label: 'Mitarbeiter', value: lead.employees },
+            lead.legal_form && { label: 'Rechtsform', value: lead.legal_form },
+            lead.hrb_number && { label: 'HRB', value: `${lead.hrb_number}${lead.court ? ` (${lead.court})` : ''}` },
+            lead.revenue && { label: 'Umsatz (Schätzung)', value: lead.revenue },
+            lead.industry && { label: 'Branche', value: lead.industry },
+          ]
+            .filter(Boolean)
+            .map((row, i, arr) => (
               <div
+                key={i}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '7px 14px',
-                  borderRadius: 99,
-                  background: `${statusColor}18`,
-                  border: `1px solid ${statusColor}40`,
+                  flexDirection: 'column' as const,
+                  padding: '9px 0',
+                  borderBottom: i < arr.length - 2 ? `1px solid ${c.border}` : 'none',
+                  paddingRight: i % 2 === 0 ? 24 : 0,
                 }}
               >
-                <div style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: statusColor }}>{statusLabel}</span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: c.textMuted,
+                    textTransform: 'uppercase' as const,
+                    letterSpacing: '0.06em',
+                    marginBottom: 3,
+                  }}
+                >
+                  {(row as { label: string; value: string }).label}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: c.text }}>
+                  {(row as { label: string; value: string }).value}
+                </span>
               </div>
-            );
-          })()}
+            ))}
         </div>
       </div>
 
