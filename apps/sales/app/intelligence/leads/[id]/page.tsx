@@ -8695,10 +8695,119 @@ function InfoTab({
         </div>
 
         {/* Description */}
-        {(lead.or_purpose || lead.web_company_pitch || lead.web_value_proposition || lead.web_analysis_summary) && (
+        {(lead.lead_summary ||
+          lead.or_purpose ||
+          lead.web_company_pitch ||
+          lead.web_value_proposition ||
+          lead.web_analysis_summary) && (
           <p style={{ fontSize: 14, color: c.text, lineHeight: 1.65, margin: '0 0 16px', fontWeight: 400 }}>
-            {lead.or_purpose || lead.web_company_pitch || lead.web_value_proposition || lead.web_analysis_summary}
+            {lead.lead_summary ||
+              lead.or_purpose ||
+              lead.web_company_pitch ||
+              lead.web_value_proposition ||
+              lead.web_analysis_summary}
           </p>
+        )}
+
+        {/* SP Fit reasoning */}
+        {lead.shipping_sps_fit_reasoning && (
+          <div
+            style={{
+              fontSize: 13,
+              color: '#4F46E5',
+              background: '#4F46E508',
+              border: '1px solid #4F46E520',
+              borderRadius: 8,
+              padding: '10px 14px',
+              marginBottom: 16,
+              lineHeight: 1.55,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                letterSpacing: '0.07em',
+                textTransform: 'uppercase' as const,
+                display: 'block',
+                marginBottom: 4,
+                opacity: 0.7,
+              }}
+            >
+              SP-Fit Begründung
+            </span>
+            {lead.shipping_sps_fit_reasoning}
+          </div>
+        )}
+
+        {/* Contact links */}
+        {(lead.linkedin_url || lead.phone || lead.website) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+            {lead.linkedin_url && (
+              <a
+                href={lead.linkedin_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '4px 10px',
+                  borderRadius: 99,
+                  background: '#0A66C210',
+                  color: '#0A66C2',
+                  border: '1px solid #0A66C225',
+                  textDecoration: 'none',
+                }}
+              >
+                LinkedIn ↗
+              </a>
+            )}
+            {lead.phone && (
+              <a
+                href={`tel:${lead.phone}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '4px 10px',
+                  borderRadius: 99,
+                  background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                  color: c.textSub,
+                  border: `1px solid ${c.border}`,
+                  textDecoration: 'none',
+                }}
+              >
+                <Phone size={11} /> {lead.phone}
+              </a>
+            )}
+            {lead.website && (
+              <a
+                href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '4px 10px',
+                  borderRadius: 99,
+                  background: '#4F46E510',
+                  color: '#4F46E5',
+                  border: '1px solid #4F46E525',
+                  textDecoration: 'none',
+                }}
+              >
+                <Globe size={11} /> {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
+              </a>
+            )}
+          </div>
         )}
 
         {/* Key facts grid */}
@@ -11324,66 +11433,21 @@ export default function LeadDetailPage() {
             )}
           </div>
 
-          {/* Name + description + facts */}
+          {/* Name + quick pills */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Name row */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
-              <h1
-                style={{
-                  fontSize: 24,
-                  fontWeight: 800,
-                  color: c.text,
-                  margin: 0,
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1.2,
-                }}
-              >
-                {lead.name}
-              </h1>
-              {lead.legal_form && (
-                <span style={{ fontSize: 12, color: c.textMuted, fontWeight: 500 }}>{lead.legal_form}</span>
-              )}
+            <div style={{ fontSize: 22, fontWeight: 800, color: c.text, marginBottom: 3, letterSpacing: '-0.02em' }}>
+              {lead.name}
             </div>
-
-            {/* City · Industry */}
             <div style={{ fontSize: 13, color: c.textMuted, marginBottom: 10 }}>
-              {[lead.city, lead.industry].filter(Boolean).join(' · ') || 'Keine Brancheninfo'}
+              {[lead.city, lead.industry].filter(Boolean).join(' · ') || ''}
             </div>
-
-            {/* Description — lead_summary or web_company_pitch */}
-            {(lead.lead_summary || lead.web_company_pitch || lead.web_value_proposition) && (
-              <p style={{ fontSize: 13, color: c.textSub, lineHeight: 1.6, margin: '0 0 14px', maxWidth: 640 }}>
-                {lead.lead_summary || lead.web_company_pitch || lead.web_value_proposition}
-              </p>
-            )}
-
-            {/* SP Fit reasoning */}
-            {lead.shipping_sps_fit_reasoning && (
-              <div
-                style={{
-                  fontSize: 12,
-                  color: '#4F46E5',
-                  background: '#4F46E508',
-                  border: '1px solid #4F46E520',
-                  borderRadius: 8,
-                  padding: '8px 12px',
-                  marginBottom: 14,
-                  lineHeight: 1.5,
-                }}
-              >
-                {lead.shipping_sps_fit_reasoning}
-              </div>
-            )}
-
-            {/* Facts row */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {lead.founded && (
-                <InfoPill icon={<Calendar size={11} />} text={`Gegr. ${lead.founded}`} c={c} isDark={isDark} />
-              )}
               {lead.employees && (
                 <InfoPill icon={<Users size={11} />} text={`${lead.employees} Mitarbeiter`} c={c} isDark={isDark} />
               )}
-              {lead.revenue && <InfoPill icon={null} text={lead.revenue} c={c} isDark={isDark} />}
+              {lead.founded && (
+                <InfoPill icon={<Calendar size={11} />} text={`Gegr. ${lead.founded}`} c={c} isDark={isDark} />
+              )}
               {lead.website && (
                 <a
                   href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
@@ -11426,33 +11490,10 @@ export default function LeadDetailPage() {
                   <Phone size={11} /> {lead.phone}
                 </a>
               )}
-              {lead.linkedin_url && (
-                <a
-                  href={lead.linkedin_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    padding: '4px 10px',
-                    borderRadius: 99,
-                    background: '#0A66C210',
-                    color: '#0A66C2',
-                    border: '1px solid #0A66C225',
-                    textDecoration: 'none',
-                  }}
-                >
-                  LinkedIn ↗
-                </a>
-              )}
-              {lead.hrb_number && <InfoPill icon={null} text={`HRB ${lead.hrb_number}`} c={c} isDark={isDark} />}
             </div>
           </div>
 
-          {/* SP Fit score — right column */}
+          {/* SP Fit score */}
           {lead.shipping_sps_fit_score != null && (
             <div style={{ flexShrink: 0, textAlign: 'center', padding: '4px 0' }}>
               <div
