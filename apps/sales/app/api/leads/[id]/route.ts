@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   try {
     const client = getAdmin() ?? getAdminClient();
 
-    const [leadRes, activitiesRes, contactsRes] = await Promise.all([
+    const [leadRes, activitiesRes, contactsRes, analysisRes] = await Promise.all([
       client.from('leads').select('*').eq('id', id).eq('tenant_id', tenantId).maybeSingle(),
       client
         .from('lead_activities')
@@ -40,6 +40,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         .eq('tenant_id', tenantId)
         .neq('is_excluded', true)
         .order('created_at', { ascending: false }),
+      client
+        .from('lead_analyses')
+        .select(
+          'id, version, is_current, primary_hook, backup_hooks, timing_assessment, deal_potential, contact_strategy, predicted_objections, corroborated_signals, contradictions, critical_warnings, data_quality_summary, domain_confidences, created_at'
+        )
+        .eq('lead_id', id)
+        .eq('tenant_id', tenantId)
+        .eq('is_current', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     if (leadRes.error) {
@@ -104,6 +115,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       lead: leadRes.data ?? null,
       activities: activitiesRes.data ?? [],
       contacts,
+      analysis: analysisRes.data ?? null,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e), lead: null, activities: [] }, { status: 500 });

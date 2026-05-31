@@ -384,6 +384,87 @@ interface LeadDetail {
   web_opportunity_flags?: { flag: string; evidence?: string; source?: string; url?: string }[];
   web_risk_flags?: { flag: string; evidence?: string; source?: string; url?: string; severity?: string }[];
   web_sources_used?: { url?: string; source?: string; subtype?: string; raw_source_id?: string }[];
+  // Übergeordnete Strategie-Analyse (lead_analyses, is_current)
+  analysis?: LeadAnalysis;
+}
+
+// ─── Strategische Lead-Analyse (lead_analyses) ────────────────────────────────
+
+interface AnalysisHook {
+  hook?: string;
+  opening_line?: string;
+  confidence?: number;
+  why_this_hook?: string;
+  risk?: string;
+  source_url?: string | null;
+  source_domain?: string;
+}
+
+interface AnalysisContact {
+  name?: string;
+  role?: string;
+  why?: string;
+  channel?: string;
+  email?: string | null;
+  linkedin_url?: string | null;
+}
+
+interface LeadAnalysis {
+  created_at?: string;
+  primary_hook?: AnalysisHook;
+  backup_hooks?: AnalysisHook[];
+  timing_assessment?: {
+    urgency?: string;
+    best_window?: string;
+    reasoning?: string;
+    risk_if_delayed?: string;
+    trigger_events?: { event?: string; date?: string; relevance?: string; url?: string | null }[];
+  };
+  deal_potential?: {
+    tier?: string;
+    estimated_annual_value_eur?: string;
+    estimated_monthly_shipments?: string;
+    confidence?: number;
+    key_driver?: string;
+    estimation_method?: string;
+    data_gaps?: string[];
+  };
+  contact_strategy?: {
+    approach?: string;
+    tone?: string;
+    avoid?: string[];
+    primary_contact?: AnalysisContact;
+    secondary_contact?: AnalysisContact | null;
+    sequence?: { step?: number; action?: string; timing?: string; channel?: string; message_outline?: string }[];
+  };
+  predicted_objections?: { objection?: string; counter?: string; confidence?: number; based_on?: string[] }[];
+  corroborated_signals?: {
+    signal?: string;
+    confidence?: number;
+    sales_relevance?: string;
+    sources?: { domain?: string; field?: string; evidence?: string; url?: string | null }[];
+  }[];
+  contradictions?: {
+    severity?: string;
+    implication?: string;
+    sales_relevance?: string;
+    signal_a?: { claim?: string; domain?: string; field?: string; url?: string | null };
+    signal_b?: { claim?: string; domain?: string; field?: string; url?: string | null };
+  }[];
+  critical_warnings?: { warning?: string; detail?: string; action?: string; severity?: string; affected_fields?: string[] }[];
+  data_quality_summary?: {
+    overall_confidence?: number;
+    overall_confidence_reasoning?: string;
+    recommendation?: string;
+    reliable_domains?: string[];
+    uncertain_domains?: string[];
+    unreliable_domains?: string[];
+    missing_domains?: string[];
+  };
+  domain_confidences?: Record<
+    string,
+    { score?: number; reasoning?: string; data_gaps?: string[]; sources_used?: string[] }
+  >;
 }
 
 // ─── DB mapper ───────────────────────────────────────────────────────────────
@@ -419,6 +500,52 @@ function mapApiContact(row: ApiLeadContact): Contact {
     emailDraftBody: row.email_draft_body ?? undefined,
     source: 'apollo',
   };
+}
+
+// lead_analyses speichert die JSONB-Spalten doppelt-kodiert (String-im-JSONB).
+// Wir parsen jedes Feld defensiv – fehlerhafte/leere Felder werden still verworfen.
+function parseJsonField<T>(value: unknown): T | undefined {
+  if (value == null) return undefined;
+  if (typeof value === 'object') return value as T;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    try {
+      return JSON.parse(trimmed) as T;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+function mapAnalysis(row: Record<string, unknown> | null | undefined): LeadAnalysis | undefined {
+  if (!row) return undefined;
+  const a: LeadAnalysis = {
+    created_at: typeof row.created_at === 'string' ? row.created_at : undefined,
+    primary_hook: parseJsonField<LeadAnalysis['primary_hook']>(row.primary_hook),
+    backup_hooks: parseJsonField<LeadAnalysis['backup_hooks']>(row.backup_hooks),
+    timing_assessment: parseJsonField<LeadAnalysis['timing_assessment']>(row.timing_assessment),
+    deal_potential: parseJsonField<LeadAnalysis['deal_potential']>(row.deal_potential),
+    contact_strategy: parseJsonField<LeadAnalysis['contact_strategy']>(row.contact_strategy),
+    predicted_objections: parseJsonField<LeadAnalysis['predicted_objections']>(row.predicted_objections),
+    corroborated_signals: parseJsonField<LeadAnalysis['corroborated_signals']>(row.corroborated_signals),
+    contradictions: parseJsonField<LeadAnalysis['contradictions']>(row.contradictions),
+    critical_warnings: parseJsonField<LeadAnalysis['critical_warnings']>(row.critical_warnings),
+    data_quality_summary: parseJsonField<LeadAnalysis['data_quality_summary']>(row.data_quality_summary),
+    domain_confidences: parseJsonField<LeadAnalysis['domain_confidences']>(row.domain_confidences),
+  };
+  // Nichts Verwertbares vorhanden → keine Analyse anzeigen.
+  const hasContent =
+    a.primary_hook?.hook ||
+    a.backup_hooks?.length ||
+    a.timing_assessment?.urgency ||
+    a.deal_potential?.tier ||
+    a.contact_strategy?.primary_contact ||
+    a.predicted_objections?.length ||
+    a.corroborated_signals?.length ||
+    a.critical_warnings?.length;
+  return hasContent ? a : undefined;
 }
 
 function mapDbLead(d: Record<string, unknown>): LeadDetail {
@@ -8582,6 +8709,663 @@ function ShippingDetail({ lead, c, isDark }: { lead: LeadDetail; c: ReturnType<t
 
 // ─── Info Tab ─────────────────────────────────────────────────────────────────
 
+// ─── Strategische Analyse (lead_analyses) ─────────────────────────────────────
+
+const ANALYSIS_ACCENT = '#6366F1';
+const A_URGENCY_DE: Record<string, string> = { high: 'Dringend', medium: 'Mittel', low: 'Niedrig' };
+const A_APPROACH_DE: Record<string, string> = {
+  warm_intro: 'Warmer Einstieg',
+  cold_outreach: 'Kaltakquise',
+  referral: 'Über Empfehlung',
+  inbound: 'Inbound',
+};
+const A_TIER_DE: Record<string, string> = { high: 'Hoch', mid: 'Mittel', medium: 'Mittel', low: 'Niedrig' };
+const A_CHANNEL_DE: Record<string, string> = {
+  linkedin: 'LinkedIn',
+  email: 'E-Mail',
+  phone: 'Telefon',
+  instagram: 'Instagram',
+};
+const A_DOMAIN_DE: Record<string, string> = {
+  web: 'Website',
+  social: 'Social Media',
+  reviews: 'Bewertungen',
+  shipping: 'Versand',
+  financial: 'Finanzen',
+  management: 'Management',
+};
+
+function aPct(n?: number): string | null {
+  if (typeof n !== 'number' || isNaN(n)) return null;
+  return `${Math.round(n <= 1 ? n * 100 : n)}%`;
+}
+function aSevColor(s?: string): string {
+  return s === 'high' ? '#EF4444' : s === 'medium' ? '#F97316' : '#10B981';
+}
+
+function AChevron({ open, color }: { open: boolean; color: string }) {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s ease', flexShrink: 0 }}
+    >
+      <path d="M6 9l6 6 6-6" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function AChip({ label, color, isDark }: { label: string; color: string; isDark: boolean }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        fontSize: 12,
+        fontWeight: 700,
+        color,
+        background: `${color}1A`,
+        border: `1px solid ${color}33`,
+        borderRadius: 999,
+        padding: '5px 11px',
+        lineHeight: 1,
+      }}
+    >
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, opacity: isDark ? 0.9 : 1 }} />
+      {label}
+    </span>
+  );
+}
+
+function ALabel({ children, c }: { children: React.ReactNode; c: ReturnType<typeof colors> }) {
+  return (
+    <div
+      style={{
+        fontSize: 10,
+        fontWeight: 700,
+        color: c.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        marginBottom: 5,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ACollapsible({
+  title,
+  count,
+  color,
+  c,
+  isDark,
+  first,
+  children,
+}: {
+  title: string;
+  count?: number;
+  color: string;
+  c: ReturnType<typeof colors>;
+  isDark: boolean;
+  first?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderTop: first ? 'none' : `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'}` }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          padding: '15px 0',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0 }} />
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: c.text }}>{title}</span>
+          {typeof count === 'number' && count > 0 && (
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: c.textSub,
+                background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                borderRadius: 999,
+                padding: '2px 8px',
+                lineHeight: 1.3,
+              }}
+            >
+              {count}
+            </span>
+          )}
+        </span>
+        <AChevron open={open} color={c.textMuted} />
+      </button>
+      <Expandable open={open}>
+        <div style={{ paddingBottom: 18 }}>{children}</div>
+      </Expandable>
+    </div>
+  );
+}
+
+function LeadAnalysisSection({
+  analysis,
+  c,
+  isDark,
+}: {
+  analysis: LeadAnalysis;
+  c: ReturnType<typeof colors>;
+  isDark: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const a = analysis;
+  const ph = a.primary_hook;
+  const ta = a.timing_assessment;
+  const dp = a.deal_potential;
+  const cs = a.contact_strategy;
+  const dq = a.data_quality_summary;
+
+  const urgency = ta?.urgency?.toLowerCase();
+  const urgencyColor = aSevColor(urgency);
+  const overallConf = aPct(dq?.overall_confidence);
+
+  const bodyText: React.CSSProperties = { fontSize: 13, color: c.text, lineHeight: 1.6, margin: 0 };
+  const subText: React.CSSProperties = { fontSize: 12, color: c.textSub, lineHeight: 1.55, margin: 0 };
+  const divider = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+
+  const copyOpener = () => {
+    if (!ph?.opening_line || typeof navigator === 'undefined' || !navigator.clipboard) return;
+    navigator.clipboard
+      .writeText(ph.opening_line)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1800);
+      })
+      .catch(() => {});
+  };
+
+  const dealValue = dp?.estimated_annual_value_eur ? `${dp.estimated_annual_value_eur} €/Jahr` : null;
+  const dealTier = dp?.tier ? A_TIER_DE[dp.tier.toLowerCase()] ?? dp.tier : null;
+
+  const hasDetails =
+    !!(ta?.urgency || ta?.best_window || ta?.trigger_events?.length) ||
+    !!(dp?.key_driver || dp?.data_gaps?.length || dealValue) ||
+    !!(cs?.primary_contact || cs?.sequence?.length) ||
+    !!a.predicted_objections?.length ||
+    !!a.backup_hooks?.length ||
+    !!a.corroborated_signals?.length ||
+    !!a.contradictions?.length ||
+    !!a.critical_warnings?.length ||
+    !!a.domain_confidences;
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {/* ── Hero: Primärer Aufhänger + Status-Chips ─────────────────────────── */}
+      <div
+        style={{
+          ...glassCard(isDark),
+          borderRadius: 16,
+          padding: '22px 24px',
+          marginBottom: hasDetails ? 12 : 0,
+          borderLeft: `3px solid ${ANALYSIS_ACCENT}`,
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(99,102,241,0.10), rgba(10,12,24,0.46))'
+            : 'linear-gradient(135deg, rgba(99,102,241,0.06), rgba(255,255,255,0.5))',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: 14,
+            flexWrap: 'wrap',
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: ANALYSIS_ACCENT,
+            }}
+          >
+            Strategische Analyse
+          </span>
+          <SourceBadge label="KI-Synthese" />
+        </div>
+
+        {/* Status-Chips */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: ph?.hook ? 18 : 0 }}>
+          {urgency && (
+            <AChip label={`Dringlichkeit: ${A_URGENCY_DE[urgency] ?? urgency}`} color={urgencyColor} isDark={isDark} />
+          )}
+          {(dealTier || dealValue) && (
+            <AChip
+              label={`Deal-Potenzial${dealTier ? `: ${dealTier}` : ''}${dealValue ? ` · ${dealValue}` : ''}`}
+              color="#10B981"
+              isDark={isDark}
+            />
+          )}
+          {overallConf && <AChip label={`Datenqualität: ${overallConf}`} color={ANALYSIS_ACCENT} isDark={isDark} />}
+        </div>
+
+        {/* Primärer Aufhänger */}
+        {ph?.hook && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+              <ALabel c={c}>Primärer Aufhänger</ALabel>
+              {aPct(ph.confidence) && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: ANALYSIS_ACCENT }}>{aPct(ph.confidence)} sicher</span>
+              )}
+            </div>
+            <p style={{ fontSize: 15, fontWeight: 600, color: c.text, lineHeight: 1.6, margin: '0 0 14px' }}>{ph.hook}</p>
+
+            {ph.opening_line && (
+              <div
+                style={{
+                  position: 'relative',
+                  background: isDark ? 'rgba(99,102,241,0.10)' : 'rgba(99,102,241,0.07)',
+                  border: `1px solid ${ANALYSIS_ACCENT}33`,
+                  borderRadius: 12,
+                  padding: '14px 16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 7 }}>
+                  <ALabel c={c}>Eröffnungszeile</ALabel>
+                  <button
+                    type="button"
+                    onClick={copyOpener}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: copied ? '#10B981' : ANALYSIS_ACCENT,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {copied ? 'Kopiert ✓' : 'Kopieren'}
+                  </button>
+                </div>
+                <p style={{ fontSize: 14, fontStyle: 'italic', color: c.text, lineHeight: 1.65, margin: 0 }}>
+                  &bdquo;{ph.opening_line}&ldquo;
+                </p>
+              </div>
+            )}
+
+            {ph.why_this_hook && (
+              <p style={{ ...subText, marginTop: 12 }}>
+                <span style={{ fontWeight: 700, color: c.textSub }}>Warum: </span>
+                {ph.why_this_hook}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Aufklappbare Detail-Abschnitte ──────────────────────────────────── */}
+      {hasDetails && (
+        <div style={{ ...glassCard(isDark), borderRadius: 16, padding: '4px 24px' }}>
+          {/* Timing */}
+          {(ta?.urgency || ta?.best_window || ta?.trigger_events?.length || ta?.risk_if_delayed) && (
+            <ACollapsible
+              title="Timing & Trigger-Events"
+              count={ta?.trigger_events?.length}
+              color="#0EA5E9"
+              c={c}
+              isDark={isDark}
+              first
+            >
+              {ta?.best_window && (
+                <div style={{ marginBottom: 12 }}>
+                  <ALabel c={c}>Bestes Zeitfenster</ALabel>
+                  <p style={bodyText}>{ta.best_window}</p>
+                </div>
+              )}
+              {ta?.reasoning && (
+                <div style={{ marginBottom: 12 }}>
+                  <ALabel c={c}>Begründung</ALabel>
+                  <p style={subText}>{ta.reasoning}</p>
+                </div>
+              )}
+              {!!ta?.trigger_events?.length && (
+                <div style={{ marginBottom: ta?.risk_if_delayed ? 12 : 0 }}>
+                  <ALabel c={c}>Trigger-Events</ALabel>
+                  {ta.trigger_events.map((ev, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 9, marginBottom: 9 }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#0EA5E9', flexShrink: 0, marginTop: 5 }} />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: c.text, lineHeight: 1.5 }}>
+                          {ev.event}
+                          {ev.date && <span style={{ fontWeight: 400, color: c.textMuted }}> · {ev.date}</span>}
+                        </div>
+                        {ev.relevance && <div style={{ fontSize: 12, color: c.textSub, lineHeight: 1.5, marginTop: 2 }}>{ev.relevance}</div>}
+                        {ev.url && (
+                          <a href={ev.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#0EA5E9', wordBreak: 'break-all' }}>
+                            {ev.url}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {ta?.risk_if_delayed && (
+                <div>
+                  <ALabel c={c}>Risiko bei Verzögerung</ALabel>
+                  <p style={subText}>{ta.risk_if_delayed}</p>
+                </div>
+              )}
+            </ACollapsible>
+          )}
+
+          {/* Deal-Potenzial */}
+          {(dp?.key_driver || dp?.data_gaps?.length || dealValue || dp?.estimated_monthly_shipments) && (
+            <ACollapsible title="Deal-Potenzial" color="#10B981" c={c} isDark={isDark}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, marginBottom: dp?.key_driver || dp?.data_gaps?.length ? 14 : 0 }}>
+                {dealValue && (
+                  <div>
+                    <ALabel c={c}>Geschätzter Jahreswert</ALabel>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#10B981' }}>{dealValue}</div>
+                  </div>
+                )}
+                {dp?.estimated_monthly_shipments && (
+                  <div>
+                    <ALabel c={c}>Pakete / Monat (geschätzt)</ALabel>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: c.text }}>{dp.estimated_monthly_shipments}</div>
+                  </div>
+                )}
+                {aPct(dp?.confidence) && (
+                  <div>
+                    <ALabel c={c}>Konfidenz</ALabel>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: c.text }}>{aPct(dp?.confidence)}</div>
+                  </div>
+                )}
+              </div>
+              {dp?.key_driver && (
+                <div style={{ marginBottom: dp?.data_gaps?.length ? 12 : 0 }}>
+                  <ALabel c={c}>Haupttreiber</ALabel>
+                  <p style={bodyText}>{dp.key_driver}</p>
+                </div>
+              )}
+              {!!dp?.data_gaps?.length && (
+                <div>
+                  <ALabel c={c}>Datenlücken</ALabel>
+                  {dp.data_gaps.map((g, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+                      <span style={{ color: c.textMuted, fontSize: 13, lineHeight: 1.5 }}>–</span>
+                      <span style={{ fontSize: 12, color: c.textSub, lineHeight: 1.5 }}>{g}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ACollapsible>
+          )}
+
+          {/* Kontaktstrategie */}
+          {(cs?.primary_contact || cs?.sequence?.length || cs?.approach || cs?.avoid?.length) && (
+            <ACollapsible title="Kontaktstrategie" count={cs?.sequence?.length} color="#8B5CF6" c={c} isDark={isDark}>
+              {cs?.primary_contact && (
+                <div
+                  style={{
+                    background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                    borderRadius: 10,
+                    padding: '12px 14px',
+                    marginBottom: 14,
+                  }}
+                >
+                  <ALabel c={c}>Primärer Ansprechpartner</ALabel>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: c.text }}>
+                    {cs.primary_contact.name || 'Unbekannt'}
+                    {cs.primary_contact.role && <span style={{ fontWeight: 500, color: c.textSub }}> · {cs.primary_contact.role}</span>}
+                  </div>
+                  {cs.primary_contact.channel && (
+                    <div style={{ fontSize: 12, color: c.textSub, marginTop: 3 }}>
+                      Kanal: {A_CHANNEL_DE[cs.primary_contact.channel.toLowerCase()] ?? cs.primary_contact.channel}
+                    </div>
+                  )}
+                  {cs.primary_contact.why && <p style={{ ...subText, marginTop: 6 }}>{cs.primary_contact.why}</p>}
+                </div>
+              )}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: cs?.tone || cs?.sequence?.length || cs?.avoid?.length ? 14 : 0 }}>
+                {cs?.approach && <AChip label={A_APPROACH_DE[cs.approach.toLowerCase()] ?? cs.approach} color="#8B5CF6" isDark={isDark} />}
+              </div>
+              {cs?.tone && (
+                <div style={{ marginBottom: cs?.sequence?.length || cs?.avoid?.length ? 14 : 0 }}>
+                  <ALabel c={c}>Tonalität</ALabel>
+                  <p style={subText}>{cs.tone}</p>
+                </div>
+              )}
+              {!!cs?.sequence?.length && (
+                <div style={{ marginBottom: cs?.avoid?.length ? 14 : 0 }}>
+                  <ALabel c={c}>Outreach-Sequenz</ALabel>
+                  {cs.sequence.map((st, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 11, marginBottom: 12 }}>
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: '50%',
+                          background: '#8B5CF6',
+                          color: '#fff',
+                          fontSize: 11,
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {st.step ?? i + 1}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: c.text, lineHeight: 1.5 }}>
+                          {st.action}
+                          {st.channel && (
+                            <span style={{ fontWeight: 400, color: c.textMuted }}>
+                              {' '}· {A_CHANNEL_DE[st.channel.toLowerCase()] ?? st.channel}
+                            </span>
+                          )}
+                          {st.timing && <span style={{ fontWeight: 400, color: c.textMuted }}> · {st.timing}</span>}
+                        </div>
+                        {st.message_outline && <div style={{ fontSize: 12, color: c.textSub, lineHeight: 1.5, marginTop: 3 }}>{st.message_outline}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!!cs?.avoid?.length && (
+                <div>
+                  <ALabel c={c}>Vermeiden</ALabel>
+                  {cs.avoid.map((av, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+                      <span style={{ color: '#EF4444', fontSize: 13, lineHeight: 1.5 }}>✕</span>
+                      <span style={{ fontSize: 12, color: c.textSub, lineHeight: 1.5 }}>{av}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ACollapsible>
+          )}
+
+          {/* Einwände & Konter */}
+          {!!a.predicted_objections?.length && (
+            <ACollapsible title="Einwände & Konter" count={a.predicted_objections.length} color="#F97316" c={c} isDark={isDark}>
+              {a.predicted_objections.map((o, i) => (
+                <div key={i} style={{ marginBottom: i < a.predicted_objections!.length - 1 ? 14 : 0 }}>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                    <span style={{ color: '#F97316', fontSize: 13, fontWeight: 800, lineHeight: 1.5 }}>„</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: c.text, lineHeight: 1.5 }}>{o.objection}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, paddingLeft: 2 }}>
+                    <span style={{ color: '#10B981', fontSize: 13, lineHeight: 1.5 }}>→</span>
+                    <span style={{ fontSize: 12, color: c.textSub, lineHeight: 1.55 }}>{o.counter}</span>
+                  </div>
+                </div>
+              ))}
+            </ACollapsible>
+          )}
+
+          {/* Backup-Aufhänger */}
+          {!!a.backup_hooks?.length && (
+            <ACollapsible title="Backup-Aufhänger" count={a.backup_hooks.length} color={ANALYSIS_ACCENT} c={c} isDark={isDark}>
+              {a.backup_hooks.map((h, i) => (
+                <div key={i} style={{ marginBottom: i < a.backup_hooks!.length - 1 ? 16 : 0, paddingBottom: i < a.backup_hooks!.length - 1 ? 16 : 0, borderBottom: i < a.backup_hooks!.length - 1 ? `1px solid ${divider}` : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: c.text, lineHeight: 1.55, margin: '0 0 6px' }}>{h.hook}</p>
+                    {aPct(h.confidence) && <span style={{ fontSize: 11, fontWeight: 700, color: ANALYSIS_ACCENT, flexShrink: 0 }}>{aPct(h.confidence)}</span>}
+                  </div>
+                  {h.opening_line && <p style={{ fontSize: 12.5, fontStyle: 'italic', color: c.textSub, lineHeight: 1.6, margin: '0 0 6px' }}>&bdquo;{h.opening_line}&ldquo;</p>}
+                  {h.risk && (
+                    <p style={{ fontSize: 11.5, color: c.textMuted, lineHeight: 1.5, margin: 0 }}>
+                      <span style={{ fontWeight: 700 }}>Risiko: </span>
+                      {h.risk}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </ACollapsible>
+          )}
+
+          {/* Bestätigte Signale */}
+          {!!a.corroborated_signals?.length && (
+            <ACollapsible title="Bestätigte Signale" count={a.corroborated_signals.length} color="#10B981" c={c} isDark={isDark}>
+              {a.corroborated_signals.map((s, i) => (
+                <div key={i} style={{ marginBottom: i < a.corroborated_signals!.length - 1 ? 14 : 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: c.text, lineHeight: 1.5 }}>{s.signal}</span>
+                    {aPct(s.confidence) && <span style={{ fontSize: 11, fontWeight: 700, color: '#10B981', flexShrink: 0 }}>{aPct(s.confidence)}</span>}
+                  </div>
+                  {s.sales_relevance && <p style={{ ...subText, marginBottom: s.sources?.length ? 5 : 0 }}>{s.sales_relevance}</p>}
+                  {!!s.sources?.length && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {s.sources.map((src, j) => (
+                        <span
+                          key={j}
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 600,
+                            color: c.textSub,
+                            background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                            borderRadius: 6,
+                            padding: '2px 7px',
+                          }}
+                        >
+                          {src.domain ? A_DOMAIN_DE[src.domain] ?? src.domain : 'Quelle'}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </ACollapsible>
+          )}
+
+          {/* Widersprüche */}
+          {!!a.contradictions?.length && (
+            <ACollapsible title="Widersprüche" count={a.contradictions.length} color="#F59E0B" c={c} isDark={isDark}>
+              {a.contradictions.map((cd, i) => (
+                <div key={i} style={{ marginBottom: i < a.contradictions!.length - 1 ? 14 : 0 }}>
+                  <div style={{ marginBottom: 6 }}>
+                    {cd.signal_a?.claim && (
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted, flexShrink: 0, marginTop: 1 }}>A</span>
+                        <span style={{ fontSize: 12.5, color: c.text, lineHeight: 1.5 }}>{cd.signal_a.claim}</span>
+                      </div>
+                    )}
+                    {cd.signal_b?.claim && (
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: c.textMuted, flexShrink: 0, marginTop: 1 }}>B</span>
+                        <span style={{ fontSize: 12.5, color: c.text, lineHeight: 1.5 }}>{cd.signal_b.claim}</span>
+                      </div>
+                    )}
+                  </div>
+                  {cd.sales_relevance && (
+                    <p style={{ ...subText, paddingLeft: 19 }}>
+                      <span style={{ fontWeight: 700, color: c.textSub }}>Relevanz: </span>
+                      {cd.sales_relevance}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </ACollapsible>
+          )}
+
+          {/* Kritische Warnungen */}
+          {!!a.critical_warnings?.length && (
+            <ACollapsible title="Kritische Warnungen" count={a.critical_warnings.length} color="#EF4444" c={c} isDark={isDark}>
+              {a.critical_warnings.map((w, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, marginBottom: i < a.critical_warnings!.length - 1 ? 14 : 0 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: aSevColor(w.severity), flexShrink: 0, marginTop: 5 }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: c.text, lineHeight: 1.5 }}>{w.warning}</div>
+                    {w.detail && <p style={{ ...subText, marginTop: 3 }}>{w.detail}</p>}
+                    {w.action && (
+                      <p style={{ fontSize: 12, color: aSevColor(w.severity), lineHeight: 1.5, margin: '5px 0 0' }}>
+                        <span style={{ fontWeight: 700 }}>Maßnahme: </span>
+                        {w.action}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </ACollapsible>
+          )}
+
+          {/* Datenqualität */}
+          {(a.domain_confidences || dq?.recommendation) && (
+            <ACollapsible title="Datenqualität pro Domäne" color={ANALYSIS_ACCENT} c={c} isDark={isDark}>
+              {dq?.recommendation && (
+                <div style={{ marginBottom: a.domain_confidences ? 14 : 0 }}>
+                  <ALabel c={c}>Empfehlung</ALabel>
+                  <p style={subText}>{dq.recommendation}</p>
+                </div>
+              )}
+              {a.domain_confidences &&
+                Object.entries(a.domain_confidences)
+                  .sort((x, y) => (y[1]?.score ?? 0) - (x[1]?.score ?? 0))
+                  .map(([domain, info]) => {
+                    const score = typeof info?.score === 'number' ? (info.score <= 1 ? info.score : info.score / 100) : 0;
+                    const scoreColorVal = score >= 0.7 ? '#10B981' : score >= 0.5 ? '#F97316' : '#EF4444';
+                    return (
+                      <div key={domain} style={{ marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 600, color: c.text }}>{A_DOMAIN_DE[domain] ?? domain}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: scoreColorVal }}>{Math.round(score * 100)}%</span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 999, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)', overflow: 'hidden' }}>
+                          <div style={{ width: `${Math.round(score * 100)}%`, height: '100%', borderRadius: 999, background: scoreColorVal }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+            </ACollapsible>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InfoTab({
   lead,
   c,
@@ -8999,6 +9783,9 @@ function InfoTab({
           );
         })()}
       </div>
+
+      {/* ── 0. Strategische Analyse (lead_analyses) ───────────────────────── */}
+      {lead.analysis ? <LeadAnalysisSection analysis={lead.analysis} c={c} isDark={isDark} /> : null}
 
       {/* ── 1. KI-Zusammenfassung ─────────────────────────────────────────── */}
       {lead.scoreReason || lead.lead_summary ? (
@@ -11394,10 +12181,15 @@ export default function LeadDetailPage() {
       if (opts?.showSpinner !== false) setLoading(true);
       try {
         const r = await fetch(`/api/leads/${id}`);
-        const data: { lead: Record<string, unknown>; contacts?: ApiLeadContact[] } = await r.json();
+        const data: {
+          lead: Record<string, unknown>;
+          contacts?: ApiLeadContact[];
+          analysis?: Record<string, unknown> | null;
+        } = await r.json();
         const mapped = mapDbLead(data.lead);
         // Only show contacts that came in via the Apollo "Personen finden" workflow.
         mapped.contacts = (data.contacts ?? []).map(mapApiContact);
+        mapped.analysis = mapAnalysis(data.analysis);
         setLead(mapped);
         setStatus(mapped.status);
         try {
