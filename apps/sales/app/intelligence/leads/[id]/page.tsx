@@ -918,6 +918,38 @@ function scoreColor(s: number) {
   return s >= 85 ? '#10B981' : s >= 70 ? '#F97316' : '#EF4444';
 }
 
+function InfoPill({
+  icon,
+  text,
+  c,
+  isDark,
+}: {
+  icon: React.ReactNode;
+  text: string;
+  c: ReturnType<typeof colors>;
+  isDark: boolean;
+}) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        fontSize: 12,
+        fontWeight: 600,
+        padding: '4px 10px',
+        borderRadius: 99,
+        background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+        color: c.textSub,
+        border: `1px solid ${c.border}`,
+      }}
+    >
+      {icon}
+      {text}
+    </span>
+  );
+}
+
 function ScoreRing({ score, size = 56 }: { score: number; size?: number }) {
   const r = (size - 8) / 2;
   const circ = 2 * Math.PI * r;
@@ -11220,271 +11252,296 @@ export default function LeadDetailPage() {
     >
       <GlassPageFilters />
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          ...glassCard(isDark),
-          margin: '0 20px 0',
-          borderRadius: '16px 16px 0 0',
-          padding: '18px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          borderBottom: 'none',
-        }}
-      >
-        {/* Back */}
-        <button
-          onClick={() => router.push('/intelligence/leads')}
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
-            border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 16,
-            color: c.textSub,
-            flexShrink: 0,
-          }}
-        >
-          ←
-        </button>
-
-        {/* Company avatar */}
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 18,
-            overflow: 'hidden',
-            flexShrink: 0,
-            boxShadow: `0 8px 24px ${lead.color}55`,
-            background: lead.color,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 18,
-            fontWeight: 800,
-            color: '#fff',
-            position: 'relative',
-          }}
-        >
-          {lead.initials}
-          {(lead.logo_url || lead.profile_image_url) && (
-            <img
-              src={lead.logo_url ?? lead.profile_image_url}
-              alt={lead.name}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          )}
-        </div>
-
-        {/* Name + quick stats */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: c.text, marginBottom: 4 }}>{lead.name}</div>
-          <div style={{ fontSize: 13, color: c.textMuted, marginBottom: 10 }}>
-            {lead.city} · {lead.industry}
-          </div>
-          {/* Quick-stat pills (Screenshot 3 style) */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-            {lead.employees && (
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: 7,
-                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                  color: c.textSub,
-                  border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                <Users size={12} style={{ flexShrink: 0 }} /> {lead.employees} Mitarbeiter
-              </span>
-            )}
-            {lead.founded && (
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: 7,
-                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                  color: c.textSub,
-                  border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                <Calendar size={12} style={{ flexShrink: 0 }} /> Seit {lead.founded}
-              </span>
-            )}
-            {lead.website && (
-              <a
-                href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: 7,
-                  background: 'rgba(79,70,229,0.10)',
-                  color: '#818CF8',
-                  border: '1px solid rgba(79,70,229,0.18)',
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                <Globe size={12} style={{ flexShrink: 0 }} />{' '}
-                {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
-              </a>
-            )}
-            {lead.phone && (
-              <a
-                href={`tel:${lead.phone}`}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: 7,
-                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                  color: c.textSub,
-                  border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                <Phone size={12} style={{ flexShrink: 0 }} /> {lead.phone}
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* Score — big badge (Screenshot 2 style) */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 6,
-            flexShrink: 0,
-            position: 'relative',
-          }}
-          onMouseEnter={() => setScoreHover(true)}
-          onMouseLeave={() => setScoreHover(false)}
-        >
-          <ScoreRing score={lead.score} size={64} />
-          <span
+      {/* ── Company Overview ─────────────────────────────────────────────────── */}
+      <div style={{ ...glassCard(isDark), margin: '0 20px 0', borderRadius: '16px 16px 0 0', borderBottom: 'none' }}>
+        {/* Nav row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px 0' }}>
+          <button
+            onClick={() => router.push('/intelligence/leads')}
             style={{
-              fontSize: 10,
-              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: 8,
+              background: 'transparent',
+              border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+              cursor: 'pointer',
               color: c.textMuted,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: 'inherit',
             }}
           >
-            Score
-          </span>
-          {scoreHover && lead.scoreReason && (
+            ← Alle Leads
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {/* Status selector */}
             <div
               style={{
-                position: 'absolute',
-                bottom: '110%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 260,
-                background: isDark ? 'rgba(10,12,24,0.95)' : 'rgba(255,255,255,0.98)',
-                border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.1)',
-                borderRadius: 10,
-                padding: '10px 14px',
+                padding: '6px 12px',
+                borderRadius: 8,
+                background: sCfg.bg,
+                border: `1.5px solid ${sCfg.color}40`,
+                color: sCfg.color,
                 fontSize: 12,
-                color: c.text,
-                lineHeight: 1.55,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.24)',
-                zIndex: 100,
-                pointerEvents: 'none',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
               }}
             >
-              {lead.scoreReason}
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: sCfg.color }} />
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as LeadStatus)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: sCfg.color,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                <option value="hot">Hot</option>
+                <option value="warm">Warm</option>
+                <option value="cold">Kalt</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Main info */}
+        <div style={{ padding: '16px 20px 20px', display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+          {/* Logo */}
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 18,
+              overflow: 'hidden',
+              flexShrink: 0,
+              background: lead.color,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 20,
+              fontWeight: 800,
+              color: '#fff',
+              position: 'relative',
+              boxShadow: `0 8px 24px ${lead.color}44`,
+            }}
+          >
+            {lead.initials}
+            {(lead.logo_url || lead.profile_image_url) && (
+              <img
+                src={lead.logo_url ?? lead.profile_image_url}
+                alt={lead.name}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  background: isDark ? 'rgba(255,255,255,0.06)' : '#F4F5F8',
+                }}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            )}
+          </div>
+
+          {/* Name + description + facts */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Name row */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
+              <h1
+                style={{
+                  fontSize: 24,
+                  fontWeight: 800,
+                  color: c.text,
+                  margin: 0,
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.2,
+                }}
+              >
+                {lead.name}
+              </h1>
+              {lead.legal_form && (
+                <span style={{ fontSize: 12, color: c.textMuted, fontWeight: 500 }}>{lead.legal_form}</span>
+              )}
+            </div>
+
+            {/* City · Industry */}
+            <div style={{ fontSize: 13, color: c.textMuted, marginBottom: 10 }}>
+              {[lead.city, lead.industry].filter(Boolean).join(' · ') || 'Keine Brancheninfo'}
+            </div>
+
+            {/* Description — lead_summary or web_company_pitch */}
+            {(lead.lead_summary || lead.web_company_pitch || lead.web_value_proposition) && (
+              <p style={{ fontSize: 13, color: c.textSub, lineHeight: 1.6, margin: '0 0 14px', maxWidth: 640 }}>
+                {lead.lead_summary || lead.web_company_pitch || lead.web_value_proposition}
+              </p>
+            )}
+
+            {/* SP Fit reasoning */}
+            {lead.shipping_sps_fit_reasoning && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: '#4F46E5',
+                  background: '#4F46E508',
+                  border: '1px solid #4F46E520',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  marginBottom: 14,
+                  lineHeight: 1.5,
+                }}
+              >
+                {lead.shipping_sps_fit_reasoning}
+              </div>
+            )}
+
+            {/* Facts row */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {lead.founded && (
+                <InfoPill icon={<Calendar size={11} />} text={`Gegr. ${lead.founded}`} c={c} isDark={isDark} />
+              )}
+              {lead.employees && (
+                <InfoPill icon={<Users size={11} />} text={`${lead.employees} Mitarbeiter`} c={c} isDark={isDark} />
+              )}
+              {lead.revenue && <InfoPill icon={null} text={lead.revenue} c={c} isDark={isDark} />}
+              {lead.website && (
+                <a
+                  href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                    borderRadius: 99,
+                    background: '#4F46E510',
+                    color: '#4F46E5',
+                    border: '1px solid #4F46E525',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <Globe size={11} /> {lead.website.replace(/^https?:\/\//, '').replace(/\/$/, '')} ↗
+                </a>
+              )}
+              {lead.phone && (
+                <a
+                  href={`tel:${lead.phone}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                    borderRadius: 99,
+                    background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)',
+                    color: c.textSub,
+                    border: `1px solid ${c.border}`,
+                    textDecoration: 'none',
+                  }}
+                >
+                  <Phone size={11} /> {lead.phone}
+                </a>
+              )}
+              {lead.linkedin_url && (
+                <a
+                  href={lead.linkedin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                    borderRadius: 99,
+                    background: '#0A66C210',
+                    color: '#0A66C2',
+                    border: '1px solid #0A66C225',
+                    textDecoration: 'none',
+                  }}
+                >
+                  LinkedIn ↗
+                </a>
+              )}
+              {lead.hrb_number && <InfoPill icon={null} text={`HRB ${lead.hrb_number}`} c={c} isDark={isDark} />}
+            </div>
+          </div>
+
+          {/* SP Fit score — right column */}
+          {lead.shipping_sps_fit_score != null && (
+            <div style={{ flexShrink: 0, textAlign: 'center', padding: '4px 0' }}>
+              <div
+                style={{
+                  fontSize: 44,
+                  fontWeight: 900,
+                  letterSpacing: '-0.04em',
+                  lineHeight: 1,
+                  color:
+                    lead.shipping_sps_fit_score >= 70
+                      ? '#10B981'
+                      : lead.shipping_sps_fit_score >= 40
+                        ? '#F97316'
+                        : '#EF4444',
+                }}
+              >
+                {lead.shipping_sps_fit_score}
+              </div>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: c.textMuted,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.07em',
+                  marginTop: 4,
+                }}
+              >
+                SP Fit
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  height: 4,
+                  width: 60,
+                  borderRadius: 99,
+                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${lead.shipping_sps_fit_score}%`,
+                    height: '100%',
+                    borderRadius: 99,
+                    background:
+                      lead.shipping_sps_fit_score >= 70
+                        ? '#10B981'
+                        : lead.shipping_sps_fit_score >= 40
+                          ? '#F97316'
+                          : '#EF4444',
+                  }}
+                />
+              </div>
             </div>
           )}
-        </div>
-
-        {/* Fit score pill */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#10B981', lineHeight: 1 }}>{lead.fit}</div>
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: c.textMuted,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Fit
-          </span>
-        </div>
-
-        {/* Status */}
-        <div
-          style={{
-            padding: '6px 12px',
-            borderRadius: 8,
-            background: sCfg.bg,
-            border: `1.5px solid ${sCfg.color}40`,
-            color: sCfg.color,
-            fontSize: 12,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: sCfg.color }} />
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as LeadStatus)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: sCfg.color,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              outline: 'none',
-              appearance: 'none',
-              WebkitAppearance: 'none',
-            }}
-          >
-            <option value="hot">Hot</option>
-            <option value="warm">Warm</option>
-            <option value="cold">Kalt</option>
-          </select>
         </div>
       </div>
 
